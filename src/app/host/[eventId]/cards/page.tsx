@@ -57,7 +57,7 @@ export default async function CardsPage({
 
   const all = (blocks ?? []) as BlockRow[];
   const showAll = searchParams.all === '1';
-  const showRoster = searchParams.roster !== '0';
+  const showRoster = searchParams.roster === '1';
   const anyInPlay = all.some((b) => b.in_play);
   const shown = showAll || !anyInPlay ? all : all.filter((b) => b.in_play);
 
