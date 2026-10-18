@@ -113,7 +113,13 @@ export async function savePhoto(token: string, formData: FormData): Promise<Form
     .update({ photo_path: path, signup_completed_at: new Date().toISOString() })
     .eq('id', ctx.participant.id);
 
+  // The camera navigates on to /booked with a client-side router.push
+  // rather than a server redirect, so the router cache for that exact
+  // path has to be invalidated here or it serves the stale, photo-less
+  // render instead of fetching the one that now has the photo.
   revalidatePath(`/i/${token}`);
+  revalidatePath(`/i/${token}/mugshot`);
+  revalidatePath(`/i/${token}/booked`);
   return { ok: true };
 }
 
