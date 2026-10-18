@@ -9,10 +9,10 @@ export const POTLUCK_CATEGORIES: { key: PotluckCategory; label: string }[] = [
 ];
 
 export const CAPACITY_BANDS: { value: number; label: string }[] = [
-  { value: 1, label: '0 — not drinking tonight' },
-  { value: 2, label: '1 standard drink' },
-  { value: 3, label: '2–3 standard drinks' },
-  { value: 4, label: '4–5 standard drinks' },
+  { value: 1, label: '0 standard drinks' },
+  { value: 2, label: '5 standard drinks' },
+  { value: 3, label: '10 standard drinks' },
+  { value: 4, label: '15 standard drinks' },
   { value: 5, label: 'The whole cabinet' },
 ];
 
