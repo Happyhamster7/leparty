@@ -34,6 +34,18 @@ export function spread(blocks: ProposedBlock[]): number {
  * carries more drinking capacity, which is correct — it also has more
  * people to spread drinks across, so the two effects roughly cancel.
  */
+/** Fisher-Yates. Array.sort is stable, so shuffling first and sorting only on
+ *  capacity below randomizes the order among people who tie on capacity,
+ *  without randomizing the capacity-driven balance itself. */
+function shuffle<T>(items: T[]): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
 export function proposeDraw(
   people: Drawee[],
   blocks: { id: string; name: string; colour: string }[]
@@ -47,9 +59,10 @@ export function proposeDraw(
 
   if (proposed.length === 0) return proposed;
 
-  const sorted = [...people].sort(
-    (a, b) => b.capacity - a.capacity || a.name.localeCompare(b.name)
-  );
+  // Shuffled first so repeat calls — i.e. the Reshuffle button — land
+  // people differently among same-capacity peers instead of reproducing
+  // the exact same groups every time.
+  const sorted = shuffle(people).sort((a, b) => b.capacity - a.capacity);
 
   // Snake deal. Uneven headcounts fall out of this naturally: the
   // remainder lands on whichever blocks the serpentine reaches next,

@@ -103,7 +103,11 @@ too.
   return `HostState` / `FormState` so `useFormState` can show errors.
 - Validate in the action and return `{ error }`; don't trust the client.
 - `src/lib/draw.ts` is pure and runs in the browser during the draw —
-  keep it dependency-free and deterministic.
+  keep it dependency-free. `proposeDraw` shuffles people before sorting
+  by capacity, so same-capacity peers land differently on each call —
+  deliberate, so the Reshuffle button actually does something. The
+  balance guarantee comes from capacity sums, not from who specifically
+  fills a slot, so this doesn't weaken it.
 - Copy is plain and direct, sentence case, no exclamation marks. The
   jail theme lives in content, not in the component names.
 - Design tokens are CSS custom properties in `globals.css`. Paper
