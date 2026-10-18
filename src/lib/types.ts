@@ -1,7 +1,9 @@
-export type PotluckCategory = 'protein' | 'sweets' | 'alcohol';
+export type PotluckCategory = 'protein' | 'carbs' | 'snacks' | 'sweets' | 'alcohol';
 
 export const POTLUCK_CATEGORIES: { key: PotluckCategory; label: string }[] = [
   { key: 'protein', label: 'Protein' },
+  { key: 'carbs', label: 'Carbs' },
+  { key: 'snacks', label: 'Snacks' },
   { key: 'sweets', label: 'Sweets' },
   { key: 'alcohol', label: 'Alcohol' },
 ];

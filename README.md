@@ -19,7 +19,7 @@ changing these.
 | --- | --- | --- |
 | Invite | `/i/<token>` | Theme, date, dress code. RSVP yes or no. |
 | Identity | `/i/<token>/identity` | Name and capacity band. Written to `people`, so a returning guest never sees this again. |
-| Potluck | `/i/<token>/potluck` | Shows the running count by category (protein, sweets, alcohol) before they choose, then takes their item and dietary notes. |
+| Potluck | `/i/<token>/potluck` | Shows the running count by category (protein, carbs, snacks, sweets, alcohol) before they choose, then takes their item and dietary notes. |
 | Mugshot | `/i/<token>/mugshot` | In-browser camera, downscaled client-side, or a file picker, or skip. |
 | Booked | `/i/<token>/booked` | Inmate number, what to bring, what happens next. |
 | Declined | `/i/<token>/declined` | The can't-make-it path, reversible until the night. |
