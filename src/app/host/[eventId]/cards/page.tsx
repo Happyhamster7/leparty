@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import QRCode from 'qrcode';
 import { db, siteUrl } from '@/lib/supabase';
 import { isHost } from '@/lib/host';
+import { getTheme } from '@/lib/theme';
 import type { EventRow } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -41,6 +42,7 @@ export default async function CardsPage({
 
   if (!event) notFound();
   const ev = event as EventRow;
+  const theme = getTheme(ev.theme_key);
 
   const [{ data: blocks }, { data: members }] = await Promise.all([
     supabase
@@ -89,13 +91,13 @@ export default async function CardsPage({
   return (
     <div className="shell shell--wide">
       <div className="topbar no-print">
-        <span>{(ev.theme_title || ev.name).toUpperCase()} &middot; BLOCK CARDS</span>
+        <span>{(ev.theme_title || ev.name).toUpperCase()} &middot; {theme.groupNoun.toUpperCase()} CARDS</span>
         <Link href={`/host/${params.eventId}`}>CONSOLE</Link>
       </div>
 
       <div className="body">
         <div className="no-print">
-          <h1>Block cards</h1>
+          <h1>{theme.groupNoun} cards</h1>
           <p className="lede">
             One per block, to sit on the table. Print two of each &mdash; cards get drinks spilled
             on them, and a spare means a lost card is never a problem.
@@ -158,7 +160,7 @@ export default async function CardsPage({
 
                   {showRoster && names.length > 0 ? (
                     <>
-                      <p className="eyebrow">Your block</p>
+                      <p className="eyebrow">Your {theme.groupNoun.toLowerCase()}</p>
                       <div
                         style={{
                           display: 'grid',

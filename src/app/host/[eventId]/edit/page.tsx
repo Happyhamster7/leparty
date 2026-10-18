@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { db } from '@/lib/supabase';
 import { isHost } from '@/lib/host';
+import { getTheme } from '@/lib/theme';
 import type { EventRow } from '@/lib/types';
 import EventForm from '../../EventForm';
 import { setEventStatus } from '../../actions';
@@ -19,6 +20,7 @@ export default async function EditEventPage({ params }: { params: { eventId: str
 
   if (!event) notFound();
   const ev = event as EventRow;
+  const theme = getTheme(ev.theme_key);
 
   const archive = setEventStatus.bind(null, params.eventId, 'archived');
   const reopen = setEventStatus.bind(null, params.eventId, 'open');
@@ -26,7 +28,7 @@ export default async function EditEventPage({ params }: { params: { eventId: str
   return (
     <div className="shell shell--wide">
       <div className="topbar">
-        <span>WARDEN&rsquo;S CONSOLE</span>
+        <span>{theme.hostConsoleLabel.toUpperCase()}</span>
         <Link href={`/host/${params.eventId}`}>BACK</Link>
       </div>
 

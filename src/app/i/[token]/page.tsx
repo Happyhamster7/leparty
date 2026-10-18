@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { loadInvite, nextStep, hasAttendedBefore } from '@/lib/invite';
 import { formatHeldOn } from '@/lib/types';
+import { getTheme } from '@/lib/theme';
 import { db } from '@/lib/supabase';
 import { setRsvp } from './actions';
 
@@ -12,6 +13,7 @@ export default async function InvitePage({ params }: { params: { token: string }
   if (!ctx) notFound();
 
   const { event, participant, person } = ctx;
+  const theme = getTheme(event.theme_key);
   const token = params.token;
   const returning = await hasAttendedBefore(ctx);
   const step = nextStep(ctx);
@@ -31,7 +33,7 @@ export default async function InvitePage({ params }: { params: { token: string }
   return (
     <div className="shell">
       <div className="topbar">
-        <span>DEPT. OF CORRECTIONS</span>
+        <span>{theme.deptLabel.toUpperCase()}</span>
         <span>FORM 1-A</span>
       </div>
 

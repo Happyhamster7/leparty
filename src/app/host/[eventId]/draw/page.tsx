@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { db } from '@/lib/supabase';
 import { isHost } from '@/lib/host';
+import { getTheme } from '@/lib/theme';
 import type { EventRow } from '@/lib/types';
 import type { Drawee } from '@/lib/draw';
 import DrawReview from './DrawReview';
@@ -28,6 +29,7 @@ export default async function DrawPage({ params }: { params: { eventId: string }
 
   if (!event) notFound();
   const ev = event as EventRow;
+  const theme = getTheme(ev.theme_key);
 
   const [{ data: rows }, { data: blocks }] = await Promise.all([
     supabase
@@ -112,7 +114,7 @@ export default async function DrawPage({ params }: { params: { eventId: string }
                 </form>
               ) : null}
               <Link className="btn btn--quiet btn--inline" href={`/host/${params.eventId}/cards`}>
-                BLOCK CARDS
+                {theme.groupNoun.toUpperCase()} CARDS
               </Link>
             </div>
           </>

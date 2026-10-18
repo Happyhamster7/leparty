@@ -47,11 +47,21 @@ and photos are `participants` and belong to one night.
 edits a profile, `/parties` lists every `status = 'open'` event and
 lets the guest join one (`joinParty` in `src/app/parties/actions.ts`).
 There is no host-side add-guest form anymore — the host's only lever
-over the roster is `removeGuest`. There is deliberately no uniqueness
-constraint on `people.display_name`, so two different people can share
-a name; nothing currently stops that from being confusing on `/parties`
-or the guest list, since there's no "different person, same name" check
-on self-service signup the way the old host-driven add flow had.
+over the roster is `removeGuest`.
+
+**Names are now the matching key — reversed from the old decision.**
+Phase 1 originally kept `people.display_name` deliberately non-unique,
+because the host-driven add flow needed to tell two different same-named
+people apart. Self-service signup inverted that: without an account, a
+typed name is the only way to recognize a returning guest, so `/signup`
+looks up an existing person by name (case/whitespace-insensitive) and
+logs the guest into that profile instead of creating a second one.
+`people_display_name_unique_idx` (migration `0004`) enforces this at
+the DB level; `saveProfile` in `src/app/signup/actions.ts` returns a
+friendly error instead of a raw constraint violation. Accepted
+tradeoff, stated by the user: two unrelated real people sharing an
+identical name will collide, and there's no "different person, same
+name" escape hatch anymore.
 
 **Block count is fixed, block size floats.** The big screen is the
 constraint — eight rows read from across a room, fourteen don't.

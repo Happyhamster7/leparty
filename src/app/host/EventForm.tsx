@@ -3,6 +3,9 @@
 import { useFormState, useFormStatus } from 'react-dom';
 import { createEvent, updateEvent, type HostState } from './actions';
 import type { EventRow } from '@/lib/types';
+import { getTheme, THEMES_WITH_COPY, type ThemeKey } from '@/lib/theme';
+
+const THEME_OPTIONS: ThemeKey[] = ['jail', 'heist', 'cult', 'custom'];
 
 function Submit({ mode }: { mode: 'create' | 'edit' }) {
   const { pending } = useFormStatus();
@@ -96,10 +99,15 @@ export default function EventForm({ event }: { event?: EventRow }) {
             Theme pack
           </label>
           <select id="theme_key" name="theme_key" defaultValue={event?.theme_key ?? 'jail'}>
-            <option value="jail">Jail</option>
-            <option value="heist">Heist</option>
-            <option value="cult">Cult</option>
-            <option value="custom">Custom</option>
+            {THEME_OPTIONS.map((key) => {
+              const hasCopy = THEMES_WITH_COPY.includes(key);
+              return (
+                <option key={key} value={key}>
+                  {getTheme(key).label}
+                  {hasCopy ? '' : ' (not written yet — uses Prison copy)'}
+                </option>
+              );
+            })}
           </select>
         </div>
       </div>

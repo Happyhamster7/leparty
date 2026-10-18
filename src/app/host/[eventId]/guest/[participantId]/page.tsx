@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { db, MUGSHOT_BUCKET, siteUrl } from '@/lib/supabase';
 import { isHost } from '@/lib/host';
+import { getTheme } from '@/lib/theme';
 import { formatHeldOn, type EventRow } from '@/lib/types';
 import GuestForm from './GuestForm';
 import GuestPhoto from './GuestPhoto';
@@ -50,6 +51,7 @@ export default async function GuestPage({
   if (!participant || !event) notFound();
   const p = participant as unknown as Participant;
   const ev = event as EventRow;
+  const theme = getTheme(ev.theme_key);
 
   let photoUrl: string | null = null;
   if (p.photo_path) {
@@ -94,7 +96,7 @@ export default async function GuestPage({
       </div>
 
       <div className="body">
-        <p className="eyebrow">Inmate {p.inmate_number ?? '----'}</p>
+        <p className="eyebrow">{theme.attendeeNoun} {p.inmate_number ?? '----'}</p>
         <h1>{name}</h1>
         <p className="lede">
           {[

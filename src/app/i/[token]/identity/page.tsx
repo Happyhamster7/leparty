@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { loadInvite } from '@/lib/invite';
+import { getTheme } from '@/lib/theme';
 import IdentityForm from './IdentityForm';
 
 export const dynamic = 'force-dynamic';
@@ -8,11 +9,12 @@ export const dynamic = 'force-dynamic';
 export default async function IdentityPage({ params }: { params: { token: string } }) {
   const ctx = await loadInvite(params.token);
   if (!ctx) notFound();
+  const theme = getTheme(ctx.event.theme_key);
 
   return (
     <div className="shell">
       <div className="topbar">
-        <span>INTAKE</span>
+        <span>{theme.intakeLabel.toUpperCase()}</span>
         <span>STEP 1 OF 3</span>
       </div>
 

@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { loadInvite } from '@/lib/invite';
+import { getTheme } from '@/lib/theme';
 import { db, MUGSHOT_BUCKET } from '@/lib/supabase';
 import { initials, POTLUCK_CATEGORIES } from '@/lib/types';
 
@@ -11,6 +12,7 @@ export default async function BookedPage({ params }: { params: { token: string }
   if (!ctx) notFound();
 
   const { person, participant, event } = ctx;
+  const theme = getTheme(event.theme_key);
   const token = params.token;
 
   let photoUrl: string | null = null;
@@ -27,12 +29,12 @@ export default async function BookedPage({ params }: { params: { token: string }
   return (
     <div className="shell">
       <div className="topbar">
-        <span>INTAKE COMPLETE</span>
+        <span>{theme.intakeLabel.toUpperCase()} COMPLETE</span>
         <span>FILE {participant.inmate_number ?? '----'}</span>
       </div>
 
       <div className="body">
-        <div className="stamp">Booked</div>
+        <div className="stamp">{theme.bookedLabel}</div>
 
         <div
           className="box"
@@ -85,7 +87,7 @@ export default async function BookedPage({ params }: { params: { token: string }
               {person.display_name}
             </p>
             <p className="mono" style={{ margin: '0 0 9px', fontSize: 11 }}>
-              INMATE {participant.inmate_number ?? '----'}
+              {theme.attendeeIdLabel.toUpperCase()} {participant.inmate_number ?? '----'}
             </p>
             <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-soft)' }}>
               Charge and cell block assigned on the night.
@@ -101,7 +103,7 @@ export default async function BookedPage({ params }: { params: { token: string }
               ? `Turn up in costume. Bring the ${participant.potluck_item.toLowerCase()}.`
               : 'Turn up in costume.',
             'Tap your own face on the check-in screen at the door.',
-            'Cell blocks are drawn once everyone’s arrived. Your block gets one card with a code on it.',
+            `${theme.groupNounPlural} are drawn once everyone’s arrived. Your ${theme.groupNoun.toLowerCase()} gets one card with a code on it.`,
           ].map((line, i) => (
             <li key={i} style={{ display: 'flex', gap: 12, marginBottom: 13 }}>
               <span

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { db, siteUrl } from '@/lib/supabase';
 import { isHost } from '@/lib/host';
+import { getTheme } from '@/lib/theme';
 import { potluckTally } from '@/lib/potluck';
 import { formatHeldOn, POTLUCK_CATEGORIES, type EventRow } from '@/lib/types';
 import BlocksForm, { type BlockEditRow } from './BlocksForm';
@@ -38,6 +39,7 @@ export default async function EventPage({ params }: { params: { eventId: string 
 
   if (!event) notFound();
   const ev = event as EventRow;
+  const theme = getTheme(ev.theme_key);
 
   const [{ data: participants }, { data: blocks }, tally, { data: allParts }] =
     await Promise.all([
@@ -100,7 +102,7 @@ export default async function EventPage({ params }: { params: { eventId: string 
   return (
     <div className="shell shell--wide">
       <div className="topbar">
-        <span>WARDEN&rsquo;S CONSOLE</span>
+        <span>{theme.hostConsoleLabel.toUpperCase()}</span>
         <Link href="/host">ALL PARTIES</Link>
       </div>
 
@@ -278,7 +280,7 @@ export default async function EventPage({ params }: { params: { eventId: string 
           </div>
         )}
 
-        <h2>Cell blocks</h2>
+        <h2>{theme.groupNounPlural}</h2>
         <p className="small" style={{ marginBottom: 14 }}>
           Created with the party so cards can be printed before anyone replies. The draw only
           fills rosters.

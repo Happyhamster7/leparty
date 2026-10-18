@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { db, MUGSHOT_BUCKET } from '@/lib/supabase';
 import { isHost } from '@/lib/host';
+import { getTheme } from '@/lib/theme';
 import type { EventRow } from '@/lib/types';
 import CheckinGrid, { type GridPerson } from './CheckinGrid';
 import DoorRegister from './DoorRegister';
@@ -32,6 +33,7 @@ export default async function CheckinPage({ params }: { params: { eventId: strin
 
   if (!event) notFound();
   const ev = event as EventRow;
+  const theme = getTheme(ev.theme_key);
 
   const { data: rows } = await supabase
     .from('participants')
@@ -84,7 +86,7 @@ export default async function CheckinPage({ params }: { params: { eventId: strin
   return (
     <div className="shell shell--wide">
       <div className="topbar">
-        <span>{(ev.theme_title || ev.name).toUpperCase()} &middot; INTAKE DESK</span>
+        <span>{(ev.theme_title || ev.name).toUpperCase()} &middot; {theme.checkinLabel.toUpperCase()}</span>
         <Link href={`/host/${params.eventId}`}>CONSOLE</Link>
       </div>
 

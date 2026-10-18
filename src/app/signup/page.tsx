@@ -1,17 +1,19 @@
 import Link from 'next/link';
 import { loadProfile } from '@/lib/profile';
+import { getTheme } from '@/lib/theme';
 import ProfileForm from './ProfileForm';
 
 export const dynamic = 'force-dynamic';
 
 export default async function SignupPage() {
   const person = await loadProfile();
+  const theme = getTheme(null);
 
   return (
     <div className="shell">
       <div className="topbar">
-        <span>DEPT. OF CORRECTIONS</span>
-        <span>INTAKE</span>
+        <span>{theme.deptLabel.toUpperCase()}</span>
+        <span>{theme.intakeLabel.toUpperCase()}</span>
       </div>
 
       <div className="body">
@@ -19,7 +21,7 @@ export default async function SignupPage() {
         <p className="lede">
           {person
             ? 'Fix your name or drinking band, then head to the parties list.'
-            : 'Asked once. Every party after this, we already have it.'}
+            : 'Been to a party here before? Type your name exactly as you did last time and we’ll find your profile instead of making a new one.'}
         </p>
 
         <ProfileForm

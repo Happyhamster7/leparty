@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { loadInvite } from '@/lib/invite';
+import { getTheme } from '@/lib/theme';
 import { potluckTally, potluckItems } from '@/lib/potluck';
 import PotluckForm from './PotluckForm';
 
@@ -9,6 +10,7 @@ export const dynamic = 'force-dynamic';
 export default async function PotluckPage({ params }: { params: { token: string } }) {
   const ctx = await loadInvite(params.token);
   if (!ctx) notFound();
+  const theme = getTheme(ctx.event.theme_key);
 
   const [tally, items] = await Promise.all([
     potluckTally(ctx.event.id),
@@ -19,7 +21,7 @@ export default async function PotluckPage({ params }: { params: { token: string 
   return (
     <div className="shell">
       <div className="topbar">
-        <span>INTAKE</span>
+        <span>{theme.intakeLabel.toUpperCase()}</span>
         <span>STEP 2 OF 3</span>
       </div>
 
