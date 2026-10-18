@@ -559,11 +559,14 @@ a:focus-visible {
   display: flex;
   flex-direction: column;
   background: var(--paper);
-  border-right: 2px solid var(--ink);
+  /* inset shadow, not a border — a border changes the box size, which
+     would make whichever cell lacks it (the last in each row) render
+     wider than the rest and throw the grid out of alignment. */
+  box-shadow: inset -2px 0 0 var(--ink);
 }
 
 .tier__row .cell:last-child {
-  border-right: 0;
+  box-shadow: none;
 }
 
 .cell__tag {

@@ -126,7 +126,7 @@ export default async function BookedPage({ params }: { params: { token: string }
         ) : null}
 
         <div className="btn-row">
-          <Link className="btn" href={`/i/${token}/going`}>
+          <Link className="btn" href={`/i/${token}/going`} prefetch={false}>
             Complete
           </Link>
         </div>

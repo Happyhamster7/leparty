@@ -116,10 +116,12 @@ export async function savePhoto(token: string, formData: FormData): Promise<Form
   // The camera navigates on to /booked with a client-side router.push
   // rather than a server redirect, so the router cache for that exact
   // path has to be invalidated here or it serves the stale, photo-less
-  // render instead of fetching the one that now has the photo.
+  // render instead of fetching the one that now has the photo. /going
+  // is reached from /booked the same way, so it needs the same treatment.
   revalidatePath(`/i/${token}`);
   revalidatePath(`/i/${token}/mugshot`);
   revalidatePath(`/i/${token}/booked`);
+  revalidatePath(`/i/${token}/going`);
   return { ok: true };
 }
 
@@ -140,5 +142,6 @@ export async function finishSignup(token: string) {
   }
 
   revalidatePath(`/i/${token}`);
+  revalidatePath(`/i/${token}/going`);
   redirect(`/i/${token}/booked`);
 }
