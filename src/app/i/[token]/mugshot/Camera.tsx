@@ -19,7 +19,7 @@ export default function Camera({
 
   const upload = useCallback((fd: FormData) => savePhoto(token, fd), [token]);
 
-  const skip = useCallback(async () => {
+  const keep = useCallback(async () => {
     setBusy(true);
     await finishSignup(token);
   }, [token]);
@@ -33,16 +33,18 @@ export default function Camera({
         onDone={() => router.push(`/i/${token}/booked`)}
       />
 
-      <div className="box box--quiet">
-        <p style={{ margin: 0, fontSize: 13, color: 'var(--muted-2)' }}>
-          Skipping is fine &mdash; you&rsquo;ll get initials and your block colour instead, and
-          you can have one taken at the door.
-        </p>
-      </div>
-
-      <button className="btn btn--ghost" type="button" onClick={skip} disabled={busy}>
-        {busy ? 'Filing…' : existingUrl ? 'Keep this photo & book me in' : 'Skip & book me in'}
-      </button>
+      {existingUrl ? (
+        <button className="btn btn--ghost" type="button" onClick={keep} disabled={busy}>
+          {busy ? 'Filing…' : 'Keep this photo & book me in'}
+        </button>
+      ) : (
+        <div className="box box--quiet">
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--muted-2)' }}>
+            A mugshot is required &mdash; use the camera or choose a photo above to finish
+            signing up.
+          </p>
+        </div>
+      )}
     </>
   );
 }

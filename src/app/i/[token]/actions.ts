@@ -93,7 +93,7 @@ export async function savePhoto(token: string, formData: FormData): Promise<Form
 
   const file = formData.get('photo');
   if (!(file instanceof File) || file.size === 0) {
-    return { error: 'No photo came through. Try again, or skip it.' };
+    return { error: 'No photo came through. Try again.' };
   }
   if (file.size > 4_000_000) {
     return { error: 'That photo is too large. Try again.' };
@@ -106,7 +106,7 @@ export async function savePhoto(token: string, formData: FormData): Promise<Form
     .from(MUGSHOT_BUCKET)
     .upload(path, file, { contentType: 'image/jpeg', upsert: true });
 
-  if (error) return { error: 'The photo would not upload. You can skip it for now.' };
+  if (error) return { error: 'The photo would not upload. Try again.' };
 
   await supabase
     .from('participants')
@@ -123,9 +123,14 @@ export async function savePhoto(token: string, formData: FormData): Promise<Form
   return { ok: true };
 }
 
+/** Confirms an already-uploaded mugshot and finishes signup. A mugshot is required — this is not a skip path. */
 export async function finishSignup(token: string) {
   const ctx = await loadInvite(token);
   if (!ctx) return;
+
+  if (!ctx.participant.photo_path) {
+    redirect(`/i/${token}/mugshot`);
+  }
 
   if (!ctx.participant.signup_completed_at) {
     await db()

@@ -27,7 +27,7 @@ changing these.
 | Invite | `/i/<token>` | Theme, date, dress code. RSVP yes or no. |
 | Identity | `/i/<token>/identity` | Name and capacity band. Already set by `/signup` for anyone who joined that way; this step is the fallback for anyone who isn't. |
 | Potluck | `/i/<token>/potluck` | Shows the running count by category (protein, carbs, snacks, sweets, alcohol) before they choose, then takes their item and dietary notes. |
-| Mugshot | `/i/<token>/mugshot` | In-browser camera, downscaled client-side, or a file picker, or skip. |
+| Mugshot | `/i/<token>/mugshot` | In-browser camera, downscaled client-side, or a file picker. Required — no skipping. |
 | Booked | `/i/<token>/booked` | Inmate number, what to bring, what happens next. |
 | Declined | `/i/<token>/declined` | The can't-make-it path, reversible until the night. |
 
