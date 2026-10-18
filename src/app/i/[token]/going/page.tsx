@@ -51,58 +51,26 @@ export default async function GoingPage({ params }: { params: { token: string } 
         <p className="lede">Everyone booked in so far.</p>
 
         {list.length > 0 ? (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))',
-              gap: 14,
-              marginBottom: 20,
-            }}
-          >
+          <div className="cellblock" style={{ marginBottom: 20 }}>
             {list.map((r) => {
               const url = r.photo_path ? signed.get(r.photo_path) : null;
               const name = r.people?.display_name ?? 'Unknown';
               return (
-                <div key={r.id} style={{ textAlign: 'center' }}>
-                  <div
-                    style={{
-                      width: '100%',
-                      aspectRatio: '3 / 4',
-                      background: '#d8d2c4',
-                      border: '1px solid #b9b2a2',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      overflow: 'hidden',
-                      marginBottom: 6,
-                    }}
-                  >
+                <div className="cell" key={r.id}>
+                  <div className="cell__tag" title={name}>
+                    {name}
+                  </div>
+                  <div className="cell__frame">
                     {url ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={url}
-                        alt=""
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
+                      <img src={url} alt="" />
                     ) : (
-                      <span
-                        style={{
-                          fontFamily: 'var(--display)',
-                          fontSize: 20,
-                          color: 'var(--muted-2)',
-                        }}
-                      >
-                        {initials(name)}
-                      </span>
+                      <span className="initials">{initials(name)}</span>
                     )}
+                    <div className="cell__bars" aria-hidden="true" />
                   </div>
-                  <p style={{ margin: 0, fontSize: 12, fontWeight: 600, lineHeight: 1.25 }}>
-                    {name}
-                  </p>
                   {r.inmate_number ? (
-                    <p className="mono" style={{ margin: 0, fontSize: 10 }}>
-                      {r.inmate_number}
-                    </p>
+                    <p className="cell__number">{r.inmate_number}</p>
                   ) : null}
                 </div>
               );
