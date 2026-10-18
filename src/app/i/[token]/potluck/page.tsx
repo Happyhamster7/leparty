@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { loadInvite } from '@/lib/invite';
-import { potluckTally } from '@/lib/potluck';
+import { potluckTally, potluckItems } from '@/lib/potluck';
 import PotluckForm from './PotluckForm';
 
 export const dynamic = 'force-dynamic';
@@ -10,7 +10,10 @@ export default async function PotluckPage({ params }: { params: { token: string 
   const ctx = await loadInvite(params.token);
   if (!ctx) notFound();
 
-  const tally = await potluckTally(ctx.event.id);
+  const [tally, items] = await Promise.all([
+    potluckTally(ctx.event.id),
+    potluckItems(ctx.event.id),
+  ]);
   const maxBar = Math.max(1, ...tally.map((t) => t.count));
 
   return (
@@ -36,6 +39,23 @@ export default async function PotluckPage({ params }: { params: { token: string 
             </div>
           ))}
         </div>
+
+        {items.length > 0 ? (
+          <div className="box box--quiet">
+            <p className="eyebrow eyebrow--quiet">What&rsquo;s coming</p>
+            {items.map((it, i) => (
+              <div className="meter-row" key={i}>
+                <span className="name">
+                  {it.item}
+                  {it.categoryLabel ? (
+                    <span className="small"> &middot; {it.categoryLabel}</span>
+                  ) : null}
+                </span>
+                <span className="count">{it.name}</span>
+              </div>
+            ))}
+          </div>
+        ) : null}
 
         <PotluckForm
           token={params.token}

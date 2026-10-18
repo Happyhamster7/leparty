@@ -126,6 +126,12 @@ export default async function BookedPage({ params }: { params: { token: string }
         ) : null}
 
         <div className="btn-row">
+          <Link className="btn" href={`/i/${token}/going`}>
+            Complete
+          </Link>
+        </div>
+
+        <div className="btn-row" style={{ marginTop: 10 }}>
           <Link className="btn btn--ghost" href={`/i/${token}/potluck`}>
             Change what I&rsquo;m bringing
           </Link>

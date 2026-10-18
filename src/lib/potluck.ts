@@ -28,3 +28,32 @@ export async function potluckTally(eventId: string): Promise<PotluckTally[]> {
     count: counts.get(key) ?? 0,
   }));
 }
+
+export type PotluckItem = {
+  item: string;
+  categoryLabel: string | null;
+  name: string;
+};
+
+/** What's actually being brought, and by whom — so a guest can see the list before picking their own thing. */
+export async function potluckItems(eventId: string): Promise<PotluckItem[]> {
+  const { data } = await db()
+    .from('participants')
+    .select('potluck_item, potluck_category, people(display_name)')
+    .eq('event_id', eventId)
+    .eq('rsvp', 'yes')
+    .not('potluck_item', 'is', null)
+    .order('created_at', { ascending: true });
+
+  const labelByKey = new Map(POTLUCK_CATEGORIES.map((c) => [c.key, c.label]));
+
+  return ((data ?? []) as unknown as {
+    potluck_item: string;
+    potluck_category: PotluckCategory | null;
+    people: { display_name: string } | null;
+  }[]).map((r) => ({
+    item: r.potluck_item,
+    categoryLabel: r.potluck_category ? labelByKey.get(r.potluck_category) ?? null : null,
+    name: r.people?.display_name ?? 'Someone',
+  }));
+}
