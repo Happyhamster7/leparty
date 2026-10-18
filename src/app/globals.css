@@ -520,43 +520,82 @@ a:focus-visible {
   transform: scale(0.92);
 }
 
+/* ------------------------------------------------------------------ */
+/* Who's going — a cellblock, not a photo grid                        */
+/* ------------------------------------------------------------------ */
+
 .cellblock {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
-  gap: 18px 14px;
+  border: 3px solid var(--ink);
+  background: var(--ink);
 }
 
-.cell {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-}
-
-.cell__tag {
+.tier__label {
+  margin: 0;
   background: var(--ink);
   color: var(--paper);
   font-family: var(--mono);
   font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+}
+
+.tier__row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.tier__floor {
+  height: 9px;
+  background: repeating-linear-gradient(
+    45deg,
+    var(--muted) 0 7px,
+    var(--ink) 7px 14px
+  );
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  border-right: 2px solid var(--ink);
+}
+
+.tier__row .cell:last-child {
+  border-right: 0;
+}
+
+.cell__tag {
+  background: #2a2621;
+  color: var(--paper);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   text-align: center;
-  padding: 5px 6px;
+  padding: 4px 3px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  border: 1px solid var(--ink);
-  position: relative;
-  z-index: 2;
+}
+
+.cell--empty .cell__tag {
+  background: #45403a;
+  color: var(--paper);
+  opacity: 0.8;
 }
 
 .cell__frame {
   position: relative;
   aspect-ratio: 3 / 4;
   background: #d8d2c4;
-  border: 2px solid var(--ink);
-  border-top: 0;
   overflow: hidden;
+}
+
+.cell--empty .cell__frame {
+  background: #b7b0a0;
 }
 
 .cell__frame img {
@@ -575,32 +614,49 @@ a:focus-visible {
   align-items: center;
   justify-content: center;
   font-family: var(--display);
-  font-size: 20px;
+  font-size: 18px;
   color: var(--muted-2);
   z-index: 0;
 }
 
+/* Explicit bar elements, not a texture — these have to visibly sit in
+   front of the photo, not just tint it. */
 .cell__bars {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 2;
+  display: flex;
+  justify-content: space-evenly;
   pointer-events: none;
-  background-image: repeating-linear-gradient(
-    90deg,
-    rgba(18, 16, 14, 0.62) 0,
-    rgba(18, 16, 14, 0.62) 3px,
-    transparent 3px,
-    transparent 24px
-  );
-  box-shadow: inset 0 6px 10px -6px rgba(0, 0, 0, 0.5), inset 0 -6px 10px -6px rgba(0, 0, 0, 0.5);
+}
+
+.cell__bars::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 5px;
+  transform: translateY(-50%);
+  background: linear-gradient(180deg, #0a0a0a, #5c554a 45%, #0a0a0a);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.7);
+}
+
+.cell__bars span {
+  width: 5px;
+  background: linear-gradient(90deg, #0a0a0a, #5c554a 45%, #0a0a0a);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.7);
 }
 
 .cell__number {
+  margin: 0;
+  background: var(--ink);
+  color: var(--paper);
   font-family: var(--mono);
-  font-size: 10px;
-  color: var(--muted-2);
+  font-size: 9px;
   text-align: center;
-  margin-top: 5px;
+  padding: 3px 0;
+  font-variant-numeric: tabular-nums;
 }
 
 .shutter:hover {
