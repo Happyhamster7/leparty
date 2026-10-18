@@ -129,6 +129,9 @@ export default async function BookedPage({ params }: { params: { token: string }
           <Link className="btn btn--ghost" href={`/i/${token}/potluck`}>
             Change what I&rsquo;m bringing
           </Link>
+          <Link className="btn btn--quiet btn--inline" href={`/i/${token}/mugshot`}>
+            RETAKE MUGSHOT
+          </Link>
         </div>
 
         <p className="small" style={{ marginTop: 14, textAlign: 'center' }}>

@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import { loadInvite } from '@/lib/invite';
 import { potluckTally } from '@/lib/potluck';
 import PotluckForm from './PotluckForm';
@@ -43,6 +44,12 @@ export default async function PotluckPage({ params }: { params: { token: string 
           category={ctx.participant.potluck_category || ''}
           dietary={ctx.participant.dietary_notes || ''}
         />
+
+        <div className="btn-row" style={{ marginTop: 14 }}>
+          <Link className="btn btn--quiet btn--inline" href={`/i/${params.token}/identity`}>
+            BACK
+          </Link>
+        </div>
       </div>
     </div>
   );

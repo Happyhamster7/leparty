@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import { loadInvite } from '@/lib/invite';
 import { db, MUGSHOT_BUCKET } from '@/lib/supabase';
 import Camera from './Camera';
@@ -37,6 +38,12 @@ export default async function MugshotPage({ params }: { params: { token: string 
         </p>
 
         <Camera token={params.token} plate={plate} existingUrl={existingUrl} />
+
+        <div className="btn-row" style={{ marginTop: 14 }}>
+          <Link className="btn btn--quiet btn--inline" href={`/i/${params.token}/potluck`}>
+            BACK
+          </Link>
+        </div>
       </div>
     </div>
   );

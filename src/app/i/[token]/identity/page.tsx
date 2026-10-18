@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import { loadInvite } from '@/lib/invite';
 import IdentityForm from './IdentityForm';
 
@@ -24,6 +25,12 @@ export default async function IdentityPage({ params }: { params: { token: string
           name={ctx.person.display_name || ''}
           band={ctx.person.capacity_band}
         />
+
+        <div className="btn-row" style={{ marginTop: 14 }}>
+          <Link className="btn btn--quiet btn--inline" href={`/i/${params.token}`}>
+            BACK
+          </Link>
+        </div>
       </div>
     </div>
   );
