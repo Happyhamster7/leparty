@@ -21,7 +21,7 @@ export type HostState = {
   added?: string;
 };
 
-const CATEGORIES: PotluckCategory[] = ['main', 'side', 'dessert', 'snack', 'ice', 'mixer'];
+const CATEGORIES: PotluckCategory[] = ['protein', 'sweets', 'alcohol'];
 
 export async function login(_prev: HostState, formData: FormData): Promise<HostState> {
   const given = String(formData.get('passcode') || '');
@@ -45,12 +45,6 @@ export async function logout() {
 
 /** Shared by create and edit. */
 function readEventFields(formData: FormData) {
-  const targets: Partial<Record<PotluckCategory, number>> = {};
-  for (const key of CATEGORIES) {
-    const n = Number(formData.get(`target_${key}`) || 0);
-    if (Number.isFinite(n) && n > 0) targets[key] = Math.min(40, Math.round(n));
-  }
-
   const heldOn = String(formData.get('held_on') || '').trim();
 
   return {
@@ -69,7 +63,6 @@ function readEventFields(formData: FormData) {
     config: {
       starting_sentence: Math.max(1, Number(formData.get('starting_sentence') || 25)),
       starting_commissary: Math.max(0, Number(formData.get('starting_commissary') || 200)),
-      potluck_targets: targets,
     },
   };
 }

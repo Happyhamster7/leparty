@@ -29,9 +29,7 @@ export default function PotluckForm({
   const action = savePotluck.bind(null, token);
   const [state, formAction] = useFormState<FormState, FormData>(action, {});
 
-  const sorted = [...tally].sort((a, b) => b.short - a.short);
-  const firstShort = sorted.find((t) => t.short > 0);
-  const preselect = category || firstShort?.key || 'main';
+  const preselect = category || tally[0]?.key || 'protein';
 
   return (
     <form action={formAction}>
@@ -39,10 +37,9 @@ export default function PotluckForm({
         Category
       </label>
       <select id="potluck_category" name="potluck_category" defaultValue={preselect}>
-        {sorted.map((t) => (
+        {tally.map((t) => (
           <option key={t.key} value={t.key}>
             {t.label}
-            {t.short > 0 ? ` — still needs ${t.short}` : ''}
           </option>
         ))}
       </select>

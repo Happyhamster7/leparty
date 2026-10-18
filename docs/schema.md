@@ -87,7 +87,7 @@ what makes the app reusable.
 | held_on | date | |
 | starts_at_label | text | Free text: "7:00 PM" |
 | status | text | draft, open, checkin, running, archived |
-| config | jsonb | Starting sentence, commissary, block count, potluck targets |
+| config | jsonb | Starting sentence, commissary, block count |
 | current_day | int | Which Day the night is on |
 | phase | text | intake, yard, lights_out, roll_call, serving, wildcard, paused |
 
@@ -114,7 +114,7 @@ because it's the machine-readable one that selects the theme pack.
 | invite_token | text | Unguessable, unique. This is the guest's link |
 | rsvp | text | pending, yes, no |
 | potluck_item | text | Asked when they open the event invite |
-| potluck_category | text | main, side, dessert, snack, ice, mixer |
+| potluck_category | text | protein, sweets, alcohol |
 | dietary_notes | text | Allergies, what they won't eat |
 | photo_path | text | Path in the private mugshots bucket |
 | capacity_snapshot | int | Copied from people at draw time |

@@ -3,7 +3,7 @@
 -- Game tables (days, games, purchases, drinks, ledger_entries, items,
 -- substitutes, wildcards) are phase 2 and deliberately absent.
 
-create extension if not exists "pgcrypto";
+create extension if not exists "pgcrypto" with schema "extensions";
 
 -- ---------------------------------------------------------------------
 -- people — the only table that persists between parties
@@ -12,7 +12,7 @@ create table if not exists people (
   id             uuid primary key default gen_random_uuid(),
   display_name   text not null,
   capacity_band  int  check (capacity_band between 1 and 5),
-  profile_token  text unique not null default encode(gen_random_bytes(16), 'hex'),
+  profile_token  text unique not null default encode(extensions.gen_random_bytes(16), 'hex'),
   created_at     timestamptz not null default now()
 );
 
@@ -54,7 +54,7 @@ create table if not exists blocks (
   event_id               uuid not null references events(id) on delete cascade,
   name                   text not null,
   colour                 text not null default '#1D4ED8',
-  join_token             text not null default encode(gen_random_bytes(16), 'hex'),
+  join_token             text not null default encode(extensions.gen_random_bytes(16), 'hex'),
   join_code              text not null,
   in_play                boolean not null default false,
   charge                 text,
@@ -74,7 +74,7 @@ create table if not exists participants (
   event_id           uuid not null references events(id) on delete cascade,
   person_id          uuid not null references people(id) on delete cascade,
   block_id           uuid references blocks(id) on delete set null,
-  invite_token       text unique not null default encode(gen_random_bytes(16), 'hex'),
+  invite_token       text unique not null default encode(extensions.gen_random_bytes(16), 'hex'),
   rsvp               text not null default 'pending'
                      check (rsvp in ('pending','yes','no')),
   potluck_item       text,

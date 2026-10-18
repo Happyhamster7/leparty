@@ -54,7 +54,7 @@ export default async function EventPage({ params }: { params: { eventId: string 
         .select('id, name, colour, charge, join_code, in_play')
         .eq('event_id', params.eventId)
         .order('name', { ascending: true }),
-      potluckTally(params.eventId, ev.config),
+      potluckTally(params.eventId),
       supabase.from('people').select('id, display_name, capacity_band').order('display_name'),
       supabase.from('participants').select('person_id, block_id'),
     ]);
@@ -181,10 +181,7 @@ export default async function EventPage({ params }: { params: { eventId: string 
           {tally.map((t) => (
             <div className="meter-row" key={t.key}>
               <span className="name">{t.label}</span>
-              <span className={t.short > 0 ? 'count needed' : 'count'}>
-                {t.count} of {t.target || '—'}
-                {t.short > 0 ? ` · needs ${t.short}` : ''}
-              </span>
+              <span className="count">{t.count}</span>
             </div>
           ))}
         </div>

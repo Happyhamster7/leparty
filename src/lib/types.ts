@@ -1,12 +1,9 @@
-export type PotluckCategory = 'main' | 'side' | 'dessert' | 'snack' | 'ice' | 'mixer';
+export type PotluckCategory = 'protein' | 'sweets' | 'alcohol';
 
 export const POTLUCK_CATEGORIES: { key: PotluckCategory; label: string }[] = [
-  { key: 'main', label: 'Mains' },
-  { key: 'side', label: 'Sides' },
-  { key: 'dessert', label: 'Dessert' },
-  { key: 'snack', label: 'Snacks' },
-  { key: 'ice', label: 'Ice' },
-  { key: 'mixer', label: 'Mixers' },
+  { key: 'protein', label: 'Protein' },
+  { key: 'sweets', label: 'Sweets' },
+  { key: 'alcohol', label: 'Alcohol' },
 ];
 
 export const CAPACITY_BANDS: { value: number; label: string }[] = [
@@ -21,7 +18,6 @@ export type EventConfig = {
   block_count: number;
   starting_sentence: number;
   starting_commissary: number;
-  potluck_targets: Partial<Record<PotluckCategory, number>>;
 };
 
 export type EventRow = {

@@ -2,7 +2,7 @@
 
 import { useFormState, useFormStatus } from 'react-dom';
 import { createEvent, updateEvent, type HostState } from './actions';
-import { POTLUCK_CATEGORIES, type EventRow } from '@/lib/types';
+import type { EventRow } from '@/lib/types';
 
 function Submit({ mode }: { mode: 'create' | 'edit' }) {
   const { pending } = useFormStatus();
@@ -19,22 +19,12 @@ function Submit({ mode }: { mode: 'create' | 'edit' }) {
   );
 }
 
-const DEFAULT_TARGETS: Record<string, number> = {
-  main: 6,
-  side: 6,
-  dessert: 4,
-  snack: 6,
-  ice: 2,
-  mixer: 4,
-};
-
 export default function EventForm({ event }: { event?: EventRow }) {
   const mode: 'create' | 'edit' = event ? 'edit' : 'create';
   const action = event ? updateEvent.bind(null, event.id) : createEvent;
   const [state, formAction] = useFormState<HostState, FormData>(action, {});
 
   const cfg = event?.config;
-  const targets = cfg?.potluck_targets ?? {};
 
   return (
     <form action={formAction}>
@@ -193,30 +183,6 @@ export default function EventForm({ event }: { event?: EventRow }) {
         min={0}
         defaultValue={cfg?.starting_commissary ?? 200}
       />
-
-      <h2>Potluck targets</h2>
-      <p className="small" style={{ marginBottom: 18 }}>
-        How many of each you want. Guests see what&rsquo;s still short before they choose, which
-        is what stops seven bowls of chips.
-      </p>
-
-      <div className="grid-2">
-        {POTLUCK_CATEGORIES.map((c) => (
-          <div key={c.key}>
-            <label className="field eyebrow--quiet" htmlFor={`target_${c.key}`}>
-              {c.label}
-            </label>
-            <input
-              id={`target_${c.key}`}
-              name={`target_${c.key}`}
-              type="number"
-              min={0}
-              max={40}
-              defaultValue={targets[c.key] ?? DEFAULT_TARGETS[c.key] ?? 0}
-            />
-          </div>
-        ))}
-      </div>
 
       {state.error ? <p className="error">{state.error}</p> : null}
 

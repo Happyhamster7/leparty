@@ -9,8 +9,8 @@ export default async function PotluckPage({ params }: { params: { token: string 
   const ctx = await loadInvite(params.token);
   if (!ctx) notFound();
 
-  const tally = await potluckTally(ctx.event.id, ctx.event.config);
-  const maxBar = Math.max(1, ...tally.map((t) => Math.max(t.count, t.target)));
+  const tally = await potluckTally(ctx.event.id);
+  const maxBar = Math.max(1, ...tally.map((t) => t.count));
 
   return (
     <div className="shell">
@@ -28,14 +28,9 @@ export default async function PotluckPage({ params }: { params: { token: string 
           {tally.map((t) => (
             <div className="meter-row" key={t.key}>
               <span className="name">{t.label}</span>
-              <span className={t.short > 0 ? 'count needed' : 'count'}>
-                {t.short > 0 ? `NEEDS ${t.short}` : t.count}
-              </span>
+              <span className="count">{t.count}</span>
               <span className="meter">
-                <span
-                  className={t.short > 0 ? 'short' : undefined}
-                  style={{ width: `${Math.round((t.count / maxBar) * 56)}px` }}
-                />
+                <span style={{ width: `${Math.round((t.count / maxBar) * 56)}px` }} />
               </span>
             </div>
           ))}
