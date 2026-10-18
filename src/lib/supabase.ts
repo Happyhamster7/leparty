@@ -24,6 +24,12 @@ export function db(): SupabaseClient {
 
   cached = createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
+    // Next.js patches the global fetch to cache responses by default, even
+    // on routes marked force-dynamic — this guarantees every Supabase
+    // request bypasses that cache instead of silently serving stale rows.
+    global: {
+      fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }),
+    },
   });
 
   return cached;
