@@ -4,7 +4,6 @@ import { db, siteUrl } from '@/lib/supabase';
 import { isHost } from '@/lib/host';
 import { potluckTally } from '@/lib/potluck';
 import { formatHeldOn, POTLUCK_CATEGORIES, type EventRow } from '@/lib/types';
-import AddGuestForm, { type KnownPerson } from './AddGuestForm';
 import BlocksForm, { type BlockEditRow } from './BlocksForm';
 import CopyLink from './CopyLink';
 import CopyAll from './CopyAll';
@@ -40,7 +39,7 @@ export default async function EventPage({ params }: { params: { eventId: string 
   if (!event) notFound();
   const ev = event as EventRow;
 
-  const [{ data: participants }, { data: blocks }, tally, { data: allPeople }, { data: allParts }] =
+  const [{ data: participants }, { data: blocks }, tally, { data: allParts }] =
     await Promise.all([
       supabase
         .from('participants')
@@ -55,7 +54,6 @@ export default async function EventPage({ params }: { params: { eventId: string 
         .eq('event_id', params.eventId)
         .order('name', { ascending: true }),
       potluckTally(params.eventId),
-      supabase.from('people').select('id, display_name, capacity_band').order('display_name'),
       supabase.from('participants').select('person_id, block_id'),
     ]);
 
@@ -73,29 +71,10 @@ export default async function EventPage({ params }: { params: { eventId: string 
   const blockCount = ev.config?.block_count ?? 8;
   const perBlock = attending.length > 0 ? capacitySum / blockCount : 0;
 
-  // People who exist but aren't on this party's list yet, with how many
-  // parties they've been to — the signal that tells same-named people
-  // apart when you pick one.
-  const partyCounts = new Map<string, number>();
   const blockByPerson = new Map<string, string | null>();
   for (const p of (allParts ?? []) as { person_id: string; block_id: string | null }[]) {
-    partyCounts.set(p.person_id, (partyCounts.get(p.person_id) ?? 0) + 1);
     blockByPerson.set(p.person_id, p.block_id);
   }
-
-  const onThisList = new Set(rows.map((r) => r.person_id));
-  const known: KnownPerson[] = ((allPeople ?? []) as {
-    id: string;
-    display_name: string;
-    capacity_band: number | null;
-  }[])
-    .filter((p) => !onThisList.has(p.id))
-    .map((p) => ({
-      id: p.id,
-      name: p.display_name,
-      band: p.capacity_band,
-      parties: partyCounts.get(p.id) ?? 0,
-    }));
 
   const blockRows: BlockEditRow[] = ((blocks ?? []) as {
     id: string;
@@ -201,7 +180,12 @@ export default async function EventPage({ params }: { params: { eventId: string 
         ) : null}
 
         <h2>Guest list</h2>
-        <AddGuestForm eventId={params.eventId} known={known} />
+        <p className="small" style={{ marginBottom: 14 }}>
+          Guests add themselves — share{' '}
+          <Link href="/signup">{base.replace(/^https?:\/\//, '')}/signup</Link> to let anyone
+          create a profile and pick this party from the open list. Remove anyone below who
+          shouldn&rsquo;t be on it.
+        </p>
 
         <div style={{ margin: '18px 0 14px' }}>
           <CopyAll lines={allLinks} />

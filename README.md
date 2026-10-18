@@ -13,12 +13,19 @@ changing these.
 
 ## What's in it
 
-**Guest flow** (`/i/<invite-token>`), one screen at a time:
+**Self-service signup** — the one link the host hands out for everything:
+
+| Step | Path | What it does |
+| --- | --- | --- |
+| Profile | `/signup` | Name and capacity band, written to `people`. First visit creates it (and sets a `leparty_profile` cookie, this browser's whole identity); later visits edit it. |
+| Parties | `/parties` | Every `open` party. "I'm going" creates (or reuses) a `participants` row with `rsvp: yes` and drops the guest straight into potluck. |
+
+**Party flow** (`/i/<invite-token>`), one screen at a time — reached via `/parties`, or directly if the host shares a specific guest's link:
 
 | Step | Path | What it does |
 | --- | --- | --- |
 | Invite | `/i/<token>` | Theme, date, dress code. RSVP yes or no. |
-| Identity | `/i/<token>/identity` | Name and capacity band. Written to `people`, so a returning guest never sees this again. |
+| Identity | `/i/<token>/identity` | Name and capacity band. Already set by `/signup` for anyone who joined that way; this step is the fallback for anyone who isn't. |
 | Potluck | `/i/<token>/potluck` | Shows the running count by category (protein, carbs, snacks, sweets, alcohol) before they choose, then takes their item and dietary notes. |
 | Mugshot | `/i/<token>/mugshot` | In-browser camera, downscaled client-side, or a file picker, or skip. |
 | Booked | `/i/<token>/booked` | Inmate number, what to bring, what happens next. |

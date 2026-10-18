@@ -49,24 +49,14 @@ export async function hasAttendedBefore(ctx: InviteContext): Promise<boolean> {
 }
 
 /**
- * Which step this guest still needs.
- *
- * A returning guest skips identity, because their name and band are
- * already on file from last time. A first-timer always sees it, with
- * whatever the host pre-filled shown as the starting point.
+ * Which step this guest still needs. Identity is set during profile
+ * creation at /signup, so this almost never lands on 'identity' in
+ * practice — it's just the fallback if that's somehow still missing.
  */
-export function nextStep(
-  ctx: InviteContext,
-  attendedBefore: boolean
-): 'identity' | 'potluck' | 'mugshot' | 'booked' {
+export function nextStep(ctx: InviteContext): 'identity' | 'potluck' | 'mugshot' | 'booked' {
   const { person, participant } = ctx;
 
   if (!person.display_name || person.capacity_band == null) return 'identity';
-
-  if (!attendedBefore && !participant.potluck_item && !participant.signup_completed_at) {
-    return 'identity';
-  }
-
   if (!participant.potluck_item) return 'potluck';
   if (!participant.photo_path && !participant.signup_completed_at) return 'mugshot';
   return 'booked';

@@ -14,7 +14,7 @@ export default async function InvitePage({ params }: { params: { token: string }
   const { event, participant, person } = ctx;
   const token = params.token;
   const returning = await hasAttendedBefore(ctx);
-  const step = nextStep(ctx, returning);
+  const step = nextStep(ctx);
   const done = Boolean(participant.signup_completed_at);
 
   const { count } = await db()

@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { db, MUGSHOT_BUCKET } from '@/lib/supabase';
-import { loadInvite, nextStep, hasAttendedBefore } from '@/lib/invite';
+import { loadInvite, nextStep } from '@/lib/invite';
 import type { PotluckCategory } from '@/lib/types';
 
 const CATEGORIES: PotluckCategory[] = ['protein', 'carbs', 'snacks', 'sweets', 'alcohol'];
@@ -21,10 +21,9 @@ export async function setRsvp(token: string, answer: 'yes' | 'no') {
 
   if (answer === 'no') redirect(`/i/${token}/declined`);
 
-  // Send them where they actually need to go: a returning guest whose
-  // name and band are already on file starts at the potluck question.
-  const returning = await hasAttendedBefore(ctx);
-  redirect(`/i/${token}/${nextStep({ ...ctx, participant: { ...ctx.participant, rsvp: 'yes' } }, returning)}`);
+  redirect(
+    `/i/${token}/${nextStep({ ...ctx, participant: { ...ctx.participant, rsvp: 'yes' } })}`
+  );
 }
 
 export async function saveIdentity(

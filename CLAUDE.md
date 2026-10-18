@@ -31,7 +31,10 @@ browser-side Supabase client, and never prefix the service key with
 `NEXT_PUBLIC_`. This is simpler than writing policies for an app with
 no accounts, and fails safe.
 
-**No auth.** A guest's link carries `participants.invite_token`. The
+**No auth, two cookies.** A guest's whole identity is their browser's
+`leparty_profile` cookie, which carries `people.profile_token` — set at
+`/signup`, the one link the host hands out for everything. A specific
+party invite carries `participants.invite_token` the same way. The
 host console is a passcode in an httpOnly cookie. Right for a private
 party, wrong for anything else.
 
@@ -40,11 +43,15 @@ party, wrong for anything else.
 capacity edits carry to future parties; RSVP, potluck, dietary notes
 and photos are `participants` and belong to one night.
 
-**Names are never matched silently.** Two different people called Sam
-Rafiq must not collapse into one profile. Adding a guest takes an
-explicit `person_id` from a list, or a new name; a typed name that
-already exists is refused with a choice. There is deliberately no
-uniqueness constraint on `people.display_name`.
+**Guests add themselves; the host only removes.** `/signup` creates or
+edits a profile, `/parties` lists every `status = 'open'` event and
+lets the guest join one (`joinParty` in `src/app/parties/actions.ts`).
+There is no host-side add-guest form anymore — the host's only lever
+over the roster is `removeGuest`. There is deliberately no uniqueness
+constraint on `people.display_name`, so two different people can share
+a name; nothing currently stops that from being confusing on `/parties`
+or the guest list, since there's no "different person, same name" check
+on self-service signup the way the old host-driven add flow had.
 
 **Block count is fixed, block size floats.** The big screen is the
 constraint — eight rows read from across a room, fourteen don't.
@@ -71,13 +78,15 @@ server action returns. The host types the next name while the previous
 add is in flight, the reset wipes it, and that guest is silently lost —
 this dropped 7 of 18 guests. Actions return `added: string`; forms
 clear a field only when it still holds exactly that value. See
-`AddGuestForm` and `DoorRegister`.
+`DoorRegister`.
 
 **"Returning guest" means attended a previous party**, counted from
-`participants` — not "has a profile". The host sets name and capacity
-when adding someone, so profile-based detection greets first-timers
-with "welcome back" and skips them past the step where they'd correct
-the host's guess. See `hasAttendedBefore` in `src/lib/invite.ts`.
+`participants` — not "has a profile" (`hasAttendedBefore` in
+`src/lib/invite.ts`). This no longer drives step routing — guests set
+their own name and band at `/signup` before any party exists, so
+`nextStep` doesn't need to special-case first-timers the way it did
+when the host pre-filled a guess. `hasAttendedBefore` is kept only for
+the "welcome back" notice text.
 
 **RSVP must be recorded before signup can complete.** The draw selects
 on `rsvp = 'yes'`, so a guest who finishes signup while still `pending`
@@ -103,9 +112,10 @@ too.
 
 ## State of play
 
-Built: guest signup (invite, identity, potluck, mugshot, booked,
-declined), host console (parties, create, edit, event, guest edit,
-check-in, draw, cards), `/join` and `/b/<token>`.
+Built: self-service signup (`/signup`, `/parties`), party signup
+(invite, identity, potluck, mugshot, booked, declined), host console
+(parties, create, edit, event, guest edit, check-in, draw, cards),
+`/join` and `/b/<token>`.
 
 Verified by driving it in a real browser against Postgres: migration
 applies, inmate-number trigger works, photos downscale and upload,
