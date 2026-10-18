@@ -58,7 +58,7 @@ export default function ProfileForm({
         ))}
       </div>
 
-      {state.error ? <p className="error">{state.error}</p> : null}
+      {state.error ? <p className="error" role="alert">{state.error}</p> : null}
 
       <p className="small" style={{ marginBottom: 22 }}>
         Only the Warden sees this. It&rsquo;s used to even out the cell blocks, nothing else.

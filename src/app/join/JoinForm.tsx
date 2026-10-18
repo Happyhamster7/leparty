@@ -39,7 +39,7 @@ export default function JoinForm() {
         }}
         required
       />
-      {state.error ? <p className="error">{state.error}</p> : null}
+      {state.error ? <p className="error" role="alert">{state.error}</p> : null}
       <Submit />
     </form>
   );

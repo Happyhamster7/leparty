@@ -21,7 +21,7 @@ export default function LoginForm() {
         Passcode
       </label>
       <input id="passcode" name="passcode" type="password" autoComplete="current-password" required />
-      {state.error ? <p className="error">{state.error}</p> : null}
+      {state.error ? <p className="error" role="alert">{state.error}</p> : null}
       <Submit />
     </form>
   );

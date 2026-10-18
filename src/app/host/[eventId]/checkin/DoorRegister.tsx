@@ -84,7 +84,7 @@ export default function DoorRegister({ eventId }: { eventId: string }) {
           </button>
         </div>
         {state.error ? (
-          <p className="error" style={{ margin: '12px 0 0' }}>
+          <p className="error" role="alert" style={{ margin: '12px 0 0' }}>
             {state.error}
           </p>
         ) : state.notice ? (

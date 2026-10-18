@@ -184,7 +184,7 @@ export default function MugshotCapture({
         )}
       </div>
 
-      {error ? <p className="error">{error}</p> : null}
+      {error ? <p className="error" role="alert">{error}</p> : null}
       {saved ? (
         <p className="small" style={{ color: '#0f5438', marginTop: -8 }}>
           Mugshot filed.

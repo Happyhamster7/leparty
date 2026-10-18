@@ -132,6 +132,7 @@ p {
   font-size: 12px;
   letter-spacing: 0.06em;
   color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .rule {
@@ -263,10 +264,17 @@ a:focus-visible {
   text-transform: uppercase;
   text-decoration: none;
   cursor: pointer;
+  transition-property: background-color, color, border-color, transform;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
 }
 
 .btn:hover {
   background: var(--rust-dark);
+}
+
+.btn:active:not([disabled]) {
+  transform: scale(0.96);
 }
 
 .btn[disabled] {
@@ -503,6 +511,13 @@ a:focus-visible {
   cursor: pointer;
   flex-shrink: 0;
   padding: 0;
+  transition-property: background-color, transform;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+.shutter:active {
+  transform: scale(0.92);
 }
 
 .cellblock {
@@ -625,10 +640,17 @@ a:focus-visible {
   font-family: inherit;
   cursor: pointer;
   text-align: center;
+  transition-property: background-color, transform;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
 }
 
 .face:hover {
   background: #fff;
+}
+
+.face:active {
+  transform: scale(0.97);
 }
 
 .face--in {
@@ -934,6 +956,7 @@ a:focus-visible {
   font-size: 30px;
   line-height: 1;
   margin: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 table.list {
