@@ -165,7 +165,6 @@ export default function MugshotCapture({
               <input
                 type="file"
                 accept="image/*"
-                capture="user"
                 style={{
                   position: 'absolute',
                   width: 1,
@@ -192,7 +191,8 @@ export default function MugshotCapture({
       ) : null}
       {cameraDenied && !error ? (
         <p className="small" style={{ marginTop: -8 }}>
-          No camera access here &mdash; &ldquo;choose a photo&rdquo; opens the camera app instead.
+          No camera access here &mdash; &ldquo;choose a photo&rdquo; opens your photo library or
+          camera app instead.
         </p>
       ) : null}
 
