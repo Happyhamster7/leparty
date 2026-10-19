@@ -6,7 +6,7 @@ import { db, MUGSHOT_BUCKET } from '@/lib/supabase';
 import { loadInvite, nextStep } from '@/lib/invite';
 import type { PotluckCategory } from '@/lib/types';
 
-const CATEGORIES: PotluckCategory[] = ['protein', 'carbs', 'snacks', 'sweets', 'alcohol'];
+const CATEGORIES: PotluckCategory[] = ['protein', 'carbs', 'salad', 'snacks', 'sweets', 'alcohol'];
 
 /** Shape every form action returns, so useFormState can render errors. */
 export type FormState = { error?: string; ok?: boolean };

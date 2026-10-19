@@ -114,7 +114,7 @@ because it's the machine-readable one that selects the theme pack.
 | invite_token | text | Unguessable, unique. This is the guest's link |
 | rsvp | text | pending, yes, no |
 | potluck_item | text | Asked when they open the event invite |
-| potluck_category | text | protein, carbs, snacks, sweets, alcohol |
+| potluck_category | text | protein, carbs, salad, snacks, sweets, alcohol |
 | dietary_notes | text | Allergies, what they won't eat |
 | photo_path | text | Path in the private mugshots bucket |
 | capacity_snapshot | int | Copied from people at draw time |

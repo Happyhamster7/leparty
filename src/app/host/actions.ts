@@ -21,7 +21,7 @@ export type HostState = {
   added?: string;
 };
 
-const CATEGORIES: PotluckCategory[] = ['protein', 'carbs', 'snacks', 'sweets', 'alcohol'];
+const CATEGORIES: PotluckCategory[] = ['protein', 'carbs', 'salad', 'snacks', 'sweets', 'alcohol'];
 
 export async function login(_prev: HostState, formData: FormData): Promise<HostState> {
   const given = String(formData.get('passcode') || '');

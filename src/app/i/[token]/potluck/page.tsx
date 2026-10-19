@@ -29,35 +29,41 @@ export default async function PotluckPage({ params }: { params: { token: string 
         <h1>Mess hall duty</h1>
         <p className="lede">Everyone brings one thing. Here&rsquo;s what&rsquo;s covered so far.</p>
 
-        <div className="box box--quiet">
-          <p className="eyebrow eyebrow--quiet">Coming so far</p>
-          {tally.map((t) => (
-            <div className="meter-row" key={t.key}>
-              <span className="name">{t.label}</span>
-              <span className="count">{t.count}</span>
-              <span className="meter">
-                <span style={{ width: `${Math.round((t.count / maxBar) * 56)}px` }} />
-              </span>
-            </div>
-          ))}
-        </div>
+        <details className="disclosure" style={{ marginBottom: 20 }}>
+          <summary className="btn btn--quiet btn--inline">
+            See what others are bringing <span className="arrow">&#9662;</span>
+          </summary>
 
-        {items.length > 0 ? (
-          <div className="box box--quiet">
-            <p className="eyebrow eyebrow--quiet">What&rsquo;s coming</p>
-            {items.map((it, i) => (
-              <div className="meter-row" key={i}>
-                <span className="name">
-                  {it.item}
-                  {it.categoryLabel ? (
-                    <span className="small"> &middot; {it.categoryLabel}</span>
-                  ) : null}
+          <div className="box box--quiet" style={{ marginTop: 10 }}>
+            <p className="eyebrow eyebrow--quiet">Coming so far</p>
+            {tally.map((t) => (
+              <div className="meter-row" key={t.key}>
+                <span className="name">{t.label}</span>
+                <span className="count">{t.count}</span>
+                <span className="meter">
+                  <span style={{ width: `${Math.round((t.count / maxBar) * 56)}px` }} />
                 </span>
-                <span className="count">{it.name}</span>
               </div>
             ))}
+
+            {items.length > 0 ? (
+              <>
+                <hr className="rule" style={{ margin: '14px 0' }} />
+                {items.map((it, i) => (
+                  <div className="meter-row" key={i}>
+                    <span className="name">
+                      {it.item}
+                      {it.categoryLabel ? (
+                        <span className="small"> &middot; {it.categoryLabel}</span>
+                      ) : null}
+                    </span>
+                    <span className="count">{it.name}</span>
+                  </div>
+                ))}
+              </>
+            ) : null}
           </div>
-        ) : null}
+        </details>
 
         <PotluckForm
           token={params.token}

@@ -318,6 +318,25 @@ a:focus-visible {
   display: inline-flex;
 }
 
+.disclosure summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.disclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.disclosure .arrow {
+  display: inline-block;
+  margin-left: 6px;
+  transition: transform 150ms ease-out;
+}
+
+.disclosure[open] summary .arrow {
+  transform: rotate(180deg);
+}
+
 .btn-row {
   display: flex;
   gap: 10px;
