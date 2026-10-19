@@ -49,15 +49,16 @@ export default async function PotluckPage({ params }: { params: { token: string 
             </summary>
 
             <div className="box box--quiet" style={{ marginTop: 10 }}>
+              <div className="roster roster--head" aria-hidden="true">
+                <span>Name</span>
+                <span>Category</span>
+                <span>Bringing</span>
+              </div>
               {items.map((it, i) => (
-                <div className="meter-row" key={i}>
-                  <span className="name">
-                    {it.item}
-                    {it.categoryLabel ? (
-                      <span className="small"> &middot; {it.categoryLabel}</span>
-                    ) : null}
-                  </span>
-                  <span className="count">{it.name}</span>
+                <div className="roster" key={i}>
+                  <span className="roster__name">{it.name}</span>
+                  <span className="roster__category">{it.categoryLabel || '—'}</span>
+                  <span className="roster__item">{it.item}</span>
                 </div>
               ))}
             </div>

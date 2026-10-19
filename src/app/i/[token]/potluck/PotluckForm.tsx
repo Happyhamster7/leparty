@@ -45,7 +45,7 @@ export default function PotluckForm({
       </select>
 
       <label className="field" htmlFor="potluck_item">
-        What you&rsquo;re bringing
+        What you&rsquo;re bringing <span className="opt">(50 words or fewer)</span>
       </label>
       <input
         id="potluck_item"

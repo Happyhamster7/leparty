@@ -67,6 +67,9 @@ export async function savePotluck(
   const dietary = String(formData.get('dietary_notes') || '').trim();
 
   if (!item) return { error: 'Say what you’re bringing, even roughly.' };
+  if (item.split(/\s+/).filter(Boolean).length > 50) {
+    return { error: 'Keep it to 50 words or fewer.' };
+  }
   if (!CATEGORIES.includes(category)) return { error: 'Pick a category.' };
 
   await db()

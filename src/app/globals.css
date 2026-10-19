@@ -429,6 +429,48 @@ a:focus-visible {
   color: var(--rust);
 }
 
+/* Who's bringing what — name, category, item, all columns aligned. */
+.roster {
+  display: grid;
+  grid-template-columns: minmax(78px, 0.9fr) minmax(64px, 0.7fr) 1.6fr;
+  gap: 10px;
+  align-items: baseline;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.roster:last-child {
+  border-bottom: 0;
+}
+
+.roster--head {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 6px;
+}
+
+.roster__name {
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.roster__category {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted-2);
+}
+
+.roster__item {
+  font-size: 13px;
+}
+
 .meter {
   width: 56px;
   height: 7px;
