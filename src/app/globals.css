@@ -264,8 +264,12 @@ a:focus-visible {
   text-transform: uppercase;
   text-decoration: none;
   cursor: pointer;
-  transition-property: background-color, color, border-color, transform;
-  transition-duration: 150ms;
+  /* Hard offset shadow, not a soft blur — reads as a stamped card,
+     consistent with .stamp/.card elsewhere, and gives every button a
+     real press-down motion instead of just a hover color swap. */
+  box-shadow: 4px 4px 0 var(--ink);
+  transition-property: background-color, color, border-color, transform, box-shadow;
+  transition-duration: 120ms;
   transition-timing-function: ease-out;
 }
 
@@ -274,7 +278,8 @@ a:focus-visible {
 }
 
 .btn:active:not([disabled]) {
-  transform: scale(0.96);
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 var(--ink);
 }
 
 .btn[disabled] {
@@ -286,6 +291,7 @@ a:focus-visible {
   background: transparent;
   color: var(--ink);
   border: 1px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
 }
 
 .btn--ghost:hover {
@@ -842,8 +848,18 @@ a:focus-visible {
   margin: 0;
   font-size: 11px;
   font-family: var(--mono);
-  border-color: var(--line);
+  border: 1px solid var(--ink);
   background: #fff;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 var(--ink);
+  transition-property: transform, box-shadow;
+  transition-duration: 120ms;
+  transition-timing-function: ease-out;
+}
+
+.member select:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--ink);
 }
 
 .block-card__empty {
