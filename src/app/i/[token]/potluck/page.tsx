@@ -30,7 +30,7 @@ export default async function PotluckPage({ params }: { params: { token: string 
         <p className="lede">Everyone brings one thing. Here&rsquo;s what&rsquo;s covered so far.</p>
 
         <div className="box box--quiet">
-          <p className="eyebrow eyebrow--quiet">Coming so far</p>
+          <p className="eyebrow eyebrow--quiet">Menu right now</p>
           {tally.map((t) => (
             <div className="meter-row" key={t.key}>
               <span className="name">{t.label}</span>
@@ -42,16 +42,8 @@ export default async function PotluckPage({ params }: { params: { token: string 
           ))}
         </div>
 
-        <PotluckForm
-          token={params.token}
-          tally={tally}
-          item={ctx.participant.potluck_item || ''}
-          category={ctx.participant.potluck_category || ''}
-          dietary={ctx.participant.dietary_notes || ''}
-        />
-
         {items.length > 0 ? (
-          <details className="disclosure" style={{ marginTop: 14 }}>
+          <details className="disclosure" style={{ marginTop: 10, marginBottom: 20 }}>
             <summary className="btn btn--quiet btn--inline">
               See what others are bringing <span className="arrow">&#9662;</span>
             </summary>
@@ -71,6 +63,14 @@ export default async function PotluckPage({ params }: { params: { token: string 
             </div>
           </details>
         ) : null}
+
+        <PotluckForm
+          token={params.token}
+          tally={tally}
+          item={ctx.participant.potluck_item || ''}
+          category={ctx.participant.potluck_category || ''}
+          dietary={ctx.participant.dietary_notes || ''}
+        />
 
         <div className="btn-row" style={{ marginTop: 14 }}>
           <Link className="btn btn--quiet btn--inline" href={`/i/${params.token}/identity`}>
