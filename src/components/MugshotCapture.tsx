@@ -129,7 +129,16 @@ export default function MugshotCapture({
           <img src={preview} alt="Mugshot" />
         ) : null}
 
-        {!live && !preview ? <div className="hint">FACE IN THE BOX</div> : null}
+        {!live && !preview ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/mugshot-example.png" alt="" className="hint-example" />
+            <div className="hint hint--over">
+              <span className="hint__badge">EXAMPLE</span>
+              <span>FACE IN THE BOX, SHOULDERS IN FRAME</span>
+            </div>
+          </>
+        ) : null}
 
         <div className="chart" aria-hidden="true">
           <span>6&prime;2&Prime;</span>
