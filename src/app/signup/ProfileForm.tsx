@@ -38,6 +38,12 @@ export default function ProfileForm({
         autoComplete="name"
         required
       />
+      {!editing ? (
+        <p className="small" style={{ margin: '-10px 0 20px' }}>
+          Use your full name &mdash; first and last. It&rsquo;s what tells you apart from anyone
+          else in the system, and what we&rsquo;ll look for if you come back later.
+        </p>
+      ) : null}
 
       <p className="eyebrow" id="caplabel">
         How much do you drink
