@@ -134,10 +134,10 @@ export default async function BookedPage({ params }: { params: { token: string }
         </div>
 
         <div className="btn-row" style={{ marginTop: 10 }}>
-          <Link className="btn btn--quiet btn--inline" href={`/i/${token}/mugshot`}>
-            RETAKE MUGSHOT
+          <Link className="btn btn--ghost" style={{ flex: 1 }} href={`/i/${token}/mugshot`}>
+            Retake mugshot
           </Link>
-          <Link className="btn btn--ghost" href={`/i/${token}/potluck`}>
+          <Link className="btn btn--ghost" style={{ flex: 1 }} href={`/i/${token}/potluck`}>
             Change what I&rsquo;m bringing
           </Link>
         </div>
