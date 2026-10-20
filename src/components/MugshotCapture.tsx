@@ -25,6 +25,7 @@ export default function MugshotCapture({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [live, setLive] = useState(false);
   const [preview, setPreview] = useState<string | null>(existingUrl);
@@ -169,25 +170,24 @@ export default function MugshotCapture({
             >
               {preview ? 'RETAKE' : 'OPEN CAMERA'}
             </button>
-            <label className="btn btn--quiet btn--inline" style={{ cursor: 'pointer' }}>
+            <button
+              className="btn btn--quiet btn--inline"
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+            >
               CHOOSE A PHOTO
-              <input
-                type="file"
-                accept="image/*"
-                style={{
-                  position: 'absolute',
-                  width: 1,
-                  height: 1,
-                  opacity: 0,
-                  pointerEvents: 'none',
-                }}
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) onPick(f);
-                  e.target.value = '';
-                }}
-              />
-            </label>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) onPick(f);
+                e.target.value = '';
+              }}
+            />
           </>
         )}
       </div>
