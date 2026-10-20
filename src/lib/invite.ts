@@ -53,11 +53,11 @@ export async function hasAttendedBefore(ctx: InviteContext): Promise<boolean> {
  * creation at /signup, so this almost never lands on 'identity' in
  * practice — it's just the fallback if that's somehow still missing.
  */
-export function nextStep(ctx: InviteContext): 'identity' | 'potluck' | 'mugshot' | 'booked' {
+export function nextStep(ctx: InviteContext): 'identity' | 'mugshot' | 'potluck' | 'booked' {
   const { person, participant } = ctx;
 
   if (!person.display_name || person.capacity_band == null) return 'identity';
-  if (!participant.potluck_item) return 'potluck';
   if (!participant.photo_path && !participant.signup_completed_at) return 'mugshot';
+  if (!participant.potluck_item) return 'potluck';
   return 'booked';
 }

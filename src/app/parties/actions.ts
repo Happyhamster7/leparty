@@ -7,8 +7,8 @@ import { loadProfile } from '@/lib/profile';
 /**
  * Self-service "I'm going". Reuses an existing participant row if one
  * already exists (e.g. they'd previously said no), otherwise creates
- * one, then drops them straight into the potluck step — identity is
- * already covered by their profile.
+ * one, then drops them straight into the mugshot step — identity is
+ * already covered by their profile, and mugshot comes before potluck.
  */
 export async function joinParty(eventId: string) {
   const person = await loadProfile();
@@ -27,7 +27,7 @@ export async function joinParty(eventId: string) {
     if (existing.rsvp !== 'yes') {
       await supabase.from('participants').update({ rsvp: 'yes' }).eq('id', existing.id);
     }
-    redirect(`/i/${existing.invite_token}/potluck`);
+    redirect(`/i/${existing.invite_token}/mugshot`);
   }
 
   const { data: created, error } = await supabase
@@ -38,5 +38,5 @@ export async function joinParty(eventId: string) {
 
   if (error || !created) redirect('/parties');
 
-  redirect(`/i/${created.invite_token}/potluck`);
+  redirect(`/i/${created.invite_token}/mugshot`);
 }

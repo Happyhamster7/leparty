@@ -51,7 +51,7 @@ export async function saveIdentity(
   await db().from('participants').update({ rsvp: 'yes' }).eq('id', ctx.participant.id);
 
   revalidatePath(`/i/${token}`);
-  redirect(`/i/${token}/potluck`);
+  redirect(`/i/${token}/mugshot`);
 }
 
 export async function savePotluck(
@@ -82,11 +82,17 @@ export async function savePotluck(
       // braces: a returning guest can reach here without passing
       // through the identity step that would otherwise set this.
       rsvp: 'yes',
+      // Potluck is the last step now that mugshot comes first — this is
+      // what "done" means. Previously savePhoto set this; moved here
+      // when the order swapped, or the root page would've claimed
+      // "nothing else to do" right after the photo, before potluck.
+      signup_completed_at: new Date().toISOString(),
     })
     .eq('id', ctx.participant.id);
 
   revalidatePath(`/i/${token}`);
-  redirect(`/i/${token}/mugshot`);
+  revalidatePath(`/i/${token}/going`);
+  redirect(`/i/${token}/booked`);
 }
 
 /** Called from the camera component with a downscaled JPEG. */
@@ -111,24 +117,28 @@ export async function savePhoto(token: string, formData: FormData): Promise<Form
 
   if (error) return { error: 'The photo would not upload. Try again.' };
 
-  await supabase
-    .from('participants')
-    .update({ photo_path: path, signup_completed_at: new Date().toISOString() })
-    .eq('id', ctx.participant.id);
+  await supabase.from('participants').update({ photo_path: path }).eq('id', ctx.participant.id);
 
-  // The camera navigates on to /booked with a client-side router.push
-  // rather than a server redirect, so the router cache for that exact
-  // path has to be invalidated here or it serves the stale, photo-less
-  // render instead of fetching the one that now has the photo. /going
-  // is reached from /booked the same way, so it needs the same treatment.
+  // The camera navigates on with a client-side router.push rather than
+  // a server redirect, so the router cache for the destination has to
+  // be invalidated here or it serves a stale render. Mugshot is no
+  // longer the last step, so this no longer stamps signup_completed_at
+  // — potluck does that now.
   revalidatePath(`/i/${token}`);
   revalidatePath(`/i/${token}/mugshot`);
+  revalidatePath(`/i/${token}/potluck`);
   revalidatePath(`/i/${token}/booked`);
   revalidatePath(`/i/${token}/going`);
   return { ok: true };
 }
 
-/** Confirms an already-uploaded mugshot and finishes signup. A mugshot is required — this is not a skip path. */
+/**
+ * Confirms an already-uploaded mugshot without retaking it. A mugshot
+ * is required — this is not a skip path. Routes to wherever nextStep
+ * says, not a hardcoded page: this is reached by revisiting mugshot
+ * (e.g. the BACK link from potluck), so potluck might still be unfilled
+ * even though a photo already exists.
+ */
 export async function finishSignup(token: string) {
   const ctx = await loadInvite(token);
   if (!ctx) return;
@@ -137,7 +147,9 @@ export async function finishSignup(token: string) {
     redirect(`/i/${token}/mugshot`);
   }
 
-  if (!ctx.participant.signup_completed_at) {
+  const step = nextStep(ctx);
+
+  if (step === 'booked' && !ctx.participant.signup_completed_at) {
     await db()
       .from('participants')
       .update({ signup_completed_at: new Date().toISOString() })
@@ -146,5 +158,5 @@ export async function finishSignup(token: string) {
 
   revalidatePath(`/i/${token}`);
   revalidatePath(`/i/${token}/going`);
-  redirect(`/i/${token}/booked`);
+  redirect(`/i/${token}/${step}`);
 }

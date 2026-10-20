@@ -127,7 +127,7 @@ too.
 ## State of play
 
 Built: self-service signup (`/signup`, `/parties`), party signup
-(invite, identity, potluck, mugshot, booked, declined), host console
+(invite, identity, mugshot, potluck, booked, declined), host console
 (parties, create, edit, event, guest edit, check-in, draw, cards),
 `/join` and `/b/<token>`.
 

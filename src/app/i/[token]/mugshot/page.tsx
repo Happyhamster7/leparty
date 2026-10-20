@@ -30,7 +30,7 @@ export default async function MugshotPage({ params }: { params: { token: string 
     <div className="shell">
       <div className="topbar">
         <span>{theme.intakeLabel.toUpperCase()}</span>
-        <span>STEP 3 OF 3</span>
+        <span>STEP 2 OF 3</span>
       </div>
 
       <div className="body">
@@ -42,7 +42,7 @@ export default async function MugshotPage({ params }: { params: { token: string 
         <Camera token={params.token} plate={plate} existingUrl={existingUrl} />
 
         <div className="btn-row" style={{ marginTop: 14 }}>
-          <Link className="btn btn--quiet btn--inline" href={`/i/${params.token}/potluck`}>
+          <Link className="btn btn--quiet btn--inline" href={`/i/${params.token}/identity`}>
             BACK
           </Link>
         </div>

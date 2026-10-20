@@ -30,12 +30,12 @@ export default function Camera({
         plate={plate}
         existingUrl={existingUrl}
         upload={upload}
-        onDone={() => router.push(`/i/${token}/booked`)}
+        onDone={() => router.push(`/i/${token}/potluck`)}
       />
 
       {existingUrl ? (
         <button className="btn btn--ghost" type="button" onClick={keep} disabled={busy}>
-          {busy ? 'Filing…' : 'Keep this photo & book me in'}
+          {busy ? 'Filing…' : 'Keep this photo & continue'}
         </button>
       ) : (
         <div className="box box--quiet">
