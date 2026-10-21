@@ -100,7 +100,19 @@ export default async function DrawPage({ params }: { params: { eventId: string }
 
             <hr className="rule" />
 
+            <p className="small no-print" style={{ marginBottom: 14 }}>
+              Latecomers can be added or marked present from the check-in desk any time, even
+              after the draw — it never needs reopening for that. Reopen check-in only if you
+              actually want the party to go back to accepting signups.
+            </p>
+
             <div className="btn-row no-print">
+              <Link
+                className="btn btn--quiet btn--inline"
+                href={`/host/${params.eventId}/checkin`}
+              >
+                CHECK-IN DESK
+              </Link>
               <form action={reopen}>
                 <button className="btn btn--quiet btn--inline" type="submit">
                   REOPEN CHECK-IN
