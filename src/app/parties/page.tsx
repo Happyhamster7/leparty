@@ -4,6 +4,7 @@ import { db } from '@/lib/supabase';
 import { loadProfile } from '@/lib/profile';
 import { formatHeldOn } from '@/lib/types';
 import { joinParty } from './actions';
+import JoinButton from './JoinButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,9 +78,7 @@ export default async function PartiesPage() {
                   </div>
                 ) : (
                   <form action={join}>
-                    <button className="btn btn--inline" type="submit">
-                      I&rsquo;m going
-                    </button>
+                    <JoinButton />
                   </form>
                 )}
               </div>
