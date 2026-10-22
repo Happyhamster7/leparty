@@ -123,7 +123,9 @@ export default async function GoingPage({ params }: { params: { token: string } 
         <div className="cellblock" style={{ marginBottom: 20 }}>
           {tiers.map((tier, i) => (
             <div className="tier" key={i}>
-              <p className="tier__label">Level {tiers.length - i}</p>
+              <p className="tier__label">
+                {i === tiers.length - 1 ? 'Fresh meat' : `Level ${tiers.length - 1 - i}`}
+              </p>
               <div className="tier__row">
                 {tier.map((occupant, j) => (
                   <Cell occupant={occupant} key={occupant ? occupant.name + j : `empty-${i}-${j}`} />
