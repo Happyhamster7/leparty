@@ -48,7 +48,8 @@ function shuffle<T>(items: T[]): T[] {
 
 export function proposeDraw(
   people: Drawee[],
-  blocks: { id: string; name: string; colour: string }[]
+  blocks: { id: string; name: string; colour: string }[],
+  options?: { randomize?: boolean }
 ): ProposedBlock[] {
   const proposed: ProposedBlock[] = blocks.map((b) => ({
     blockId: b.id,
@@ -59,10 +60,14 @@ export function proposeDraw(
 
   if (proposed.length === 0) return proposed;
 
-  // Shuffled first so repeat calls — i.e. the Reshuffle button — land
-  // people differently among same-capacity peers instead of reproducing
-  // the exact same groups every time.
-  const sorted = shuffle(people).sort((a, b) => b.capacity - a.capacity);
+  // Deterministic by default — so navigating to this page (or reloading
+  // it, e.g. via "Close check-in & draw blocks") always reproduces the
+  // same arrangement instead of silently discarding whatever the host
+  // already settled on. Randomize is opt-in, used only by the explicit
+  // Reshuffle button in DrawReview.
+  const sorted = options?.randomize
+    ? shuffle(people).sort((a, b) => b.capacity - a.capacity)
+    : [...people].sort((a, b) => b.capacity - a.capacity || a.name.localeCompare(b.name));
 
   // Snake deal. Uneven headcounts fall out of this naturally: the
   // remainder lands on whichever blocks the serpentine reaches next,

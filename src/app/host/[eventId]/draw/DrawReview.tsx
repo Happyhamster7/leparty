@@ -50,7 +50,7 @@ export default function DrawReview({
 
   function reshuffle() {
     setTouched(false);
-    setProposed(proposeDraw(people, blocks));
+    setProposed(proposeDraw(people, blocks, { randomize: true }));
   }
 
   function commit() {
