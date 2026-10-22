@@ -114,8 +114,13 @@ export default async function CheckinPage({ params }: { params: { eventId: strin
         >
           <p className="small" style={{ flex: '1 1 260px', margin: 0 }}>
             Closing check-in draws the blocks from whoever is actually here. Latecomers after
-            that drop into the lightest block rather than triggering a redraw.
+            that drop into the lightest block rather than triggering a redraw. If the draw&rsquo;s
+            already happened, &ldquo;The draw&rdquo; just shows the real board &mdash; nothing
+            here reshuffles it.
           </p>
+          <Link className="btn btn--quiet btn--inline" href={`/host/${params.eventId}/draw`}>
+            THE DRAW
+          </Link>
           <form action={close}>
             <button className="btn btn--inline" type="submit" disabled={!drawn}>
               Close check-in &amp; draw blocks
