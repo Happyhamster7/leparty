@@ -659,6 +659,13 @@ a:focus-visible {
      would make whichever cell lacks it (the last in each row) render
      wider than the rest and throw the grid out of alignment. */
   box-shadow: inset -2px 0 0 var(--ink);
+  /* A grid item's automatic minimum width otherwise comes from its
+     content's min-content size — and for nowrap text that's the full
+     rendered string, so one long name blows out its whole column.
+     overflow:hidden resets that minimum to 0, letting the track hold
+     to its real 1fr share and the tag's own ellipsis actually apply. */
+  overflow: hidden;
+  min-width: 0;
 }
 
 .tier__row .cell:last-child {
