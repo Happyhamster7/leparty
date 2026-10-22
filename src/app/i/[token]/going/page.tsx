@@ -21,15 +21,6 @@ type Occupant = {
   inmateNumber: number | null;
 };
 
-// Same compression as the door's plate format (checkin/DoorPhotos) — a
-// short, consistent tag regardless of name length. Full name is still on
-// the title attribute for hover/long-press.
-function shortLabel(name: string): string {
-  const trimmed = name.trim();
-  const surname = trimmed.split(/\s+/).slice(-1)[0] || trimmed;
-  return `${surname.toUpperCase()}, ${trimmed.charAt(0).toUpperCase()}.`;
-}
-
 function Cell({ occupant }: { occupant: Occupant | null }) {
   if (!occupant) {
     return (
@@ -50,7 +41,7 @@ function Cell({ occupant }: { occupant: Occupant | null }) {
   return (
     <div className="cell">
       <div className="cell__tag" title={occupant.name}>
-        {shortLabel(occupant.name)}
+        {occupant.name}
       </div>
       <div className="cell__frame">
         {occupant.url ? (
