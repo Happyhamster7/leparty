@@ -1,7 +1,14 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
-import { proposeDraw, blockTotal, spread, type Drawee, type ProposedBlock } from '@/lib/draw';
+import {
+  proposeDraw,
+  buildFromExisting,
+  blockTotal,
+  spread,
+  type Drawee,
+  type ProposedBlock,
+} from '@/lib/draw';
 import { confirmDraw } from '../nightActions';
 
 export default function DrawReview({
@@ -13,7 +20,14 @@ export default function DrawReview({
   people: Drawee[];
   blocks: { id: string; name: string; colour: string }[];
 }) {
-  const [proposed, setProposed] = useState<ProposedBlock[]>(() => proposeDraw(people, blocks));
+  // If everyone already has a block (the draw already happened), show
+  // that real state instead of a fresh proposal — otherwise opening
+  // this page to check on one latecomer would discard everyone else's
+  // settled assignment.
+  const [proposed, setProposed] = useState<ProposedBlock[]>(() => {
+    const alreadyDrawn = people.length > 0 && people.every((p) => p.blockId);
+    return alreadyDrawn ? buildFromExisting(people, blocks) : proposeDraw(people, blocks);
+  });
   const [pending, startTransition] = useTransition();
   const [touched, setTouched] = useState(false);
 

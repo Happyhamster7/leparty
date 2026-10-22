@@ -52,6 +52,7 @@ export default async function DrawPage({ params }: { params: { eventId: string }
     participantId: r.id,
     name: r.people?.display_name ?? 'Unknown',
     capacity: r.people?.capacity_band ?? 3,
+    blockId: r.block_id,
   }));
 
   const reopen = reopenCheckIn.bind(null, params.eventId);
@@ -86,9 +87,10 @@ export default async function DrawPage({ params }: { params: { eventId: string }
           <>
             {alreadyDrawn ? (
               <div className="notice">
-                These blocks are already drawn and in play. Reshuffling or confirming again
-                reassigns everyone &mdash; which is usually the wrong move once the night has
-                started.
+                These blocks are already drawn and in play &mdash; shown below exactly as they
+                stand, not a fresh guess. Moving someone and confirming again only changes what
+                you actually moved. Reshuffle is the one button that still throws the whole board
+                out and starts over, which is usually the wrong move once the night has started.
               </div>
             ) : null}
 

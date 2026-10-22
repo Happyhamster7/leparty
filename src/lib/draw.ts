@@ -2,6 +2,7 @@ export type Drawee = {
   participantId: string;
   name: string;
   capacity: number;
+  blockId: string | null;
 };
 
 export type ProposedBlock = {
@@ -141,4 +142,51 @@ export function lightestBlock(blocks: ProposedBlock[]): ProposedBlock | null {
   const used = blocks.filter((b) => b.members.length > 0);
   if (used.length === 0) return blocks[0] ?? null;
   return used.reduce((min, b) => (blockTotal(b) < blockTotal(min) ? b : min), used[0]);
+}
+
+/**
+ * Rebuild the board from each person's already-persisted block_id,
+ * instead of recomputing a fresh balanced proposal. Used once a draw
+ * is already confirmed, so opening this page to review or nudge one
+ * latecomer's placement never discards everyone else's real, settled
+ * assignment.
+ */
+export function buildFromExisting(
+  people: Drawee[],
+  blocks: { id: string; name: string; colour: string }[]
+): ProposedBlock[] {
+  const proposed: ProposedBlock[] = blocks.map((b) => ({
+    blockId: b.id,
+    name: b.name,
+    colour: b.colour,
+    members: [],
+  }));
+
+  const byId = new Map(proposed.map((b) => [b.blockId, b]));
+  const unassigned: Drawee[] = [];
+
+  for (const person of people) {
+    const target = person.blockId ? byId.get(person.blockId) : undefined;
+    if (target) target.members.push(person);
+    else unassigned.push(person);
+  }
+
+  // Shouldn't normally happen — check-in already assigns a block to
+  // anyone added after the draw — but if it ever does, don't drop
+  // them silently. Lightest block first, including currently-empty
+  // ones, not just blocks already carrying someone.
+  for (const person of unassigned) {
+    if (proposed.length === 0) break;
+    const target = proposed.reduce(
+      (min, b) => (blockTotal(b) < blockTotal(min) ? b : min),
+      proposed[0]
+    );
+    target.members.push(person);
+  }
+
+  for (const b of proposed) {
+    b.members.sort((x, y) => x.name.localeCompare(y.name));
+  }
+
+  return proposed;
 }
