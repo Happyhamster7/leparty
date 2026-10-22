@@ -952,6 +952,37 @@ a:focus-visible {
   box-shadow: 0 0 0 var(--ink);
 }
 
+.member__grip {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  flex-shrink: 0;
+  padding: 4px 6px;
+  margin-right: -4px;
+  color: var(--muted-2);
+  font-size: 15px;
+}
+
+.block-card[data-drag-over='true'] {
+  outline: 3px dashed var(--rust);
+  outline-offset: -3px;
+}
+
+.drag-ghost {
+  position: fixed;
+  z-index: 50;
+  transform: translate(-50%, -140%);
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  padding: 6px 10px;
+  pointer-events: none;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+}
+
 .block-card__empty {
   padding: 14px 12px;
   font-family: var(--mono);

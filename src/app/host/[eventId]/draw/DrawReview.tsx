@@ -30,6 +30,15 @@ export default function DrawReview({
   });
   const [pending, startTransition] = useTransition();
   const [touched, setTouched] = useState(false);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  const [overBlockId, setOverBlockId] = useState<string | null>(null);
+
+  function endDrag() {
+    setDragId(null);
+    setDragPos(null);
+    setOverBlockId(null);
+  }
 
   const totals = useMemo(() => proposed.map(blockTotal), [proposed]);
   const used = proposed.filter((b) => b.members.length > 0);
@@ -110,6 +119,11 @@ export default function DrawReview({
             : 'Worth a look: one block is carrying noticeably more than another. Reshuffle, or swap a high number for a low one.'}
       </p>
 
+      <p className="small" style={{ marginBottom: 10 }}>
+        Drag the <span aria-hidden="true">⠿</span> handle onto another block to move someone, or
+        use the dropdown.
+      </p>
+
       <div className="draw-grid">
         {proposed.map((b) => {
           const total = blockTotal(b);
@@ -119,6 +133,8 @@ export default function DrawReview({
             <div
               className="block-card"
               key={b.blockId}
+              data-block-id={b.blockId}
+              data-drag-over={dragId && overBlockId === b.blockId ? 'true' : undefined}
               style={{ borderColor: isHeavy || isLight ? 'var(--ink)' : undefined }}
             >
               <div className="block-card__head" style={{ background: b.colour }}>
@@ -147,7 +163,38 @@ export default function DrawReview({
               ) : (
                 <div className="block-card__body">
                   {b.members.map((m) => (
-                    <div className="member" key={m.participantId}>
+                    <div
+                      className="member"
+                      key={m.participantId}
+                      style={{ opacity: dragId === m.participantId ? 0.35 : 1 }}
+                    >
+                      <span
+                        className="member__grip"
+                        aria-hidden="true"
+                        onPointerDown={(e) => {
+                          e.currentTarget.setPointerCapture(e.pointerId);
+                          setDragId(m.participantId);
+                          setDragPos({ x: e.clientX, y: e.clientY });
+                        }}
+                        onPointerMove={(e) => {
+                          if (dragId !== m.participantId) return;
+                          setDragPos({ x: e.clientX, y: e.clientY });
+                          const el = document.elementFromPoint(e.clientX, e.clientY);
+                          const card = (el as HTMLElement | null)?.closest<HTMLElement>(
+                            '[data-block-id]'
+                          );
+                          setOverBlockId(card?.dataset.blockId ?? null);
+                        }}
+                        onPointerUp={() => {
+                          if (overBlockId && overBlockId !== b.blockId) {
+                            move(m.participantId, overBlockId);
+                          }
+                          endDrag();
+                        }}
+                        onPointerCancel={endDrag}
+                      >
+                        ⠿
+                      </span>
                       <span className="cap">{m.capacity}</span>
                       <span className="nm" title={m.name}>
                         {m.name}
@@ -171,6 +218,17 @@ export default function DrawReview({
           );
         })}
       </div>
+
+      {dragId && dragPos
+        ? (() => {
+            const dragged = proposed.flatMap((b) => b.members).find((m) => m.participantId === dragId);
+            return dragged ? (
+              <div className="drag-ghost" style={{ left: dragPos.x, top: dragPos.y }}>
+                {dragged.name}
+              </div>
+            ) : null;
+          })()
+        : null}
 
       <div className="btn-row">
         <button className="btn btn--inline" type="button" onClick={commit} disabled={pending}>
