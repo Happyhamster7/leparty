@@ -28,7 +28,7 @@ Plus two places nobody wants to be:
 - **Yard**: the game that's on now (including its extra Holding/Solitary rules), the schedule and the gossip feed. Holding and Solitary inmates see their standing rules at the top.
 - **Commissary**: spend your block's credits.
 - **My Block / Holding / Solitary**: the tab changes with where you are. It shows your budget, blockmates, contraband stash, wiretap results, who's in Holding (people you could bail), and your block's orders.
-- **Rap Sheet**: your mugshot (inmate #, a random charge) and your secret role (tap to reveal). Lights Out picks and block votes happen here.
+- **Rap Sheet**: your mugshot (inmate #, a random charge), your secret role and your secret task for this game (each one is tap to reveal). Lights Out picks and block votes happen here.
 - **Board**: standings, the full roster and the 🍺 drink tab.
 
 A **🍺 drinks owed** card appears on every tab whenever you owe penalty drinks. Tap *Drank one ✅* as you pay them off. It's the honor system, but the whole room can see the tab on the TV.
@@ -56,17 +56,23 @@ The Warden can add, edit, hide, price and stock-limit any item, and can refund a
 
 Each game can also carry its own extra rule for Holding and for Solitary (e.g. "flip with your off hand" or "full cup every flip"). There's also an "End round now" button if you want penalties without a game.
 
-### Snitches
+### Snitches and secret tasks (Among Us style)
 
 1. **🐀 Plant snitches** (Warden → Snitches). Each block independently gets one hidden snitch with the chance you set (default 50%), so some blocks have one and some don't. "At least one overall" is on by default.
-2. **🌙 Lights Out.** *Everyone* picks a name on their phone, so you can't spot a snitch by who's tapping. Snitch picks are tip-offs. Everyone else's picks are anonymous suspicions.
-3. **☀️ Lights On.** Each snitch's target goes to solitary for 1 round ("an anonymous tip"). The feed whispers who was most suspected.
-4. **🗳️ Block Votes.** Each block votes only on its own members, and a **majority of the block** is needed to kick someone.
-   - Kicked the snitch: the block gets **+25**. The snitch is exposed, serves 1 round in solitary, then goes to the Holding Cell.
+2. **📋 Secret tasks.** When a game goes ▶ live, *everyone* gets a secret task on their Rap Sheet, and every task card looks the same.
+   - **Inmates** get harmless tasks ("high-five someone from every other block"). Tapping Done earns their block **+3**.
+   - **The snitch** gets a **sabotage** for that game ("volunteer to go first, then choke", "talk your block into the worst strategy"). You can also write a game-specific one, e.g. "miss your first two flips". Tapping Done **skims 5 credits** from their block.
+   - **Holding Cell** inmates get tasks too. Completing one earns parole points, so blocks can see who's hustling before they bail someone out.
+   - The feed line is identical for both ("✅ Someone in Block A finished their task"). But the block's **account activity** shows either *+3 Task completed* or *−5 Unexplained withdrawal*, and that withdrawal is the clue. Who just tapped their phone?
+   - Everyone gets one reroll per game, and the Warden can void a task (undoing its effect).
+3. **🌙 Lights Out.** *Everyone* picks a name on their phone, so you can't spot a snitch by who's tapping. Snitch picks are tip-offs. Everyone else's picks are anonymous suspicions.
+4. **☀️ Lights On.** Each snitch's target goes to solitary for 1 round ("an anonymous tip"). The feed whispers who was most suspected.
+5. **🗳️ Block Votes.** Each block votes only on its own members, and a **majority of the block** is needed to kick someone.
+   - Kicked the snitch: the block gets **+25 plus every credit the snitch skimmed**. The snitch is exposed, serves 1 round in solitary, then goes to the Holding Cell.
    - Kicked an innocent: the block pays **−10**, and the innocent goes to the Holding Cell, where they have to earn their way back.
-5. **🎭 Reveal** at the end of the night unmasks every snitch who got away with it. If every snitch is caught earlier, the game ends with the blocks winning.
+6. **🎭 Reveal** at the end of the night unmasks every snitch who got away with it. **Surviving snitches cash in:** they get **3 drinks + 1 per successful sabotage** to hand out to anyone from their phone, plus a prize you set (default "a drink on the birthday inmate + eternal bragging rights").
 
-All the numbers (chance, bounty, fine and sentence lengths) are editable in the Warden console.
+All the numbers, both task lists and the prize are editable in the Warden console (Snitches tab).
 
 ## Running it
 
@@ -81,7 +87,7 @@ Open `http://localhost:3000/warden` and log in. Then:
 
 1. Put `/tv` on the TV. Guests scan the QR code and book in. Everyone starts in the Holding Cell.
 2. **🔐 Blocks**: "Build blocks from Holding" splits everyone into Block A, B, C… of up to 5. Late arrivals stay in Holding until a block bails them out or you parole them with the dropdown.
-3. **🐀 Snitches**: plant snitches.
+3. **🐀 Snitches**: plant snitches. Tweak the task lists and survivor prize if you like.
 4. **🏁 Games**: add the schedule (with optional Holding/Solitary rules), hit ▶ Go live, then 🏆 Finish & pay out after each one.
 5. **🧾 Orders**: your bartender queue. Tap Delivered / Enforced as you go.
 6. **⛓️ Lockup**: throw rule-breakers into solitary, release people, fix the drink tab, and edit the standing rules.
@@ -111,6 +117,6 @@ npm run dev   # restarts on file changes
 npm test      # rules engine tests (node:test)
 ```
 
-- `lib/game.js`: all game rules and per-viewer views. Players never receive other players' secret roles, other blocks' stash or wiretap results, or login tokens.
+- `lib/game.js`: all game rules and per-viewer views. Players never receive other players' secret roles, which kind of task anyone has, the task lists, other blocks' stash/ledger/wiretap results, or login tokens.
 - `server.js`: Express + Socket.io. Every mutation is saved and pushes fresh state to every connected screen.
 - `public/`: a single-page client in vanilla JS (no build step).

@@ -354,3 +354,21 @@ body[data-kind='tv'] { overflow: hidden; }
 .rule { background: #00000055; border-left: 3px solid var(--orange); padding: 6px 10px; border-radius: 6px; font-weight: 600; }
 body[data-status='solitary'] .top { border-bottom-color: var(--red); }
 body[data-status='holding'] .top { border-bottom-color: #777; }
+
+/* ---------- tasks & snitch payout ---------- */
+.task-card { border: 2px dashed var(--line); }
+.task-card [data-act] { cursor: pointer; }
+.task-card.shown { border-style: solid; border-color: var(--yellow); }
+.task-text { font-family: var(--type); font-size: 18px; background: #00000055; padding: 10px 12px; border-radius: 8px; }
+.green-t { color: var(--green); }
+.ledger li { display: flex; gap: 8px; align-items: baseline; }
+.ledger li span:first-child { font-family: var(--stencil); min-width: 36px; }
+textarea {
+  width: 100%; background: #151515; color: var(--text); border: 1.5px solid var(--line); border-radius: 10px;
+  padding: 10px 12px; font: 14px/1.5 Inter, sans-serif; margin-top: 5px; resize: vertical;
+}
+.dealercard {
+  max-width: 760px; width: calc(100% - 32px); margin: 12px auto 0; border-radius: var(--radius); padding: 14px;
+  background: linear-gradient(135deg, #2a1240, #1a0f26); border: 2px solid #9b51e0;
+}
+.dealercard .drink-n { color: #d6b4ff; }

@@ -20,6 +20,7 @@
     atab: LS.get('sss_atab') || 'orders',
     sheet: null, // { itemId, targetTeamId, targetPlayerId }
     reveal: false,
+    revealTask: false,
     finishing: null,
   };
   const drafts = {};
@@ -232,6 +233,7 @@
       ${phaseBanner()}
       ${announcement()}
       ${drinkCard()}
+      ${dealerCard()}
       ${incomingAlerts()}
       <main class="content">${body()}</main>
       ${ui.sheet ? buySheet() : ''}
@@ -240,9 +242,13 @@
       </nav>`;
   }
 
+  const seenTasks = new Set((LS.get('sss_seen') || '').split(',').filter(Boolean));
+  const taskUnseen = () => S.me.task?.status === 'active' && !seenTasks.has(S.me.task.id);
+
   function needsMafiaAction() {
     const m = S.mafia;
     const me = S.me;
+    if (taskUnseen() || me.dealerDrinks) return true;
     if (me.status === 'solitary') return false;
     if (m.phase === 'vote') return me.status === 'block' && !m.myVote;
     if (m.phase === 'night') return !m.myNight;
@@ -262,6 +268,18 @@
   function announcement() {
     if (!S.announcement) return '';
     return `<div class="announce"><span class="mega">📣</span><div><div class="announce-t">${h(S.announcement.text)}</div><div class="fine">from the Warden · ${time(S.announcement.ts)}</div></div></div>`;
+  }
+
+  // A surviving snitch's payout: hand out penalty drinks to anyone.
+  function dealerCard() {
+    const me = S.me;
+    if (!me.dealerDrinks) return '';
+    const targets = S.players.filter((p) => p.id !== me.id);
+    return `<div class="dealercard">
+      <div class="drink-n">🐀 You got away with it!</div>
+      <p>Hand out <b>${plural(me.dealerDrinks, 'drink')}</b> to anyone you like.${S.settings.snitchPrize ? ` Plus: <b>${h(S.settings.snitchPrize)}</b>` : ''}</p>
+      <div class="targets">${targets.map((p) => `<button class="target" data-act="dealDrink" data-target-id="${p.id}">🥃 ${h(p.name)}${p.drinksOwed ? ` <small>(${p.drinksOwed})</small>` : ''}</button>`).join('')}</div>
+    </div>`;
   }
 
   function drinkCard() {
@@ -455,6 +473,7 @@
         ${voteOpen && inv.immunity && me.status === 'block' ? `
           <p class="fine">Block vote is open — bribe a guard to protect someone on your block:</p>
           <div class="targets">${members.filter((p) => p.status === 'block').map((p) => `<button class="target" style="--c:${h(myTeam.color)}" data-act="immunity" data-target-id="${p.id}" ${immune.has(p.id) ? 'disabled' : ''}>${immune.has(p.id) ? '🛡️ ' : ''}${h(p.name)}</button>`).join('')}</div>` : ''}
+        ${(myTeam.ledger || []).length ? `<h3 class="section-h">🧾 Account activity</h3><ul class="roster ledger">${myTeam.ledger.map((l) => `<li><span class="${l.amount < 0 ? 'red-t' : 'green-t'}">${l.amount > 0 ? '+' : ''}${l.amount}</span> ${h(l.text)} <span class="fine">${time(l.ts)}</span></li>`).join('')}</ul><p class="fine">Unexplained withdrawals happen when a snitch pulls off a sabotage. Who finished a “task” right before it?</p>` : ''}
         ${(myTeam.intel || []).length ? `<h3 class="section-h">📡 Wiretap results</h3><ul class="roster">${myTeam.intel.map((i) => `<li>${time(i.ts)} — ${i.hasSnitch ? '<b class="red-t">🐀 There IS a snitch on this block.</b>' : '✅ No snitch on this block (at the time).'} <span class="fine">bought by ${h(i.by)}</span></li>`).join('')}</ul>` : ''}
       </section>
       <section class="card">
@@ -478,7 +497,7 @@
     if (forBlock && !list.length) return '';
     return `<section class="card">
       <h3>🕳️ Holding Cell (${list.length})</h3>
-      ${list.length ? `<ul class="roster">${list.map((p) => `<li>${h(p.name)} <span class="fine">#${h(p.inmateNo)}${p.role ? ` · was ${h(roleOf(p.role)?.name)}` : ''}</span>${p.drinksOwed ? ` <span class="fine">🍺×${p.drinksOwed}</span>` : ''}</li>`).join('')}</ul>` : '<p class="empty">Empty.</p>'}
+      ${list.length ? `<ul class="roster">${list.map((p) => `<li>${h(p.name)} <span class="fine">#${h(p.inmateNo)}${p.role ? ` · was ${h(roleOf(p.role)?.name)}` : ''}${p.paroleScore ? ` · ⭐ ${plural(p.paroleScore, 'parole point')}` : ''}</span>${p.drinksOwed ? ` <span class="fine">🍺×${p.drinksOwed}</span>` : ''}</li>`).join('')}</ul>` : '<p class="empty">Empty.</p>'}
       ${forBlock ? '<p class="fine">Room on your block? Buy a 🔑 Bail Bond to recruit one of them. Or punish them. They can’t deflect. 😈</p>' : ''}
     </section>`;
   }
@@ -513,10 +532,29 @@
       ${m.phase !== 'off' ? `
         <section class="card role-card ${ui.reveal ? 'shown' : ''}" data-act="reveal">
           ${ui.reveal
-            ? `<div class="mega">${role.emoji}</div><h2>${h(role.name)}</h2><p>${h(role.blurb)}</p>${me.revealed ? '<p class="fine">You’ve been exposed. Your powers are gone.</p>' : ''}<p class="fine">Tap to hide</p>`
+            ? `<div class="mega">${role.emoji}</div><h2>${h(role.name)}</h2><p>${h(role.blurb)}</p>${me.role === 'snitch' ? `<p class="fine">Sabotages pulled off: <b>${me.dirt}</b> · credits skimmed: <b>${me.skimmed}</b>. Survive the reveal to cash in ${plural(S.settings.snitchRewardDrinks + me.dirt * S.settings.drinksPerSabotage, 'drink')}.</p>` : ''}${me.revealed ? '<p class="fine">You’ve been exposed. Your powers are gone.</p>' : ''}<p class="fine">Tap to hide</p>`
             : `<div class="mega">🗂️</div><h2>Secret role</h2><p class="fine">Tap to reveal. Shield your screen!</p>`}
         </section>` : ''}
+      ${taskCard()}
       ${mafiaPanel()}`;
+  }
+
+  // Identical layout for every inmate; only the wording of a snitch's task gives it away.
+  function taskCard() {
+    const t = S.me.task;
+    if (!t) return '';
+    const active = t.status === 'active';
+    const label = { done: '✅ Done', skipped: 'Skipped', expired: 'Expired', revoked: '❌ Voided by the Warden' }[t.status];
+    return `<section class="card task-card ${ui.revealTask ? 'shown' : ''}">
+      <div class="eyebrow">📋 Secret task · ${h(t.gameName)}</div>
+      ${ui.revealTask
+        ? `<p class="task-text" data-act="reveal-task">${h(t.text)}</p>
+           ${active
+             ? `<div class="row"><button class="btn ghost sm" data-act="task" data-result="skip">Skip</button>${t.rerolled ? '' : '<button class="btn ghost sm" data-act="reroll">🎲 Reroll</button>'}<button class="btn sm" data-act="task" data-result="done">Done ✅</button></div>
+                <p class="fine">Pull it off without anyone noticing, then tap Done. Tap the task to hide it.</p>`
+             : `<p class="fine">${label}. Tap the task to hide it.</p>`}`
+        : `<p class="fine" data-act="reveal-task">Tap to view your task. Shield your screen!</p>${active ? '' : `<p class="fine">${label}</p>`}`}
+    </section>`;
   }
 
   function mafiaPanel() {
@@ -674,6 +712,7 @@
           <label>Description<input id="g_desc" name="desc" maxlength="200" placeholder="Best of 3. Winner +30." /></label>
           <label>🕳️ Extra rule for Holding Cell<input id="g_hold" name="holdingRule" maxlength="160" placeholder="Must flip with your off hand" /></label>
           <label>🔒 Extra rule for Solitary<input id="g_sol" name="solitaryRule" maxlength="160" placeholder="Drink a full cup every flip" /></label>
+          <label class="span2">🐀 Snitch sabotage for this game (optional — blank = random from the list)<input id="g_sab" name="sabotage" maxlength="160" placeholder="Miss your first two flips" /></label>
           <button class="btn span2">Add to schedule</button>
         </form>
       </section>
@@ -684,7 +723,7 @@
           .map((g) => `<li class="g-${g.status}">
             <div class="g-h"><b>${h(g.name)}</b> <span class="tag">${g.status.toUpperCase()}</span></div>
             ${g.desc ? `<div class="fine">${h(g.desc)}</div>` : ''}
-            ${g.holdingRule ? `<div class="fine">🕳️ ${h(g.holdingRule)}</div>` : ''}${g.solitaryRule ? `<div class="fine">🔒 ${h(g.solitaryRule)}</div>` : ''}
+            ${g.holdingRule ? `<div class="fine">🕳️ ${h(g.holdingRule)}</div>` : ''}${g.solitaryRule ? `<div class="fine">🔒 ${h(g.solitaryRule)}</div>` : ''}${g.sabotage ? `<div class="fine">🐀 ${h(g.sabotage)}</div>` : ''}
             ${g.results ? `<div class="fine">Paid: ${Object.entries(g.results).map(([id, n]) => `${h(teamName(id))} ${n > 0 ? '+' : ''}${n}`).join(' · ') || 'nothing'}</div>` : ''}
             <div class="row wrap">
               ${g.status !== 'live' ? btn('▶ Go live', 'setGameStatus', { gameId: g.id, status: 'live' }, 'sm') : btn('⏸ Back to upcoming', 'setGameStatus', { gameId: g.id, status: 'upcoming' }, 'ghost sm')}
@@ -881,6 +920,7 @@
               ${Object.entries(tally).sort((a, b) => b[1] - a[1]).map(([id, n]) => `<div class="fine">${name(id)} — ${n}${m.immune.includes(id) ? ' 🛡️' : ''}</div>`).join('') || '<div class="fine">no votes</div>'}</div>`;
           }).join('')}</div>` : ''}
       </section>` : ''}
+      ${aTasks()}
       <section class="card">
         <h3>Secret roles (Warden eyes only)</h3>
         ${dealt ? `<p class="fine">${snitches.length ? `Snitches: ${snitches.map((p) => `<b>${h(p.name)}</b> (${h(teamName(p.teamId || HOLDING))}${p.revealed ? ', exposed' : ''})`).join(', ')}` : 'No snitches this game. 👀'} · Clean blocks: ${S.teams.filter((t) => !snitches.some((p) => p.teamId === t.id && !p.revealed)).map((t) => h(t.name)).join(', ') || 'none'}</p>` : ''}
@@ -892,6 +932,35 @@
           </div>`)
           .join('')}</div>
       </section>`;
+  }
+
+  function aTasks() {
+    const st = S.settings;
+    const withTasks = S.players.filter((p) => p.task);
+    const kindLabel = { sabotage: '🐀 sabotage', yard: '📋 yard', parole: '🕳️ parole' };
+    return `<section class="card">
+      <h3>📋 Secret tasks (Among Us style)</h3>
+      <p class="fine">Every inmate gets a secret task when a game goes ▶ live. Inmates earn their block <b>+${st.taskReward}</b> per task. A hidden snitch gets a sabotage instead — when they tap Done, their block is skimmed <b>−${st.sabotageSkim}</b> (“unexplained withdrawal”). The feed line looks the same either way. Holding Cell tasks earn parole points. Surviving snitches cash in <b>${st.snitchRewardDrinks} + ${st.drinksPerSabotage}/sabotage</b> drinks to hand out at the reveal; caught snitches give back what they skimmed.</p>
+      <div class="row wrap">${btn('📋 Deal new tasks now', 'dealTasks', {}, 'sm', 'Deal everyone a fresh task? Any unfinished ones expire.')}</div>
+      ${withTasks.length ? `<div class="ptable">${withTasks
+        .map((p) => `<div class="prow">
+          <div class="p-n"><b>${h(p.name)}</b> <span class="fine">${kindLabel[p.task.kind]} · ${h(p.task.status)}${p.role === 'snitch' ? ` · ${plural(p.dirt, 'sabotage')}, ${p.skimmed} cr skimmed` : ''}${p.paroleScore ? ` · ⭐${p.paroleScore}` : ''}</span></div>
+          <div class="fine">${h(p.task.text)}</div>
+          <div class="row">${p.task.status === 'done' ? btn('Void', 'revokeTask', { playerId: p.id }, 'ghost sm', `Void ${p.name}'s task and undo its effect?`) : ''}</div>
+        </div>`)
+        .join('')}</div>` : ''}
+      <form data-admin="updateSettings" class="grid2">
+        <label class="check span2"><input type="checkbox" id="tk_on" name="tasksEnabled" ${st.tasksEnabled ? 'checked' : ''} /> Deal tasks automatically when a game goes live</label>
+        <label>Credits per inmate task<input id="tk_r" name="taskReward" type="number" min="0" value="${st.taskReward}" /></label>
+        <label>Credits skimmed per sabotage<input id="tk_s" name="sabotageSkim" type="number" min="0" value="${st.sabotageSkim}" /></label>
+        <label>Survivor reward: base drinks to hand out<input id="tk_d" name="snitchRewardDrinks" type="number" min="0" value="${st.snitchRewardDrinks}" /></label>
+        <label>+ drinks per sabotage<input id="tk_dp" name="drinksPerSabotage" type="number" min="0" value="${st.drinksPerSabotage}" /></label>
+        <label class="span2">Survivor prize (shown at the reveal)<input id="tk_prize" name="snitchPrize" value="${h(st.snitchPrize)}" maxlength="160" /></label>
+        <label class="span2">🐀 Sabotage tasks (one per line)<textarea id="tk_sab" name="sabotageTasks" rows="6">${h(st.sabotageTasks.join('\n'))}</textarea></label>
+        <label class="span2">📋 Inmate / Holding Cell tasks (one per line)<textarea id="tk_yard" name="yardTasks" rows="6">${h(st.yardTasks.join('\n'))}</textarea></label>
+        <button class="btn span2">Save task settings</button>
+      </form>
+    </section>`;
   }
 
   function aSettings() {
@@ -961,9 +1030,29 @@
 
   // ---------- events ----------
   const ACTIONS = {
-    tab: (d) => { ui.tab = d.tab; ui.reveal = false; LS.set('sss_tab', d.tab); window.scrollTo(0, 0); render(); },
+    tab: (d) => { ui.tab = d.tab; ui.reveal = false; ui.revealTask = false; LS.set('sss_tab', d.tab); window.scrollTo(0, 0); render(); },
     atab: (d) => { ui.atab = d.tab; LS.set('sss_atab', d.tab); render(); },
     reveal: () => { ui.reveal = !ui.reveal; render(); },
+    'reveal-task': () => {
+      ui.revealTask = !ui.revealTask;
+      if (ui.revealTask && S.me.task) {
+        seenTasks.add(S.me.task.id);
+        LS.set('sss_seen', [...seenTasks].slice(-30).join(','));
+      }
+      render();
+    },
+    task: async (d) => {
+      const res = await act('task', { result: d.result });
+      if (res.ok) toast(d.result === 'done' ? '✅ Task logged. Act natural.' : 'Task skipped.', 'ok');
+    },
+    reroll: async () => {
+      const res = await act('reroll');
+      if (res.ok) toast('🎲 New task.', 'ok');
+    },
+    dealDrink: async (d) => {
+      const res = await act('dealDrink', { targetId: d.targetId });
+      if (res.ok) toast(`🥃 ${player(d.targetId)?.name} drinks!`, 'ok');
+    },
     'buy-open': (d) => { ui.sheet = { itemId: d.itemId, targetTeamId: null, targetPlayerId: null }; delete drafts.buy_note; render(); },
     'sheet-close': () => { ui.sheet = null; render(); },
     'pick-target': (d) => { ui.sheet.targetTeamId = d.teamId; render(); },

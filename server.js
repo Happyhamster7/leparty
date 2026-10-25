@@ -93,6 +93,9 @@ const PLAYER_ACTIONS = {
   night: (pid, a) => game.nightPick(pid, a),
   vote: (pid, a) => game.castVote(pid, a),
   drank: (pid) => game.drank(pid),
+  task: (pid, a) => game.reportTask(pid, a),
+  reroll: (pid) => game.rerollTask(pid),
+  dealDrink: (pid, a) => game.dealDrink(pid, a),
 };
 
 const ADMIN_ACTIONS = [
@@ -103,6 +106,7 @@ const ADMIN_ACTIONS = [
   'addGame', 'updateGame', 'setGameStatus', 'moveGame', 'finishGame', 'removeGame',
   'addItem', 'updateItem', 'removeItem', 'resolveOrder',
   'dealSnitches', 'resetMafia', 'startNight', 'endNight', 'openVote', 'closeVote', 'revealSnitches',
+  'dealTasks', 'revokeTask',
 ];
 
 io.on('connection', (socket) => {

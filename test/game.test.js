@@ -272,3 +272,104 @@ test('loads an older saved state without crashing', () => {
   g.viewFor('x');
   g.adminView();
 });
+
+test('going live deals everyone a task; snitch gets a sabotage, holding gets parole', () => {
+  const { g, players } = setup(6);
+  g.dealSnitches({ chance: 0, atLeastOne: false });
+  g.updatePlayer({ playerId: players[0].id, role: 'snitch' });
+  const late = g.join('Late');
+  const game = g.addGame({ name: 'Flip Cup' });
+  g.setGameStatus({ gameId: game.id, status: 'live' });
+  assert.equal(players[0].task.kind, 'sabotage');
+  assert.ok(g.s.settings.sabotageTasks.includes(players[0].task.text));
+  assert.equal(players[1].task.kind, 'yard');
+  assert.equal(late.task.kind, 'parole');
+  // The snitch's phone payload doesn't say it's a sabotage.
+  const me = g.viewFor(players[0].id).me;
+  assert.equal(me.task.kind, undefined);
+  assert.ok(!JSON.stringify(g.viewFor(players[1].id)).includes(players[0].task.text));
+});
+
+test('per-game sabotage override is used for snitches', () => {
+  const { g, players } = setup(4);
+  g.dealSnitches({ chance: 0, atLeastOne: false });
+  g.updatePlayer({ playerId: players[0].id, role: 'snitch' });
+  const game = g.addGame({ name: 'Beer Pong', sabotage: 'Bounce one into the wrong cup' });
+  g.setGameStatus({ gameId: game.id, status: 'live' });
+  assert.equal(players[0].task.text, 'Bounce one into the wrong cup');
+});
+
+test('task completion: inmates earn credits, snitch skims, holding earns parole; revoke undoes', () => {
+  const { g, a, players } = setup(6); // A = P0, P2, P4
+  g.dealSnitches({ chance: 0, atLeastOne: false });
+  g.updatePlayer({ playerId: players[4].id, role: 'snitch' });
+  const late = g.join('Late');
+  g.dealTasks();
+  const start = a.budget;
+  g.reportTask(players[0].id, { result: 'done' });
+  assert.equal(a.budget, start + g.s.settings.taskReward);
+  g.reportTask(players[4].id, { result: 'done' });
+  assert.equal(a.budget, start + g.s.settings.taskReward - g.s.settings.sabotageSkim);
+  assert.equal(players[4].dirt, 1);
+  assert.equal(a.ledger[0].text, 'Unexplained withdrawal');
+  assert.throws(() => g.reportTask(players[4].id, { result: 'done' }), /active task/);
+  g.reportTask(late.id, { result: 'done' });
+  assert.equal(late.paroleScore, 1);
+  // Feed lines are identical for honest and sabotage completions.
+  const lines = g.s.feed.filter((f) => f.kind === 'task' && f.text.includes(a.name)).map((f) => f.text);
+  assert.equal(new Set(lines).size, 1);
+  g.revokeTask({ playerId: players[4].id });
+  assert.equal(players[4].dirt, 0);
+  assert.equal(a.budget, start + g.s.settings.taskReward);
+});
+
+test('reroll once per task, skip works', () => {
+  const { g, players } = setup(2);
+  g.dealTasks();
+  g.rerollTask(players[0].id);
+  assert.throws(() => g.rerollTask(players[0].id), /One reroll/);
+  g.reportTask(players[0].id, { result: 'skip' });
+  assert.equal(players[0].task.status, 'skipped');
+});
+
+test('catching a snitch recovers what they skimmed', () => {
+  const { g, a, players } = setup(6);
+  g.dealSnitches({ chance: 0, atLeastOne: false });
+  const [p0, , p2, , p4] = players;
+  g.updatePlayer({ playerId: p4.id, role: 'snitch' });
+  g.dealTasks();
+  g.reportTask(p4.id, { result: 'done' });
+  const before = a.budget;
+  g.openVote();
+  g.castVote(p0.id, { targetId: p4.id });
+  g.castVote(p2.id, { targetId: p4.id });
+  g.closeVote();
+  assert.equal(a.budget, before + g.s.settings.snitchBounty + g.s.settings.sabotageSkim);
+  assert.equal(p4.dealerDrinks, 0);
+});
+
+test('surviving snitches get drinks to hand out, scaled by sabotages', () => {
+  const { g, players } = setup(6);
+  g.dealSnitches({ chance: 0, atLeastOne: false });
+  const snitch = players[1];
+  g.updatePlayer({ playerId: snitch.id, role: 'snitch' });
+  g.dealTasks();
+  g.reportTask(snitch.id, { result: 'done' });
+  g.dealTasks();
+  g.reportTask(snitch.id, { result: 'done' });
+  g.revealSnitches();
+  const st = g.s.settings;
+  assert.equal(snitch.dealerDrinks, st.snitchRewardDrinks + 2 * st.drinksPerSabotage);
+  g.dealDrink(snitch.id, { targetId: players[0].id });
+  assert.equal(players[0].drinksOwed, 1);
+  assert.equal(snitch.dealerDrinks, st.snitchRewardDrinks + 2 * st.drinksPerSabotage - 1);
+  assert.throws(() => g.dealDrink(snitch.id, { targetId: snitch.id }), /someone else/);
+  assert.throws(() => g.dealDrink(players[0].id, { targetId: snitch.id }), /no drinks/);
+});
+
+test('task lists are editable from settings', () => {
+  const g = new Game();
+  g.updateSettings({ sabotageTasks: 'One\n\nTwo  \n' });
+  assert.deepEqual(g.s.settings.sabotageTasks, ['One', 'Two']);
+  assert.throws(() => g.updateSettings({ yardTasks: '   ' }), /at least one/);
+});
