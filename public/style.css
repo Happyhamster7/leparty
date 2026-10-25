@@ -324,11 +324,33 @@ body[data-kind='tv'] { overflow: hidden; }
 .tv-night { text-align: center; font-family: var(--stencil); font-size: clamp(30px, 4vw, 64px); color: #b8c6ff; padding: 20px; }
 .tv-feed { grid-row: span 2; }
 .tv-feed .feed li { font-size: clamp(14px, 1.2vw, 19px); }
-.tv-qr { grid-column: span 2; display: flex; align-items: center; gap: 20px; font-size: 22px; }
+.tv-qr { display: flex; align-items: center; gap: 20px; font-size: 22px; }
+.tv-lockup { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.tv-names { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.tv-names span { background: var(--card2); border-radius: 8px; padding: 4px 9px; font-weight: 700; font-size: clamp(14px, 1.2vw, 18px); }
+.tv-names b { color: var(--yellow); }
 .tv-qr .qr { width: 150px; height: 150px; }
 @media (max-width: 900px) {
   body[data-kind='tv'] { overflow: auto; }
   .tv { height: auto; }
   .tv-grid { grid-template-columns: 1fr; }
-  .tv-feed, .tv-qr { grid-row: auto; grid-column: auto; }
+  .tv-feed, .tv-qr, .tv-lockup { grid-row: auto; grid-column: auto; }
 }
+
+/* ---------- lockup & drinks ---------- */
+.badge.grey { background: #666; }
+.drinkcard {
+  max-width: 760px; width: calc(100% - 32px); margin: 12px auto 0; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: linear-gradient(135deg, #3d2c00, #2a1f00); border: 2px solid var(--yellow); border-radius: var(--radius); padding: 12px 14px;
+}
+.drink-n { font-family: var(--stencil); font-size: 26px; color: var(--yellow); }
+.drinkcard .fine { color: #d9c88a; }
+.drinkcard .btn { flex: 0 0 auto; background: var(--yellow); }
+.drink-owed { color: var(--yellow); font-family: var(--stencil); font-weight: 400; float: right; }
+.prow .drink-owed { float: none; }
+.lockup { border-width: 2px; }
+.lockup.holding { border-color: #777; background: repeating-linear-gradient(90deg, #262626 0 22px, #1d1d1d 22px 26px); }
+.lockup.solitary { border-color: var(--red); background: linear-gradient(160deg, #3a1010, var(--card)); }
+.rule { background: #00000055; border-left: 3px solid var(--orange); padding: 6px 10px; border-radius: 6px; font-weight: 600; }
+body[data-status='solitary'] .top { border-bottom-color: var(--red); }
+body[data-status='holding'] .top { border-bottom-color: #777; }

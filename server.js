@@ -84,23 +84,25 @@ function run(ack, fn) {
 const PLAYER_ACTIONS = {
   buy: (pid, a) => {
     const o = game.buy(pid, a);
-    return { status: o.status };
+    return { status: o.status, hasSnitch: o.hasSnitch };
   },
   respond: (pid, a) => {
     game.respondPunishment(pid, a);
   },
   immunity: (pid, a) => game.useImmunity(pid, a),
-  night: (pid, a) => game.nightAction(pid, a),
+  night: (pid, a) => game.nightPick(pid, a),
   vote: (pid, a) => game.castVote(pid, a),
+  drank: (pid) => game.drank(pid),
 };
 
 const ADMIN_ACTIONS = [
   'updateSettings', 'announce', 'clearAnnouncement',
   'addTeam', 'seedTeams', 'updateTeam', 'removeTeam', 'adjustBudget', 'setInventory',
-  'updatePlayer', 'removePlayer', 'shuffleTeams',
+  'buildBlocks', 'updatePlayer', 'removePlayer',
+  'sendToSolitary', 'releaseSolitary', 'tickRound', 'adjustDrinks',
   'addGame', 'updateGame', 'setGameStatus', 'moveGame', 'finishGame', 'removeGame',
   'addItem', 'updateItem', 'removeItem', 'resolveOrder',
-  'assignRoles', 'resetMafia', 'startNight', 'endNight', 'openVote', 'closeVote',
+  'dealSnitches', 'resetMafia', 'startNight', 'endNight', 'openVote', 'closeVote', 'revealSnitches',
 ];
 
 io.on('connection', (socket) => {
