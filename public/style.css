@@ -192,7 +192,10 @@ label.check { display: flex; align-items: center; gap: 10px; font-size: 14px; co
 .sheet {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 41; background: var(--concrete); border-top: 4px solid var(--orange);
   border-radius: 20px 20px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); max-width: 620px; margin: 0 auto;
-  max-height: 85vh; overflow: auto; animation: up 0.18s ease-out;
+  max-height: 85vh; overflow: auto;
+}
+.sheet.enter {
+  animation: up 0.18s ease-out;
 }
 @keyframes up { from { transform: translateY(40px); opacity: 0; } }
 .sheet-h { display: flex; gap: 12px; align-items: center; }
@@ -376,3 +379,15 @@ textarea {
 /* ---------- host task claims ---------- */
 .claim.k-sabotage { border-left: 5px solid #9b51e0; }
 .claim .task-line { font-family: var(--type); font-size: 14px; }
+
+/* ---------- game briefings ---------- */
+.rules { white-space: pre-line; background: #00000044; border-radius: 10px; padding: 10px 12px; margin: 8px 0; line-height: 1.55; }
+.rules.small { font-size: 13px; color: var(--muted); max-height: 7.5em; overflow: hidden; }
+.tv-rules { font-size: clamp(15px, 1.3vw, 20px); }
+.sheet.briefing { border-top-color: var(--yellow); }
+.sheet.briefing .btn.big { margin-top: 14px; }
+.classified { margin-top: 12px; border: 2px dashed var(--line); border-radius: 12px; padding: 12px; cursor: pointer; }
+.classified.open { border-style: solid; border-color: var(--yellow); }
+.classified .row { margin-top: 8px; }
+.glist details { margin-top: 4px; }
+.glist summary { cursor: pointer; }

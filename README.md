@@ -19,7 +19,7 @@ Plus two places nobody wants to be:
 
 There are two hosts: the **Warden** and the **Commissary Officer**. They have **identical powers**, and the title is purely for show: it changes the console header and how they're named in the feed ("The Commissary Officer paid Block A 10 credits"). Each logs in with their own PIN.
 
-**Only hosts can give or take credits**, through payouts, fines, game results and refunds. Hosts also **judge every task**: a player tapping Done only files a claim, and nothing happens until a host approves it (📋 Tasks tab). Rejecting a claim hands the task back so the player can try again. Approved claims can be voided later, which undoes their effect.
+**Only hosts can give or take credits**, through payouts, fines, game results and refunds. Hosts also **judge every snitch sabotage**: a snitch tapping Done only files a claim, and nothing happens until a host approves it (🕵️ Sabotage tab).
 
 Players still spend their block's credits at the commissary themselves, and track their own penalty drinks on the honor system. Hosts can correct the drink tab at any time.
 
@@ -34,10 +34,10 @@ Players still spend their block's credits at the commissary themselves, and trac
 
 ### Player tabs
 
-- **Yard**: the game that's on now (including its extra Holding/Solitary rules), the schedule and the gossip feed. Holding and Solitary inmates see their standing rules at the top.
+- **Yard**: the game that's on now (how to play, plus its extra Holding/Solitary rules), the schedule and the gossip feed. Holding and Solitary inmates see their standing rules at the top.
 - **Commissary**: spend your block's credits.
-- **My Block / Holding / Solitary**: the tab changes with where you are. It shows your budget, blockmates, contraband stash, wiretap results, who's in Holding (people you could bail), and your block's orders.
-- **Rap Sheet**: your mugshot (inmate #, a random charge), your secret role and your secret task for this game (each one is tap to reveal). Lights Out picks and block votes happen here.
+- **My Block / Holding / Solitary**: the tab changes with where you are. It shows your budget, account activity (watch for unexplained withdrawals), blockmates, contraband stash, wiretap results, who's in Holding (people you could bail), and your block's orders.
+- **Rap Sheet**: your mugshot (inmate #, a random charge), your secret role (tap to reveal) and the current game's briefing with its Classified box. Lights Out picks and block votes happen here.
 - **Board**: standings, the full roster and the 🍺 drink tab.
 
 A **🍺 drinks owed** card appears on every tab whenever you owe penalty drinks. Tap *Drank one ✅* as you pay them off. It's the honor system, but the whole room can see the tab on the TV.
@@ -65,23 +65,29 @@ Hosts can add, edit, hide, price and stock-limit any item, and can refund any or
 
 Each game can also carry its own extra rule for Holding and for Solitary (e.g. "flip with your off hand" or "full cup every flip"). There's also an "End round now" button if you want penalties without a game.
 
-### Snitches and secret tasks (Among Us style)
+### Game briefings
+
+When a host hits ▶ Go live on a game, **every phone pops up a briefing**. It shows how to play (the "How to play" text you write for each game), plus the extra Holding Cell and Solitary rules for that game. Tap *Got it* to dismiss it. It stays on the Rap Sheet and shows on the TV too. If a host edits the rules while the game is live, the briefing pops up again on every phone.
+
+### Snitches and sabotage (Among Us style)
 
 1. **🐀 Plant snitches** (host console → Snitches). Each block independently gets one hidden snitch with the chance you set (default 50%), so some blocks have one and some don't. "At least one overall" is on by default.
-2. **📋 Secret tasks.** When a game goes ▶ live, *everyone* gets a secret task on their Rap Sheet, and every task card looks the same.
-   - **Inmates** get harmless tasks ("high-five someone from every other block"). Once a host approves the claim, their block earns **+3**.
-   - **The snitch** gets a **sabotage** for that game ("volunteer to go first, then choke", "talk your block into the worst strategy"). You can also write a game-specific one, e.g. "miss your first two flips". Once a host approves it, it **skims 5 credits** from their block. The host judges whether they really pulled it off.
-   - **Holding Cell** inmates get tasks too. Completing one earns parole points, so blocks can see who's hustling before they bail someone out.
-   - The feed line is identical for both ("✅ Someone in Block A finished their task"). But the block's **account activity** shows either *+3 Task completed* or *−5 Unexplained withdrawal*, and that withdrawal is the clue. Who just tapped their phone?
-   - Everyone gets one reroll per game. Hosts approve or reject every claim, and can void an approved one.
-3. **🌙 Lights Out.** *Everyone* picks a name on their phone, so you can't spot a snitch by who's tapping. Snitch picks are tip-offs. Everyone else's picks are anonymous suspicions.
-4. **☀️ Lights On.** Each snitch's target goes to solitary for 1 round ("an anonymous tip"). The feed whispers who was most suspected.
-5. **🗳️ Block Votes.** Each block votes only on its own members, and a **majority of the block** is needed to kick someone.
+2. **🗂️ Sabotage hides inside the briefing.** Every briefing has a *Classified* box that looks the same on every phone.
+   - **Inmates** who open it see "No orders for you this round. Play it straight."
+   - **The snitch** sees their secret sabotage for that game ("volunteer to go first, then choke", "talk your block into the worst strategy"). You can also write a game-specific one, e.g. "miss your first two flips".
+   - Everyone gets the same pop-up and taps the same things, so you can't spot the snitch by who's looking at their phone. Only snitches get tasks.
+3. **The hosts judge it.** When the snitch thinks they pulled it off, they tap Done, and that goes to the 🕵️ Sabotage tab. If a host approves, **5 credits are skimmed from the snitch's block**.
+   - There's no public feed line. Only that block sees an **"Unexplained withdrawal"** in its account activity, plus a "credits just vanished" alert on their phones. That's the clue.
+   - Rejecting hands the orders back to the snitch. An approved sabotage can be voided, which refunds the block.
+   - The snitch gets one reroll per game.
+4. **🌙 Lights Out.** *Everyone* picks a name on their phone. Snitch picks are tip-offs. Everyone else's picks are anonymous suspicions.
+5. **☀️ Lights On.** Each snitch's target goes to solitary for 1 round ("an anonymous tip"). The feed whispers who was most suspected.
+6. **🗳️ Block Votes.** Each block votes only on its own members, and a **majority of the block** is needed to kick someone.
    - Kicked the snitch: the block gets **+25 plus every credit the snitch skimmed**. The snitch is exposed, serves 1 round in solitary, then goes to the Holding Cell.
    - Kicked an innocent: the block pays **−10**, and the innocent goes to the Holding Cell, where they have to earn their way back.
-6. **🎭 Reveal** at the end of the night unmasks every snitch who got away with it. **Surviving snitches cash in:** they get **3 drinks + 1 per successful sabotage** to hand out to anyone from their phone, plus a prize you set (default "a drink on the birthday inmate + eternal bragging rights").
+7. **🎭 Reveal** at the end of the night unmasks every snitch who got away with it. **Surviving snitches cash in:** they get **3 drinks + 1 per approved sabotage** to hand out to anyone from their phone, plus a prize you set.
 
-All the numbers, both task lists and the prize are editable in the host console (Snitches and Tasks tabs).
+All the numbers, the sabotage list and the prize are editable in the host console (Snitches and Sabotage tabs).
 
 ## Running it
 
@@ -97,9 +103,9 @@ The Warden opens `http://localhost:3000/warden` and the Commissary Officer opens
 1. Put `/tv` on the TV. Guests scan the QR code and book in. Everyone starts in the Holding Cell.
 2. **🔐 Blocks**: "Build blocks from Holding" splits everyone into Block A, B, C… of up to 5. Late arrivals stay in Holding until a block bails them out or you parole them with the dropdown.
 3. **🐀 Snitches**: plant snitches. Tweak the task lists and survivor prize if you like.
-4. **🏁 Games**: add the schedule (with optional Holding/Solitary rules), hit ▶ Go live, then 🏆 Finish & pay out after each one.
+4. **🏁 Games**: add the schedule with **how-to-play rules** for each game (plus optional Holding/Solitary rules and a custom sabotage). ▶ Go live pops the briefing up on every phone. Then 🏆 Finish & pay out after each one.
 5. **🧾 Orders**: your bartender queue. Tap Delivered / Enforced as you go.
-6. **📋 Tasks**: approve or reject task claims as they come in.
+6. **🕵️ Sabotage**: approve or reject snitch sabotage claims as they come in.
 7. **⛓️ Lockup**: throw rule-breakers into solitary, release people, fix the drink tab, and edit the standing rules.
 
 Environment variables:
@@ -128,6 +134,6 @@ npm run dev   # restarts on file changes
 npm test      # rules engine tests (node:test)
 ```
 
-- `lib/game.js`: all game rules and per-viewer views. Players never receive other players' secret roles, which kind of task anyone has, the task lists, other blocks' stash/ledger/wiretap results, or login tokens.
+- `lib/game.js`: all game rules and per-viewer views. Players never receive other players' secret roles, anyone's sabotage, the sabotage list, other blocks' stash/ledger/wiretap results, or login tokens.
 - `server.js`: Express + Socket.io. Every mutation is saved and pushes fresh state to every connected screen.
 - `public/`: a single-page client in vanilla JS (no build step).

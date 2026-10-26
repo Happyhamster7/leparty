@@ -280,21 +280,35 @@ test('loads an older saved state without crashing', () => {
   g.adminView();
 });
 
-test('going live deals everyone a task; snitch gets a sabotage, holding gets parole', () => {
+test('going live gives only the hidden snitch a task; everyone gets the rules', () => {
   const { g, players } = setup(6);
   g.dealSnitches({ chance: 0, atLeastOne: false });
   g.updatePlayer({ playerId: players[0].id, role: 'snitch' });
   const late = g.join('Late');
-  const game = g.addGame({ name: 'Flip Cup' });
+  const game = g.addGame({ name: 'Flip Cup', rules: 'Line up.\nDrink, then flip.\n\n\n\nFirst block done wins.' });
+  assert.equal(game.rules, 'Line up.\nDrink, then flip.\n\nFirst block done wins.');
   g.setGameStatus({ gameId: game.id, status: 'live' });
   assert.equal(players[0].task.kind, 'sabotage');
   assert.ok(g.s.settings.sabotageTasks.includes(players[0].task.text));
-  assert.equal(players[1].task.kind, 'yard');
-  assert.equal(late.task.kind, 'parole');
-  // The snitch's phone payload doesn't say it's a sabotage.
-  const me = g.viewFor(players[0].id).me;
-  assert.equal(me.task.kind, undefined);
-  assert.ok(!JSON.stringify(g.viewFor(players[1].id)).includes(players[0].task.text));
+  assert.equal(players[1].task, null);
+  assert.equal(late.task, null);
+  // Every phone gets the same briefing; nobody else's payload carries the sabotage or the task list.
+  const v1 = g.viewFor(players[1].id);
+  assert.equal(v1.games[0].rules, game.rules);
+  assert.equal(v1.settings.sabotageTasks, undefined);
+  assert.ok(!JSON.stringify(v1).includes(players[0].task.text));
+  assert.equal(g.viewFor(players[0].id).me.task.kind, undefined);
+});
+
+test('editing a game bumps the briefing version', () => {
+  const { g } = setup(2);
+  const game = g.addGame({ name: 'Beer Pong', rules: 'Two cups.' });
+  g.setGameStatus({ gameId: game.id, status: 'live' });
+  g.updateGame({ gameId: game.id, rules: 'Two cups.' });
+  assert.equal(game.rulesVersion, 1, 'no change, no new pop-up');
+  g.updateGame({ gameId: game.id, rules: 'Three cups.' });
+  assert.equal(game.rulesVersion, 2);
+  assert.match(g.s.feed[0].text, /Rules updated/);
 });
 
 test('per-game sabotage override is used for snitches', () => {
@@ -306,36 +320,34 @@ test('per-game sabotage override is used for snitches', () => {
   assert.equal(players[0].task.text, 'Bounce one into the wrong cup');
 });
 
-test('task completion: inmates earn credits, snitch skims, holding earns parole; revoke undoes', () => {
+test('sabotage: claim does nothing until approved, then skims silently; void reverses', () => {
   const { g, a, players } = setup(6); // A = P0, P2, P4
   g.dealSnitches({ chance: 0, atLeastOne: false });
   g.updatePlayer({ playerId: players[4].id, role: 'snitch' });
-  const late = g.join('Late');
   g.dealTasks();
   const start = a.budget;
-  g.reportTask(players[0].id, { result: 'done' });
+  const feedBefore = g.s.feed.length;
+  g.reportTask(players[4].id, { result: 'done' });
   assert.equal(a.budget, start, 'claiming alone moves no credits');
-  assert.equal(players[0].task.status, 'claimed');
-  g.approveTask({ claimId: g.s.claims[0].id, by: 'officer' });
-  assert.equal(players[0].task.status, 'done');
-  assert.equal(a.budget, start + g.s.settings.taskReward);
-  const sab = complete(g, players[4]);
-  assert.equal(a.budget, start + g.s.settings.taskReward - g.s.settings.sabotageSkim);
+  assert.equal(players[4].task.status, 'claimed');
+  const sab = g.s.claims[0];
+  g.approveTask({ claimId: sab.id, by: 'officer' });
+  assert.equal(players[4].task.status, 'done');
+  assert.equal(a.budget, start - g.s.settings.sabotageSkim);
   assert.equal(players[4].dirt, 1);
   assert.equal(a.ledger[0].text, 'Unexplained withdrawal');
+  assert.equal(g.s.feed.length, feedBefore, 'no public feed line gives it away');
   assert.throws(() => g.reportTask(players[4].id, { result: 'done' }), /active task/);
-  complete(g, late);
-  assert.equal(late.paroleScore, 1);
-  // Feed lines are identical for honest and sabotage completions.
-  const lines = g.s.feed.filter((f) => f.kind === 'task' && f.text.includes(a.name)).map((f) => f.text);
-  assert.equal(new Set(lines).size, 1);
+  assert.throws(() => g.reportTask(players[0].id, { result: 'done' }), /active task/);
   g.revokeTask({ claimId: sab.id });
   assert.equal(players[4].dirt, 0);
-  assert.equal(a.budget, start + g.s.settings.taskReward);
+  assert.equal(a.budget, start);
 });
 
 test('reroll once per task, skip works', () => {
-  const { g, players } = setup(2);
+  const { g, players } = setup(4);
+  g.dealSnitches({ chance: 0, atLeastOne: false });
+  g.updatePlayer({ playerId: players[0].id, role: 'snitch' });
   g.dealTasks();
   g.rerollTask(players[0].id);
   assert.throws(() => g.rerollTask(players[0].id), /One reroll/);
@@ -343,7 +355,7 @@ test('reroll once per task, skip works', () => {
   assert.equal(players[0].task.status, 'skipped');
 });
 
-test('catching a snitch recovers what they skimmed', () => {
+test('a caught snitch’s pending claim pays nothing; catching recovers what they skimmed', () => {
   const { g, a, players } = setup(6);
   g.dealSnitches({ chance: 0, atLeastOne: false });
   const [p0, , p2, , p4] = players;
@@ -382,11 +394,13 @@ test('task lists are editable from settings', () => {
   const g = new Game();
   g.updateSettings({ sabotageTasks: 'One\n\nTwo  \n' });
   assert.deepEqual(g.s.settings.sabotageTasks, ['One', 'Two']);
-  assert.throws(() => g.updateSettings({ yardTasks: '   ' }), /at least one/);
+  assert.throws(() => g.updateSettings({ sabotageTasks: '   ' }), /at least one/);
 });
 
-test('rejected claims go back to the player; claims can only be judged once', () => {
-  const { g, a, players } = setup(2);
+test('rejected claims go back to the snitch; claims can only be judged once', () => {
+  const { g, a, players } = setup(4);
+  g.dealSnitches({ chance: 0, atLeastOne: false });
+  g.updatePlayer({ playerId: players[0].id, role: 'snitch' });
   g.dealTasks();
   const start = a.budget;
   g.reportTask(players[0].id, { result: 'done' });
@@ -400,7 +414,7 @@ test('rejected claims go back to the player; claims can only be judged once', ()
   const c2 = g.s.claims[0];
   g.dealTasks();
   g.approveTask({ claimId: c2.id, by: 'warden' });
-  assert.equal(a.budget, start + g.s.settings.taskReward);
+  assert.equal(a.budget, start - g.s.settings.sabotageSkim);
   assert.equal(players[0].task.status, 'active', 'the new task is untouched');
 });
 
