@@ -10,6 +10,7 @@
 
   const HOLDING = 'holding';
   const route = location.pathname.replace(/\/+$/, '') || '/';
+  const hostRoute = route === '/warden' || route === '/officer';
   let kind = 'connecting'; // connecting | guest | player | admin | tv
   let S = null;
   let guest = {};
@@ -73,7 +74,7 @@
     online = true;
     socket.emit(
       'hello',
-      { token: LS.get('sss_token'), adminToken: route === '/warden' ? LS.get('sss_admin') : null, tv: route === '/tv' },
+      { token: LS.get('sss_token'), adminToken: hostRoute ? LS.get('sss_admin') : null, tv: route === '/tv' },
       (res) => {
         kind = res.kind;
         if (kind === 'guest') {
@@ -98,7 +99,7 @@
     LS.del('sss_token');
     kind = 'guest';
     S = null;
-    toast('The Warden released you from the system. Book in again to rejoin.', 'error');
+    toast('A host released you from the system. Book in again to rejoin.', 'error');
     render();
   });
 
@@ -115,6 +116,10 @@
     }
     const a = prev.me;
     const b = next.me;
+    if (a.task && b.task && a.task.id === b.task.id && a.task.status === 'claimed') {
+      if (b.task.status === 'done') toast('✅ A host approved your task.', 'ok');
+      if (b.task.status === 'active') toast('❌ A host didn’t buy it. Try again.', 'warn');
+    }
     if (a.status !== b.status || a.teamId !== b.teamId) {
       if (b.status === 'solitary') toast(`🔒 You’ve been thrown in SOLITARY (${plural(b.solitary.rounds, 'round')}).`, 'warn');
       else if (b.status === 'holding') toast('🕳️ You’re in the Holding Cell. Earn your way onto a block!', 'warn');
@@ -159,7 +164,7 @@
         if (sel) try { el.setSelectionRange(...sel); } catch {}
       }
     }
-    if (S?.settings?.partyName) document.title = route === '/warden' ? `Warden · ${S.settings.partyName}` : S.settings.partyName;
+    if (S?.settings?.partyName) document.title = hostRoute ? `${S.hosts?.[S.hostRole]?.name || 'Host'} · ${S.settings.partyName}` : S.settings.partyName;
   }
 
   function page() {
@@ -168,7 +173,7 @@
     if (kind === 'tv') return offline + (S ? tvPage() : '');
     if (kind === 'admin') return offline + (S ? adminPage() : '');
     if (kind === 'player') return offline + (S ? playerPage() : '<div class="boot">Loading your rap sheet…</div>');
-    return offline + (route === '/warden' ? wardenLogin() : landing());
+    return offline + (hostRoute ? wardenLogin() : landing());
   }
 
   // ---------- guest screens ----------
@@ -184,9 +189,9 @@
             <label for="join_name">Name for the booking sheet</label>
             <input id="join_name" name="name" maxlength="24" autocomplete="nickname" placeholder="e.g. Shen" required />
             <button class="btn big" type="submit">Book me in 🚔</button>
-            <p class="fine">You’ll start in the Holding Cell with an inmate number and a charge until the Warden puts you on a block. Keep this tab open all night — it remembers you.</p>
+            <p class="fine">You’ll start in the Holding Cell with an inmate number and a charge until a host puts you on a block. Keep this tab open all night — it remembers you.</p>
           </form>
-          <p class="fine center"><a href="/warden">Warden login</a> · <a href="/tv">TV screen</a></p>
+          <p class="fine center"><a href="/warden">Host login</a> · <a href="/tv">TV screen</a></p>
         </div>
       </main>`;
   }
@@ -197,9 +202,9 @@
         <div class="bars"></div>
         <div class="landing-inner">
           <div class="stamp">RESTRICTED</div>
-          <h1 class="logo">Warden Office</h1>
+          <h1 class="logo">${route === '/officer' ? 'Commissary Office' : 'Warden Office'}</h1>
           <form data-form="pin" class="card booking">
-            <label for="pin">Warden PIN</label>
+            <label for="pin">Host PIN (Warden or Commissary Officer)</label>
             <input id="pin" name="pin" type="password" inputmode="numeric" autocomplete="current-password" required />
             <button class="btn big" type="submit">Enter the control room</button>
           </form>
@@ -267,7 +272,7 @@
 
   function announcement() {
     if (!S.announcement) return '';
-    return `<div class="announce"><span class="mega">📣</span><div><div class="announce-t">${h(S.announcement.text)}</div><div class="fine">from the Warden · ${time(S.announcement.ts)}</div></div></div>`;
+    return `<div class="announce"><span class="mega">📣</span><div><div class="announce-t">${h(S.announcement.text)}</div><div class="fine">from ${h(S.announcement.byName || 'the Warden')} · ${time(S.announcement.ts)}</div></div></div>`;
   }
 
   // A surviving snitch's payout: hand out penalty drinks to anyone.
@@ -327,7 +332,7 @@
         <div class="eyebrow">🕳️ You’re in the Holding Cell</div>
         <p><b>${h(st.holdingRules)}</b></p>
         ${live?.holdingRule ? `<p class="rule">This game: ${h(live.holdingRule)}</p>` : ''}
-        <p class="fine">Get out by getting bailed 🔑 by a block (they buy it at the commissary) or by impressing the Warden. ${st.holdingDrinks ? `+${plural(st.holdingDrinks, 'drink')} every round you’re in here.` : ''}</p>
+        <p class="fine">Get out by getting bailed 🔑 by a block (they buy it at the commissary) or by impressing the hosts. ${st.holdingDrinks ? `+${plural(st.holdingDrinks, 'drink')} every round you’re in here.` : ''}</p>
       </section>`;
     }
     if (status === 'solitary') {
@@ -446,7 +451,7 @@
       </div>`;
   }
 
-  const ORDER_STATUS = { incoming: 'awaiting response', pending: 'with the Warden', done: 'done', cancelled: 'cancelled' };
+  const ORDER_STATUS = { incoming: 'awaiting response', pending: 'with the hosts', done: 'done', cancelled: 'cancelled' };
 
   function cellTab() {
     const me = S.me;
@@ -544,14 +549,20 @@
     const t = S.me.task;
     if (!t) return '';
     const active = t.status === 'active';
-    const label = { done: '✅ Done', skipped: 'Skipped', expired: 'Expired', revoked: '❌ Voided by the Warden' }[t.status];
+    const label = {
+      claimed: '⏳ Claimed — waiting for the Warden or the Commissary Officer to sign off',
+      done: '✅ Approved by a host',
+      skipped: 'Skipped',
+      expired: 'Expired',
+      revoked: '❌ Voided by a host',
+    }[t.status];
     return `<section class="card task-card ${ui.revealTask ? 'shown' : ''}">
       <div class="eyebrow">📋 Secret task · ${h(t.gameName)}</div>
       ${ui.revealTask
         ? `<p class="task-text" data-act="reveal-task">${h(t.text)}</p>
            ${active
              ? `<div class="row"><button class="btn ghost sm" data-act="task" data-result="skip">Skip</button>${t.rerolled ? '' : '<button class="btn ghost sm" data-act="reroll">🎲 Reroll</button>'}<button class="btn sm" data-act="task" data-result="done">Done ✅</button></div>
-                <p class="fine">Pull it off without anyone noticing, then tap Done. Tap the task to hide it.</p>`
+                <p class="fine">${t.rejected ? '❌ A host didn’t buy it last time. ' : ''}Pull it off without anyone noticing, then tap Done — a host has to sign off before it counts. Tap the task to hide it.</p>`
              : `<p class="fine">${label}. Tap the task to hide it.</p>`}`
         : `<p class="fine" data-act="reveal-task">Tap to view your task. Shield your screen!</p>${active ? '' : `<p class="fine">${label}</p>`}`}
     </section>`;
@@ -592,7 +603,7 @@
         <p class="fine">Needs a majority of the block. Catch the snitch: +${S.settings.snitchBounty} credits and they go to solitary. Kick an innocent: −${S.settings.wrongfulPenalty} credits and they go to the Holding Cell. 🛡️ = bribed.</p>
       </section>`;
     }
-    return `<section class="card"><h3>☀️ Daytime in the yard</h3>${m.lastResult ? `<p>${h(m.lastResult.text)}</p>` : ''}${m.lastResult?.whispers?.length ? `<p class="fine">Most suspected: ${h(m.lastResult.whispers.join(', '))}</p>` : ''}<p class="fine">Watch your blockmates. Who’s acting shifty? The Warden will call the next Lights Out or Block Vote.</p></section>`;
+    return `<section class="card"><h3>☀️ Daytime in the yard</h3>${m.lastResult ? `<p>${h(m.lastResult.text)}</p>` : ''}${m.lastResult?.whispers?.length ? `<p class="fine">Most suspected: ${h(m.lastResult.whispers.join(', '))}</p>` : ''}<p class="fine">Watch your blockmates. Who’s acting shifty? The hosts will call the next Lights Out or Block Vote.</p></section>`;
   }
 
   function standings() {
@@ -627,6 +638,7 @@
     const pending = S.orders.filter((o) => o.status === 'pending').length;
     const incoming = S.orders.filter((o) => o.status === 'incoming').length;
     const lockup = inHolding().length + inSolitary().length;
+    const pendingClaims = S.claims.filter((c) => c.status === 'pending').length;
     const tabs = [
       ['orders', `🧾 Orders${pending + incoming ? ` <b class="badge">${pending + incoming}</b>` : ''}`],
       ['money', '💰 Payouts'],
@@ -634,14 +646,15 @@
       ['blocks', '🔐 Blocks'],
       ['lockup', `⛓️ Lockup${lockup ? ` <b class="badge grey">${lockup}</b>` : ''}`],
       ['shop', '🛒 Commissary'],
+      ['tasks', `📋 Tasks${pendingClaims ? ` <b class="badge">${pendingClaims}</b>` : ''}`],
       ['mafia', '🐀 Snitches'],
       ['settings', '⚙️ Settings'],
     ];
-    const body = { orders: aOrders, money: aMoney, games: aGames, blocks: aBlocks, lockup: aLockup, shop: aShop, mafia: aMafia, settings: aSettings }[ui.atab] || aOrders;
+    const body = { orders: aOrders, money: aMoney, games: aGames, blocks: aBlocks, lockup: aLockup, tasks: aTasks, shop: aShop, mafia: aMafia, settings: aSettings }[ui.atab] || aOrders;
     return `
       <header class="top admin-top">
         <div class="top-row">
-          <div class="who"><div class="who-name">🔑 Warden Control Room</div><div class="who-sub">${h(S.settings.partyName)} · ${plural(S.players.length, 'inmate')} · ${plural(S.teams.length, 'block')}</div></div>
+          <div class="who"><div class="who-name">${S.hostRole === 'officer' ? '🧾 Commissary Office' : '🔑 Warden Control Room'}</div><div class="who-sub">${h(S.settings.partyName)} · ${plural(S.players.length, 'inmate')} · ${plural(S.teams.length, 'block')}</div></div>
           <div class="row"><a class="btn ghost sm" href="/tv" target="_blank">📺 TV</a><button class="btn ghost sm" data-act="logout">Log out</button></div>
         </div>
         <nav class="atabs">${tabs.map(([k, l]) => `<button data-act="atab" data-tab="${k}" class="${ui.atab === k ? 'on' : ''}">${l}</button>`).join('')}</nav>
@@ -675,7 +688,7 @@
     const incoming = by('incoming');
     const closed = S.orders.filter((o) => ['done', 'cancelled'].includes(o.status)).slice(0, 25);
     return `
-      <section class="card"><h3>🍹 To deliver / enforce (${pending.length})</h3>${pending.length ? `<ul class="olist">${pending.map(orderRow).join('')}</ul>` : '<p class="empty">Queue is clear. Go get a drink, Warden.</p>'}</section>
+      <section class="card"><h3>🍹 To deliver / enforce (${pending.length})</h3>${pending.length ? `<ul class="olist">${pending.map(orderRow).join('')}</ul>` : '<p class="empty">Queue is clear. Go get a drink.</p>'}</section>
       <section class="card"><h3>⏳ Punishments waiting on the target (${incoming.length})</h3><p class="fine">The target block can take it or play a deflect card. Force it if they’re stalling.</p>${incoming.length ? `<ul class="olist">${incoming.map(orderRow).join('')}</ul>` : '<p class="empty">None.</p>'}</section>
       <section class="card"><h3>Recent</h3>${closed.length ? `<ul class="olist compact">${closed.map(orderRow).join('')}</ul>` : '<p class="empty">Nothing yet.</p>'}</section>`;
   }
@@ -804,7 +817,7 @@
       <section class="card">
         <h3>🕳️ Holding Cell (${holding.length})</h3>
         <p class="fine">Late arrivals and anyone kicked off a block. Parole them onto a block with the dropdown, or let blocks buy a 🔑 Bail Bond.</p>
-        ${holding.length ? `<div class="ptable">${holding.map((p) => playerRow(p, `${btn('🔒 Solitary', 'sendToSolitary', { playerId: p.id, rounds: 1, reason: 'Warden’s orders' }, 'ghost sm')}${drinkBtns(p)}`)).join('')}</div>` : '<p class="empty">Empty.</p>'}
+        ${holding.length ? `<div class="ptable">${holding.map((p) => playerRow(p, `${btn('🔒 Solitary', 'sendToSolitary', { playerId: p.id, rounds: 1, reason: 'host’s orders' }, 'ghost sm')}${drinkBtns(p)}`)).join('')}</div>` : '<p class="empty">Empty.</p>'}
       </section>
       <section class="card">
         <h3>🔒 Solitary (${solitary.length})</h3>
@@ -920,9 +933,8 @@
               ${Object.entries(tally).sort((a, b) => b[1] - a[1]).map(([id, n]) => `<div class="fine">${name(id)} — ${n}${m.immune.includes(id) ? ' 🛡️' : ''}</div>`).join('') || '<div class="fine">no votes</div>'}</div>`;
           }).join('')}</div>` : ''}
       </section>` : ''}
-      ${aTasks()}
       <section class="card">
-        <h3>Secret roles (Warden eyes only)</h3>
+        <h3>Secret roles (hosts’ eyes only)</h3>
         ${dealt ? `<p class="fine">${snitches.length ? `Snitches: ${snitches.map((p) => `<b>${h(p.name)}</b> (${h(teamName(p.teamId || HOLDING))}${p.revealed ? ', exposed' : ''})`).join(', ')}` : 'No snitches this game. 👀'} · Clean blocks: ${S.teams.filter((t) => !snitches.some((p) => p.teamId === t.id && !p.revealed)).map((t) => h(t.name)).join(', ') || 'none'}</p>` : ''}
         <div class="ptable">${S.players
           .map((p) => `<div class="prow ${p.status}">
@@ -938,15 +950,40 @@
     const st = S.settings;
     const withTasks = S.players.filter((p) => p.task);
     const kindLabel = { sabotage: '🐀 sabotage', yard: '📋 yard', parole: '🕳️ parole' };
+    const pending = S.claims.filter((c) => c.status === 'pending');
+    const judged = S.claims.filter((c) => c.status !== 'pending').slice(0, 30);
+    const who = (c) => {
+      const p = player(c.playerId);
+      return p ? `<b>${h(p.name)}</b> ${statusChip(p)}` : '<b>(removed)</b>';
+    };
+    const effect = (c) => (c.effect === 'sabotage' ? `skimmed ${c.amount}` : c.effect === 'yard' ? `+${c.amount}` : c.effect === 'parole' ? '+1 parole' : '');
     return `<section class="card">
+      <h3>⏳ Claims to judge (${pending.length})</h3>
+      <p class="fine">Players tap Done; nothing counts until a host approves. 🐀 sabotage claims skim the snitch’s block when approved — judge whether they really pulled it off. Rejecting hands the task back so they can try again.</p>
+      ${pending.length ? `<div class="ptable">${pending
+        .map((c) => `<div class="prow claim k-${c.kind}">
+          <div class="p-n">${who(c)} <span class="fine">${kindLabel[c.kind]} · ${h(c.gameName)} · ${time(c.ts)}</span></div>
+          <div class="task-line">${h(c.text)}</div>
+          <div class="row">${btn('Reject', 'rejectTask', { claimId: c.id }, 'ghost sm')}${btn('Approve ✅', 'approveTask', { claimId: c.id }, 'sm')}</div>
+        </div>`)
+        .join('')}</div>` : '<p class="empty">Nothing waiting.</p>'}
+      ${judged.length ? `<h3 class="section-h">Recently judged</h3><div class="ptable">${judged
+        .map((c) => `<div class="prow ${c.status === 'approved' ? '' : 'solitary'}">
+          <div class="p-n">${who(c)} <span class="fine">${kindLabel[c.kind]} · ${c.status} by ${h(S.hosts[c.by]?.name || 'host')}${c.status === 'approved' ? ` · ${effect(c)}` : ''}</span></div>
+          <div class="fine">${h(c.text)}</div>
+          <div class="row">${c.status === 'approved' ? btn('Void', 'revokeTask', { claimId: c.id }, 'ghost sm', 'Void this task and undo its effect?') : ''}</div>
+        </div>`)
+        .join('')}</div>` : ''}
+    </section>
+    <section class="card">
       <h3>📋 Secret tasks (Among Us style)</h3>
-      <p class="fine">Every inmate gets a secret task when a game goes ▶ live. Inmates earn their block <b>+${st.taskReward}</b> per task. A hidden snitch gets a sabotage instead — when they tap Done, their block is skimmed <b>−${st.sabotageSkim}</b> (“unexplained withdrawal”). The feed line looks the same either way. Holding Cell tasks earn parole points. Surviving snitches cash in <b>${st.snitchRewardDrinks} + ${st.drinksPerSabotage}/sabotage</b> drinks to hand out at the reveal; caught snitches give back what they skimmed.</p>
+      <p class="fine">Every inmate gets a secret task when a game goes ▶ live. Inmates earn their block <b>+${st.taskReward}</b> per task. A hidden snitch gets a sabotage instead — once a host approves it, their block is skimmed <b>−${st.sabotageSkim}</b> (“unexplained withdrawal”). The feed line looks the same either way. Holding Cell tasks earn parole points. Surviving snitches cash in <b>${st.snitchRewardDrinks} + ${st.drinksPerSabotage}/sabotage</b> drinks to hand out at the reveal; caught snitches give back what they skimmed.</p>
       <div class="row wrap">${btn('📋 Deal new tasks now', 'dealTasks', {}, 'sm', 'Deal everyone a fresh task? Any unfinished ones expire.')}</div>
       ${withTasks.length ? `<div class="ptable">${withTasks
         .map((p) => `<div class="prow">
           <div class="p-n"><b>${h(p.name)}</b> <span class="fine">${kindLabel[p.task.kind]} · ${h(p.task.status)}${p.role === 'snitch' ? ` · ${plural(p.dirt, 'sabotage')}, ${p.skimmed} cr skimmed` : ''}${p.paroleScore ? ` · ⭐${p.paroleScore}` : ''}</span></div>
           <div class="fine">${h(p.task.text)}</div>
-          <div class="row">${p.task.status === 'done' ? btn('Void', 'revokeTask', { playerId: p.id }, 'ghost sm', `Void ${p.name}'s task and undo its effect?`) : ''}</div>
+          <span></span>
         </div>`)
         .join('')}</div>` : ''}
       <form data-admin="updateSettings" class="grid2">
@@ -1043,7 +1080,7 @@
     },
     task: async (d) => {
       const res = await act('task', { result: d.result });
-      if (res.ok) toast(d.result === 'done' ? '✅ Task logged. Act natural.' : 'Task skipped.', 'ok');
+      if (res.ok) toast(d.result === 'done' ? '⏳ Claim sent. A host will sign off. Act natural.' : 'Task skipped.', 'ok');
     },
     reroll: async () => {
       const res = await act('reroll');
@@ -1067,7 +1104,7 @@
       if (r.status === 'intel') toast(r.hasSnitch ? '📡 Wiretap says: there IS a snitch on your block. 🐀' : '📡 Wiretap says: your block is clean. For now.', r.hasSnitch ? 'warn' : 'ok');
       else if (r.status === 'stashed') toast(`${it?.emoji || ''} Stashed on your block. Shhh.`, 'ok');
       else if (it?.type === 'bail') toast('🔑 Bail posted. Welcome your new blockmate.', 'ok');
-      else toast(`${it?.emoji || ''} Ordered! The Warden is on it.`, 'ok');
+      else toast(`${it?.emoji || ''} Ordered! The hosts are on it.`, 'ok');
       ui.sheet = null;
       delete drafts.buy_note;
       render();

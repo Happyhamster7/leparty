@@ -372,3 +372,7 @@ textarea {
   background: linear-gradient(135deg, #2a1240, #1a0f26); border: 2px solid #9b51e0;
 }
 .dealercard .drink-n { color: #d6b4ff; }
+
+/* ---------- host task claims ---------- */
+.claim.k-sabotage { border-left: 5px solid #9b51e0; }
+.claim .task-line { font-family: var(--type); font-size: 14px; }

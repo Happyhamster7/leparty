@@ -18,6 +18,13 @@ function setup(n = 6) {
   return { g, a, b, players };
 }
 const itemOf = (g, type, pred = () => true) => g.s.items.find((i) => i.type === type && pred(i));
+// Player claims a task and a host signs off on it.
+const complete = (g, p, by = 'warden') => {
+  g.reportTask(p.id, { result: 'done' });
+  const c = g.s.claims.find((x) => x.playerId === p.id && x.status === 'pending');
+  g.approveTask({ claimId: c.id, by });
+  return c;
+};
 
 test('join puts new arrivals in the Holding Cell', () => {
   const g = new Game();
@@ -307,18 +314,22 @@ test('task completion: inmates earn credits, snitch skims, holding earns parole;
   g.dealTasks();
   const start = a.budget;
   g.reportTask(players[0].id, { result: 'done' });
+  assert.equal(a.budget, start, 'claiming alone moves no credits');
+  assert.equal(players[0].task.status, 'claimed');
+  g.approveTask({ claimId: g.s.claims[0].id, by: 'officer' });
+  assert.equal(players[0].task.status, 'done');
   assert.equal(a.budget, start + g.s.settings.taskReward);
-  g.reportTask(players[4].id, { result: 'done' });
+  const sab = complete(g, players[4]);
   assert.equal(a.budget, start + g.s.settings.taskReward - g.s.settings.sabotageSkim);
   assert.equal(players[4].dirt, 1);
   assert.equal(a.ledger[0].text, 'Unexplained withdrawal');
   assert.throws(() => g.reportTask(players[4].id, { result: 'done' }), /active task/);
-  g.reportTask(late.id, { result: 'done' });
+  complete(g, late);
   assert.equal(late.paroleScore, 1);
   // Feed lines are identical for honest and sabotage completions.
   const lines = g.s.feed.filter((f) => f.kind === 'task' && f.text.includes(a.name)).map((f) => f.text);
   assert.equal(new Set(lines).size, 1);
-  g.revokeTask({ playerId: players[4].id });
+  g.revokeTask({ claimId: sab.id });
   assert.equal(players[4].dirt, 0);
   assert.equal(a.budget, start + g.s.settings.taskReward);
 });
@@ -338,7 +349,7 @@ test('catching a snitch recovers what they skimmed', () => {
   const [p0, , p2, , p4] = players;
   g.updatePlayer({ playerId: p4.id, role: 'snitch' });
   g.dealTasks();
-  g.reportTask(p4.id, { result: 'done' });
+  complete(g, p4);
   const before = a.budget;
   g.openVote();
   g.castVote(p0.id, { targetId: p4.id });
@@ -354,9 +365,9 @@ test('surviving snitches get drinks to hand out, scaled by sabotages', () => {
   const snitch = players[1];
   g.updatePlayer({ playerId: snitch.id, role: 'snitch' });
   g.dealTasks();
-  g.reportTask(snitch.id, { result: 'done' });
+  complete(g, snitch);
   g.dealTasks();
-  g.reportTask(snitch.id, { result: 'done' });
+  complete(g, snitch);
   g.revealSnitches();
   const st = g.s.settings;
   assert.equal(snitch.dealerDrinks, st.snitchRewardDrinks + 2 * st.drinksPerSabotage);
@@ -372,4 +383,36 @@ test('task lists are editable from settings', () => {
   g.updateSettings({ sabotageTasks: 'One\n\nTwo  \n' });
   assert.deepEqual(g.s.settings.sabotageTasks, ['One', 'Two']);
   assert.throws(() => g.updateSettings({ yardTasks: '   ' }), /at least one/);
+});
+
+test('rejected claims go back to the player; claims can only be judged once', () => {
+  const { g, a, players } = setup(2);
+  g.dealTasks();
+  const start = a.budget;
+  g.reportTask(players[0].id, { result: 'done' });
+  const c = g.s.claims[0];
+  g.rejectTask({ claimId: c.id, by: 'officer' });
+  assert.equal(players[0].task.status, 'active');
+  assert.equal(a.budget, start);
+  assert.throws(() => g.approveTask({ claimId: c.id }), /already judged/);
+  // A claim survives a new deal and can still be approved.
+  g.reportTask(players[0].id, { result: 'done' });
+  const c2 = g.s.claims[0];
+  g.dealTasks();
+  g.approveTask({ claimId: c2.id, by: 'warden' });
+  assert.equal(a.budget, start + g.s.settings.taskReward);
+  assert.equal(players[0].task.status, 'active', 'the new task is untouched');
+});
+
+test('host tokens carry a role; payouts name the host', () => {
+  const { g, a } = setup(2);
+  const t1 = g.newHostToken('warden');
+  const t2 = g.newHostToken('officer');
+  assert.equal(g.hostRole(t1), 'warden');
+  assert.equal(g.hostRole(t2), 'officer');
+  assert.equal(g.hostRole('nope'), null);
+  g.adjustBudget({ teamId: a.id, amount: 10, reason: 'flip cup', by: 'officer' });
+  assert.match(g.s.feed[0].text, /^The Commissary Officer paid/);
+  const old = new Game({ adminTokens: ['legacy'] });
+  assert.equal(old.hostRole('legacy'), 'warden');
 });

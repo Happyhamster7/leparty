@@ -7,7 +7,14 @@ const QRCode = require('qrcode');
 const { Game, GameError } = require('./lib/game');
 
 const PORT = Number(process.env.PORT) || 3000;
-const ADMIN_PIN = String(process.env.ADMIN_PIN || '1234');
+const PINS = {
+  warden: String(process.env.WARDEN_PIN || process.env.ADMIN_PIN || '1234'),
+  officer: String(process.env.OFFICER_PIN || '5678'),
+};
+if (PINS.warden === PINS.officer) {
+  console.error('WARDEN_PIN and OFFICER_PIN must be different.');
+  process.exit(1);
+}
 const DATA_FILE = process.env.DATA_FILE || path.join(__dirname, 'data', 'state.json');
 
 // ---------- persistence ----------
@@ -38,7 +45,7 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
-app.get(['/tv', '/warden'], (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get(['/tv', '/warden', '/officer'], (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/qr.svg', async (req, res) => {
   const url = String(req.query.url || `${req.protocol}://${req.get('host')}/`).slice(0, 300);
   const svg = await QRCode.toString(url, { type: 'svg', margin: 1, color: { dark: '#111111', light: '#ffffff' } });
@@ -49,7 +56,7 @@ app.get('/healthz', (req, res) => res.json({ ok: true, players: game.s.players.l
 // ---------- realtime ----------
 function viewFor(socket) {
   const d = socket.data;
-  if (d.kind === 'admin') return game.adminView();
+  if (d.kind === 'host') return game.adminView(d.role);
   if (d.kind === 'player') return game.viewFor(d.playerId);
   if (d.kind === 'tv') return game.tvView();
   return null;
@@ -98,7 +105,8 @@ const PLAYER_ACTIONS = {
   dealDrink: (pid, a) => game.dealDrink(pid, a),
 };
 
-const ADMIN_ACTIONS = [
+// Everything a host can do. Both hosts have the same powers; their role only shows up in the feed.
+const HOST_ACTIONS = [
   'updateSettings', 'announce', 'clearAnnouncement',
   'addTeam', 'seedTeams', 'updateTeam', 'removeTeam', 'adjustBudget', 'setInventory',
   'buildBlocks', 'updatePlayer', 'removePlayer',
@@ -106,8 +114,9 @@ const ADMIN_ACTIONS = [
   'addGame', 'updateGame', 'setGameStatus', 'moveGame', 'finishGame', 'removeGame',
   'addItem', 'updateItem', 'removeItem', 'resolveOrder',
   'dealSnitches', 'resetMafia', 'startNight', 'endNight', 'openVote', 'closeVote', 'revealSnitches',
-  'dealTasks', 'revokeTask',
+  'dealTasks', 'approveTask', 'rejectTask', 'revokeTask',
 ];
+
 
 io.on('connection', (socket) => {
   socket.data = { kind: 'guest' };
@@ -119,10 +128,11 @@ io.on('connection', (socket) => {
       socket.emit('state', game.tvView());
       return reply({ ok: true, kind: 'tv' });
     }
-    if (game.isAdminToken(adminToken)) {
-      socket.data = { kind: 'admin' };
-      socket.emit('state', game.adminView());
-      return reply({ ok: true, kind: 'admin' });
+    const role = game.hostRole(adminToken);
+    if (role) {
+      socket.data = { kind: 'host', role };
+      socket.emit('state', game.adminView(role));
+      return reply({ ok: true, kind: 'admin', role });
     }
     const p = game.playerByToken(token);
     if (p) {
@@ -143,12 +153,13 @@ io.on('connection', (socket) => {
 
   socket.on('admin:login', ({ pin } = {}, ack) => {
     const reply = typeof ack === 'function' ? ack : () => {};
-    if (String(pin || '') !== ADMIN_PIN) return reply({ ok: false, error: 'Wrong PIN. The Warden has been notified. 👀' });
-    const adminToken = game.newAdminToken();
-    socket.data = { kind: 'admin' };
+    const role = Object.keys(PINS).find((r) => PINS[r] === String(pin || ''));
+    if (!role) return reply({ ok: false, error: 'Wrong PIN. The Warden has been notified. 👀' });
+    const adminToken = game.newHostToken(role);
+    socket.data = { kind: 'host', role };
     save();
-    socket.emit('state', game.adminView());
-    reply({ ok: true, result: { adminToken } });
+    socket.emit('state', game.adminView(role));
+    reply({ ok: true, result: { adminToken, role } });
   });
 
   socket.on('act', ({ type, ...args } = {}, ack) => {
@@ -161,9 +172,12 @@ io.on('connection', (socket) => {
   });
 
   socket.on('admin', ({ type, ...args } = {}, ack) => {
-    if (socket.data.kind !== 'admin') return typeof ack === 'function' && ack({ ok: false, error: 'Warden access only.' });
-    if (!ADMIN_ACTIONS.includes(type)) return typeof ack === 'function' && ack({ ok: false, error: 'Unknown action.' });
-    run(ack, () => game[type](args));
+    const reply = typeof ack === 'function' ? ack : () => {};
+    const { kind, role } = socket.data;
+    if (kind !== 'host') return reply({ ok: false, error: 'Hosts only.' });
+    if (!HOST_ACTIONS.includes(type)) return reply({ ok: false, error: 'Unknown action.' });
+    // `by` always comes from the logged-in host, never from the request.
+    run(ack, () => game[type]({ ...args, by: role }));
   });
 
   socket.on('logout', () => {
@@ -173,6 +187,7 @@ io.on('connection', (socket) => {
 
 server.listen(PORT, () => {
   console.log(`🔒 ${game.s.settings.partyName} is open on http://localhost:${PORT}`);
-  console.log(`   Warden console: http://localhost:${PORT}/warden  (PIN ${process.env.ADMIN_PIN ? 'from ADMIN_PIN' : '1234 — set ADMIN_PIN to change'})`);
+  console.log(`   Warden:             http://localhost:${PORT}/warden   (PIN ${process.env.WARDEN_PIN || process.env.ADMIN_PIN ? 'from WARDEN_PIN' : '1234 — set WARDEN_PIN to change'})`);
+  console.log(`   Commissary Officer: http://localhost:${PORT}/officer  (PIN ${process.env.OFFICER_PIN ? 'from OFFICER_PIN' : '5678 — set OFFICER_PIN to change'})`);
   console.log(`   TV / projector: http://localhost:${PORT}/tv`);
 });
