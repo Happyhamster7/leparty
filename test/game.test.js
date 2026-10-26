@@ -15,6 +15,7 @@ function setup(n = 6) {
   }
   a.budget = 200;
   b.budget = 200;
+  g.updateSettings({ spendMode: 'anyone' }); // request mode has its own tests
   return { g, a, b, players };
 }
 const itemOf = (g, type, pred = () => true) => g.s.items.find((i) => i.type === type && pred(i));
@@ -99,7 +100,7 @@ test('cannot overspend or gift yourself; captain-only spending; stock', () => {
   a.budget = 0;
   assert.throws(() => g.buy(players[0].id, { itemId: itemOf(g, 'supply').id }), /Not enough credits/);
   a.budget = 100;
-  g.updateSettings({ captainOnlySpending: true });
+  g.updateSettings({ spendMode: 'captain' });
   assert.throws(() => g.buy(players[0].id, { itemId: itemOf(g, 'supply').id }), /Shot Caller/);
   g.updatePlayer({ playerId: players[0].id, isCaptain: true });
   const item = itemOf(g, 'supply');
@@ -429,4 +430,117 @@ test('host tokens carry a role; payouts name the host', () => {
   assert.match(g.s.feed[0].text, /^The Commissary Officer paid/);
   const old = new Game({ adminTokens: ['legacy'] });
   assert.equal(old.hostRole('legacy'), 'warden');
+});
+
+test('request mode: a blockmate proposes, two seconds (or the Shot Caller) make it happen', () => {
+  const { g, a, players } = setup(8); // A = P0, P2, P4, P6
+  g.updateSettings({ spendMode: 'request', requestSeconds: 2 });
+  const [p0, , p2, , p4, , p6] = players;
+  const item = itemOf(g, 'supply');
+  const start = a.budget;
+  const r = g.buy(p0.id, { itemId: item.id, note: 'vodka soda' });
+  assert.equal(r.status, 'requested');
+  assert.equal(a.budget, start, 'nothing spent yet');
+  const req = a.requests[0];
+  assert.throws(() => g.secondRequest(p0.id, { requestId: req.id }), /own request/);
+  assert.equal(g.secondRequest(p2.id, { requestId: req.id }).status, 'seconded');
+  assert.throws(() => g.secondRequest(p2.id, { requestId: req.id }), /already/);
+  const done = g.secondRequest(p4.id, { requestId: req.id });
+  assert.equal(done.status, 'pending');
+  assert.equal(done.buyerName, 'P0', 'credited to whoever asked');
+  assert.equal(a.budget, start - item.price);
+  assert.equal(a.requests.length, 0);
+  // Shot Caller approves alone and buys directly.
+  g.updatePlayer({ playerId: p6.id, isCaptain: true });
+  g.buy(p0.id, { itemId: item.id });
+  assert.throws(() => g.approveRequest(p2.id, { requestId: a.requests[0].id }), /Shot Caller/);
+  g.approveRequest(p6.id, { requestId: a.requests[0].id });
+  assert.equal(a.requests.length, 0);
+  assert.notEqual(g.buy(p6.id, { itemId: item.id }).status, 'requested');
+  // Dropping: only the asker or the Shot Caller.
+  g.buy(p0.id, { itemId: item.id });
+  assert.throws(() => g.dropRequest(p2.id, { requestId: a.requests[0].id }), /Only whoever asked/);
+  g.dropRequest(p0.id, { requestId: a.requests[0].id });
+  assert.equal(a.requests.length, 0);
+});
+
+test('requests stay inside the block and are re-checked when they go through', () => {
+  const { g, a, players } = setup(6);
+  g.updateSettings({ spendMode: 'request', requestSeconds: 1 });
+  const item = itemOf(g, 'supply');
+  g.buy(players[0].id, { itemId: item.id });
+  const req = a.requests[0];
+  assert.equal(g.viewFor(players[1].id).teams.find((t) => t.id === a.id).requests, null, 'other blocks cannot see it');
+  assert.equal(g.viewFor(players[2].id).teams.find((t) => t.id === a.id).requests.length, 1);
+  a.budget = 0;
+  assert.throws(() => g.secondRequest(players[2].id, { requestId: req.id }), /Not enough credits/);
+});
+
+test('a block of one buys directly even in request mode', () => {
+  const { g, a, players } = setup(2);
+  g.updateSettings({ spendMode: 'request' });
+  assert.equal(g.buy(players[0].id, { itemId: itemOf(g, 'supply').id }).status, 'pending');
+  assert.ok(a);
+});
+
+test('Shot Caller renames the block; others cannot once there is a Shot Caller', () => {
+  const { g, a, players } = setup(4);
+  g.renameBlock(players[0].id, { nickname: 'The Shawshank Redeemers', motto: 'Get busy drinking' });
+  assert.equal(a.nickname, 'The Shawshank Redeemers');
+  g.updatePlayer({ playerId: players[2].id, isCaptain: true });
+  assert.throws(() => g.renameBlock(players[0].id, { nickname: 'Nope' }), /Shot Caller/);
+  g.renameBlock(players[2].id, { nickname: 'Cell Mates', motto: '' });
+  assert.equal(a.nickname, 'Cell Mates');
+  assert.equal(g.viewFor(players[1].id).teams.find((t) => t.id === a.id).nickname, 'Cell Mates');
+});
+
+test('heats: pairs with no block left alone, paid per heat, totals on the game', () => {
+  const g = new Game();
+  for (let i = 0; i < 15; i++) g.join(`P${i}`);
+  g.buildBlocks(); // 3 blocks of 5
+  g.seedTeams({ count: 2 });
+  for (const t of g.s.teams.slice(3)) g.updatePlayer({ playerId: g.join(`X${t.id}`).id, teamId: t.id });
+  const game = g.addGame({ name: 'Beer Pong' });
+  g.makeHeats({ gameId: game.id, size: 2 });
+  assert.deepEqual(game.heats.map((h) => h.teamIds.length).sort(), [2, 3], '5 blocks → a pair and a three-way');
+  const [h1, h2] = game.heats;
+  g.startHeat({ gameId: game.id, heatId: h1.id });
+  assert.equal(game.status, 'live');
+  assert.equal(h1.status, 'live');
+  assert.throws(() => g.makeHeats({ gameId: game.id, size: 2 }), /already started/);
+  const winner = h1.teamIds[0];
+  const outsider = h2.teamIds[0];
+  g.finishHeat({ gameId: game.id, heatId: h1.id, results: { [winner]: 30, [outsider]: 99 } });
+  assert.equal(g.team(winner).earned, 30);
+  assert.equal(g.team(outsider).earned, 0, 'only blocks in the heat get paid');
+  assert.throws(() => g.finishHeat({ gameId: game.id, heatId: h1.id, results: {} }), /already/);
+  g.startHeat({ gameId: game.id, heatId: h2.id });
+  g.finishHeat({ gameId: game.id, heatId: h2.id, results: { [outsider]: 20 } });
+  g.finishGame({ gameId: game.id, results: { [winner]: 5 } });
+  assert.deepEqual(game.results, { [winner]: 35, [outsider]: 20 });
+  assert.equal(g.team(winner).earned, 35);
+});
+
+test('custom heats need two real blocks', () => {
+  const { g, a, b } = setup(4);
+  const game = g.addGame({ name: 'Final' });
+  assert.throws(() => g.addHeat({ gameId: game.id, teamIds: [a.id] }), /at least 2/);
+  g.addHeat({ gameId: game.id, teamIds: `${a.id},${b.id}` });
+  assert.equal(game.heats.length, 1);
+  g.removeHeat({ gameId: game.id, heatId: game.heats[0].id });
+  assert.equal(game.heats.length, 0);
+});
+
+test('bookings roll up into one feed line', () => {
+  const g = new Game();
+  for (let i = 0; i < 6; i++) g.join(`Guest${i}`);
+  const joins = g.s.feed.filter((f) => f.kind === 'join');
+  assert.equal(joins.length, 1);
+  assert.match(joins[0].text, /Guest5, Guest4, Guest3, Guest2 and 2 more\. 6 inmates/);
+});
+
+test('old captain-only saves become captain spend mode', () => {
+  const g = new Game({ settings: { captainOnlySpending: true } });
+  assert.equal(g.s.settings.spendMode, 'captain');
+  assert.equal(g.s.settings.captainOnlySpending, undefined);
 });

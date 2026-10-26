@@ -36,9 +36,9 @@ Players still spend their block's credits at the commissary themselves, and trac
 
 ### Player tabs
 
-- **Yard**: the game that's on now (how to play, plus its extra Holding/Solitary rules), the schedule and the gossip feed. Holding and Solitary inmates see their standing rules at the top.
-- **Commissary**: spend your block's credits.
-- **My Block / Holding / Solitary**: the tab changes with where you are. It shows your budget, account activity (watch for unexplained withdrawals), blockmates, contraband stash, wiretap results, who's in Holding (people you could bail), and your block's orders.
+- **My Block** (the home screen): your block's name, nickname and motto, its rank, credits, your current matchup, purchase requests waiting on a second, account activity (watch for unexplained withdrawals), blockmates, contraband stash, wiretap results, who's in Holding (people you could bail), and your block's orders. The tab becomes **Holding** or **Solitary** when that's where you are.
+- **Yard**: your matchup, the game that's on now (how to play, its extra Holding/Solitary rules, and every heat), the schedule and the gossip feed.
+- **Commissary**: spend, or ask your block to spend, the block's credits.
 - **Rap Sheet**: your mugshot (inmate #, a random charge), your secret role (tap to reveal) and the current game's briefing with its Classified box. Lights Out picks and block votes happen here.
 - **Board**: standings, the full roster and the 🍺 drink tab.
 
@@ -57,6 +57,13 @@ A **🍺 drinks owed** card appears on every tab whenever you owe penalty drinks
 | Intel           | 📡 Wiretap. Tells your block whether it has a hidden snitch right now (not who). Careful: the snitch sees the result too.                                     |
 
 Hosts can add, edit, hide, price and stock-limit any item, and can refund any order.
+
+### Built for blocks (about 40 guests)
+
+- **Matchups and heats.** For each game, hosts can split the blocks into heats (pairs, threes, fours, or everyone at once) or build a custom heat, such as a final between the winners. A block left over joins the previous heat, so nobody plays alone. Hosts start each heat and score it, and credits are paid per heat. Phones say *You're up*, *Up next (1 heat before yours)*, *Your heat is done* or *Sitting this one out*. The TV shows the heat being played and what's next.
+- **Block decisions.** By default spending is a block decision: a blockmate's purchase becomes a request that goes through when the Shot Caller approves it or 2 blockmates second it. The asker can withdraw it and the Shot Caller can veto it. Blockmates get a phone alert for each new request. Hosts can switch to *Shot Caller only* or *anyone, instantly* in Settings.
+- **Block identity.** The Shot Caller (or anyone, if the block has none) names the block and sets a motto. It shows on phones, the Board and the TV, and the block's color tints its members' screens.
+- **Less clutter.** Bookings roll up into one feed line. Lights Out names are grouped by block, with your own block first. Host inmate lists are sorted block by block.
 
 ### Rounds
 
@@ -105,7 +112,7 @@ The Warden opens `http://localhost:3000/warden` and the Commissary Officer opens
 1. Put `/tv` on the TV. Guests scan the QR code and book in. Everyone starts in the Holding Cell.
 2. **🔐 Blocks**: "Build blocks from Holding" splits everyone into Block A, B, C… of up to 5. Late arrivals stay in Holding until a block bails them out or you parole them with the dropdown.
 3. **🐀 Snitches**: plant snitches. Tweak the task lists and survivor prize if you like.
-4. **🏁 Games**: add the schedule with **how-to-play rules** for each game (plus optional Holding/Solitary rules and a custom sabotage). ▶ Go live pops the briefing up on every phone. Then 🏆 Finish & pay out after each one.
+4. **🏁 Games**: add the schedule with **how-to-play rules** for each game (plus optional Holding/Solitary rules and a custom sabotage). Tap **Pairs** (or Threes, Fours, or a custom heat) to set matchups. **▶ Start heat** makes the game live and pops the briefing up on every phone. **🏁 Score heat** pays out each heat. **🏆 Finish & pay out** closes the game and applies the round penalties.
 5. **🧾 Orders**: your bartender queue. Tap Delivered / Enforced as you go.
 6. **🕵️ Sabotage**: approve or reject snitch sabotage claims as they come in.
 7. **⛓️ Lockup**: throw rule-breakers into solitary, release people, fix the drink tab, and edit the standing rules.

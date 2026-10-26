@@ -391,3 +391,33 @@ textarea {
 .classified .row { margin-top: 8px; }
 .glist details { margin-top: 4px; }
 .glist summary { cursor: pointer; }
+
+/* ---------- blocks, matchups, requests ---------- */
+.nick { font-family: Inter, sans-serif; font-size: 0.62em; font-weight: 800; color: var(--c, var(--orange2)); white-space: nowrap; }
+.board .nick { color: var(--c); }
+.motto { font-family: var(--type); color: var(--muted); margin-top: 0; }
+.block-banner { background: linear-gradient(140deg, color-mix(in srgb, var(--c) 28%, var(--card)), var(--card) 70%); }
+.block-banner .rename { margin-top: 8px; }
+.block-banner > .btn { margin-top: 10px; }
+.match { border-left: 6px solid var(--yellow); }
+.match.now { border-color: var(--orange); background: linear-gradient(135deg, #3a1d05, var(--card)); animation: pulse 1.6s infinite; }
+.vs { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0; font-size: 15px; }
+.vs .chip { font-size: 15px; padding: 4px 12px 4px 9px; }
+.heats { list-style: none; padding: 0; margin: 10px 0 0; }
+.heats li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; align-items: center; padding: 7px 0; border-bottom: 1px dashed var(--line); }
+.heats li .fine, .heats li .row, .heats li form { flex-basis: 100%; }
+.heats .h-live .tag { background: var(--orange); color: #111; }
+.heats .h-done, .heats .h-skipped { opacity: 0.6; }
+.chip.mine { box-shadow: 0 0 0 2px var(--yellow); }
+.heat-admin { background: #00000033; border-radius: 10px; padding: 10px; display: grid; gap: 8px; }
+.heat-admin form .check { margin: 0; }
+.reqs { list-style: none; padding: 0; margin: 0; }
+.reqs li { padding: 10px 0; border-bottom: 1px solid #2c2c2c; display: grid; gap: 6px; }
+.reqs .mega { font-size: 20px; vertical-align: middle; }
+.requests { border-color: var(--yellow); }
+.tgroup { margin: 6px 0 10px; }
+.tgroup-h { margin-bottom: 4px; }
+.board li.mine { box-shadow: inset 0 0 0 2px var(--yellow); }
+.tv-board .b-n small { display: block; font-size: 0.6em; color: var(--muted); font-weight: 600; }
+.tv-heat { background: #00000044; border-radius: 12px; padding: 10px 14px; margin: 8px 0; }
+.tv-heat .vs .chip { font-size: clamp(16px, 1.6vw, 24px); }

@@ -17,12 +17,13 @@
   let offlineReason = '';
   let pendingRender = false;
   const ui = {
-    tab: LS.get('sss_tab') || 'yard',
+    tab: LS.get('sss_tab') || 'cell',
     atab: LS.get('sss_atab') || 'orders',
     sheet: null, // { itemId, targetTeamId, targetPlayerId }
     reveal: false,
     revealTask: false,
     finishing: null,
+    renaming: false,
   };
   const drafts = {};
   // Bottom sheets slide in once, not on every state push.
@@ -48,6 +49,88 @@
       : p.status === 'holding'
         ? chip(null)
         : chip(team(p.teamId));
+
+  const rankOf = (id) => standings().findIndex((t) => t.id === id) + 1;
+  const nick = (t) => (t?.nickname ? ` <span class="nick">“${h(t.nickname)}”</span>` : '');
+
+  // ---------- block helpers ----------
+  // Blockmates (other than the asker, and not in solitary) who must second a purchase request.
+  const secondsNeeded = (t, requesterId) =>
+    Math.min(S.settings.requestSeconds, blockmates(t.id).filter((p) => p.id !== requesterId && p.status !== 'solitary').length);
+  const requestsMine = () => (S.me?.status === 'block' ? team(S.me.teamId)?.requests || [] : []);
+  const actionableRequests = () => requestsMine().filter((r) => r.by !== S.me.id && (S.me.isCaptain || !r.seconds.includes(S.me.id)));
+  const willRequest = () => {
+    const t = team(S.me.teamId);
+    return !!t && S.settings.spendMode === 'request' && !S.me.isCaptain && secondsNeeded(t, S.me.id) > 0;
+  };
+
+  // Where my block stands in the live game's heats.
+  function myMatch() {
+    const g = S.games.find((x) => x.status === 'live');
+    const myId = S.me?.teamId;
+    if (!g || !(g.heats || []).length) return null;
+    const mine = myId ? g.heats.filter((x) => x.teamIds.includes(myId)) : [];
+    return {
+      g,
+      n: (x) => g.heats.indexOf(x) + 1,
+      live: g.heats.find((x) => x.status === 'live'),
+      now: mine.find((x) => x.status === 'live'),
+      next: mine.find((x) => x.status === 'upcoming'),
+      done: mine.find((x) => x.status === 'done'),
+    };
+  }
+  const vsLine = (x, me) => x.teamIds.filter((id) => id !== me).map((id) => chip(team(id))).join(' <b>vs</b> ');
+
+  function matchCard() {
+    const m = myMatch();
+    if (!m || S.me.status !== 'block') return '';
+    const me = S.me.teamId;
+    if (m.now) return `<section class="card match now"><div class="eyebrow">🥊 You're up · ${h(m.g.name)} · Heat ${m.n(m.now)}</div><div class="vs">${chip(team(me))} <b>vs</b> ${vsLine(m.now, me)}</div><p class="fine">Get to the table!</p></section>`;
+    if (m.next) {
+      const before = m.g.heats.filter((x) => x.status !== 'done' && m.g.heats.indexOf(x) < m.g.heats.indexOf(m.next)).length;
+      return `<section class="card match"><div class="eyebrow">⏭️ Up ${before ? 'soon' : 'next'} · ${h(m.g.name)} · Heat ${m.n(m.next)}</div><div class="vs">${chip(team(me))} <b>vs</b> ${vsLine(m.next, me)}</div><p class="fine">${before ? `${plural(before, 'heat')} before yours.` : 'You’re on after this heat.'}${m.live ? ` Now playing: ${m.live.teamIds.map((id) => h(teamName(id))).join(' vs ')}.` : ''}</p></section>`;
+    }
+    if (m.done) {
+      const got = m.done.results?.[me] || 0;
+      return `<section class="card match"><div class="eyebrow">✅ Your heat is done · ${h(m.g.name)}</div><p>${got ? `Your block earned <b>${got > 0 ? '+' : ''}${got}</b>.` : 'No credits this time.'}</p></section>`;
+    }
+    return `<section class="card match"><div class="eyebrow">🪑 Sitting this one out · ${h(m.g.name)}</div>${m.live ? `<p class="fine">Now playing: ${m.live.teamIds.map((id) => h(teamName(id))).join(' vs ')}</p>` : ''}</section>`;
+  }
+
+  function requestsCard(t) {
+    const list = t.requests || [];
+    if (!list.length) return '';
+    const me = S.me;
+    return `<section class="card requests"><h3>🛒 Waiting on the block (${list.length})</h3>
+      <ul class="reqs">${list
+        .map((r) => {
+          const need = secondsNeeded(t, r.by);
+          const mine = r.by === me.id;
+          const target = r.targetPlayerName ? ` → ${h(r.targetPlayerName)}` : r.targetTeamId ? ` → ${h(teamName(r.targetTeamId))}` : '';
+          return `<li>
+            <div><span class="mega">${h(r.emoji)}</span> <b>${h(r.name)}</b>${target} <span class="fine">${r.price} cr · asked by ${mine ? 'you' : h(r.byName)}${r.note ? ` · “${h(r.note)}”` : ''}</span></div>
+            <div class="row wrap"><span class="tag">${r.seconds.length}/${need} seconds</span>
+              ${!mine && !r.seconds.includes(me.id) && me.status === 'block' ? `<button class="btn sm" data-act="second" data-request-id="${r.id}">👍 Second it</button>` : ''}
+              ${me.isCaptain ? `<button class="btn sm" data-act="approve" data-request-id="${r.id}">👑 Approve</button>` : ''}
+              ${mine || me.isCaptain ? `<button class="btn ghost sm" data-act="drop" data-request-id="${r.id}">${mine ? 'Withdraw' : 'Veto'}</button>` : ''}
+            </div></li>`;
+        })
+        .join('')}</ul>
+      <p class="fine">A purchase goes through when ${S.settings.requestSeconds === 1 ? 'a blockmate seconds it' : `${S.settings.requestSeconds} blockmates second it`}, or the Shot Caller 👑 approves it.</p>
+    </section>`;
+  }
+
+  // Name buttons grouped by block (own block first) so 40 names stay scannable.
+  function groupedTargets(list, button) {
+    const mine = S.me?.teamId;
+    const order = [...S.teams].sort((a, b) => (b.id === mine) - (a.id === mine));
+    const groups = order.map((t) => [chip(t), list.filter((p) => p.teamId === t.id)]);
+    groups.push([chip(null), list.filter((p) => !p.teamId)]);
+    return groups
+      .filter(([, ps]) => ps.length)
+      .map(([label, ps]) => `<div class="tgroup"><div class="tgroup-h">${label}</div><div class="targets">${ps.map(button).join('')}</div></div>`)
+      .join('');
+  }
 
   function toast(msg, type = 'info') {
     const el = document.createElement('div');
@@ -158,6 +241,14 @@
     }
     const a = prev.me;
     const b = next.me;
+    const reqs = (v) => v.teams.find((t) => t.id === v.me.teamId)?.requests || [];
+    const known = new Set(reqs(prev).map((r) => r.id));
+    for (const r of reqs(next)) {
+      if (!known.has(r.id) && r.by !== b.id && a.teamId === b.teamId) {
+        toast(`🛒 ${r.byName} wants ${r.emoji} ${r.name}. Second it on My Block.`);
+        buzz(100);
+      }
+    }
     if (a.task && b.task && a.task.id === b.task.id && a.task.status === 'claimed') {
       if (b.task.status === 'done') toast('✅ The hosts signed off. Clean getaway.', 'ok');
       if (b.task.status === 'active') toast('❌ The hosts didn’t buy it. Try again.', 'warn');
@@ -267,15 +358,15 @@
     const me = S.me;
     const myTeam = team(me.teamId);
     const tabs = [
+      ['cell', me.status === 'block' ? '🔐' : me.status === 'holding' ? '🕳️' : '🔒', me.status === 'block' ? 'My Block' : me.status === 'holding' ? 'Holding' : 'Solitary'],
       ['yard', '🏟️', 'Yard'],
       ['shop', '🛒', 'Commissary'],
-      ['cell', me.status === 'block' ? '🔐' : me.status === 'holding' ? '🕳️' : '🔒', me.status === 'block' ? 'My Block' : me.status === 'holding' ? 'Holding' : 'Solitary'],
       ['rap', '🗂️', 'Rap Sheet'],
       ['board', '🏆', 'Board'],
     ];
-    const body = { yard: yardTab, shop: shopTab, cell: cellTab, rap: rapTab, board: boardTab }[ui.tab] || yardTab;
+    const body = { yard: yardTab, shop: shopTab, cell: cellTab, rap: rapTab, board: boardTab }[ui.tab] || cellTab;
     return `
-      <header class="top">
+      <header class="top" ${myTeam && me.status === 'block' ? `style="border-bottom-color:${h(myTeam.color)}"` : ''}>
         <div class="top-row">
           <div class="who">
             <div class="who-name">${h(me.name)} ${me.isCaptain ? '<span title="Shot Caller">👑</span>' : ''}</div>
@@ -293,7 +384,7 @@
       ${ui.sheet ? buySheet() : ''}
       ${briefingUnseen() ? briefingModal() : ''}
       <nav class="tabs">
-        ${tabs.map(([k, icon, label]) => `<button data-act="tab" data-tab="${k}" class="${ui.tab === k ? 'on' : ''}">${icon}<span>${label}</span>${k === 'rap' && needsMafiaAction() ? '<i class="dot"></i>' : ''}${k === 'cell' && myIncoming().length ? '<i class="dot"></i>' : ''}</button>`).join('')}
+        ${tabs.map(([k, icon, label]) => `<button data-act="tab" data-tab="${k}" class="${ui.tab === k ? 'on' : ''}">${icon}<span>${label}</span>${k === 'rap' && needsMafiaAction() ? '<i class="dot"></i>' : ''}${k === 'cell' && (myIncoming().length || actionableRequests().length) ? '<i class="dot"></i>' : ''}</button>`).join('')}
       </nav>`;
   }
 
@@ -414,13 +505,23 @@
     return `<section class="card live"><div class="eyebrow">🏁 Now in the yard</div><h2>${h(live.name)}</h2>${live.desc ? `<p>${h(live.desc)}</p>` : ''}
       ${live.rules ? `<div class="rules">${h(live.rules)}</div>` : ''}
       ${live.holdingRule ? `<p class="rule">🕳️ Holding Cell: ${h(live.holdingRule)}</p>` : ''}
-      ${live.solitaryRule ? `<p class="rule">🔒 Solitary: ${h(live.solitaryRule)}</p>` : ''}</section>`;
+      ${live.solitaryRule ? `<p class="rule">🔒 Solitary: ${h(live.solitaryRule)}</p>` : ''}
+      ${heatList(live)}</section>`;
+  }
+
+  function heatList(g) {
+    if (!(g.heats || []).length) return '';
+    const tag = { live: 'NOW', done: 'DONE', upcoming: 'UP NEXT', skipped: 'SKIPPED' };
+    return `<ol class="heats">${g.heats
+      .map((x, i) => `<li class="h-${x.status}"><span>Heat ${i + 1}: ${x.teamIds.map((id) => chip(team(id), id === S.me?.teamId ? 'mine' : '')).join(' vs ')}</span><span class="tag">${tag[x.status]}</span>${x.results && Object.keys(x.results).length ? `<div class="fine">${Object.entries(x.results).sort((a, b) => b[1] - a[1]).map(([id, n]) => `${h(teamName(id))} ${n > 0 ? '+' : ''}${n}`).join(' · ')}</div>` : ''}</li>`)
+      .join('')}</ol>`;
   }
 
   function yardTab() {
     const live = S.games.find((g) => g.status === 'live');
     return `
       ${lockupRules(S.me.status, live)}
+      ${matchCard()}
       ${live ? liveGameCard(live) : ''}
       ${S.games.length ? `
         <section class="card">
@@ -443,7 +544,7 @@
         ? 'No commissary privileges in solitary. Window shop and weep.'
         : !myTeam
           ? 'Holding Cell inmates don’t get a commissary account. Get a block to bail you out 🔑'
-          : S.settings.captainOnlySpending && !me.isCaptain
+          : S.settings.spendMode === 'captain' && !me.isCaptain
             ? 'Only your Shot Caller 👑 can spend tonight. Lobby them.'
             : '';
     const groups = Object.entries(S.itemTypes)
@@ -451,7 +552,7 @@
       .filter(([, , list]) => list.length);
     return `
       <section class="card shop-head">
-        <div><div class="eyebrow">Commissary</div><h2>${myTeam ? `${myTeam.budget} credits` : 'No account'}</h2><p class="fine">Spending comes out of your whole block’s budget.</p></div>
+        <div><div class="eyebrow">Commissary</div><h2>${myTeam ? `${myTeam.budget} credits` : 'No account'}</h2><p class="fine">${myTeam && willRequest() ? `Spending is a block decision: your picks go to your block, and need the Shot Caller 👑 or ${plural(S.settings.requestSeconds, 'blockmate')} to second them.` : 'Spending comes out of your whole block’s budget.'}</p></div>
         ${myTeam ? `<div class="inv-mini"><span title="Deflect cards">🔄 ${myTeam.inventory?.deflect || 0}</span><span title="Bribes">💵 ${myTeam.inventory?.immunity || 0}</span></div>` : ''}
       </section>
       ${blocked ? `<p class="warnbox">${h(blocked)}</p>` : ''}
@@ -508,8 +609,9 @@
           <input id="buy_note" maxlength="120" placeholder="${it.type === 'punishment' ? 'Enjoy, losers' : 'e.g. vodka soda, extra lime'}" />` : ''}
         <div class="row sheet-actions">
           <button class="btn ghost" data-act="sheet-close">Cancel</button>
-          <button class="btn" data-act="buy-confirm" ${ready ? '' : 'disabled'}>Buy for ${it.price} cr</button>
+          <button class="btn" data-act="buy-confirm" ${ready ? '' : 'disabled'}>${willRequest() ? 'Ask the block' : 'Buy'} for ${it.price} cr</button>
         </div>
+        ${willRequest() ? `<p class="fine center">Goes to your block. It goes through when the Shot Caller approves it or ${plural(secondsNeeded(myTeam, S.me.id), 'blockmate')} second it.</p>` : ''}
         <p class="fine center">${myTeam ? `${h(myTeam.name)} has ${myTeam.budget} credits.` : ''}</p>
       </div>`;
   }
@@ -527,11 +629,15 @@
     const immune = new Set(S.mafia.immune);
     return `
       ${me.status === 'solitary' ? lockupRules('solitary') : ''}
-      <section class="card cell-head" style="--c:${h(myTeam.color)}">
-        <div class="eyebrow">Your block</div>
-        <h2>${h(myTeam.name)}</h2>
+      <section class="card cell-head block-banner" style="--c:${h(myTeam.color)}">
+        <div class="eyebrow">Your block · #${rankOf(myTeam.id)} of ${S.teams.length}</div>
+        <h2>${h(myTeam.name)}${nick(myTeam)}</h2>
+        ${myTeam.motto ? `<p class="motto">${h(myTeam.motto)}</p>` : ''}
         <div class="stats"><div><b>${myTeam.budget}</b><span>credits</span></div><div><b>${myTeam.earned}</b><span>earned tonight</span></div><div><b>${members.length}/${S.settings.maxBlockSize}</b><span>inmates</span></div></div>
+        ${renameControls(myTeam, members)}
       </section>
+      ${matchCard()}
+      ${requestsCard(myTeam)}
       <section class="card">
         <h3>Contraband stash</h3>
         <div class="stash">
@@ -558,6 +664,18 @@
           })
           .join('')}</ul>` : '<p class="empty">Nothing ordered yet. Hit the commissary.</p>'}
       </section>`;
+  }
+
+  function renameControls(t, members) {
+    const me = S.me;
+    const allowed = me.status === 'block' && (me.isCaptain || !members.some((p) => p.isCaptain));
+    if (!allowed) return '';
+    if (!ui.renaming) return `<button class="btn ghost sm" data-act="rename-open">🏷️ ${t.nickname ? 'Rename the block' : 'Name your block'}</button>`;
+    return `<form data-form="rename" class="grid2 rename">
+      <label>Block nickname<input id="rn_nick" name="nickname" maxlength="32" value="${h(t.nickname)}" placeholder="The Shawshank Redeemers" /></label>
+      <label>Motto<input id="rn_motto" name="motto" maxlength="80" value="${h(t.motto)}" placeholder="Get busy drinking" /></label>
+      <div class="row span2"><button type="button" class="btn ghost sm" data-act="rename-close">Cancel</button><button class="btn sm">Save</button></div>
+    </form>`;
   }
 
   function holdingRoster(forBlock = false) {
@@ -681,7 +799,7 @@
       const targets = S.players.filter((p) => p.id !== me.id && p.status !== 'solitary');
       return `<section class="card night-card">
         <h3>${isSnitch ? '🐀 Who are you tipping off to the guards?' : '🗣️ Who do you suspect? (anonymous)'}</h3>
-        <div class="targets">${targets.map((p) => `<button class="target ${m.myNight === p.id ? 'on' : ''}" data-act="night" data-target-id="${p.id}">${h(p.name)}</button>`).join('')}</div>
+        ${groupedTargets(targets, (p) => `<button class="target ${m.myNight === p.id ? 'on' : ''}" data-act="night" data-target-id="${p.id}">${h(p.name)}</button>`)}
         <p class="fine">${isSnitch ? `Your target gets ${plural(S.settings.tipRounds, 'round')} in solitary at Lights On. Nobody will know it was you.` : 'Everyone picks a name so the snitches can’t be spotted by who’s on their phone. Top suspects get whispered in the feed.'} You can change your pick until Lights On.</p>
       </section>`;
     }
@@ -722,7 +840,7 @@
       <section class="card">
         <h3>🏆 Block Standings</h3>
         ${rows.length ? `<ol class="board">${rows
-          .map((t, i) => `<li style="--c:${h(t.color)}"><span class="rank">${i + 1}</span><span class="b-n">${h(t.name)}<small>${plural(blockmates(t.id).length, 'inmate')}</small></span><span class="b-s"><b>${t.earned}</b><small>earned · ${t.budget} left</small></span></li>`)
+          .map((t, i) => `<li style="--c:${h(t.color)}" class="${t.id === S.me?.teamId ? 'mine' : ''}"><span class="rank">${i + 1}</span><span class="b-n">${h(t.name)}${nick(t)}<small>${t.motto ? `${h(t.motto)} · ` : ''}${plural(blockmates(t.id).length, 'inmate')}</small></span><span class="b-s"><b>${t.earned}</b><small>earned · ${t.budget} left</small></span></li>`)
           .join('')}</ol>` : '<p class="empty">No blocks yet.</p>'}
       </section>
       <section class="card">
@@ -848,6 +966,7 @@
               ${btn('🗑', 'removeGame', { gameId: g.id }, 'ghost sm', `Delete ${g.name}?`)}
             </div>
             ${ui.finishing === g.id ? finishForm(g) : ''}
+            ${heatAdmin(g)}
             <details>
               <summary class="fine">✏️ Edit game & rules${g.status === 'live' ? ' (saving pops the new briefing up on every phone)' : ''}</summary>
               <form data-admin="updateGame" class="grid2">
@@ -866,14 +985,56 @@
       </section>`;
   }
 
+  function heatAdmin(g) {
+    if (g.status === 'done' && !(g.heats || []).length) return '';
+    const heats = g.heats || [];
+    const tag = { live: 'NOW', done: 'DONE', upcoming: 'UP NEXT', skipped: 'SKIPPED' };
+    return `<div class="heat-admin">
+      <div class="fine"><b>🥊 Matchups</b> — run the game as heats so every block gets a turn. ${heats.length ? '' : 'Without heats, everyone plays at once.'}</div>
+      ${g.status !== 'done' && !heats.some((x) => x.status !== 'upcoming') ? `<div class="row wrap">
+        ${btn('Pairs', 'makeHeats', { gameId: g.id, size: 2 }, 'ghost sm')}${btn('Threes', 'makeHeats', { gameId: g.id, size: 3 }, 'ghost sm')}${btn('Fours', 'makeHeats', { gameId: g.id, size: 4 }, 'ghost sm')}${btn('All blocks, one heat', 'makeHeats', { gameId: g.id, size: 'all' }, 'ghost sm')}
+        ${heats.length ? btn('Clear', 'clearHeats', { gameId: g.id }, 'ghost sm') : ''}
+      </div>` : ''}
+      ${heats.length ? `<ol class="heats admin-heats">${heats
+        .map((x, i) => `<li class="h-${x.status}">
+          <span>Heat ${i + 1}: ${x.teamIds.map((id) => chip(team(id))).join(' vs ')}</span> <span class="tag">${tag[x.status]}</span>
+          ${x.results && Object.keys(x.results).length ? `<div class="fine">${Object.entries(x.results).map(([id, n]) => `${h(teamName(id))} ${n > 0 ? '+' : ''}${n}`).join(' · ')}</div>` : ''}
+          <div class="row wrap">
+            ${x.status === 'upcoming' ? btn('▶ Start heat', 'startHeat', { gameId: g.id, heatId: x.id }, 'sm') : ''}
+            ${['live', 'upcoming'].includes(x.status) ? `<button class="btn sm ${x.status === 'live' ? '' : 'ghost'}" data-act="finish-open" data-game-id="${g.id}" data-heat-id="${x.id}">🏁 Score heat</button>` : ''}
+            ${x.status !== 'done' ? btn('🗑', 'removeHeat', { gameId: g.id, heatId: x.id }, 'ghost sm') : ''}
+          </div>
+          ${ui.finishing === `${g.id}:${x.id}` ? heatFinishForm(g, x) : ''}
+        </li>`)
+        .join('')}</ol>` : ''}
+      ${g.status !== 'done' ? `<details><summary class="fine">+ Custom heat (e.g. a final between the winners)</summary>
+        <form data-form="heat" data-game-id="${g.id}" class="row wrap">${S.teams.map((t) => `<label class="check"><input type="checkbox" id="ch_${g.id}_${t.id}" name="t_${t.id}" /> ${chip(t)}</label>`).join('')}<button class="btn sm">Add heat</button></form>
+      </details>` : ''}
+    </div>`;
+  }
+
+  function heatFinishForm(g, x) {
+    return `<form data-form="finish-heat" data-game-id="${g.id}" data-heat-id="${x.id}" class="finish">
+      <p class="fine">Credits for each block in this heat (blank = 0, negative to fine):</p>
+      <div class="grid2">${x.teamIds.map((id) => `<label>${chip(team(id))}<input id="fh_${x.id}_${id}" name="pts_${id}" type="number" inputmode="numeric" placeholder="0" /></label>`).join('')}</div>
+      <div class="row"><button type="button" class="btn ghost sm" data-act="finish-close">Cancel</button><button class="btn sm">Pay out heat</button></div>
+    </form>`;
+  }
+
   function finishForm(g) {
     return `<form data-form="finish" data-game-id="${g.id}" class="finish">
-      <p class="fine">Credits for each block (leave blank for 0, negative to fine):</p>
+      <p class="fine">${(g.heats || []).length ? 'Heats already paid out as they finished. Add any bonus credits here (blank = 0):' : 'Credits for each block (leave blank for 0, negative to fine):'}</p>
       <div class="grid2">${S.teams.map((t) => `<label>${chip(t)}<input id="fin_${g.id}_${t.id}" name="pts_${t.id}" type="number" inputmode="numeric" placeholder="0" /></label>`).join('')}</div>
       <label class="check"><input type="checkbox" id="fin_${g.id}_pen" name="penalties" checked /> Apply round penalties (Holding +${S.settings.holdingDrinks} 🍺, Solitary +${S.settings.solitaryDrinks} 🍺, sentences −1)</label>
       <div class="row"><button type="button" class="btn ghost sm" data-act="finish-close">Cancel</button><button class="btn sm">Pay out & close game</button></div>
     </form>`;
   }
+
+  // Players sorted block by block (Holding last), so 40 rows read as teams.
+  const byBlock = (list) => {
+    const order = Object.fromEntries(S.teams.map((t, i) => [t.id, i]));
+    return [...list].sort((a, b) => (order[a.teamId] ?? 999) - (order[b.teamId] ?? 999) || a.name.localeCompare(b.name));
+  };
 
   function playerRow(p, extra = '') {
     return `<div class="prow ${p.status}">
@@ -904,6 +1065,8 @@
               <input type="hidden" name="teamId" value="${t.id}" />
               <input type="color" id="tc_${t.id}" name="color" value="${h(t.color)}" />
               <input id="tn_${t.id}" name="name" value="${h(t.name)}" maxlength="30" />
+              <input id="tk_${t.id}" name="nickname" value="${h(t.nickname)}" maxlength="32" placeholder="Nickname" />
+              <input id="tm_${t.id}" name="motto" value="${h(t.motto)}" maxlength="80" placeholder="Motto" />
               <button class="btn sm">Save</button>
               ${btn('🗑', 'removeTeam', { teamId: t.id }, 'ghost sm', `Delete ${t.name}? Its inmates go to the Holding Cell.`)}
             </form>
@@ -917,7 +1080,7 @@
       </section>
       <section class="card">
         <h3>All inmates (${S.players.length})</h3>
-        ${S.players.length ? `<div class="ptable">${S.players
+        ${S.players.length ? `<div class="ptable">${byBlock(S.players)
           .map((p) => playerRow(p, `
               ${p.teamId ? btn(p.isCaptain ? '👑 Captain' : 'Make 👑', 'updatePlayer', { playerId: p.id, isCaptain: !p.isCaptain }, p.isCaptain ? 'sm' : 'ghost sm') : ''}
               ${btn('🗑', 'removePlayer', { playerId: p.id }, 'ghost sm', `Remove ${p.name} from the party? Their phone gets logged out.`)}`))
@@ -1128,7 +1291,12 @@
           <label>Tagline<input id="s_tag" name="tagline" value="${h(st.tagline)}" maxlength="80" /></label>
           <label>Starting credits for new blocks<input id="s_start" name="startingBudget" type="number" min="0" value="${st.startingBudget}" /></label>
           <label>Max inmates per block<input id="s_max" name="maxBlockSize" type="number" min="2" max="12" value="${st.maxBlockSize}" /></label>
-          <label class="check span2"><input type="checkbox" id="s_capt" name="captainOnlySpending" ${st.captainOnlySpending ? 'checked' : ''} /> Only Shot Callers 👑 can spend</label>
+          <label>Who can spend a block's credits<select id="s_spend" name="spendMode">
+            <option value="request" ${st.spendMode === 'request' ? 'selected' : ''}>Block decides: Shot Caller approves or blockmates second</option>
+            <option value="captain" ${st.spendMode === 'captain' ? 'selected' : ''}>Only the Shot Caller 👑</option>
+            <option value="anyone" ${st.spendMode === 'anyone' ? 'selected' : ''}>Anyone on the block, instantly</option>
+          </select></label>
+          <label>Seconds needed (block decides)<input id="s_sec" name="requestSeconds" type="number" min="1" max="5" value="${st.requestSeconds}" /></label>
           <button class="btn span2">Save settings</button>
         </form>
       </section>
@@ -1156,7 +1324,7 @@
         <div class="tv-grid">
           <section class="card">
             <h2>🏆 Standings</h2>
-            <ol class="tv-board">${rows.map((t, i) => `<li style="--c:${h(t.color)}"><span class="rank">${i + 1}</span><span class="b-n">${h(t.name)}</span><span class="tv-bar"><i style="width:${(t.earned / max) * 100}%"></i></span><b>${t.earned}</b></li>`).join('') || '<p class="empty">No blocks yet</p>'}</ol>
+            <ol class="tv-board">${rows.map((t, i) => `<li style="--c:${h(t.color)}"><span class="rank">${i + 1}</span><span class="b-n">${h(t.name)}${t.nickname ? `<small>${h(t.nickname)}</small>` : ''}</span><span class="tv-bar"><i style="width:${(t.earned / max) * 100}%"></i></span><b>${t.earned}</b></li>`).join('') || '<p class="empty">No blocks yet</p>'}</ol>
             ${m.phase === 'vote' ? `<h3 class="section-h">🗳️ Block votes</h3>${S.teams.map((t) => {
               const tally = m.tallies?.[t.id] || {};
               const top = Object.entries(tally).filter(([id]) => id !== 'skip').sort((a, b) => b[1] - a[1])[0];
@@ -1164,7 +1332,7 @@
             }).join('')}` : ''}
           </section>
           <section class="card">
-            ${live ? `<div class="eyebrow">🏁 Now in the yard</div><h2 class="tv-live">${h(live.name)}</h2>${live.desc ? `<p>${h(live.desc)}</p>` : ''}${live.rules ? `<div class="rules tv-rules">${h(live.rules)}</div>` : ''}${live.holdingRule ? `<p class="rule">🕳️ Holding: ${h(live.holdingRule)}</p>` : ''}${live.solitaryRule ? `<p class="rule">🔒 Solitary: ${h(live.solitaryRule)}</p>` : ''}` : next ? `<div class="eyebrow">Up next</div><h2 class="tv-live">${h(next.name)}</h2>` : `<div class="eyebrow">Yard</div><h2>Free time 🍻</h2>`}
+            ${live ? `<div class="eyebrow">🏁 Now in the yard</div><h2 class="tv-live">${h(live.name)}</h2>${live.desc ? `<p>${h(live.desc)}</p>` : ''}${tvHeat(live)}${live.rules ? `<div class="rules tv-rules">${h(live.rules)}</div>` : ''}${live.holdingRule ? `<p class="rule">🕳️ Holding: ${h(live.holdingRule)}</p>` : ''}${live.solitaryRule ? `<p class="rule">🔒 Solitary: ${h(live.solitaryRule)}</p>` : ''}` : next ? `<div class="eyebrow">Up next</div><h2 class="tv-live">${h(next.name)}</h2>` : `<div class="eyebrow">Yard</div><h2>Free time 🍻</h2>`}
             ${m.phase === 'night' ? '<div class="tv-night">🌙<br/>LIGHTS OUT<br/><small>Everyone pick a name on your phone.</small></div>' : ''}
             ${S.orders.length ? `<h3>⚠️ Incoming punishments</h3><ul class="feed">${S.orders.map((o) => `<li><span class="f-e">${h(o.emoji)}</span><span class="f-t">${h(o.name)}: ${h(teamName(o.fromTeamId))} → <b>${h(teamName(o.targetTeamId))}</b> (deciding…)</span></li>`).join('')}</ul>` : ''}
           </section>
@@ -1176,6 +1344,16 @@
           <section class="card tv-qr"><img class="qr" src="/qr.svg?url=${encodeURIComponent(`${location.origin}/`)}" alt="QR code to join" /><div><b>Scan to get booked</b><div class="fine">${h(location.host)}</div><div class="fine">${plural(S.players.length, 'inmate')} booked</div></div></section>
         </div>
       </div>`;
+  }
+
+  function tvHeat(g) {
+    const heats = g.heats || [];
+    if (!heats.length) return '';
+    const now = heats.find((x) => x.status === 'live');
+    const next = heats.filter((x) => x.status === 'upcoming').slice(0, 3);
+    const label = (x) => x.teamIds.map((id) => chip(team(id))).join(' <b>vs</b> ');
+    return `${now ? `<div class="tv-heat"><div class="eyebrow">🥊 Heat ${heats.indexOf(now) + 1} of ${heats.length}</div><div class="vs">${label(now)}</div></div>` : ''}
+      ${next.length ? `<div class="fine">Up next: ${next.map((x) => `Heat ${heats.indexOf(x) + 1} — ${x.teamIds.map((id) => h(teamName(id))).join(' vs ')}`).join(' · ')}</div>` : ''}`;
   }
 
   // ---------- events ----------
@@ -1219,7 +1397,8 @@
       if (!res.ok) return;
       const it = S.items.find((i) => i.id === itemId);
       const r = res.result || {};
-      if (r.status === 'intel') toast(r.hasSnitch ? '📡 Wiretap says: there IS a snitch on your block. 🐀' : '📡 Wiretap says: your block is clean. For now.', r.hasSnitch ? 'warn' : 'ok');
+      if (r.status === 'requested') toast('🛒 Sent to your block. Get them to second it (or ask the Shot Caller).', 'ok');
+      else if (r.status === 'intel') toast(r.hasSnitch ? '📡 Wiretap says: there IS a snitch on your block. 🐀' : '📡 Wiretap says: your block is clean. For now.', r.hasSnitch ? 'warn' : 'ok');
       else if (r.status === 'stashed') toast(`${it?.emoji || ''} Stashed on your block. Shhh.`, 'ok');
       else if (it?.type === 'bail') toast('🔑 Bail posted. Welcome your new blockmate.', 'ok');
       else toast(`${it?.emoji || ''} Ordered! The hosts are on it.`, 'ok');
@@ -1248,7 +1427,21 @@
       const res = await act('drank');
       if (res.ok) toast('🍻 Debt to society: reduced.', 'ok');
     },
-    'finish-open': (d) => { ui.finishing = d.gameId; render(); },
+    'finish-open': (d) => { ui.finishing = d.heatId ? `${d.gameId}:${d.heatId}` : d.gameId; render(); },
+    'rename-open': () => { ui.renaming = true; render(); },
+    'rename-close': () => { ui.renaming = false; render(); },
+    second: async (d) => {
+      const res = await act('second', { requestId: d.requestId });
+      if (res.ok) toast(res.result?.status === 'seconded' ? '👍 Seconded.' : '✅ That’s enough votes: bought!', 'ok');
+    },
+    approve: async (d) => {
+      const res = await act('approve', { requestId: d.requestId });
+      if (res.ok) toast('👑 Approved and bought.', 'ok');
+    },
+    drop: async (d) => {
+      const res = await act('drop', { requestId: d.requestId });
+      if (res.ok) toast('Request dropped.', 'ok');
+    },
     'finish-close': () => { ui.finishing = null; render(); },
     logout: () => { LS.del('sss_admin'); kind = 'guest'; S = null; version = null; render(); poll(); },
     admin: async (d) => {
@@ -1304,7 +1497,7 @@
       if (res.ok) {
         LS.set('sss_token', res.result.token);
         kind = 'player';
-        ui.tab = 'rap';
+        ui.tab = 'cell';
         clearDrafts(form);
         toast('Welcome to the Slammer. 🔒', 'ok');
         render();
@@ -1317,6 +1510,35 @@
         kind = 'admin';
         clearDrafts(form);
         render();
+      }
+    },
+    rename: async (data, form) => {
+      const res = await act('rename', { nickname: data.nickname, motto: data.motto });
+      if (res.ok) {
+        ui.renaming = false;
+        clearDrafts(form);
+        render();
+        toast('🏷️ Block renamed.', 'ok');
+      }
+    },
+    heat: async (data, form) => {
+      const teamIds = Object.entries(data).filter(([k, v]) => k.startsWith('t_') && v).map(([k]) => k.slice(2));
+      const res = await admin('addHeat', { gameId: form.dataset.gameId, teamIds });
+      if (res.ok) {
+        clearDrafts(form);
+        form.reset();
+        toast('🥊 Heat added.', 'ok');
+      }
+    },
+    'finish-heat': async (data, form) => {
+      const results = {};
+      for (const [k, v] of Object.entries(data)) if (k.startsWith('pts_') && v !== '') results[k.slice(4)] = Number(v);
+      const res = await admin('finishHeat', { gameId: form.dataset.gameId, heatId: form.dataset.heatId, results });
+      if (res.ok) {
+        ui.finishing = null;
+        clearDrafts(form);
+        render();
+        toast('🏁 Heat paid out.', 'ok');
       }
     },
     finish: async (data, form) => {
