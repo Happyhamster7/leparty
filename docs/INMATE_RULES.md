@@ -92,6 +92,7 @@ About half the blocks have a hidden snitch. Nobody knows which ones. Check your 
 
 **Any drink can be swapped for a water or a sip, no questions asked.** Look after each other.
 
-- Drinks and punishments you owe are listed on your **Now** tab. Tap **Drank one** or **Done** as you serve them. Hosts can sentence anyone, any time. It's on your honor, and the whole room can see the drink tab on the TV.
+- Drinks and punishments you owe are listed on your **Now** tab. Tap **Drank one** or **Done** as you serve them. It's on your honor, and the whole room can see the drink tab on the TV.
+- The hosts can sentence anyone, any time: a shot, a dare, or both.
 - The hosts have the final word on every rule, sabotage and dispute.
 - Don't show your secret role or your Classified box to anyone.
