@@ -544,3 +544,42 @@ test('old captain-only saves become captain spend mode', () => {
   assert.equal(g.s.settings.spendMode, 'captain');
   assert.equal(g.s.settings.captainOnlySpending, undefined);
 });
+
+test('hosts sentence anyone: a player, a block, the Holding Cell, Solitary or everyone', () => {
+  const { g, a, players } = setup(6);
+  const late = g.join('Late');
+  g.assignPunishment({ target: `player:${players[1].id}`, drinks: 2, reason: 'cheating', by: 'officer' });
+  assert.equal(players[1].drinksOwed, 2);
+  assert.match(g.s.feed[0].text, /^The Commissary Officer sentenced P1: 2 drinks for cheating\./);
+  g.assignPunishment({ target: `team:${a.id}`, text: '10 push-ups', by: 'warden' });
+  for (const m of g.members(a.id)) assert.equal(m.sentences[0].text, '10 push-ups');
+  assert.equal(players[1].sentences.length, 0, 'other blocks untouched');
+  g.assignPunishment({ target: 'holding', drinks: 1, text: 'Sing', by: 'warden' });
+  assert.equal(late.drinksOwed, 1);
+  g.assignPunishment({ target: 'all', drinks: 1, by: 'warden' });
+  assert.equal(late.drinksOwed, 2);
+  assert.equal(players[0].drinksOwed, 1);
+  assert.throws(() => g.assignPunishment({ target: 'solitary', drinks: 1 }), /Nobody/);
+  assert.throws(() => g.assignPunishment({ target: 'all' }), /drinks, a punishment/);
+  const sid = players[0].sentences[0].id;
+  g.completeSentence(players[0].id, { sentenceId: sid });
+  assert.equal(players[0].sentences[0].status, 'done');
+  assert.throws(() => g.completeSentence(players[0].id, { sentenceId: sid }), /Already/);
+  assert.equal(g.viewFor(players[0].id).me.sentences[0].status, 'done');
+  assert.equal(g.viewFor(players[1].id).players.find((p) => p.id === players[0].id).sentences, undefined, 'others only see a count');
+});
+
+test('dare-style commissary punishments land on the victims’ to-do lists', () => {
+  const { g, b, players } = setup(4);
+  const drills = itemOf(g, 'punishment', (i) => i.name === 'Yard Drills');
+  const o = g.buy(players[0].id, { itemId: drills.id, targetTeamId: b.id, note: 'get moving' });
+  g.respondPunishment(players[1].id, { orderId: o.id, choice: 'accept' });
+  for (const m of g.members(b.id)) {
+    assert.match(m.sentences[0].text, /Yard Drills/);
+    assert.equal(m.sentences[0].from, g.s.teams[0].name);
+  }
+  const shot = itemOf(g, 'punishment', (i) => i.drinks === 1);
+  const o2 = g.buy(players[0].id, { itemId: shot.id, targetTeamId: b.id });
+  g.respondPunishment(players[1].id, { orderId: o2.id, choice: 'accept' });
+  assert.equal(players[1].sentences.length, 1, 'drink punishments go on the drink tab, not the to-do list twice');
+});

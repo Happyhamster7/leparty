@@ -421,3 +421,12 @@ textarea {
 .tv-board .b-n small { display: block; font-size: 0.6em; color: var(--muted); font-weight: 600; }
 .tv-heat { background: #00000044; border-radius: 12px; padding: 10px 14px; margin: 8px 0; }
 .tv-heat .vs .chip { font-size: clamp(16px, 1.6vw, 24px); }
+
+/* ---------- Now tab / punishments ---------- */
+.todo-card { border-color: var(--orange); }
+.todos { list-style: none; padding: 0; margin: 0; }
+.todo { display: grid; grid-template-columns: 32px 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid #2c2c2c; }
+.todo:last-child { border-bottom: 0; }
+.todo .mega { font-size: 24px; }
+.todo.drink b { color: var(--yellow); }
+.todo.sentence b { color: var(--orange2); }

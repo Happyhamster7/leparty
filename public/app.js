@@ -17,7 +17,7 @@
   let offlineReason = '';
   let pendingRender = false;
   const ui = {
-    tab: LS.get('sss_tab') || 'cell',
+    tab: LS.get('sss_tab') || 'yard',
     atab: LS.get('sss_atab') || 'orders',
     sheet: null, // { itemId, targetTeamId, targetPlayerId }
     reveal: false,
@@ -266,6 +266,12 @@
       toast(`💸 Unexplained withdrawal: ${lb.amount} credits just vanished from your block. Someone’s dirty…`, 'warn');
       buzz([100, 50, 100]);
     }
+    const openIds = (p) => new Set((p.sentences || []).filter((x) => x.status === 'open').map((x) => x.id));
+    const wasOpen = openIds(a);
+    for (const x of (b.sentences || []).filter((y) => y.status === 'open' && !wasOpen.has(y.id))) {
+      toast(`⚖️ ${x.from}: ${x.text}`, 'warn');
+      buzz([200, 100, 200]);
+    }
     if (b.drinksOwed > a.drinksOwed) {
       toast(`🍺 You owe ${plural(b.drinksOwed - a.drinksOwed, 'more penalty drink')}.`, 'warn');
       buzz(200);
@@ -358,13 +364,13 @@
     const me = S.me;
     const myTeam = team(me.teamId);
     const tabs = [
+      ['yard', '📌', 'Now'],
       ['cell', me.status === 'block' ? '🔐' : me.status === 'holding' ? '🕳️' : '🔒', me.status === 'block' ? 'My Block' : me.status === 'holding' ? 'Holding' : 'Solitary'],
-      ['yard', '🏟️', 'Yard'],
       ['shop', '🛒', 'Commissary'],
       ['rap', '🗂️', 'Rap Sheet'],
       ['board', '🏆', 'Board'],
     ];
-    const body = { yard: yardTab, shop: shopTab, cell: cellTab, rap: rapTab, board: boardTab }[ui.tab] || cellTab;
+    const body = { yard: yardTab, shop: shopTab, cell: cellTab, rap: rapTab, board: boardTab }[ui.tab] || yardTab;
     return `
       <header class="top" ${myTeam && me.status === 'block' ? `style="border-bottom-color:${h(myTeam.color)}"` : ''}>
         <div class="top-row">
@@ -384,7 +390,7 @@
       ${ui.sheet ? buySheet() : ''}
       ${briefingUnseen() ? briefingModal() : ''}
       <nav class="tabs">
-        ${tabs.map(([k, icon, label]) => `<button data-act="tab" data-tab="${k}" class="${ui.tab === k ? 'on' : ''}">${icon}<span>${label}</span>${k === 'rap' && needsMafiaAction() ? '<i class="dot"></i>' : ''}${k === 'cell' && (myIncoming().length || actionableRequests().length) ? '<i class="dot"></i>' : ''}</button>`).join('')}
+        ${tabs.map(([k, icon, label]) => `<button data-act="tab" data-tab="${k}" class="${ui.tab === k ? 'on' : ''}">${icon}<span>${label}</span>${k === 'rap' && needsMafiaAction() ? '<i class="dot"></i>' : ''}${k === 'yard' && ui.tab !== 'yard' && todoItems().length ? '<i class="dot"></i>' : ''}${k === 'cell' && (myIncoming().length || actionableRequests().length) ? '<i class="dot"></i>' : ''}</button>`).join('')}
       </nav>`;
   }
 
@@ -442,7 +448,7 @@
 
   function drinkCard() {
     const me = S.me;
-    if (!me.drinksOwed) return '';
+    if (!me.drinksOwed || ui.tab === 'yard') return '';
     return `<div class="drinkcard">
       <div><div class="drink-n">🍺 ×${me.drinksOwed}</div><div class="fine">${plural(me.drinksOwed, 'penalty drink')} owed. ${h(S.settings.houseRules)}</div></div>
       <button class="btn" data-act="drank">Drank one ✅</button>
@@ -517,9 +523,43 @@
       .join('')}</ol>`;
   }
 
+  // Everything this inmate owes or has to act on, in one list.
+  const goItem = (emoji, title, sub, tab) =>
+    `<li class="todo"><span class="mega">${emoji}</span><div><b>${h(title)}</b>${sub ? `<div class="fine">${h(sub)}</div>` : ''}</div>${tab ? `<button class="btn ghost sm" data-act="tab" data-tab="${tab}">Go →</button>` : ''}</li>`;
+
+  function todoItems() {
+    const me = S.me;
+    const m = S.mafia;
+    const items = [];
+    if (me.drinksOwed) {
+      items.push(`<li class="todo drink"><span class="mega">🍺</span><div><b>${plural(me.drinksOwed, 'penalty drink')}</b><div class="fine">${h(S.settings.houseRules)}</div></div><button class="btn sm" data-act="drank">Drank one ✅</button></li>`);
+    }
+    for (const x of (me.sentences || []).filter((y) => y.status === 'open')) {
+      items.push(`<li class="todo sentence"><span class="mega">⚖️</span><div><b>${h(x.text)}</b><div class="fine">from ${h(x.from)}${x.reason ? ` · ${h(x.reason)}` : ''} · ${time(x.ts)}</div></div><button class="btn sm" data-act="sentence-done" data-sentence-id="${x.id}">Done ✅</button></li>`);
+    }
+    for (const o of myIncoming()) items.push(goItem('⚠️', `${o.name} incoming from ${teamName(o.fromTeamId)}`, 'Take it or deflect it in the alert at the top.'));
+    if (me.dealerDrinks) items.push(goItem('🥃', `Hand out ${plural(me.dealerDrinks, 'drink')}`, 'Your snitch reward is at the top of the screen.'));
+    if (m.phase === 'night' && me.status !== 'solitary' && !m.myNight) items.push(goItem('🌙', 'Lights Out: pick a name', 'Everyone picks, so nobody can tell who the snitch is.', 'rap'));
+    if (m.phase === 'vote' && me.status === 'block' && !m.myVote) items.push(goItem('🗳️', 'Vote in your block vote', 'Majority kicks someone off the block.', 'rap'));
+    const reqs = actionableRequests();
+    if (reqs.length) items.push(goItem('🛒', `${plural(reqs.length, 'purchase request')} waiting on you`, reqs.map((r) => `${r.emoji} ${r.name} (${r.byName})`).join(', '), 'cell'));
+    return items;
+  }
+
+  function todoCard() {
+    const items = todoItems();
+    const done = (S.me.sentences || []).filter((x) => x.status === 'done').slice(0, 3);
+    return `<section class="card todo-card">
+      <h3>📌 Your to-do</h3>
+      ${items.length ? `<ul class="todos">${items.join('')}</ul>` : '<p class="empty">Nothing owed, nothing pending. Enjoy it while it lasts.</p>'}
+      ${done.length ? `<p class="fine">Done: ${done.map((x) => h(x.text)).join(' · ')}${S.me.drinksDone ? ` · ${plural(S.me.drinksDone, 'drink')} served` : ''}</p>` : ''}
+    </section>`;
+  }
+
   function yardTab() {
     const live = S.games.find((g) => g.status === 'live');
     return `
+      ${todoCard()}
       ${lockupRules(S.me.status, live)}
       ${matchCard()}
       ${live ? liveGameCard(live) : ''}
@@ -863,7 +903,7 @@
       ['money', '💰 Payouts'],
       ['games', '🏁 Games'],
       ['blocks', '🔐 Blocks'],
-      ['lockup', `⛓️ Lockup${lockup ? ` <b class="badge grey">${lockup}</b>` : ''}`],
+      ['lockup', `⚖️ Punish / Lockup${lockup ? ` <b class="badge grey">${lockup}</b>` : ''}`],
       ['shop', '🛒 Commissary'],
       ['tasks', `🕵️ Sabotage${pendingClaims ? ` <b class="badge">${pendingClaims}</b>` : ''}`],
       ['mafia', '🐀 Snitches'],
@@ -1088,11 +1128,39 @@
       </section>`;
   }
 
+  function punishCard() {
+    const withOpen = byBlock(S.players).filter((p) => (p.sentences || []).some((x) => x.status === 'open'));
+    return `<section class="card">
+      <h3>⚖️ Hand out a punishment</h3>
+      <form data-admin="assignPunishment" class="grid2">
+        <label class="span2">Who<select id="pun_target" name="target">
+          <option value="all">Everyone (${S.players.length})</option>
+          <option value="holding">🕳️ The Holding Cell (${inHolding().length})</option>
+          <option value="solitary">🔒 Everyone in Solitary (${inSolitary().length})</option>
+          <optgroup label="Blocks">${S.teams.map((t) => `<option value="team:${t.id}">${h(t.name)}${t.nickname ? ` “${h(t.nickname)}”` : ''} (${blockmates(t.id).length})</option>`).join('')}</optgroup>
+          <optgroup label="One inmate">${byBlock(S.players).map((p) => `<option value="player:${p.id}">${h(p.name)} · ${h(p.teamId ? teamName(p.teamId) : 'Holding')}</option>`).join('')}</optgroup>
+        </select></label>
+        <label>Drinks each<input id="pun_drinks" name="drinks" type="number" min="0" max="10" value="1" /></label>
+        <label>Punishment (optional)<input id="pun_text" name="text" maxlength="120" list="pun_presets" placeholder="10 push-ups" /></label>
+        <datalist id="pun_presets">
+          ${['Take a shot', 'Waterfall until the Warden says stop', '10 push-ups', 'Sing a chorus of a song the hosts pick', 'Wear the jumpsuit for the next game', 'Hold your drink in your weak hand until the next game', 'Compliment every member of another block', 'Speak only in a prison-movie accent for 10 minutes'].map((x) => `<option value="${h(x)}"></option>`).join('')}
+        </datalist>
+        <label class="span2">Reason (shows in the feed)<input id="pun_reason" name="reason" maxlength="80" placeholder="cheating at flip cup" /></label>
+        <button class="btn span2">⚖️ Sentence them</button>
+      </form>
+      <p class="fine">Drinks go on their drink tab; the punishment shows on their Now tab until they tap Done.</p>
+      ${withOpen.length ? `<h3 class="section-h">Open punishments</h3><div class="ptable">${withOpen
+        .map((p) => (p.sentences || []).filter((x) => x.status === 'open').map((x) => `<div class="prow"><div class="p-n"><b>${h(p.name)}</b> ${statusChip(p)}</div><div class="fine">${h(x.text)} · from ${h(x.from)}${x.reason ? ` · ${h(x.reason)}` : ''}</div><div class="row">${btn('Clear', 'clearSentence', { playerId: p.id, sentenceId: x.id }, 'ghost sm')}</div></div>`).join(''))
+        .join('')}</div>` : ''}
+    </section>`;
+  }
+
   function aLockup() {
     const st = S.settings;
     const holding = inHolding();
     const solitary = inSolitary();
     return `
+      ${punishCard()}
       <section class="card">
         <h3>🕳️ Holding Cell (${holding.length})</h3>
         <p class="fine">Late arrivals and anyone kicked off a block. Parole them onto a block with the dropdown, or let blocks buy a 🔑 Bail Bond.</p>
@@ -1429,6 +1497,10 @@
     },
     'finish-open': (d) => { ui.finishing = d.heatId ? `${d.gameId}:${d.heatId}` : d.gameId; render(); },
     'rename-open': () => { ui.renaming = true; render(); },
+    'sentence-done': async (d) => {
+      const res = await act('sentenceDone', { sentenceId: d.sentenceId });
+      if (res.ok) toast('✅ Served your time.', 'ok');
+    },
     'rename-close': () => { ui.renaming = false; render(); },
     second: async (d) => {
       const res = await act('second', { requestId: d.requestId });
@@ -1497,7 +1569,7 @@
       if (res.ok) {
         LS.set('sss_token', res.result.token);
         kind = 'player';
-        ui.tab = 'cell';
+        ui.tab = 'yard';
         clearDrafts(form);
         toast('Welcome to the Slammer. 🔒', 'ok');
         render();
@@ -1565,7 +1637,7 @@
       const res = await admin(form.dataset.admin, data);
       if (res.ok) {
         clearDrafts(form);
-        if (['addGame', 'addTeam', 'addItem', 'announce', 'adjustBudget', 'sendToSolitary'].includes(form.dataset.admin)) form.reset();
+        if (['addGame', 'addTeam', 'addItem', 'announce', 'adjustBudget', 'sendToSolitary', 'assignPunishment'].includes(form.dataset.admin)) form.reset();
         render();
         toast('Done ✔', 'ok');
       }
