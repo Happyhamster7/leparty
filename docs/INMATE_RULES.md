@@ -16,20 +16,21 @@ Scan the QR code on the TV and type your name. You get an inmate number, a charg
 
 | Tab | What's there |
 | --- | --- |
-| Yard | The game on now and its rules, tonight's schedule, the gossip feed |
-| Commissary | Spend your block's credits |
-| My Block | Your block's credits, account activity, blockmates, stashed cards and orders (shows Holding or Solitary if that's where you are) |
+| My Block | Your home screen: block name and motto, rank, credits, your matchup, purchase requests to second, blockmates, account activity, stash and orders (shows Holding or Solitary if that's where you are) |
+| Yard | Your matchup, the game on now with its rules and heats, tonight's schedule, the gossip feed |
+| Commissary | Spend your block's credits, or ask your block to |
 | Rap Sheet | Your mugshot, your secret role (tap to reveal), the current game briefing, and Lights Out and vote screens |
 | Board | Block standings, the full roster and the drink tab |
 
-A red dot on a tab means something needs you: a new briefing, a vote, or a punishment aimed at your block.
+A red dot on a tab means something needs you: a new briefing, a vote, a purchase request to second, or a punishment aimed at your block.
 
 ## Blocks and credits
 
 You play in a block of 4 or 5 (Block A, Block B and so on). Each block starts with 20 credits and shares one budget.
 
-- **Earning credits:** win games. The two hosts, the Warden and the Commissary Officer, pay out after every game and can hand out bonuses or fines. Nobody else can create credits.
-- **Spending credits:** anyone on the block can spend at the commissary, unless the hosts say only your Shot Caller can.
+- **Earning credits:** win games. The two hosts, the Warden and the Commissary Officer, pay out after every heat and can hand out bonuses or fines. Nobody else can create credits.
+- **Spending is a block decision:** pick something in the Commissary and it goes to your block as a request. It goes through when your Shot Caller approves it or 2 blockmates second it. You can withdraw your own request, and the Shot Caller can veto one.
+- **Name your block:** your Shot Caller (or anyone, if your block has none) sets a nickname and motto on the My Block tab. It shows on everyone's phones and the TV.
 - **Standings:** blocks are ranked by credits earned tonight, so spending doesn't cost you rank.
 
 ## The commissary
@@ -56,8 +57,9 @@ When a game starts, a **briefing** pops up on every phone. Read it, then tap **G
 
 1. The briefing explains how to play, plus any extra rules for people in the Holding Cell or Solitary.
 2. Every briefing has a **Classified** box. Open it privately. If it says "No orders for you this round," play to win.
-3. Play the game. The hosts pay out credits when it ends.
-4. Each finished game counts as a round: Holding Cell and Solitary inmates owe their penalty drinks, and solitary sentences go down by one.
+3. Most games run in **heats**, a few blocks at a time. My Block tells you "You're up," "Up next," or "Sitting this one out," and the TV shows who's playing.
+4. The hosts pay out credits after each heat.
+5. Each finished game counts as a round: Holding Cell and Solitary inmates owe their penalty drinks, and solitary sentences go down by one.
 
 If the hosts change the rules mid-game, the briefing pops up again.
 

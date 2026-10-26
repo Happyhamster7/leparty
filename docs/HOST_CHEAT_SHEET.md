@@ -22,7 +22,7 @@ Either PIN works on either page; the PIN decides your title, which only changes 
 - [ ] Put `/tv` on the TV; both hosts log in on their phones
 - [ ] Games tab: add every game with its How to play text, Holding and Solitary rules, and an optional custom sabotage
 - [ ] Commissary tab: hide anything you can't actually serve, adjust prices, set stock limits
-- [ ] Settings tab: party name, tagline, starting credits, max block size, Shot-Caller-only spending
+- [ ] Settings tab: party name, tagline, starting credits, max block size, who can spend (block decides by default)
 - [ ] Lockup tab: check the Holding and Solitary rules and drinks per round
 - [ ] Sabotage tab: check the sabotage list and the survivor prize
 - [ ] Stock the real bar: mixers, ice, shot glasses, plenty of water
@@ -35,7 +35,7 @@ About 3 hours for 5 games. Snitch phases go every other game so Solitary doesn't
 | # | Stage | Host does | Tab |
 | --- | --- | --- | --- |
 | 1 | Arrival (30 min) | Guests scan and book in; announce the house rules | TV, Settings |
-| 2 | Blocks | Build blocks from Holding | Blocks |
+| 2 | Blocks | Build blocks from Holding; make a Shot Caller per block so blocks can name themselves and approve spending | Blocks |
 | 3 | Snitches | Plant snitches; tell everyone to check their Rap Sheet privately | Snitches |
 | 4 | Game 1 | Go live, play, finish and pay out | Games |
 | 5 | Game 2 + Lights Out | Game loop, then Lights Out and Lights On | Games, Snitches |
@@ -46,11 +46,15 @@ About 3 hours for 5 games. Snitch phases go every other game so Solitary doesn't
 
 ## Every game
 
-1. **Games tab, Go live.** The briefing pops up on every phone and the TV shows the rules. Each hidden snitch gets a sabotage in their Classified box.
-2. **Explain it out loud** while people read. Point out the Holding and Solitary rules for this game.
-3. **During play:** one host referees; the other works the Orders tab (deliver drinks, enforce punishments) and the Sabotage tab (judge claims).
-4. **Games tab, Finish and pay out.** Enter credits per block (for example 30 / 20 / 10). Leave "Apply round penalties" ticked: Holding owes 1 drink, Solitary 2, and sentences drop by one.
-5. **Snitch phase** if it's due (see Running the snitch game).
+1. **Games tab, set matchups.** Tap **Pairs** (or Threes, Fours, All blocks). A leftover block joins the last heat, so nobody plays alone. Use **Custom heat** for a final between winners.
+2. **Start heat 1.** The game goes live: the briefing pops up on every phone, the TV shows the rules and who's playing, and each hidden snitch gets a sabotage in their Classified box. Phones show "You're up," "Up next" or "Sitting this one out."
+3. **Explain it out loud** while people read. Point out the Holding and Solitary rules for this game.
+4. **During play:** one host referees; the other works the Orders tab (deliver drinks, enforce punishments) and the Sabotage tab (judge claims).
+5. **Score heat** after each heat (for example 30 / 10), then **Start heat** on the next one.
+6. **Finish and pay out** once the last heat is scored. Heat credits are already paid, so add only bonuses. Leave "Apply round penalties" ticked: Holding owes 1 drink, Solitary 2, and sentences drop by one.
+7. **Snitch phase** if it's due (see Running the snitch game).
+
+No heats set? Everyone plays at once and you pay out in Finish and pay out, as before.
 
 ## Calls you make
 
@@ -90,6 +94,8 @@ If every snitch gets caught early, the snitch game ends itself and the blocks wi
 | --- | --- | --- |
 | Starting credits per block | 20 | Settings |
 | Max inmates per block | 5 | Settings |
+| Who can spend | Block decides (Shot Caller approves or blockmates second) | Settings |
+| Seconds needed | 2 | Settings |
 | Holding Cell drinks per round | 1 | Lockup |
 | Solitary drinks per round | 2 | Lockup |
 | Snitch chance per block | 50% | Snitches |
