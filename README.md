@@ -15,6 +15,8 @@ Plus two places nobody wants to be:
 
 > **House rules:** every drink can be swapped for a water or a sip, no questions asked. This line shows next to every drink owed and can be edited by the Warden.
 
+Printable copies: [Inmate Rules](docs/INMATE_RULES.md) for guests, and the [Host Cheat Sheet](docs/HOST_CHEAT_SHEET.md) for the Warden and Commissary Officer.
+
 ## Hosts
 
 There are two hosts: the **Warden** and the **Commissary Officer**. They have **identical powers**, and the title is purely for show: it changes the console header and how they're named in the feed ("The Commissary Officer paid Block A 10 credits"). Each logs in with their own PIN.
