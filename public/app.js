@@ -14,6 +14,7 @@
   let S = null;
   let guest = {};
   let online = true;
+  let offlineReason = '';
   let pendingRender = false;
   const ui = {
     tab: LS.get('sss_tab') || 'yard',
@@ -93,7 +94,7 @@
   }
 
   function setOnline(on) {
-    if (online === on) return;
+    if (online === on && on) return;
     online = on;
     render();
   }
@@ -104,8 +105,12 @@
       if (version !== null) qs.set('v', version);
       if (route === '/tv') qs.set('tv', '1');
       const r = await fetch(`/api/state?${qs}`, { headers: creds(), cache: 'no-store' });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      if (!r.ok) {
+        offlineReason = (await r.json().catch(() => ({}))).error || '';
+        throw new Error(`HTTP ${r.status}`);
+      }
       const res = await r.json();
+      offlineReason = '';
       setOnline(true);
       apply(res);
     } catch {
@@ -212,7 +217,7 @@
   }
 
   function page() {
-    const offline = online ? '' : '<div class="offline">📡 Lost signal to the yard… reconnecting</div>';
+    const offline = online ? '' : `<div class="offline">${h(offlineReason || '📡 Lost signal to the yard… reconnecting')}</div>`;
     if (kind === 'connecting') return `${offline}<div class="boot">Booking you in…</div>`;
     if (kind === 'tv') return offline + (S ? tvPage() : '');
     if (kind === 'admin') return offline + (S ? adminPage() : '');
