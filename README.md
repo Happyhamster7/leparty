@@ -21,6 +21,8 @@ Printable copies: [Inmate Rules](docs/INMATE_RULES.md) for guests, and the [Host
 
 There are two hosts: the **Warden** and the **Commissary Officer**. They have **identical powers**, and the title is purely for show: it changes the console header and how they're named in the feed ("The Commissary Officer paid Block A 10 credits"). Each logs in with their own PIN.
 
+**Hosts can sentence anyone** from the ⚖️ Punish / Lockup tab: one inmate, a block, the Holding Cell, everyone in Solitary, or everyone. They can hand out drinks, a written punishment (with presets like "10 push-ups" or "Waterfall"), or both, plus a reason that shows in the feed. Drinks go on the drink tab. The punishment sits on the person's Now tab until they tap Done, and hosts can clear it. Dare-style commissary punishments (Yard Drills, Chain Gang, Confession Booth) also land on each victim's Now tab.
+
 **Only hosts can give or take credits**, through payouts, fines, game results and refunds. Hosts also **judge every snitch sabotage**: a snitch tapping Done only files a claim, and nothing happens until a host approves it (🕵️ Sabotage tab).
 
 Players still spend their block's credits at the commissary themselves, and track their own penalty drinks on the honor system. Hosts can correct the drink tab at any time.
@@ -36,8 +38,8 @@ Players still spend their block's credits at the commissary themselves, and trac
 
 ### Player tabs
 
-- **My Block** (the home screen): your block's name, nickname and motto, its rank, credits, your current matchup, purchase requests waiting on a second, account activity (watch for unexplained withdrawals), blockmates, contraband stash, wiretap results, who's in Holding (people you could bail), and your block's orders. The tab becomes **Holding** or **Solitary** when that's where you are.
-- **Yard**: your matchup, the game that's on now (how to play, its extra Holding/Solitary rules, and every heat), the schedule and the gossip feed.
+- **Now** (the home screen): your to-do list (penalty drinks to pay off, punishments to serve with a Done button, incoming punishments, Lights Out picks, votes and purchase requests waiting on you), then your matchup, the game that's on now with its heats, the schedule and the gossip feed.
+- **My Block**: your block's name, nickname and motto, its rank, credits, your current matchup, purchase requests waiting on a second, account activity (watch for unexplained withdrawals), blockmates, contraband stash, wiretap results, who's in Holding (people you could bail), and your block's orders. The tab becomes **Holding** or **Solitary** when that's where you are.
 - **Commissary**: spend, or ask your block to spend, the block's credits.
 - **Rap Sheet**: your mugshot (inmate #, a random charge), your secret role (tap to reveal) and the current game's briefing with its Classified box. Lights Out picks and block votes happen here.
 - **Board**: standings, the full roster and the 🍺 drink tab.

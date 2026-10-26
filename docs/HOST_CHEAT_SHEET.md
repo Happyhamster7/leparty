@@ -67,10 +67,11 @@ No heats set? Everyone plays at once and you pay out in Finish and pay out, as b
 | A block is stalling on a punishment | Orders | Force it |
 | An order you can't fill | Orders | Refund |
 | Bonus or fine | Payouts | +1 / +5 / +10 / +25, or a custom amount with a reason (it shows in the feed) |
-| Someone breaks a rule | Lockup | Send to solitary: person, rounds, reason |
-| Solitary is overcrowded | Lockup | Release |
-| Someone earns their way out of Holding | Blocks or Lockup | Pick their block in the dropdown |
-| The drink tab is wrong | Lockup | Drink +1 or -1 for that person |
+| Someone deserves a shot or a dare | Punish / Lockup | Hand out a punishment: one inmate, a block, Holding, Solitary or everyone; drinks, a written punishment, or both |
+| Someone breaks a rule | Punish / Lockup | Send to solitary: person, rounds, reason |
+| Solitary is overcrowded | Punish / Lockup | Release |
+| Someone earns their way out of Holding | Blocks or Punish / Lockup | Pick their block in the dropdown |
+| The drink tab is wrong | Punish / Lockup | Drink +1 or -1 for that person |
 | Everyone needs to hear something | Settings | PA announcement: shows on every phone and the TV |
 
 Nobody else can change credits, so every dispute ends with you.

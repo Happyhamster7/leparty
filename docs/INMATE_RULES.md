@@ -16,8 +16,8 @@ Scan the QR code on the TV and type your name. You get an inmate number, a charg
 
 | Tab | What's there |
 | --- | --- |
-| My Block | Your home screen: block name and motto, rank, credits, your matchup, purchase requests to second, blockmates, account activity, stash and orders (shows Holding or Solitary if that's where you are) |
-| Yard | Your matchup, the game on now with its rules and heats, tonight's schedule, the gossip feed |
+| Now | Your home screen: drinks you owe, punishments to serve, votes and requests waiting on you, then your matchup, the game on now and the gossip feed |
+| My Block | Block name and motto, rank, credits, your matchup, purchase requests to second, blockmates, account activity, stash and orders (shows Holding or Solitary if that's where you are) |
 | Commissary | Spend your block's credits, or ask your block to |
 | Rap Sheet | Your mugshot, your secret role (tap to reveal), the current game briefing, and Lights Out and vote screens |
 | Board | Block standings, the full roster and the drink tab |
@@ -92,6 +92,6 @@ About half the blocks have a hidden snitch. Nobody knows which ones. Check your 
 
 **Any drink can be swapped for a water or a sip, no questions asked.** Look after each other.
 
-- Drinks you owe show at the top of your phone. Tap **Drank one** each time you pay one off. It's on your honor, and the whole room can see the drink tab on the TV.
+- Drinks and punishments you owe are listed on your **Now** tab. Tap **Drank one** or **Done** as you serve them. Hosts can sentence anyone, any time. It's on your honor, and the whole room can see the drink tab on the TV.
 - The hosts have the final word on every rule, sabotage and dispute.
 - Don't show your secret role or your Classified box to anyone.
