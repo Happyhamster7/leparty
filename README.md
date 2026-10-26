@@ -117,25 +117,45 @@ Environment variables:
 | `PORT`      | `3000`              |                                                          |
 | `WARDEN_PIN` | `1234`             | **Change this** before the party (`ADMIN_PIN` also works) |
 | `OFFICER_PIN` | `5678`            | **Change this** too; must differ from the Warden's        |
-| `DATA_FILE` | `data/state.json`   | All game state is saved here and survives restarts        |
+| `DATA_FILE` | `data/state.json`   | Local saves; survives restarts (not used when Redis is set) |
+| `KV_REST_API_URL` / `KV_REST_API_TOKEN` | — | Upstash Redis (required on Vercel; set by the integration) |
 
 To start fresh, stop the server and delete `data/state.json`.
 
 ### Hosting for the party
 
-Everyone's phone needs to reach the server. Options, easiest first:
+Everyone's phone needs to reach the server. Options:
+
+#### Vercel
+
+The repo deploys to Vercel as static files (`public/`) plus three serverless functions (`api/`). Game state lives in Upstash Redis, because Vercel functions don't keep anything in memory between requests.
+
+1. **Project settings → Build and Deployment:**
+   - Framework Preset: **Other** (not Next.js). `vercel.json` also sets this, so it applies even if the dashboard says otherwise.
+   - Build Command: leave empty.
+   - Output Directory: `public`.
+   - Install Command: default.
+2. **Storage → Create Database → Upstash Redis** (free tier is enough), then connect it to this project. That adds `KV_REST_API_URL` and `KV_REST_API_TOKEN` automatically. A direct Upstash database works too: set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`.
+3. **Environment Variables:** add `WARDEN_PIN` and `OFFICER_PIN` (different from each other).
+4. Deploy, then open `/warden` on your phone and `/tv` on the TV.
+
+Phones check for updates every 2 seconds. A 40-guest, 3-hour night is roughly 200–300k function calls and Redis reads, which fits the Vercel Hobby and Upstash free tiers. To wipe the game on Vercel, delete the `sss:v` and `sss:s` keys in the Upstash console (or set a new `STATE_KEY`).
+
+#### Anywhere else
 
 - **Same Wi-Fi**: run it on a laptop at the party and share `http://<laptop-ip>:3000`. The TV QR code uses whatever address the TV opened, so open `/tv` via the IP, not `localhost`.
 - **Tunnel**: `npx cloudflared tunnel --url http://localhost:3000` (or ngrok) gives you a public https URL that works on cellular too.
-- **Cloud**: any Node host that supports WebSockets (Render, Railway, Fly.io). Start command is `npm start`. Set `WARDEN_PIN` and `OFFICER_PIN`. Without a persistent disk, state resets on redeploy, which is fine for one night.
+- **Cloud**: any long-running Node host (Render, Railway, Fly.io). Start command is `npm start`. Set `WARDEN_PIN` and `OFFICER_PIN`. Without a persistent disk (or the Redis variables above), state resets on redeploy, which is fine for one night.
 
 ## Development
 
 ```bash
 npm run dev   # restarts on file changes
-npm test      # rules engine tests (node:test)
+npm test      # rules engine + API tests (node:test)
 ```
 
 - `lib/game.js`: all game rules and per-viewer views. Players never receive other players' secret roles, anyone's sabotage, the sabotage list, other blocks' stash/ledger/wiretap results, or login tokens.
-- `server.js`: Express + Socket.io. Every mutation is saved and pushes fresh state to every connected screen.
+- `lib/api.js`: the HTTP API. Phones poll `GET /api/state` (a cheap version check when nothing changed) and send every change to `POST /api/action`. Each change reloads the state, applies it and saves with compare-and-set, retrying if someone else saved first.
+- `lib/store.js`: where state lives: Upstash Redis when its variables are set, otherwise memory mirrored to `DATA_FILE`.
+- `api/`: the Vercel functions. `server.js`: the same handlers behind Express for `npm start`.
 - `public/`: a single-page client in vanilla JS (no build step).

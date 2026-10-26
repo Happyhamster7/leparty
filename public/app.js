@@ -1,6 +1,5 @@
 /* Shifty Shen Slammer — client. One file, no build step. */
 (() => {
-  const socket = io();
   const $app = document.getElementById('app');
   const LS = {
     get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
@@ -14,7 +13,7 @@
   let kind = 'connecting'; // connecting | guest | player | admin | tv
   let S = null;
   let guest = {};
-  let online = false;
+  let online = true;
   let pendingRender = false;
   const ui = {
     tab: LS.get('sss_tab') || 'yard',
@@ -60,51 +59,86 @@
     setTimeout(() => el.remove(), 3900);
   }
 
-  function send(event, payload = {}) {
-    return new Promise((resolve) => {
-      socket.timeout(8000).emit(event, payload, (err, res) => {
-        if (err) res = { ok: false, error: 'The server is not answering. Check your connection.' };
-        if (!res.ok) toast(res.error, 'error');
-        resolve(res);
-      });
-    });
-  }
-  const admin = (type, args = {}) => send('admin', { type, ...args });
-  const act = (type, args = {}) => send('act', { type, ...args });
+  // ---------- server ----------
+  // Phones poll for changes (Vercel functions can't hold WebSockets open) and push every change through /api/action.
+  const POLL_MS = 2000;
+  let version = null;
+  let pollTimer = null;
 
-  // ---------- connection ----------
-  socket.on('connect', () => {
-    online = true;
-    socket.emit(
-      'hello',
-      { token: LS.get('sss_token'), adminToken: hostRoute ? LS.get('sss_admin') : null, tv: route === '/tv' },
-      (res) => {
-        kind = res.kind;
-        if (kind === 'guest') {
-          guest = res;
-          S = null;
-        }
-        render();
-      },
-    );
-  });
-  socket.on('disconnect', () => {
-    online = false;
+  // Each screen sends only the credential it acts with: hosts on /warden and /officer, players on /, nothing on /tv.
+  const creds = () =>
+    route === '/tv' ? {} : hostRoute ? { 'x-host-token': LS.get('sss_admin') || '' } : { 'x-player-token': LS.get('sss_token') || '' };
+
+  // Takes a server reply carrying { kind, version, view } and shows it.
+  function apply(res) {
+    if (!res || res.same || !res.kind) return;
+    if (version !== null && res.version < version) return; // an older poll that lost the race
+    version = res.version;
+    if (res.kind === 'guest') {
+      if (res.kicked) {
+        LS.del('sss_token');
+        if (kind === 'player') toast('A host released you from the system. Book in again to rejoin.', 'error');
+      }
+      kind = 'guest';
+      guest = res;
+      S = null;
+      render();
+      return;
+    }
+    const prev = kind === res.kind ? S : null;
+    kind = res.kind;
+    S = res.view;
+    if (kind === 'player') notifyChanges(prev, S);
     render();
-  });
-  socket.on('state', (v) => {
-    const prev = S;
-    S = v;
-    if (kind === 'player') notifyChanges(prev, v);
+  }
+
+  function setOnline(on) {
+    if (online === on) return;
+    online = on;
     render();
+  }
+
+  async function poll() {
+    try {
+      const qs = new URLSearchParams();
+      if (version !== null) qs.set('v', version);
+      if (route === '/tv') qs.set('tv', '1');
+      const r = await fetch(`/api/state?${qs}`, { headers: creds(), cache: 'no-store' });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const res = await r.json();
+      setOnline(true);
+      apply(res);
+    } catch {
+      setOnline(false);
+    }
+  }
+
+  function schedule() {
+    clearTimeout(pollTimer);
+    pollTimer = setTimeout(async () => {
+      if (!document.hidden || route === '/tv') await poll();
+      schedule();
+    }, POLL_MS);
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) poll();
   });
-  socket.on('kicked', () => {
-    LS.del('sss_token');
-    kind = 'guest';
-    S = null;
-    toast('A host released you from the system. Book in again to rejoin.', 'error');
-    render();
-  });
+
+  async function send(body) {
+    let res;
+    try {
+      const r = await fetch('/api/action', { method: 'POST', headers: { 'Content-Type': 'application/json', ...creds() }, body: JSON.stringify(body) });
+      res = await r.json();
+      setOnline(true);
+    } catch {
+      res = { ok: false, error: 'The server is not answering. Check your connection.' };
+    }
+    if (!res.ok) toast(res.error, 'error');
+    else apply(res);
+    return res;
+  }
+  const admin = (type, args = {}) => send({ kind: 'admin', type, args });
+  const act = (type, args = {}) => send({ kind: 'act', type, args });
 
   const buzz = (p) => navigator.vibrate && navigator.vibrate(p);
   function notifyChanges(prev, next) {
@@ -1211,7 +1245,7 @@
     },
     'finish-open': (d) => { ui.finishing = d.gameId; render(); },
     'finish-close': () => { ui.finishing = null; render(); },
-    logout: () => { LS.del('sss_admin'); socket.emit('logout'); kind = 'guest'; S = null; render(); },
+    logout: () => { LS.del('sss_admin'); kind = 'guest'; S = null; version = null; render(); poll(); },
     admin: async (d) => {
       if (d.confirm && !confirm(d.confirm)) return;
       const { act: _a, type, confirm: _c, ...args } = d;
@@ -1261,7 +1295,7 @@
 
   const FORMS = {
     join: async (data, form) => {
-      const res = await send('join', { name: data.name });
+      const res = await send({ kind: 'join', name: data.name });
       if (res.ok) {
         LS.set('sss_token', res.result.token);
         kind = 'player';
@@ -1272,7 +1306,7 @@
       }
     },
     pin: async (data, form) => {
-      const res = await send('admin:login', { pin: data.pin });
+      const res = await send({ kind: 'login', pin: data.pin });
       if (res.ok) {
         LS.set('sss_admin', res.result.adminToken);
         kind = 'admin';
@@ -1312,4 +1346,5 @@
   });
 
   render();
+  poll().then(schedule);
 })();
