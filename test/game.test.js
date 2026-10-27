@@ -583,3 +583,46 @@ test('dare-style commissary punishments land on the victims’ to-do lists', () 
   g.respondPunishment(players[1].id, { orderId: o2.id, choice: 'accept' });
   assert.equal(players[1].sentences.length, 1, 'drink punishments go on the drink tab, not the to-do list twice');
 });
+
+test('removing inmates cleans up votes, picks, requests and claims', () => {
+  const { g, a, players } = setup(6); // A = P0, P2, P4
+  g.dealSnitches({ chance: 0, atLeastOne: false });
+  g.updatePlayer({ playerId: players[4].id, role: 'snitch' });
+  g.dealTasks();
+  g.reportTask(players[4].id, { result: 'done' });
+  g.updateSettings({ spendMode: 'request', requestSeconds: 2 });
+  g.buy(players[2].id, { itemId: itemOf(g, 'supply').id });
+  g.secondRequest(players[0].id, { requestId: a.requests[0].id });
+  g.openVote();
+  g.castVote(players[0].id, { targetId: players[2].id });
+  g.castVote(players[2].id, { targetId: players[0].id });
+  g.removePlayers({ playerIds: [players[2].id, players[4].id] });
+  assert.equal(g.s.players.length, 4);
+  assert.equal(a.requests.length, 0, 'their request is gone');
+  assert.deepEqual(g.s.mafia.vote.votes, {}, 'votes by or about them are gone');
+  assert.equal(g.s.claims.length, 0);
+  assert.equal(g.viewFor(players[2].id), null, 'their phone no longer has a view');
+  assert.throws(() => g.removePlayers({ playerIds: ['nope'] }), /at least one/);
+});
+
+test('fresh start wipes the night but keeps the setup', () => {
+  const { g, players } = setup(4);
+  const game = g.addGame({ name: 'Flip Cup', rules: 'Flip it.' });
+  g.makeHeats({ gameId: game.id, size: 2 });
+  g.finishGame({ gameId: game.id, results: {} });
+  const host = g.newHostToken('warden');
+  g.updateSettings({ partyName: 'Shen 30' });
+  assert.throws(() => g.freshStart({ confirm: 'yes' }), /RESET/);
+  g.freshStart({ confirm: 'reset' });
+  assert.equal(g.s.players.length, 0);
+  assert.equal(g.s.teams.length, 0);
+  assert.equal(g.s.orders.length, 0);
+  assert.equal(g.s.feed.length, 1);
+  assert.equal(game.status, 'upcoming');
+  assert.equal(game.rules, 'Flip it.');
+  assert.deepEqual(game.heats, []);
+  assert.equal(g.s.settings.partyName, 'Shen 30');
+  assert.equal(g.hostRole(host), 'warden', 'hosts stay logged in');
+  assert.ok(g.s.items.length > 0);
+  assert.ok(players);
+});

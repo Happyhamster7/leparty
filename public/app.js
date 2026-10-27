@@ -1076,9 +1076,9 @@
     return [...list].sort((a, b) => (order[a.teamId] ?? 999) - (order[b.teamId] ?? 999) || a.name.localeCompare(b.name));
   };
 
-  function playerRow(p, extra = '') {
+  function playerRow(p, extra = '', selectable = false) {
     return `<div class="prow ${p.status}">
-      <div class="p-n"><b>${h(p.name)}</b> <span class="fine">#${h(p.inmateNo)} · ${h(roleOf(p.role)?.emoji)}${p.revealed ? ' (exposed)' : ''}${p.drinksOwed ? ` · 🍺×${p.drinksOwed}` : ''}</span> ${p.status === 'solitary' ? `<span class="chip red">🔒 ${plural(p.solitary.rounds, 'rd')}</span>` : ''}</div>
+      <div class="p-n">${selectable ? `<input type="checkbox" class="pick" id="sel_${p.id}" name="sel_${p.id}" aria-label="Select ${h(p.name)}" /> ` : ''}<b>${h(p.name)}</b> <span class="fine">#${h(p.inmateNo)} · ${h(roleOf(p.role)?.emoji)}${p.revealed ? ' (exposed)' : ''}${p.drinksOwed ? ` · 🍺×${p.drinksOwed}` : ''}</span> ${p.status === 'solitary' ? `<span class="chip red">🔒 ${plural(p.solitary.rounds, 'rd')}</span>` : ''}</div>
       <select id="pt_${p.id}" data-change="updatePlayer" data-player-id="${p.id}" name="teamId">
         <option value="">🕳️ Holding Cell</option>${S.teams.map((t) => `<option value="${t.id}" ${p.teamId === t.id ? 'selected' : ''}>${h(t.name)}</option>`).join('')}
       </select>
@@ -1120,11 +1120,13 @@
       </section>
       <section class="card">
         <h3>All inmates (${S.players.length})</h3>
-        ${S.players.length ? `<div class="ptable">${byBlock(S.players)
+        ${S.players.length ? `<form data-form="remove-players">
+          <div class="row wrap"><button type="button" class="btn ghost sm" data-act="select-all">Select all</button><button class="btn sm danger">🗑 Remove selected</button></div>
+          <div class="ptable">${byBlock(S.players)
           .map((p) => playerRow(p, `
               ${p.teamId ? btn(p.isCaptain ? '👑 Captain' : 'Make 👑', 'updatePlayer', { playerId: p.id, isCaptain: !p.isCaptain }, p.isCaptain ? 'sm' : 'ghost sm') : ''}
-              ${btn('🗑', 'removePlayer', { playerId: p.id }, 'ghost sm', `Remove ${p.name} from the party? Their phone gets logged out.`)}`))
-          .join('')}</div>` : `<p class="empty">Nobody booked yet. Put the TV screen up so people can scan the QR code.</p>`}
+              ${btn('🗑', 'removePlayer', { playerId: p.id }, 'ghost sm', `Remove ${p.name} for good? Their phone gets logged out.`)}`, true))
+          .join('')}</div></form>` : `<p class="empty">Nobody booked yet. Put the TV screen up so people can scan the QR code.</p>`}
       </section>`;
   }
 
@@ -1368,6 +1370,11 @@
           <button class="btn span2">Save settings</button>
         </form>
       </section>
+      <section class="card danger-zone">
+        <h3>🧨 Fresh start</h3>
+        <p class="fine">Removes every inmate, block, order, punishment, sabotage claim and feed line, and resets every game to upcoming. Keeps your games and their rules, the commissary shelf, settings and host logins. Use it to clear out test data before the party.</p>
+        <form data-admin="freshStart" class="row wrap"><input id="fs_confirm" name="confirm" placeholder="Type RESET" autocomplete="off" /><button class="btn danger" data-confirm="Wipe every inmate, block and order and start fresh? This can't be undone.">Wipe it</button></form>
+      </section>
       <section class="card">
         <h3>Links</h3>
         <p>Players join at <b>${h(location.origin)}/</b><br/>TV / projector: <b>${h(location.origin)}/tv</b><br/>Warden: <b>${h(location.origin)}/warden</b></p>
@@ -1497,6 +1504,12 @@
     },
     'finish-open': (d) => { ui.finishing = d.heatId ? `${d.gameId}:${d.heatId}` : d.gameId; render(); },
     'rename-open': () => { ui.renaming = true; render(); },
+    'select-all': () => {
+      const ids = S.players.map((p) => `sel_${p.id}`);
+      const all = ids.every((id) => drafts[id]);
+      for (const id of ids) drafts[id] = !all;
+      render();
+    },
     'sentence-done': async (d) => {
       const res = await act('sentenceDone', { sentenceId: d.sentenceId });
       if (res.ok) toast('✅ Served your time.', 'ok');
@@ -1584,6 +1597,17 @@
         render();
       }
     },
+    'remove-players': async (data, form) => {
+      const playerIds = Object.entries(data).filter(([k, v]) => k.startsWith('sel_') && v).map(([k]) => k.slice(4));
+      if (!playerIds.length) return toast('Tick the inmates to remove first.', 'error');
+      if (!confirm(`Remove ${playerIds.length === 1 ? '1 inmate' : `${playerIds.length} inmates`} for good? Their phones get logged out.`)) return;
+      const res = await admin('removePlayers', { playerIds });
+      if (res.ok) {
+        clearDrafts(form);
+        render();
+        toast(`🗑 Removed ${playerIds.length}.`, 'ok');
+      }
+    },
     rename: async (data, form) => {
       const res = await act('rename', { nickname: data.nickname, motto: data.motto });
       if (res.ok) {
@@ -1637,7 +1661,7 @@
       const res = await admin(form.dataset.admin, data);
       if (res.ok) {
         clearDrafts(form);
-        if (['addGame', 'addTeam', 'addItem', 'announce', 'adjustBudget', 'sendToSolitary', 'assignPunishment'].includes(form.dataset.admin)) form.reset();
+        if (['addGame', 'addTeam', 'addItem', 'announce', 'adjustBudget', 'sendToSolitary', 'assignPunishment', 'freshStart'].includes(form.dataset.admin)) form.reset();
         render();
         toast('Done ✔', 'ok');
       }

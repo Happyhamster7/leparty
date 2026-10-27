@@ -26,7 +26,7 @@ Either PIN works on either page; the PIN decides your title, which only changes 
 - [ ] Lockup tab: check the Holding and Solitary rules and drinks per round
 - [ ] Sabotage tab: check the sabotage list and the survivor prize
 - [ ] Stock the real bar: mixers, ice, shot glasses, plenty of water
-- [ ] Test with 3 or 4 phones, then wipe it: stop the server and delete `data/state.json`
+- [ ] Test with 3 or 4 phones, then wipe it: Settings tab, Fresh start (type RESET)
 
 ## Run of show
 
@@ -116,7 +116,8 @@ If every snitch gets caught early, the snitch game ends itself and the blocks wi
 | Phones show "Lost signal" | Check the Wi-Fi or tunnel and that the server is running; phones reconnect on their own |
 | The TV's QR code doesn't work | Reopen `/tv` using the laptop's IP or the tunnel URL |
 | A host got logged out | Re-enter the PIN |
-| Need a clean slate | Stop the server and delete `data/state.json` |
+| Remove test or duplicate inmates | Blocks tab: tick them, then Remove selected (their phones get logged out) |
+| Need a clean slate | Settings tab: Fresh start (type RESET). Keeps games, shop, settings and host logins |
 
 ## Still to decide
 

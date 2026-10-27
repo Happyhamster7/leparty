@@ -430,3 +430,10 @@ textarea {
 .todo .mega { font-size: 24px; }
 .todo.drink b { color: var(--yellow); }
 .todo.sentence b { color: var(--orange2); }
+
+/* ---------- removal ---------- */
+.btn.danger { background: var(--red); color: #fff; }
+.danger-zone { border-color: #6b1f1f; }
+.prow .pick { width: 18px; height: 18px; vertical-align: middle; margin-right: 4px; }
+
+.row > input[type='color'] { flex: 0 0 46px; }

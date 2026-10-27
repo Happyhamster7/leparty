@@ -129,7 +129,7 @@ Environment variables:
 | `DATA_FILE` | `data/state.json`   | Local saves; survives restarts (not used when Redis is set) |
 | `KV_REST_API_URL` / `KV_REST_API_TOKEN` | — | Upstash Redis (required on Vercel; set by the integration) |
 
-To start fresh, stop the server and delete `data/state.json`.
+To clear out test data, use **Settings → Fresh start** (type RESET). It removes every inmate, block, order and feed line but keeps your games, shop, settings and host logins. To remove only some people, tick them on the Blocks tab and tap **Remove selected**. For a total wipe, including settings, stop the server and delete `data/state.json`.
 
 ### Hosting for the party
 
@@ -148,7 +148,7 @@ The repo deploys to Vercel as static files (`public/`) plus three serverless fun
 3. **Environment Variables:** add `WARDEN_PIN` and `OFFICER_PIN` (different from each other).
 4. Deploy, then open `/warden` on your phone and `/tv` on the TV.
 
-Phones check for updates every 2 seconds. A 40-guest, 3-hour night is roughly 200–300k function calls and Redis reads, which fits the Vercel Hobby and Upstash free tiers. To wipe the game on Vercel, delete the `sss:v` and `sss:s` keys in the Upstash console (or set a new `STATE_KEY`).
+Phones check for updates every 2 seconds. A 40-guest, 3-hour night is roughly 200–300k function calls and Redis reads, which fits the Vercel Hobby and Upstash free tiers. To clear test data on Vercel, use **Settings → Fresh start**. For a total wipe including settings, delete the `sss:v` and `sss:s` keys in the Upstash console (or set a new `STATE_KEY`).
 
 #### Anywhere else
 
