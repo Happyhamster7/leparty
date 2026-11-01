@@ -36,6 +36,14 @@ Players still spend their block's credits at the commissary themselves, and trac
 | `/officer`| Commissary Officer | Host console (Officer PIN)                                                            |
 | `/tv`     | Projector   | Standings, current game and its lockup rules, Holding/Solitary with drinks owed, block-vote progress, gossip feed, QR code to join |
 
+### The look
+
+The app is styled like a Vice City night out: a sunset-and-palms banner, neon pink, orange and teal, and big condensed headlines. Phones show a GTA-style HUD in the top corner: block credits as cash and a wanted level. Solitary is 5 stars and Holding 3; on a block, owed drinks and open punishments add a star each. Big full-screen stamps pop up at key moments:
+
+- **MISSION PASSED / MISSION FAILED** when your block's heat (or a game without heats) gets scored.
+- **BUSTED** when you're sent to Solitary.
+- **WASTED** when you're kicked off your block into the Holding Cell.
+
 ### Player tabs
 
 - **Now** (the home screen): your to-do list (penalty drinks to pay off, punishments to serve with a Done button, incoming punishments, Lights Out picks, votes and purchase requests waiting on you), then your matchup, the game that's on now with its heats, the schedule and the gossip feed.

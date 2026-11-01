@@ -50,6 +50,14 @@
         ? chip(null)
         : chip(team(p.teamId));
 
+  // Wanted level, GTA style: Solitary is five stars, Holding three, and owed drinks or open sentences add one each.
+  const wantedLevel = (p) =>
+    p.status === 'solitary' ? 5 : p.status === 'holding' ? 3 : (p.drinksOwed > 0 ? 1 : 0) + ((p.sentences || []).some((x) => x.status === 'open') ? 1 : 0);
+  const wantedStars = (p) => {
+    const n = wantedLevel(p);
+    return `<div class="wanted${n >= 3 ? ' hot' : ''}" title="Wanted level ${n} of 5" aria-label="Wanted level ${n} of 5">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= n ? 'on' : ''}">★</i>`).join('')}</div>`;
+  };
+
   const rankOf = (id) => standings().findIndex((t) => t.id === id) + 1;
   const nick = (t) => (t?.nickname ? ` <span class="nick">“${h(t.nickname)}”</span>` : '');
 
@@ -130,6 +138,45 @@
       .filter(([, ps]) => ps.length)
       .map(([label, ps]) => `<div class="tgroup"><div class="tgroup-h">${label}</div><div class="targets">${ps.map(button).join('')}</div></div>`)
       .join('');
+  }
+
+  // Vice City sunset with palms, drawn inline so it needs no image files.
+  const PALM_LEAF = 'M0 0C20-14 44-10 64 8C44-2 22-4 0 4Z';
+  const palm = (x, y, k, flip) => `<g transform="translate(${x} ${y}) scale(${flip ? -k : k} ${k})">
+      <path d="M0 0Q-12 70 10 150" stroke="#0e0818" stroke-width="7" fill="none" stroke-linecap="round"/>
+      ${[-40, -8, 24].map((a) => `<path d="${PALM_LEAF}" transform="rotate(${a})"/><path d="${PALM_LEAF}" transform="scale(-1 1) rotate(${a})"/>`).join('')}
+      <path d="${PALM_LEAF}" transform="rotate(-78)"/>
+    </g>`;
+  const hero = (thin) => `<div class="hero${thin ? ' thin' : ''}" aria-hidden="true">
+    <svg viewBox="0 0 400 210" preserveAspectRatio="xMidYM${thin ? 'id' : 'ax'} slice">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c0b35"/><stop offset=".45" stop-color="#6a1f6e"/><stop offset=".75" stop-color="#ff3d8b"/><stop offset="1" stop-color="#ff9b3d"/></linearGradient>
+        <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe066"/><stop offset=".6" stop-color="#ff9b3d"/><stop offset="1" stop-color="#ff3d8b"/></linearGradient>
+        <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3d1552"/><stop offset="1" stop-color="#0e0818"/></linearGradient>
+      </defs>
+      <rect width="400" height="152" fill="url(#sky)"/>
+      <g fill="#fff" opacity=".7"><circle cx="40" cy="22" r="1"/><circle cx="120" cy="12" r="1.2"/><circle cx="300" cy="18" r="1"/><circle cx="360" cy="40" r=".8"/><circle cx="210" cy="30" r=".9"/></g>
+      <circle cx="200" cy="138" r="64" fill="url(#sun)"/>
+      <g fill="#ff3d8b">${[104, 116, 126, 135, 143].map((y, i) => `<rect x="130" y="${y}" width="140" height="${2 + i}"/>`).join('')}</g>
+      <rect y="150" width="400" height="60" fill="url(#sea)"/>
+      <g fill="#ff9b3d" opacity=".55">${[156, 163, 171, 180].map((y, i) => `<rect x="${170 - i * 8}" y="${y}" width="${60 + i * 16}" height="1.6" rx=".8"/>`).join('')}</g>
+      <g fill="#1fe0d0" opacity=".25"><rect x="20" y="168" width="70" height="1"/><rect x="300" y="174" width="80" height="1"/></g>
+      <path d="M0 210V178Q70 160 150 186L250 192Q330 162 400 174V210Z" fill="#0e0818"/>
+      <g fill="#0e0818">${palm(52, 62, 1)}${palm(104, 104, 0.62)}${palm(348, 54, 1.08, true)}${palm(300, 108, 0.55, true)}</g>
+    </svg>
+  </div>`;
+
+  // GTA-style full-screen stamp: MISSION PASSED, BUSTED, WASTED. Tap or wait to clear it.
+  function splash(kind, title, sub = '') {
+    document.querySelectorAll('.splash').forEach((x) => x.remove());
+    const el = document.createElement('div');
+    el.className = `splash ${kind}`;
+    el.setAttribute('role', 'status');
+    el.innerHTML = `<div class="splash-t">${h(title)}</div>${sub ? `<div class="splash-s">${h(sub)}</div>` : ''}`;
+    const close = () => { el.classList.add('out'); setTimeout(() => el.remove(), 500); };
+    el.addEventListener('click', close);
+    document.body.append(el);
+    setTimeout(close, 2800);
   }
 
   function toast(msg, type = 'info') {
@@ -253,6 +300,28 @@
       if (b.task.status === 'done') toast('✅ The hosts signed off. Clean getaway.', 'ok');
       if (b.task.status === 'active') toast('❌ The hosts didn’t buy it. Try again.', 'warn');
     }
+    if (a.status !== b.status) {
+      if (b.status === 'solitary') splash('busted', 'Busted', `Solitary · ${plural(b.solitary.rounds, 'round')}`);
+      else if (b.status === 'holding' && a.status === 'block') splash('wasted', 'Wasted', 'Kicked to the Holding Cell');
+    }
+    if (b.teamId) {
+      // A heat (or a game played without heats) just got scored with this block in it.
+      const scored = [];
+      for (const g of next.games) {
+        const old = prev.games.find((x) => x.id === g.id);
+        if (!old) continue;
+        for (const x of g.heats || []) {
+          const was = (old.heats || []).find((y) => y.id === x.id);
+          if (x.status === 'done' && was && was.status !== 'done' && x.teamIds.includes(b.teamId)) scored.push(x.results?.[b.teamId] || 0);
+        }
+        if (g.status === 'done' && old.status !== 'done' && !(g.heats || []).length && g.results && b.teamId in g.results) scored.push(g.results[b.teamId] || 0);
+      }
+      if (scored.length) {
+        const n = scored.reduce((x, y) => x + y, 0);
+        if (n > 0) splash('passed', 'Mission passed', `+$${n} credits`);
+        else splash('failed', 'Mission failed', n < 0 ? `-$${-n} credits` : 'No credits this time');
+      }
+    }
     if (a.status !== b.status || a.teamId !== b.teamId) {
       if (b.status === 'solitary') toast(`🔒 You’ve been thrown in SOLITARY (${plural(b.solitary.rounds, 'round')}).`, 'warn');
       else if (b.status === 'holding') toast('🕳️ You’re in the Holding Cell. Earn your way onto a block!', 'warn');
@@ -326,7 +395,7 @@
   function landing() {
     return `
       <main class="landing">
-        <div class="bars"></div>
+        ${hero()}
         <div class="landing-inner">
           <div class="stamp">BOOKING</div>
           <h1 class="logo">${h(guest.partyName || 'Shifty Shen Slammer')}</h1>
@@ -345,7 +414,7 @@
   function wardenLogin() {
     return `
       <main class="landing">
-        <div class="bars"></div>
+        ${hero()}
         <div class="landing-inner">
           <div class="stamp">RESTRICTED</div>
           <h1 class="logo">${route === '/officer' ? 'Commissary Office' : 'Warden Office'}</h1>
@@ -378,7 +447,10 @@
             <div class="who-name">${h(me.name)} ${me.isCaptain ? '<span title="Shot Caller">👑</span>' : ''}</div>
             <div class="who-sub">#${h(me.inmateNo)} · ${statusChip(me)}</div>
           </div>
-          ${myTeam ? `<div class="credits" title="${h(myTeam.name)} credits"><div class="credits-n">${myTeam.budget}</div><div class="credits-l">credits</div></div>` : ''}
+          <div class="hud">
+            ${wantedStars(me)}
+            ${myTeam ? `<div class="credits" title="${h(myTeam.name)} credits"><div class="credits-n">${myTeam.budget}</div><div class="credits-l">block credits</div></div>` : ''}
+          </div>
         </div>
       </header>
       ${phaseBanner()}
@@ -1393,7 +1465,7 @@
     const solitary = inSolitary();
     return `
       <div class="tv">
-        <header class="tv-h"><div class="bars thin"></div><h1 class="logo">${h(S.settings.partyName)}</h1><div class="tagline">${h(S.settings.tagline)}</div></header>
+        <header class="tv-h">${hero(true)}<h1 class="logo">${h(S.settings.partyName)}</h1><div class="tagline">${h(S.settings.tagline)}</div></header>
         ${phaseBanner()}
         ${S.announcement ? `<div class="announce tv-ann"><span class="mega">📣</span><div class="announce-t">${h(S.announcement.text)}</div></div>` : ''}
         <div class="tv-grid">
