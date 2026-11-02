@@ -1,3 +1,12 @@
+/* Genshin Impact's own UI font (HYWenHei-85W, © Hanyi), cut down to Latin text and symbols (16 KB). */
+@font-face {
+  font-family: 'HYWenHei';
+  src: url('/fonts/hywenhei-latin.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: swap;
+  /* Curly quotes, dashes, the ellipsis and the middle dot are full-width in this CJK font, so those fall back to Noto Sans. */
+  unicode-range: U+0020-007E, U+00A0-00B6, U+00B8-017F, U+2030-205E, U+2122, U+2190-2193, U+2212, U+221E, U+25C6, U+2605-2606;
+}
 :root {
   /* Vice City after dark: night-purple base, sunset pink -> orange -> gold, ocean teal. */
   --bg: #0e0818;
@@ -496,7 +505,7 @@ textarea {
 /* ---------- acts: each one reskins the whole app ----------
    Fonts are the closest free matches to each game's own type:
    GTA: Pricedown (HUD/stamps) -> Anton; Chalet London 1960 (menus) -> Roboto / Roboto Condensed.
-   Genshin Impact: HYWenHei-85W -> Noto Sans.
+   Genshin Impact: HYWenHei-85W itself (supplied by the host), Noto Sans as fallback.
    TFT / League client: Beaufort (headings) -> Cinzel; Spiegel (body) -> Source Sans 3.
    Among Us: rounded, outlined UI text -> Fredoka. */
 .tabs .ti { font-style: normal; }
@@ -541,13 +550,13 @@ body[data-era='gta'][data-kind='player'] #toasts { bottom: 18px; }
 
 /* ===== Act II · Wish Upon Teyvat (Genshin Impact) =====
    Palette from the game's own settings screen: Paimon white #ece5d8, gold #d3bc8e / #eddbbb, slate text #495366.
-   The UI font (HYWenHei-85W) is personal-use only, so Noto Sans stands in. */
+   Type: the game's own HYWenHei-85W (see the @font-face at the top), with Noto Sans as the fallback. */
 body[data-era='genshin'] {
   --bg: #121a2c; --concrete: #1a2238; --card: #1f2840; --card2: #29334f; --line: #3a4664; --text: #ece5d8; --muted: #b9b1a2;
   --orange: #d3bc8e; --orange2: #eddbbb; --yellow: #ffd780; --teal: #8fd3ff; --purple: #b78ae0; --cash: #f4ecd6;
   --sunset: linear-gradient(180deg, #f6eedc, #d3bc8e);
   --on-accent: #495366; --divider: #313b57; --tint: #2a2f45; --card-line: #3a4664; --card-top: #1f2840; --input: #0f1524; --sky: #1d3a6b;
-  --body: 'Noto Sans', system-ui, sans-serif; --stencil: 'Noto Sans', system-ui, sans-serif; --script: 'Noto Sans', system-ui, sans-serif;
+  --body: 'HYWenHei', 'Noto Sans', system-ui, sans-serif; --stencil: 'HYWenHei', 'Noto Sans', system-ui, sans-serif; --script: 'HYWenHei', 'Noto Sans', system-ui, sans-serif;
   background: radial-gradient(70% 50% at 70% 0%, #3d5a8a, transparent), linear-gradient(180deg, #1d2d4d, #121a2c 70%) fixed;
 }
 body[data-era='genshin'] .logo { font-weight: 700; letter-spacing: 1px; text-transform: none; filter: drop-shadow(0 2px 6px #0008); font-size: clamp(32px, 9vw, 54px); line-height: 1.05; }
