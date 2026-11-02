@@ -1163,3 +1163,33 @@ body[data-era='gta'] .ph-wall { background: linear-gradient(180deg, #343c86 0%, 
 body[data-era='gta'] .ph-wall .hero { inset: auto; left: -25%; right: -25%; top: 24%; height: auto; aspect-ratio: 400 / 210; }
 body[data-era='gta'] .ph-wall .hero::after { display: none; }
 body[data-era='gta'] .ph-wall::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, #0000 58%, #1d183899 74%, #1d1838ee 88%); }
+
+/* ---------- TFT: League client details ----------
+   The client pairs Beaufort for LOL (headings, buttons, caps) with Spiegel (body, stats, labels).
+   Both are Riot-only; Cinzel and Source Sans 3 stand in until the real files are supplied. */
+body[data-era='tft'] h2, body[data-era='tft'] h3, body[data-era='tft'] .btn, body[data-era='tft'] .lc-nav button, body[data-era='tft'] .lc-play { font-feature-settings: 'lnum'; }
+body[data-era='tft'] h2 { letter-spacing: 0.04em; text-transform: uppercase; font-size: 24px; }
+body[data-era='tft'] h3 { text-transform: uppercase; letter-spacing: 0.12em; font-size: 13px; display: flex; align-items: center; gap: 10px; }
+body[data-era='tft'] h3::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, #785a28, transparent); }
+body[data-era='tft'] .card { position: relative; }
+body[data-era='tft'] .card::before {
+  content: ''; position: absolute; top: -6px; left: 50%; width: 9px; height: 9px; margin-left: -5px; transform: rotate(45deg);
+  background: #010a13; border: 2px solid #c8aa6e; box-shadow: 0 0 6px #c8aa6e66;
+}
+body[data-era='tft'] .eyebrow { color: #0ac8b9; letter-spacing: 0.14em; }
+.lc-crest {
+  display: grid; place-items: center; width: 34px; height: 38px; font-size: 18px; color: #f0e6d2; flex: 0 0 auto;
+  background: linear-gradient(180deg, #c8aa6e, #785a28); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  box-shadow: inset 0 0 0 3px #010a13;
+}
+.lc-tag { font-style: normal; font-weight: 400; color: #a09b8c; margin-left: 2px; font-size: 0.85em; }
+.lc-banner { position: relative; min-height: 200px; margin-bottom: 14px; overflow: hidden; border: 2px solid; border-image: linear-gradient(180deg, #c8aa6e, #785a28) 1; box-shadow: 0 10px 30px #000a; }
+.lc-banner .hero { position: absolute; inset: 0; height: 100%; }
+.lc-banner .hero::after { height: 100%; background: linear-gradient(90deg, #010a13ee 0%, #010a13aa 40%, transparent 75%); }
+.lc-banner-copy { position: relative; z-index: 1; padding: 18px 20px; max-width: 360px; }
+.lc-eyebrow { font: 700 11px var(--body); letter-spacing: 0.16em; text-transform: uppercase; color: #0ac8b9; }
+.lc-banner-copy h2 { font-size: clamp(28px, 5vw, 40px); margin: 4px 0 6px; background: var(--sunset); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 2px 6px #000); }
+.lc-banner-copy p { color: #cdbe91; font-size: 14px; }
+.lc-banner-copy .btn { margin-top: 10px; }
+.lc-me > span:not(.lc-icon) { overflow: hidden; }
+.lc-me em, .lc-me small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

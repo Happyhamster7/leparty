@@ -215,17 +215,29 @@
       <g fill="#ffe7a8"><path d="M200 40l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"/><path d="M40 52l2 6 6 2-6 2-2 6-2-6-6-2 6-2z" opacity=".8"/></g>`,
     tft: () => `
       <defs>
-        <linearGradient id="tsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#03171c"/><stop offset=".7" stop-color="#0b2f38"/><stop offset="1" stop-color="#103c45"/></linearGradient>
-        <radialGradient id="tglow" cx=".5" cy=".9" r=".6"><stop offset="0" stop-color="#0ac8b9" stop-opacity=".45"/><stop offset="1" stop-color="#0ac8b9" stop-opacity="0"/></radialGradient>
+        <linearGradient id="tsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#07112b"/><stop offset=".38" stop-color="#1f2c5c"/><stop offset=".66" stop-color="#4b3a78"/><stop offset=".86" stop-color="#1d6a78"/><stop offset="1" stop-color="#0b2a33"/></linearGradient>
+        <radialGradient id="tportal" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#e9fffb"/><stop offset=".35" stop-color="#5ff0e0" stop-opacity=".85"/><stop offset=".7" stop-color="#7a5cff" stop-opacity=".35"/><stop offset="1" stop-color="#7a5cff" stop-opacity="0"/></radialGradient>
         <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0e6d2"/><stop offset=".5" stop-color="#c8aa6e"/><stop offset="1" stop-color="#785a28"/></linearGradient>
+        <linearGradient id="trock" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2f5a"/><stop offset="1" stop-color="#0d0a1a"/></linearGradient>
+        <filter id="tblur" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="5"/></filter>
       </defs>
-      <rect width="400" height="210" fill="url(#tsky)"/><rect width="400" height="210" fill="url(#tglow)"/>
-      ${starField(0.35)}
-      <g transform="translate(200 150) scale(1 .5)" fill="none" stroke="#c8aa6e" stroke-width="1.6">
-        ${[-3, -2, -1, 0, 1, 2, 3].flatMap((c) => [-2, -1, 0, 1].map((r) => { const x = c * 52 + (r % 2 ? 26 : 0); const y = r * 46; const near = Math.abs(c) < 2 && Math.abs(r) < 2; return `<polygon points="${hex(x, y, 28)}" opacity="${near ? 0.95 : 0.45}" ${near ? 'fill="#0ac8b922"' : ''}/>`; })).join('')}
+      <rect width="400" height="210" fill="url(#tsky)"/>
+      <g filter="url(#tblur)" fill="none" stroke-linecap="round">
+        <path d="M-20 70C60 30 120 110 200 70S330 20 420 60" stroke="#ff7ac8" stroke-width="14" opacity=".45"/>
+        <path d="M-20 100C80 70 140 140 230 96S350 60 420 92" stroke="#5ff0e0" stroke-width="10" opacity=".4"/>
       </g>
-      <g stroke="url(#gold)" stroke-width="2.5" fill="none" opacity=".9"><path d="M0 24H140L156 10H244L260 24H400"/></g>
-      <g fill="url(#gold)">${[[70, 74], [330, 66], [300, 116], [96, 120]].map(([x, y]) => `<g transform="translate(${x} ${y})"><circle r="9"/><circle r="6" fill="#785a28"/><text y="3.5" text-anchor="middle" font-size="9" font-weight="900" fill="#f0e6d2">g</text></g>`).join('')}</g>`,
+      ${starField(0.6)}
+      <circle cx="200" cy="74" r="58" fill="url(#tportal)"/>
+      <circle cx="200" cy="74" r="34" fill="none" stroke="url(#gold)" stroke-width="2.5"/>
+      <circle cx="200" cy="74" r="40" fill="none" stroke="#c8aa6e" stroke-width="1" stroke-dasharray="2 6" opacity=".8"/>
+      <path d="M70 150Q200 128 330 150L300 178Q200 196 100 178Z" fill="url(#trock)"/>
+      <path d="M70 150Q200 128 330 150" fill="none" stroke="#5ff0e0" stroke-width="2" opacity=".8"/>
+      <path d="M118 178L140 204M200 192L198 210M280 178L262 206" stroke="#0d0a1a" stroke-width="10" stroke-linecap="round"/>
+      <g transform="translate(200 146) scale(1 .42)" fill="none" stroke="#c8aa6e" stroke-width="1.6">
+        ${[-2, -1, 0, 1, 2].flatMap((c) => [-1, 0].map((r) => { const x = c * 46 + (r % 2 ? 23 : 0); const y = r * 40; return `<polygon points="${hex(x, y, 24)}" fill="#5ff0e01a" opacity="${Math.abs(c) < 2 ? 1 : 0.6}"/>`; })).join('')}
+      </g>
+      <g fill="#fff6d8">${[[60, 40], [340, 30], [300, 110], [120, 116], [250, 18]].map(([x, y]) => `<path transform="translate(${x} ${y})" d="M0-5L1.2-1.2 5 0 1.2 1.2 0 5-1.2 1.2-5 0-1.2-1.2Z"/>`).join('')}</g>
+      <g stroke="url(#gold)" stroke-width="2.5" fill="none" opacity=".95"><path d="M0 14H150L162 4H238L250 14H400"/><path d="M196 4L200 0L204 4L200 8Z" fill="#c8aa6e"/></g>`,
     amongus: () => `
       <defs>
         <linearGradient id="asky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#02030c"/><stop offset="1" stop-color="#101736"/></linearGradient>
@@ -764,6 +776,20 @@
     if (g && (!heat || heat.teamIds.includes(p.teamId))) return ['game', `In Game: ${g.name}`];
     return ['online', 'In Lobby'];
   }
+  // The client's featured-set banner on Home.
+  function tftBanner(t) {
+    const live = liveGame();
+    return `<section class="lc-banner">
+      ${hero(true)}
+      <div class="lc-banner-copy">
+        <span class="lc-eyebrow">Teamfight Tactics · Set: The Slammer</span>
+        <h2>Convergence</h2>
+        <p>${live ? `Now playing: ${h(live.name)}.` : 'Econ, streak, augment. Top four or bust.'}${t ? ` ${h(t.name)} is ${h(rankName(t))}.` : ''}</p>
+        <button class="btn" data-act="tab" data-tab="events">${live ? 'Join game' : 'View schedule'}</button>
+      </div>
+    </section>`;
+  }
+
   function tftClient() {
     const me = S.me;
     const t = team(me.teamId);
@@ -786,13 +812,14 @@
     const [mcls, mtext] = socialStatus(me);
     return `<div class="lc landscape">${rotatePrompt()}
       <header class="lc-top">
+        <span class="lc-crest" aria-hidden="true">♟</span>
         <button class="lc-play ${ui.tab === 'events' ? 'on' : ''}" data-act="tab" data-tab="events">PLAY${dotFor('events') ? '<i class="dot"></i>' : ''}</button>
         <nav class="lc-nav">${tabs.map(([k, label]) => `<button data-act="tab" data-tab="${k}" class="${cur[0] === k ? 'on' : ''}">${label}${dotFor(k) ? '<i class="dot"></i>' : ''}</button>`).join('')}</nav>
         <div class="lc-cur">${t ? `<span class="lc-streak">${t.augment ? `${S.augments[t.augment].emoji} ` : ''}${t.streak > 1 ? `🔥${t.streak}` : t.streak < -1 ? `💧${-t.streak}` : ''}</span><span class="lc-gold">🪙 ${t.budget}</span>` : ''}</div>
       </header>
-      <main class="lc-main">${alerts()}${cur[2]()}</main>
+      <main class="lc-main">${alerts()}${cur[0] === 'yard' ? tftBanner(t) : ''}${cur[2]()}</main>
       <aside class="lc-social">
-        <div class="lc-me ${mcls}">${icon(me, true)}<span><b>${h(me.name)}</b><small>${h(mtext)}</small><em>${h(rankName(t))} · ${t ? h(t.name) : 'No party'}</em></span></div>
+        <div class="lc-me ${mcls}">${icon(me, true)}<span><b>${h(me.name)}<i class="lc-tag">#${h(t ? t.name.replace(/^Block\s*/i, '').slice(0, 5) || 'TFT' : 'HOLD')}</i></b><small>${h(mtext)}</small><em>${h(rankName(t))} · ${t ? h(t.name) : 'No party'}</em></span></div>
         <div class="lc-group">${t ? `${h(t.name)}${t.nickname ? ` “${h(t.nickname)}”` : ''} (${mates.length + 1})` : 'Holding Cell'}</div>
         <ul class="lc-friends">${(t ? mates : inHolding().filter((p) => p.id !== me.id)).map(row).join('') || '<li class="lc-empty">Nobody else here</li>'}</ul>
         ${others.map((o) => `<div class="lc-group">${h(o.name)} (${blockmates(o.id).length})</div><ul class="lc-friends">${blockmates(o.id).map(row).join('')}</ul>`).join('')}
