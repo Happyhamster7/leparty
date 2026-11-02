@@ -71,6 +71,16 @@
     return '';
   }
 
+  // Price bands double as rarity: 1★ cheap mixers up to 5★ big-ticket items (Honkai rarity, TFT champion cost).
+  const tierOf = (price) => (price <= 5 ? 1 : price <= 12 ? 2 : price <= 20 ? 3 : price <= 30 ? 4 : 5);
+
+  // Among Us act: everyone gets a crewmate colour, fixed by booking order.
+  const CREW_COLORS = ['#c51111', '#132ed1', '#117f2d', '#ed54ba', '#ef7d0d', '#f5f557', '#3f474e', '#d6e0f0', '#6b2fbb', '#71491e', '#38fedc', '#50ef39'];
+  const crewIcon = (p) => {
+    const c = CREW_COLORS[Math.max(0, S.players.findIndex((x) => x.id === p.id)) % CREW_COLORS.length];
+    return `<svg class="crew" viewBox="-14 -2 78 96" aria-hidden="true"><rect x="-12" y="34" width="16" height="38" rx="6" fill="${c}" stroke="#000" stroke-width="5"/><path d="${CREWMATE}" fill="${c}" stroke="#000" stroke-width="6"/><ellipse cx="40" cy="30" rx="20" ry="12" fill="#9fe7ff" stroke="#000" stroke-width="6"/></svg>`;
+  };
+
   const rankOf = (id) => standings().findIndex((t) => t.id === id) + 1;
   const nick = (t) => (t?.nickname ? ` <span class="nick">“${h(t.nickname)}”</span>` : '');
 
@@ -585,7 +595,7 @@
       ${ui.sheet ? buySheet() : ''}
       ${actUnseen() ? actModal() : briefingUnseen() ? briefingModal() : ''}
       <nav class="tabs">
-        ${tabs.map(([k, icon, label]) => `<button data-act="tab" data-tab="${k}" class="${ui.tab === k ? 'on' : ''}">${icon}<span>${label}</span>${k === 'rap' && needsMafiaAction() ? '<i class="dot"></i>' : ''}${k === 'yard' && ui.tab !== 'yard' && todoItems().length ? '<i class="dot"></i>' : ''}${k === 'cell' && (myIncoming().length || actionableRequests().length) ? '<i class="dot"></i>' : ''}</button>`).join('')}
+        ${tabs.map(([k, icon, label]) => `<button data-act="tab" data-tab="${k}" class="${ui.tab === k ? 'on' : ''}"><i class="ti">${icon}</i><span>${label}</span>${k === 'rap' && needsMafiaAction() ? '<i class="dot"></i>' : ''}${k === 'yard' && ui.tab !== 'yard' && todoItems().length ? '<i class="dot"></i>' : ''}${k === 'cell' && (myIncoming().length || actionableRequests().length) ? '<i class="dot"></i>' : ''}</button>`).join('')}
       </nav>`;
   }
 
@@ -781,10 +791,24 @@
   function todoCard() {
     const items = todoItems();
     const done = (S.me.sentences || []).filter((x) => x.status === 'done').slice(0, 3);
+    if (actId() === 'amongus') return taskList(items);
     return `<section class="card todo-card">
       <h3>📌 Your to-do</h3>
       ${items.length ? `<ul class="todos">${items.join('')}</ul>` : '<p class="empty">Nothing owed, nothing pending. Enjoy it while it lasts.</p>'}
       ${done.length ? `<p class="fine">Done: ${done.map((x) => h(x.text)).join(' · ')}${S.me.drinksDone ? ` · ${plural(S.me.drinksDone, 'drink')} served` : ''}</p>` : ''}
+    </section>`;
+  }
+
+  // Among Us act: the to-do list becomes the crewmate task list, with the total-tasks bar.
+  function taskList(items) {
+    const me = S.me;
+    const done = (me.sentences || []).filter((x) => x.status === 'done').length + (me.drinksDone || 0);
+    const total = done + (me.sentences || []).filter((x) => x.status === 'open').length + (me.drinksOwed || 0);
+    const pct = total ? Math.round((done / total) * 100) : 100;
+    return `<section class="card todo-card task-list">
+      <div class="task-bar"><b>TOTAL TASKS COMPLETED</b><i style="width:${pct}%"></i></div>
+      <h3>Tasks</h3>
+      ${items.length ? `<ul class="todos">${items.join('')}</ul>` : '<p class="empty">All tasks done. Act natural.</p>'}
     </section>`;
   }
 
@@ -842,8 +866,10 @@
               const soldOut = it.stock !== null && it.stock <= 0;
               const broke = myTeam && myTeam.budget < priceOf(it);
               const disabled = blocked || soldOut || broke;
-              return `<button class="item t-${h(it.type)}" data-act="buy-open" data-item-id="${it.id}" ${disabled ? 'disabled' : ''}>
+              const tier = tierOf(it.price);
+              return `<button class="item t-${h(it.type)} tier-${tier}" data-act="buy-open" data-item-id="${it.id}" ${disabled ? 'disabled' : ''}>
                 <span class="item-e">${h(it.emoji)}</span>
+                <span class="item-r" aria-label="${tier} star">${'★'.repeat(tier)}</span>
                 <span class="item-n">${h(it.name)}</span>
                 <span class="item-d">${h(it.desc)}</span>
                 <span class="item-p">${soldOut ? 'SOLD OUT' : h(money(priceOf(it)))}${it.stock !== null && !soldOut ? ` · ${it.stock} left` : ''}${it.drinks ? ` · 🍺×${it.drinks}` : ''}</span>
@@ -1093,11 +1119,11 @@
         <div class="votes">${mates
           .map((p) => `<button class="vote ${m.myVote === p.id ? 'on' : ''}" data-act="vote" data-target-id="${p.id}" ${p.id === me.id ? 'disabled' : ''}>
             <span class="bar" style="width:${((tally[p.id] || 0) / max) * 100}%"></span>
-            <span class="v-n">${h(p.name)}${p.id === me.id ? ' (you)' : ''} ${immune.has(p.id) ? '🛡️' : ''}</span><span class="v-c">${tally[p.id] || 0}</span></button>`)
+            <span class="v-n">${actId() === 'amongus' ? crewIcon(p) : ''}${h(p.name)}${p.id === me.id ? ' (you)' : ''} ${immune.has(p.id) ? '🛡️' : ''}</span><span class="v-c">${tally[p.id] || 0}</span></button>`)
           .join('')}
           <button class="vote skip ${m.myVote === 'skip' ? 'on' : ''}" data-act="vote" data-target-id="skip"><span class="bar" style="width:${((tally.skip || 0) / max) * 100}%"></span><span class="v-n">Keep everyone</span><span class="v-c">${tally.skip || 0}</span></button>
         </div>
-        <p class="fine">Needs a majority of the block. Catch the snitch: +${S.settings.snitchBounty} credits and they go to solitary. Kick an innocent: −${S.settings.wrongfulPenalty} credits and they go to the Holding Cell. 🛡️ = bribed.</p>
+        <p class="fine">Needs a majority of the block. Catch the ${actId() === 'amongus' ? 'Impostor' : 'snitch'}: +${S.settings.snitchBounty * (actId() === 'amongus' ? 2 : 1)} credits and they go to solitary. Kick an innocent: −${S.settings.wrongfulPenalty} credits and they go to the Holding Cell. 🛡️ = bribed.</p>
       </section>`;
     }
     return `<section class="card"><h3>☀️ Daytime in the yard</h3>${m.lastResult ? `<p>${h(m.lastResult.text)}</p>` : ''}${m.lastResult?.whispers?.length ? `<p class="fine">Most suspected: ${h(m.lastResult.whispers.join(', '))}</p>` : ''}<p class="fine">Watch your blockmates. Who’s acting shifty? The hosts will call the next Lights Out or Block Vote.</p></section>`;

@@ -28,6 +28,8 @@
   --stencil: 'Anton', Impact, 'Arial Narrow', sans-serif;
   --script: 'Yellowtail', 'Brush Script MT', cursive;
   --type: 'Special Elite', 'Courier New', monospace;
+  --body: 'Inter';
+  --ui: var(--body);
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -40,7 +42,7 @@ body {
     linear-gradient(180deg, var(--sky) 0, var(--bg) 420px) fixed;
   background-color: var(--bg);
   color: var(--text);
-  font: 15px/1.45 Inter, system-ui, -apple-system, sans-serif;
+  font: 15px/1.45 var(--body), system-ui, -apple-system, sans-serif;
   min-height: 100vh;
 }
 body[data-phase='night'] { background: #070a1f radial-gradient(circle at 50% -10%, #23307a 0, transparent 60%) fixed; }
@@ -60,7 +62,7 @@ small { color: var(--muted); }
 /* ---------- buttons & inputs ---------- */
 .btn {
   appearance: none; border: 0; border-radius: 10px; cursor: pointer;
-  background: var(--sunset); color: var(--on-accent); font: 800 14px Inter, sans-serif; text-transform: uppercase; letter-spacing: 0.4px;
+  background: var(--sunset); color: var(--on-accent); font: 800 14px var(--body), sans-serif; text-transform: uppercase; letter-spacing: 0.4px;
   box-shadow: 0 4px 18px color-mix(in srgb, var(--orange) 25%, transparent);
   padding: 11px 16px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   transition: transform 0.08s, filter 0.15s;
@@ -75,7 +77,7 @@ small { color: var(--muted); }
 .btn.xs { padding: 2px 8px; font-size: 12px; border-radius: 6px; }
 input, select {
   width: 100%; background: var(--input); color: var(--text); border: 1.5px solid var(--line); border-radius: 10px;
-  padding: 11px 12px; font: 16px Inter, sans-serif; outline: none;
+  padding: 11px 12px; font: 16px var(--body), sans-serif; outline: none;
 }
 input:focus, select:focus, textarea:focus { border-color: var(--teal); box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 15%, transparent); }
 input[type='color'] { width: 46px; height: 40px; padding: 2px; flex: 0 0 auto; }
@@ -235,7 +237,7 @@ label.check { display: flex; align-items: center; gap: 10px; font-size: 14px; co
 .targets { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
 .target {
   --c: var(--teal); background: var(--card2); color: var(--text); border: 2px solid var(--line); border-radius: 10px; padding: 10px 14px;
-  font: 700 14px Inter, sans-serif; cursor: pointer;
+  font: 700 14px var(--body), sans-serif; cursor: pointer;
 }
 .target.on { border-color: var(--c); background: color-mix(in srgb, var(--c) 30%, var(--card2)); }
 .target:disabled { opacity: 0.5; }
@@ -278,7 +280,7 @@ label.check { display: flex; align-items: center; gap: 10px; font-size: 14px; co
 .votes { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
 .vote {
   position: relative; overflow: hidden; display: flex; justify-content: space-between; align-items: center; gap: 8px;
-  background: var(--card2); color: var(--text); border: 2px solid var(--line); border-radius: 10px; padding: 11px 14px; font: 700 15px Inter, sans-serif; cursor: pointer; text-align: left;
+  background: var(--card2); color: var(--text); border: 2px solid var(--line); border-radius: 10px; padding: 11px 14px; font: 700 15px var(--body), sans-serif; cursor: pointer; text-align: left;
 }
 .vote .bar { position: absolute; left: 0; top: 0; bottom: 0; background: #ffd23f2b; transition: width 0.3s; }
 .vote .v-n, .vote .v-c { position: relative; }
@@ -300,7 +302,7 @@ label.check { display: flex; align-items: center; gap: 10px; font-size: 14px; co
 /* ---------- admin ---------- */
 .admin-top { padding-bottom: 0; }
 .atabs { display: flex; gap: 4px; overflow-x: auto; max-width: 980px; margin: 8px auto 0; scrollbar-width: none; }
-.atabs button { background: none; border: 0; color: var(--muted); font: 700 13.5px Inter, sans-serif; padding: 9px 10px 11px; white-space: nowrap; cursor: pointer; border-bottom: 3px solid transparent; }
+.atabs button { background: none; border: 0; color: var(--muted); font: 700 13.5px var(--body), sans-serif; padding: 9px 10px 11px; white-space: nowrap; cursor: pointer; border-bottom: 3px solid transparent; }
 .atabs button.on { color: var(--text); border-bottom-color: var(--orange); }
 .admin-top .top-row { max-width: 980px; }
 .olist, .glist, .tlist, .ilist { list-style: none; padding: 0; margin: 0; }
@@ -402,7 +404,7 @@ body[data-status='holding'] .top { border-bottom-color: #6d5d88; }
 .ledger li span:first-child { font-family: var(--stencil); min-width: 36px; }
 textarea {
   width: 100%; background: var(--input); color: var(--text); border: 1.5px solid var(--line); border-radius: 10px;
-  padding: 10px 12px; font: 14px/1.5 Inter, sans-serif; margin-top: 5px; resize: vertical;
+  padding: 10px 12px; font: 14px/1.5 var(--body), sans-serif; margin-top: 5px; resize: vertical;
 }
 .dealercard {
   max-width: 760px; width: calc(100% - 32px); margin: 12px auto 0; border-radius: var(--radius); padding: 14px;
@@ -427,7 +429,7 @@ textarea {
 .glist summary { cursor: pointer; }
 
 /* ---------- blocks, matchups, requests ---------- */
-.nick { font-family: Inter, sans-serif; font-size: 0.62em; font-weight: 800; color: var(--c, var(--orange2)); white-space: nowrap; }
+.nick { font-family: var(--body), sans-serif; font-size: 0.62em; font-weight: 800; color: var(--c, var(--orange2)); white-space: nowrap; }
 .board .nick { color: var(--c); }
 .motto { font-family: var(--type); color: var(--muted); margin-top: 0; }
 .block-banner { background: linear-gradient(140deg, color-mix(in srgb, var(--c) 28%, var(--card)), var(--card) 70%); }
@@ -491,48 +493,218 @@ textarea {
 .splash.wasted { backdrop-filter: grayscale(1); }
 @keyframes splash-in { from { transform: scale(1.15); opacity: 0; } }
 
-/* ---------- acts: each one reskins the whole app ---------- */
-/* Act II · Honkai: Star Rail. Deep space navy, Express gold, nebula lilac. */
+/* ---------- acts: each one reskins the whole app ----------
+   Fonts are the closest free matches to each game's own type:
+   GTA: Pricedown (HUD/stamps) -> Anton; Chalet London 1960 (menus) -> Roboto / Roboto Condensed.
+   Honkai: Star Rail: DIN-style UI -> Barlow.
+   TFT / League client: Beaufort (headings) -> Cinzel; Spiegel (body) -> Source Sans 3.
+   Among Us: rounded, outlined UI text -> Fredoka. */
+.tabs .ti { font-style: normal; }
+.item-r { display: none; }
+.crew { width: 22px; height: 26px; vertical-align: -6px; margin-right: 8px; }
+
+/* ===== Act I · Vice City (GTA): HUD overlay, pause-menu tabs and panels ===== */
+body[data-era='gta'] { --body: 'Roboto', system-ui, sans-serif; --ui: 'Roboto Condensed', 'Arial Narrow', sans-serif; }
+body[data-era='gta'] h3, body[data-era='gta'] .eyebrow { font-family: var(--ui); }
+body[data-era='gta'] .card { background: rgba(0, 0, 0, 0.66); border: 0; border-radius: 0; backdrop-filter: blur(6px); }
+body[data-era='gta'] .card > h3:first-child, body[data-era='gta'] .card > .eyebrow:first-child {
+  margin: -16px -16px 12px; padding: 9px 16px; background: #000; color: #fff; font-size: 13px; letter-spacing: 1.2px;
+  border-bottom: 2px solid transparent; border-image: var(--sunset) 1;
+}
+body[data-era='gta'] .btn { border-radius: 0; font-family: var(--ui); letter-spacing: 1px; }
+body[data-era='gta'] .btn.ghost { background: rgba(0, 0, 0, 0.5); }
+body[data-era='gta'] .chip { border-radius: 0; }
+body[data-era='gta'] .target, body[data-era='gta'] .vote, body[data-era='gta'] input, body[data-era='gta'] select { border-radius: 0; }
+body[data-era='gta'] .target.on, body[data-era='gta'] .vote.on { background: #fff; color: #000; border-color: #fff; }
+body[data-era='gta'] .todo:hover, body[data-era='gta'] .schedule li:hover { background: rgba(255, 255, 255, 0.06); }
+body[data-era='gta'] .item { border-radius: 0; background: rgba(0, 0, 0, 0.62); border: 0; border-left: 4px solid var(--line); }
+body[data-era='gta'] .item:hover:not(:disabled) { background: #fff; color: #000; border-left-color: var(--orange); }
+body[data-era='gta'] .item:hover:not(:disabled) .item-d { color: #333; }
+body[data-era='gta'] .item-p { color: var(--cash); -webkit-text-stroke: 1px #000; font-size: 20px; }
+/* The HUD floats over the page; the pause-menu tab strip sits at the top. */
+body[data-era='gta'][data-kind='player'] .top { position: relative; background: linear-gradient(180deg, #000c, transparent); border-bottom: 0; box-shadow: none; }
+body[data-era='gta'][data-kind='player'] #app { display: flex; flex-direction: column; }
+body[data-era='gta'][data-kind='player'] .tabs {
+  order: -1; position: sticky; top: 0; bottom: auto; background: #000d; border: 0; box-shadow: 0 2px 0 #0006; padding: 0; gap: 2px;
+}
+body[data-era='gta'][data-kind='player'] .top { order: -2; }
+body[data-era='gta'][data-kind='player'] .offline { order: -3; }
+body[data-era='gta'][data-kind='player'] .tabs button { padding: 11px 2px 10px; background: #0009; color: #ddd; }
+body[data-era='gta'][data-kind='player'] .tabs .ti { display: none; }
+body[data-era='gta'][data-kind='player'] .tabs button span { font: 700 12px var(--ui); letter-spacing: 0.8px; color: inherit; }
+body[data-era='gta'][data-kind='player'] .tabs button.on { background: #fff; color: #000; }
+body[data-era='gta'][data-kind='player'] .tabs button.on span { color: #000; text-shadow: none; }
+body[data-era='gta'][data-kind='player'] .tabs button.on::before { top: 0; left: 0; right: 0; height: 4px; border-radius: 0; }
+body[data-era='gta'][data-kind='player'] .tabs .dot { top: 4px; right: 4px; }
+body[data-era='gta'][data-kind='player'] .content { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
+body[data-era='gta'][data-kind='player'] #toasts { bottom: 18px; }
+
+/* ===== Act II · Warp Drive (Honkai: Star Rail): starfield, glass panels, pill buttons, rarity tiles ===== */
 body[data-era='honkai'] {
-  --bg: #060a1c; --concrete: #0d1230; --card: #0e1433; --card2: #161e47; --line: #2c3772; --text: #eef1ff; --muted: #a8b2dc;
-  --orange: #e8c37c; --orange2: #b48cff; --yellow: #f7dc9a; --teal: #7fd8ff; --purple: #b48cff; --cash: #f7dc9a;
-  --sunset: linear-gradient(100deg, #fff1cf 0%, #e8c37c 40%, #c79ae8 80%, #8f7bff 100%);
-  --on-accent: #16112e; --divider: #1f2857; --tint: #2a2350; --card-line: #26306a; --card-top: #131a40; --input: #080d24; --sky: #141a4a;
-  --stencil: 'Orbitron', 'Arial Narrow', sans-serif; --script: 'Cinzel', Georgia, serif;
+  --bg: #05081a; --concrete: #0b1029; --card: #0c1230; --card2: #151c40; --line: #2e3769; --text: #f2f1ec; --muted: #a9b0cc;
+  --orange: #e2c78f; --orange2: #c9a8ff; --yellow: #f3dfae; --teal: #9ad7ff; --purple: #b48cff; --cash: #f3dfae;
+  --sunset: linear-gradient(180deg, #f8eed8 0%, #e2c78f 100%);
+  --on-accent: #191629; --divider: #222a55; --tint: #241f45; --card-line: #2a3263; --card-top: #10173a; --input: #070b20; --sky: #10153c;
+  --body: 'Barlow', system-ui, sans-serif; --stencil: 'Barlow', system-ui, sans-serif; --script: 'Barlow', system-ui, sans-serif;
+  background:
+    radial-gradient(1px 1px at 12% 18%, #fff 50%, transparent), radial-gradient(1px 1px at 72% 8%, #fffc 50%, transparent),
+    radial-gradient(1.5px 1.5px at 40% 60%, #fff 50%, transparent), radial-gradient(1px 1px at 88% 44%, #fffa 50%, transparent),
+    radial-gradient(1px 1px at 22% 82%, #fff9 50%, transparent), radial-gradient(1.5px 1.5px at 60% 92%, #fffb 50%, transparent),
+    radial-gradient(60% 40% at 80% 0%, #6d4bd03a, transparent), radial-gradient(70% 50% at 0% 30%, #2a5bd02e, transparent),
+    linear-gradient(180deg, #0d1236, #05081a 70%) fixed;
+  background-size: 260px 260px, 300px 300px, 340px 340px, 220px 220px, 280px 280px, 320px 320px, auto, auto, auto;
 }
-body[data-era='honkai'] .logo, body[data-era='honkai'] h2, body[data-era='honkai'] .who-name { font-weight: 900; letter-spacing: 1px; }
-body[data-era='honkai'] .logo { font-size: clamp(32px, 9.5vw, 54px); line-height: 1.05; }
-body[data-era='honkai'] .tagline { font-size: 17px; letter-spacing: 1px; }
-body[data-era='honkai'] .card { border-radius: 4px 18px 4px 18px; }
-body[data-era='honkai'] .credits-n { -webkit-text-stroke: 0; text-shadow: 0 0 10px #f7dc9a88, 1px 1px 0 #000; font-size: 26px; }
+body[data-era='honkai'] .logo { font-weight: 700; letter-spacing: 2px; text-transform: none; filter: drop-shadow(0 0 16px #e2c78f66); font-size: clamp(34px, 10vw, 56px); line-height: 1.02; }
+body[data-era='honkai'] h2, body[data-era='honkai'] .who-name { font-weight: 700; letter-spacing: 1px; text-transform: none; }
+body[data-era='honkai'] .tagline { font-size: 15px; letter-spacing: 3px; text-transform: uppercase; color: var(--yellow); text-shadow: 0 0 10px #e2c78f66; }
+body[data-era='honkai'] .card {
+  position: relative; border-radius: 3px; background: linear-gradient(180deg, rgba(22, 28, 64, 0.78), rgba(8, 11, 30, 0.86));
+  border: 1px solid rgba(255, 255, 255, 0.13); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 10px 30px #0006; backdrop-filter: blur(8px);
+}
+body[data-era='honkai'] .card::before, body[data-era='honkai'] .card::after { content: ''; position: absolute; width: 14px; height: 14px; border: 0 solid var(--orange); pointer-events: none; }
+body[data-era='honkai'] .card::before { top: -1px; left: -1px; border-top-width: 2px; border-left-width: 2px; }
+body[data-era='honkai'] .card::after { bottom: -1px; right: -1px; border-bottom-width: 2px; border-right-width: 2px; }
+body[data-era='honkai'] h3 { color: var(--orange); font-weight: 600; letter-spacing: 2.5px; display: flex; align-items: center; gap: 8px; }
+body[data-era='honkai'] h3::before { content: '◆'; font-size: 9px; color: var(--orange); }
+body[data-era='honkai'] .btn { border-radius: 999px; text-transform: none; letter-spacing: 0.3px; font-weight: 700; box-shadow: 0 0 0 1px #fff3 inset, 0 4px 16px #0008; }
+body[data-era='honkai'] .btn.ghost { background: rgba(0, 0, 0, 0.35); color: var(--text); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35); }
+body[data-era='honkai'] input, body[data-era='honkai'] select, body[data-era='honkai'] textarea { border-radius: 999px; }
+body[data-era='honkai'] textarea { border-radius: 14px; }
+body[data-era='honkai'] .chip { border-radius: 4px; }
+body[data-era='honkai'] .target, body[data-era='honkai'] .vote { border-radius: 999px; }
+body[data-era='honkai'] .top { background: linear-gradient(180deg, #05081af2, #05081ab0); border-bottom: 1px solid rgba(255, 255, 255, 0.12); box-shadow: none; }
+body[data-era='honkai'] .credits { display: flex; align-items: center; gap: 8px; background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 999px; padding: 4px 14px 4px 10px; }
+body[data-era='honkai'] .credits-n { font: 700 20px var(--body); -webkit-text-stroke: 0; text-shadow: 0 0 8px #e2c78f88; color: var(--yellow); }
+body[data-era='honkai'] .credits-l { display: none; }
+body[data-era='honkai'] .tabs { background: linear-gradient(180deg, transparent, #05081af5 35%); border-top: 0; box-shadow: none; padding-top: 6px; }
+body[data-era='honkai'] .tabs .ti {
+  display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; font-size: 19px;
+  background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+body[data-era='honkai'] .tabs button.on .ti { background: radial-gradient(circle, #e2c78f55, #e2c78f18); box-shadow: inset 0 0 0 2px var(--orange), 0 0 14px #e2c78f88; }
+body[data-era='honkai'] .tabs button.on::before { display: none; }
+body[data-era='honkai'] .tabs button span { text-transform: none; letter-spacing: 0.3px; font-weight: 600; }
+body[data-era='honkai'] .tabs button.on span { color: var(--yellow); text-shadow: none; }
+/* Shop tiles in Star Rail's rarity colours: grey 1★, green 2★, blue 3★, purple 4★, gold 5★. */
+body[data-era='honkai'] .item { border: 0; border-radius: 6px 6px 18px 6px; padding: 0; overflow: hidden; background: #e9e6df; color: #1d1b2a; gap: 0; }
+body[data-era='honkai'] .item-e { display: grid; place-items: center; height: 92px; font-size: 44px; background: var(--rar); }
+body[data-era='honkai'] .item-r { display: block; padding: 2px 10px; background: var(--rar); color: #ffe9a8; font-size: 12px; letter-spacing: 1px; text-shadow: 0 1px 2px #0008; }
+body[data-era='honkai'] .item-n, body[data-era='honkai'] .item-d, body[data-era='honkai'] .item-p { padding: 0 10px; }
+body[data-era='honkai'] .item-n { margin-top: 8px; color: #1d1b2a; }
+body[data-era='honkai'] .item-d { color: #5b5868; }
+body[data-era='honkai'] .item-p { color: #7a5a1c; font: 700 17px var(--body); padding-bottom: 10px; }
+body[data-era='honkai'] .tier-1 { --rar: linear-gradient(160deg, #5d6070, #8a8d99); }
+body[data-era='honkai'] .tier-2 { --rar: linear-gradient(160deg, #3c6b5c, #5aa184); }
+body[data-era='honkai'] .tier-3 { --rar: linear-gradient(160deg, #36508f, #5a8ee8); }
+body[data-era='honkai'] .tier-4 { --rar: linear-gradient(160deg, #5b3e9b, #a874e8); }
+body[data-era='honkai'] .tier-5 { --rar: linear-gradient(160deg, #a8652c, #e8b25a); }
+body[data-era='honkai'] .item:hover:not(:disabled) { box-shadow: 0 0 0 2px var(--orange), 0 0 20px #e2c78f66; }
 
-/* Act III · TFT. Hextech teal on the Convergence board, Piltover gold trim. */
+/* ===== Act III · Convergence (TFT): League client panels, hextech buttons, champion-cost shop cards ===== */
 body[data-era='tft'] {
-  --bg: #04151a; --concrete: #08212a; --card: #0a2128; --card2: #0f2e37; --line: #285159; --text: #f0e6d2; --muted: #a3b8b4;
+  --bg: #010a13; --concrete: #0a1428; --card: #0a1428; --card2: #111d33; --line: #463714; --text: #f0e6d2; --muted: #a09b8c;
   --orange: #c8aa6e; --orange2: #0ac8b9; --yellow: #f0e6d2; --teal: #0ac8b9; --purple: #0397ab; --cash: #f0c75e;
-  --sunset: linear-gradient(180deg, #f0e6d2 0%, #c8aa6e 55%, #785a28 100%);
-  --on-accent: #10161a; --divider: #163a42; --tint: #1b3a33; --card-line: #3a5a4f; --card-top: #0d2a31; --input: #031015; --sky: #0b2f38;
-  --stencil: 'Cinzel', Georgia, serif; --script: 'Cinzel', Georgia, serif;
+  --sunset: linear-gradient(180deg, #f0e6d2 0%, #c8aa6e 50%, #785a28 100%);
+  --on-accent: #010a13; --divider: #1e2328; --tint: #0a323c; --card-line: #463714; --card-top: #0a1428; --input: #010a13; --sky: #091428;
+  --body: 'Source Sans 3', system-ui, sans-serif; --stencil: 'Cinzel', Georgia, serif; --script: 'Cinzel', Georgia, serif;
+  background: radial-gradient(90% 50% at 50% 0%, #0a323c66, transparent), linear-gradient(180deg, #091428, #010a13 60%) fixed;
 }
-body[data-era='tft'] .logo, body[data-era='tft'] h2, body[data-era='tft'] .who-name, body[data-era='tft'] .phase { font-weight: 900; }
-body[data-era='tft'] .logo { font-size: clamp(34px, 10vw, 58px); line-height: 1.02; }
-body[data-era='tft'] .tagline { font-size: 17px; font-weight: 700; }
-body[data-era='tft'] .card { border-radius: 2px; border-color: #c8aa6e55; box-shadow: inset 0 0 0 1px #00000066; }
-body[data-era='tft'] .btn { border-radius: 2px; box-shadow: inset 0 0 0 1px #f0e6d299, 0 4px 14px #0008; }
-body[data-era='tft'] .credits-n { -webkit-text-stroke: 0; font-size: 26px; }
+body[data-era='tft'] .logo, body[data-era='tft'] h2, body[data-era='tft'] .who-name, body[data-era='tft'] .phase, body[data-era='tft'] .splash-t { font-weight: 700; }
+body[data-era='tft'] .logo { font-size: clamp(32px, 9.6vw, 56px); line-height: 1.04; }
+body[data-era='tft'] .tagline { font-size: 15px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--teal); text-shadow: 0 0 10px #0ac8b966; }
+body[data-era='tft'] h2 { color: var(--yellow); }
+body[data-era='tft'] h3 { font-family: var(--stencil); font-weight: 700; letter-spacing: 1.2px; color: var(--orange); }
+body[data-era='tft'] .card { border-radius: 0; background: linear-gradient(180deg, #0a1428f2, #010a13f2); border: 2px solid; border-image: linear-gradient(180deg, #c8aa6e, #785a28) 1; box-shadow: inset 0 0 30px #0ac8b90d; }
+body[data-era='tft'] .btn {
+  border-radius: 0; font: 700 14px var(--stencil); letter-spacing: 1px; color: #cdbe91; background: linear-gradient(180deg, #1e2328, #0a1428);
+  border: 2px solid; border-image: linear-gradient(180deg, #c8aa6e, #785a28) 1; box-shadow: none;
+}
+body[data-era='tft'] .btn:hover { color: #f0e6d2; box-shadow: 0 0 12px #c8aa6e55; filter: none; }
+body[data-era='tft'] .btn.big { color: #0ac8b9; border-image: linear-gradient(180deg, #0ac8b9, #005a82) 1; box-shadow: inset 0 0 14px #0ac8b944, 0 0 14px #0ac8b933; }
+body[data-era='tft'] .btn.ghost { border-image: linear-gradient(180deg, #785a28, #463714) 1; color: var(--muted); }
+body[data-era='tft'] input, body[data-era='tft'] select, body[data-era='tft'] textarea, body[data-era='tft'] .target, body[data-era='tft'] .vote, body[data-era='tft'] .chip { border-radius: 0; }
+body[data-era='tft'] input, body[data-era='tft'] select { border-color: #463714; background: #010a13; }
+body[data-era='tft'] .top { background: linear-gradient(180deg, #010a13, #0a1428e6); border-bottom: 2px solid; border-image: linear-gradient(90deg, transparent, #c8aa6e, transparent) 1; box-shadow: none; }
+body[data-era='tft'] .credits { display: flex; align-items: center; gap: 4px; background: #010a13; border: 1px solid #785a28; padding: 2px 12px; }
+body[data-era='tft'] .credits-n { font: 700 24px var(--body); -webkit-text-stroke: 0; color: #f0c75e; text-shadow: 0 0 8px #f0c75e55; }
+body[data-era='tft'] .credits-l { display: none; }
+body[data-era='tft'] .tabs { background: linear-gradient(180deg, #0a1428, #010a13); border-top: 2px solid #785a28; box-shadow: 0 -6px 20px #000a; }
+body[data-era='tft'] .tabs .ti {
+  display: grid; place-items: center; width: 40px; height: 44px; font-size: 18px; background: linear-gradient(180deg, #785a28, #463714);
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+}
+body[data-era='tft'] .tabs button.on .ti { background: linear-gradient(180deg, #0ac8b9, #005a82); }
+body[data-era='tft'] .tabs button.on::before { display: none; }
+body[data-era='tft'] .tabs button span { font: 700 9.5px var(--stencil); letter-spacing: 0.4px; }
+body[data-era='tft'] .tabs button.on span { color: var(--teal); text-shadow: 0 0 8px #0ac8b9; }
+/* Shop cards in champion-cost colours: 1 grey, 2 green, 3 blue, 4 purple, 5 gold. */
+body[data-era='tft'] .items { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+body[data-era='tft'] .item { border-radius: 0; padding: 0; gap: 0; border: 3px solid var(--cost); background: #010a13; overflow: hidden; }
+body[data-era='tft'] .item-e { display: grid; place-items: center; height: 84px; font-size: 42px; background: radial-gradient(circle at 50% 60%, color-mix(in srgb, var(--cost) 45%, transparent), #0a1428 75%); }
+body[data-era='tft'] .item-n { padding: 6px 8px 0; font-family: var(--stencil); font-size: 14px; }
+body[data-era='tft'] .item-d { padding: 2px 8px; font-size: 12px; }
+body[data-era='tft'] .item-p { margin: 0; padding: 5px 8px; background: linear-gradient(90deg, #010a13, color-mix(in srgb, var(--cost) 40%, #010a13)); color: #f0c75e; font: 700 16px var(--body); text-align: right; }
+body[data-era='tft'] .tier-1 { --cost: #808080; }
+body[data-era='tft'] .tier-2 { --cost: #11b288; }
+body[data-era='tft'] .tier-3 { --cost: #207ac7; }
+body[data-era='tft'] .tier-4 { --cost: #c440da; }
+body[data-era='tft'] .tier-5 { --cost: #ffb93b; }
+body[data-era='tft'] .item:hover:not(:disabled) { box-shadow: 0 0 16px var(--cost); }
+body[data-era='tft'] .aug { border-radius: 0; border: 2px solid; border-image: linear-gradient(180deg, #c8aa6e, #785a28) 1; background: linear-gradient(180deg, #0a323c, #010a13); }
+body[data-era='tft'] .aug b { font-family: var(--stencil); color: var(--yellow); }
 
-/* Act IV · Among Us. Deep space, impostor red, crewmate cyan, chunky rounded type. */
+/* ===== Act IV · Emergency Meeting (Among Us): chunky outlined UI, task list, meeting tablet ===== */
 body[data-era='amongus'] {
-  --bg: #070a17; --concrete: #0f1428; --card: #121830; --card2: #1a2242; --line: #2e3a66; --text: #ffffff; --muted: #a9b3d8;
-  --orange: #ff4b4b; --orange2: #ffd400; --yellow: #ffd400; --teal: #38fedc; --purple: #6b2fbb; --cash: #38fedc;
-  --sunset: linear-gradient(100deg, #ff4b4b 0%, #ff7a3d 60%, #ffd400 100%);
-  --on-accent: #12060a; --divider: #1d2647; --tint: #3a1020; --card-line: #2a3460; --card-top: #161d3a; --input: #060914; --sky: #101736;
-  --stencil: 'Lilita One', 'Arial Rounded MT Bold', sans-serif; --script: 'Lilita One', sans-serif;
+  --bg: #04060f; --concrete: #10162b; --card: #1b2236; --card2: #283149; --line: #3c4866; --text: #ffffff; --muted: #b8c2dd;
+  --orange: #ff4b4b; --orange2: #ffd400; --yellow: #f5f557; --teal: #38fedc; --purple: #6b2fbb; --cash: #38fedc;
+  --sunset: linear-gradient(180deg, #ff6b6b, #c51111);
+  --on-accent: #fff; --divider: #2c3550; --tint: #3a1020; --card-line: #000; --card-top: #1b2236; --input: #0b0f1d; --sky: #0b0f22;
+  --body: 'Fredoka', 'Arial Rounded MT Bold', sans-serif; --stencil: 'Fredoka', 'Arial Rounded MT Bold', sans-serif; --script: 'Fredoka', sans-serif;
+  --outline: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 3px 0 #000;
+  background:
+    radial-gradient(1.5px 1.5px at 10% 20%, #fff 50%, transparent), radial-gradient(1px 1px at 70% 10%, #fff 50%, transparent),
+    radial-gradient(2px 2px at 45% 70%, #fffd 50%, transparent), radial-gradient(1px 1px at 85% 50%, #fff 50%, transparent),
+    #04060f fixed;
+  background-size: 180px 180px, 240px 240px, 300px 300px, 200px 200px, auto;
 }
-body[data-era='amongus'] .logo { background: none; color: #fff; -webkit-text-stroke: 2px #000; filter: drop-shadow(4px 4px 0 #000); }
-body[data-era='amongus'] .card { border-radius: 22px; border-width: 3px; border-color: #000; box-shadow: 0 0 0 2px var(--card-line); }
-body[data-era='amongus'] .btn { border-radius: 14px; border: 3px solid #000; }
-body[data-era='amongus'] .tagline { color: var(--yellow); text-shadow: 2px 2px 0 #000; }
+body[data-era='amongus'] .logo { background: none; color: #fff; -webkit-text-stroke: 0; text-shadow: var(--outline); filter: none; font-weight: 700; text-transform: none; }
+body[data-era='amongus'] h2, body[data-era='amongus'] .who-name { font-weight: 700; text-transform: none; text-shadow: var(--outline); letter-spacing: 0.3px; }
+body[data-era='amongus'] h3 { color: #fff; font-weight: 700; text-transform: none; letter-spacing: 0.3px; font-size: 18px; text-shadow: var(--outline); }
+body[data-era='amongus'] .tagline { color: #fff; font-size: 18px; font-weight: 600; text-shadow: var(--outline); }
+body[data-era='amongus'] .card { border-radius: 20px; background: #1b2236e8; border: 4px solid #000; box-shadow: inset 0 0 0 2px #ffffff22; }
+body[data-era='amongus'] .btn {
+  border-radius: 14px; border: 3px solid #000; background: #2c3550; color: #fff; text-transform: none; font-weight: 700; letter-spacing: 0.3px;
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; box-shadow: inset 0 -4px 0 #0005, inset 0 0 0 2px #fff3;
+}
+body[data-era='amongus'] .btn.big, body[data-era='amongus'] .drinkcard .btn { background: #c51111; }
+body[data-era='amongus'] .btn.ghost { background: transparent; box-shadow: inset 0 0 0 2px #fff6; }
+body[data-era='amongus'] .chip, body[data-era='amongus'] .target { border-radius: 12px; }
+body[data-era='amongus'] input, body[data-era='amongus'] select, body[data-era='amongus'] textarea { border-radius: 12px; border: 3px solid #000; }
+body[data-era='amongus'] .top { background: #04060fe6; border-bottom: 3px solid #000; box-shadow: none; }
+body[data-era='amongus'] .credits-n { font-weight: 700; -webkit-text-stroke: 0; text-shadow: var(--outline); color: #fff; font-size: 24px; }
+body[data-era='amongus'] .tabs { background: transparent; border-top: 0; box-shadow: none; gap: 6px; padding: 0 8px calc(8px + env(safe-area-inset-bottom)); backdrop-filter: none; }
+body[data-era='amongus'] .tabs button {
+  background: #2c3550ee; border: 3px solid #000; border-radius: 16px; box-shadow: inset 0 -4px 0 #0006, inset 0 0 0 2px #fff2; padding: 6px 2px;
+}
+body[data-era='amongus'] .tabs button.on { background: #c51111; }
+body[data-era='amongus'] .tabs button.on::before { display: none; }
+body[data-era='amongus'] .tabs .ti { font-size: 22px; }
+body[data-era='amongus'] .tabs button span, body[data-era='amongus'] .tabs button.on span { color: #fff; text-transform: none; letter-spacing: 0; font-size: 11px; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; }
+/* Task list, top-left in the game: dark translucent panel, yellow tasks, green total bar. */
+body[data-era='amongus'] .task-list { background: #000a; border-radius: 12px; }
+body[data-era='amongus'] .task-list .todo b { color: var(--yellow); }
+.task-bar { position: relative; height: 26px; margin: 0 0 12px; background: #1d2a1d; border: 3px solid #000; border-radius: 4px; overflow: hidden; }
+.task-bar i { position: absolute; inset: 0 auto 0 0; background: #43d35d; box-shadow: inset 0 -5px 0 #2a9e40; transition: width 0.5s; }
+.task-bar b { position: relative; z-index: 1; display: block; padding: 2px 10px; font-size: 13px; color: #fff; letter-spacing: 0.5px; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; }
+/* Voting looks like the meeting tablet. */
+body[data-era='amongus'] .votes { background: #8fa2b9; border: 4px solid #000; border-radius: 18px; padding: 10px; }
+body[data-era='amongus'] .vote { background: #dde6ee; color: #111; border: 3px solid #000; border-radius: 10px; font-weight: 700; }
+body[data-era='amongus'] .vote .bar { background: #43d35d55; }
+body[data-era='amongus'] .vote .v-c { color: #111; font-family: var(--body); font-weight: 700; }
+body[data-era='amongus'] .vote.on { background: #fff8b0; box-shadow: 0 0 0 3px #f5f557; }
+body[data-era='amongus'] .vote.on .v-c::after { content: ' ✔ I VOTED'; color: #c51111; font-size: 11px; }
+body[data-era='amongus'] .vote.skip { background: #b9c6d3; color: #333; }
+body[data-era='amongus'] .item { border-radius: 16px; border: 3px solid #000; background: #283149; }
 
 /* ---------- act furniture ---------- */
 .hud-x { font-size: 12px; font-weight: 800; color: var(--teal); white-space: nowrap; letter-spacing: 0.3px; }
@@ -564,12 +736,12 @@ body[data-era='amongus'] .tagline { color: var(--yellow); text-shadow: 2px 2px 0
 .splash.act .splash-t { background: var(--sunset); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-stroke: 0; filter: drop-shadow(4px 4px 0 #000); text-shadow: none; }
 .splash.act .splash-s { font-size: clamp(26px, 8vw, 48px); }
 .splash.meeting { background: radial-gradient(circle at center, #b3000099 0, #2a000ccc 55%, #000c 100%); }
-.splash.meeting .splash-t { color: #fff; font-family: 'Lilita One', sans-serif; animation: shake 0.4s 3; }
+.splash.meeting .splash-t { color: #fff; font-family: var(--stencil); animation: shake 0.4s 3; }
 .splash.ejected { background: #02030cf2; }
-.splash.ejected .splash-t { color: #fff; font-family: 'Lilita One', sans-serif; font-size: clamp(26px, 7vw, 56px); -webkit-text-stroke: 0; text-shadow: none; max-width: 900px; }
+.splash.ejected .splash-t { color: #fff; font-family: var(--stencil); font-size: clamp(26px, 7vw, 56px); -webkit-text-stroke: 0; text-shadow: none; max-width: 900px; }
 @keyframes shake { 25% { transform: translateX(-6px) rotate(-1deg); } 75% { transform: translateX(6px) rotate(1deg); } }
 .splash.warp .splash-t { letter-spacing: 6px; -webkit-text-stroke: 0; font-size: clamp(44px, 13vw, 96px); animation: rise 0.6s ease-out; }
-.splash.warp .splash-s { font-family: Inter, sans-serif; font-weight: 800; font-size: clamp(16px, 4.6vw, 26px); max-width: 520px; }
+.splash.warp .splash-s { font-family: var(--body), sans-serif; font-weight: 800; font-size: clamp(16px, 4.6vw, 26px); max-width: 520px; }
 .splash.r3 { background: radial-gradient(ellipse at center, #3a8dffaa 0, #061235e6 60%); }
 .splash.r3 .splash-t { color: #9cd0ff; text-shadow: 0 0 18px #3a8dff; }
 .splash.r4 { background: radial-gradient(ellipse at center, #b45cffbb 0, #1a0838ee 60%); }
@@ -578,3 +750,19 @@ body[data-era='amongus'] .tagline { color: var(--yellow); text-shadow: 2px 2px 0
 .splash.r5 .splash-t { color: #fff3c4; text-shadow: 0 0 26px #ffcf4a, 0 0 60px #ff9b3d; }
 @keyframes rise { from { transform: translateY(30px) scale(0.8); opacity: 0; } }
 .item.t-warp { border-color: var(--orange); background: linear-gradient(160deg, color-mix(in srgb, var(--purple) 28%, var(--card)), var(--card)); }
+
+/* per-act drink card, toasts and banners */
+body[data-era='gta'] .drinkcard { border-radius: 0; border: 0; border-left: 5px solid var(--yellow); background: rgba(0, 0, 0, 0.72); }
+body[data-era='gta'] .toast { border-radius: 0; background: #000d; }
+body[data-era='honkai'] .drinkcard { border-radius: 3px; border: 1px solid var(--orange); background: linear-gradient(180deg, rgba(40, 34, 20, 0.85), rgba(10, 12, 30, 0.9)); }
+body[data-era='honkai'] .toast { border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.2); background: #0b1029e8; }
+body[data-era='honkai'] .item.t-warp { --rar: linear-gradient(160deg, #a8652c, #e8b25a 55%, #b48cff); }
+body[data-era='tft'] .drinkcard { border-radius: 0; border: 2px solid; border-image: linear-gradient(180deg, #f0c75e, #785a28) 1; background: linear-gradient(180deg, #2a2210, #010a13); }
+body[data-era='tft'] .drinkcard .btn { background: linear-gradient(180deg, #1e2328, #0a1428); }
+body[data-era='tft'] .stats div, body[data-era='tft'] .stash-i, body[data-era='tft'] .inv-mini { border-radius: 0; background: #010a13; border: 1px solid #463714; }
+body[data-era='tft'] .toast { border-radius: 0; background: #010a13f2; border: 1px solid #785a28; }
+body[data-era='amongus'] .drinkcard { border-radius: 20px; border: 4px solid #000; background: #1b2236; box-shadow: inset 0 0 0 2px #f5f55755; }
+body[data-era='amongus'] .toast { border-radius: 14px; border: 3px solid #000; background: #1b2236f2; }
+body[data-era='amongus'] .phase.vote { background: #c51111; color: #fff; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; animation: alarm 1.2s steps(1) infinite; }
+@keyframes alarm { 50% { background: #7a0a0a; } }
+body[data-era='amongus'][data-kind='player'] .tabs::before { content: ''; position: absolute; inset: -24px 0 0; z-index: -1; background: linear-gradient(transparent, #04060f 45%); }

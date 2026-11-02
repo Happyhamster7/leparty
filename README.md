@@ -47,6 +47,13 @@ The night runs in four acts. A host moves to the next one with the act bar at th
 | III · Convergence (TFT) | Hextech teal and gold; money is **🪙gold** | **Augments**: each block picks one of three (Shot Caller picks if there is one). **Interest**: after every game, +1 gold per 10 unspent, up to 5. **Streaks**: win or lose heats in a row for +1 at 2, +2 at 3, +3 at 4 or more. | 1ST / 2ND / … PLACE, BENCHED, ELIMINATED |
 | IV · Emergency Meeting (Among Us) | Deep space and impostor red; money is **credits** | Snitches are Impostors and the stakes double: sabotage skims twice as much and catching one pays double. Opening Block Votes calls an **EMERGENCY MEETING** on every screen, and closing them shows "*Name* was / was not an Impostor." | VICTORY / DEFEAT, LOCKED IN MEDBAY, EJECTED |
 
+Each act also changes the layout and type on phones, to look as close to its game as free fonts allow:
+
+- **GTA:** HUD-style header with cash and wanted stars, pause-menu tabs across the top, square black panels with title bars. Type: Anton for the HUD and stamps (in place of Pricedown) and Roboto for menus (in place of Chalet).
+- **Honkai: Star Rail:** starfield, glass panels with gold corner brackets, pill buttons, round menu icons, and shop items as rarity tiles from grey 1★ to gold 5★. Type: Barlow (in place of the game's DIN-style UI font).
+- **TFT:** League-client panels with gold borders, hextech buttons, hexagon tab icons, and shop items as champion cards bordered in cost colours (grey, green, blue, purple, gold). Type: Cinzel and Source Sans 3 (in place of Beaufort and Spiegel).
+- **Among Us:** chunky black-outlined UI, the Now tab becomes a task list with a TOTAL TASKS COMPLETED bar, voting looks like the meeting tablet with a coloured crewmate per player, and a flashing red meeting banner. Type: Fredoka (in place of the game's rounded UI font).
+
 Augments (Act III): Windfall (+20 now), Rich Get Richer (+5 now and an interest cap of 10), Hustler (25% off the shop), Thrill of the Hunt (+4 per heat win), Built Different (a free Deflect and Bribe), Cursed Crown (+30 now, but 2 drinks each).
 
 Warp odds and pity are in Settings. Any shop item can be limited to one act in the Commissary tab ("On the shelf during").
