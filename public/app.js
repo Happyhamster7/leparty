@@ -165,10 +165,18 @@
 
   // Each act's banner art, drawn inline so it needs no image files.
   const PALM_LEAF = 'M0 0C20-14 44-10 64 8C44-2 22-4 0 4Z';
-  const palm = (x, y, k, flip) => `<g transform="translate(${x} ${y}) scale(${flip ? -k : k} ${k})">
-      <path d="M0 0Q-12 70 10 150" stroke="#0e0818" stroke-width="7" fill="none" stroke-linecap="round"/>
-      ${[-40, -8, 24].map((a) => `<path d="${PALM_LEAF}" transform="rotate(${a})"/><path d="${PALM_LEAF}" transform="scale(-1 1) rotate(${a})"/>`).join('')}
+  const palm = (x, y, k, flip, color = '#0e0818') => `<g transform="translate(${x} ${y}) scale(${flip ? -k : k} ${k})" fill="${color}">
+      <path d="M0 0Q-12 70 10 150" stroke="${color}" stroke-width="7" fill="none" stroke-linecap="round"/>
+      ${[-52, -28, -6, 16, 36].map((a) => `<path d="${PALM_LEAF}" transform="rotate(${a})"/><path d="${PALM_LEAF}" transform="scale(-1 1) rotate(${a})"/>`).join('')}
       <path d="${PALM_LEAF}" transform="rotate(-78)"/>
+    </g>`;
+  // GTA VI key art: an Art Deco hotel on Ocean Drive, pastel and lit by the sunset.
+  const decoHotel = (x, y, w, h, wall, shade, glass) => `<g transform="translate(${x} ${y})">
+      <rect x="${w * 0.3}" y="-22" width="${w * 0.4}" height="24" fill="${wall}"/><rect x="${w * 0.4}" y="-34" width="${w * 0.2}" height="14" fill="${wall}"/><rect x="${w * 0.47}" y="-46" width="${w * 0.06}" height="14" fill="${shade}"/>
+      <rect width="${w}" height="${h}" fill="${wall}"/><rect width="${w * 0.22}" height="${h}" fill="${shade}"/>
+      ${[0, 1, 2, 3].map((r) => [0, 1, 2].map((c) => `<rect x="${w * 0.32 + c * w * 0.22}" y="${10 + r * 16}" width="${w * 0.14}" height="9" rx="1" fill="${glass}"/>`).join('')).join('')}
+      ${[0, 1, 2, 3].map((r) => `<circle cx="${w * 0.11}" cy="${14 + r * 16}" r="3.4" fill="${glass}"/>`).join('')}
+      <rect y="${h - 14}" width="${w}" height="5" fill="#f28fb8"/>
     </g>`;
   // Fixed star positions so the sky doesn't reshuffle on every render.
   const STARS = Array.from({ length: 46 }, (_, i) => [(i * 89 + 17) % 400, (i * 53 + 11) % 150, ((i * 7) % 3) * 0.4 + 0.6]);
@@ -178,19 +186,18 @@
   const HERO_ART = {
     gta: () => `
       <defs>
-        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c0b35"/><stop offset=".45" stop-color="#6a1f6e"/><stop offset=".75" stop-color="#ff3d8b"/><stop offset="1" stop-color="#ff9b3d"/></linearGradient>
-        <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe066"/><stop offset=".6" stop-color="#ff9b3d"/><stop offset="1" stop-color="#ff3d8b"/></linearGradient>
-        <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3d1552"/><stop offset="1" stop-color="#0e0818"/></linearGradient>
+        <linearGradient id="vsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4c57a8"/><stop offset=".3" stop-color="#9563b5"/><stop offset=".55" stop-color="#e57aa7"/><stop offset=".78" stop-color="#f7a073"/><stop offset="1" stop-color="#fcc98a"/></linearGradient>
+        <radialGradient id="vglow" cx=".62" cy=".78" r=".45"><stop offset="0" stop-color="#ffe1a6" stop-opacity=".95"/><stop offset="1" stop-color="#ffe1a6" stop-opacity="0"/></radialGradient>
+        <linearGradient id="vroad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9a83c4"/><stop offset="1" stop-color="#5a4888"/></linearGradient>
       </defs>
-      <rect width="400" height="152" fill="url(#sky)"/>
-      <g fill="#fff" opacity=".7"><circle cx="40" cy="22" r="1"/><circle cx="120" cy="12" r="1.2"/><circle cx="300" cy="18" r="1"/><circle cx="360" cy="40" r=".8"/><circle cx="210" cy="30" r=".9"/></g>
-      <circle cx="200" cy="138" r="64" fill="url(#sun)"/>
-      <g fill="#ff3d8b">${[104, 116, 126, 135, 143].map((y, i) => `<rect x="130" y="${y}" width="140" height="${2 + i}"/>`).join('')}</g>
-      <rect y="150" width="400" height="60" fill="url(#sea)"/>
-      <g fill="#ff9b3d" opacity=".55">${[156, 163, 171, 180].map((y, i) => `<rect x="${170 - i * 8}" y="${y}" width="${60 + i * 16}" height="1.6" rx=".8"/>`).join('')}</g>
-      <g fill="#1fe0d0" opacity=".25"><rect x="20" y="168" width="70" height="1"/><rect x="300" y="174" width="80" height="1"/></g>
-      <path d="M0 210V178Q70 160 150 186L250 192Q330 162 400 174V210Z" fill="#0e0818"/>
-      <g fill="#0e0818">${palm(52, 62, 1)}${palm(104, 104, 0.62)}${palm(348, 54, 1.08, true)}${palm(300, 108, 0.55, true)}</g>`,
+      <rect width="400" height="210" fill="url(#vsky)"/>
+      <rect width="400" height="210" fill="url(#vglow)"/>
+      <g fill="#fff" opacity=".18"><ellipse cx="90" cy="46" rx="70" ry="7"/><ellipse cx="300" cy="30" rx="60" ry="5"/><ellipse cx="220" cy="70" rx="44" ry="4"/></g>
+      <g opacity=".55">${palm(150, 96, 0.5, false, '#b779a6')}${palm(196, 104, 0.42, true, '#b779a6')}</g>
+      ${decoHotel(238, 104, 86, 72, '#e7d3f2', '#c3aee6', '#9f92d8')}${decoHotel(326, 118, 66, 58, '#f6d0df', '#e6b3cc', '#b29ad8')}
+      <rect y="176" width="400" height="34" fill="url(#vroad)"/><rect y="174" width="400" height="4" fill="#c7b3e3"/>
+      <g fill="#fff" opacity=".45">${[30, 110, 190, 270, 350].map((x) => `<rect x="${x}" y="194" width="34" height="2" rx="1"/>`).join('')}</g>
+      ${palm(40, 54, 1.05, false, '#7a4a86')}${palm(98, 96, 0.68, false, '#8a5592')}${palm(372, 40, 1.12, true, '#7a4a86')}`,
     genshin: () => `
       <defs>
         <linearGradient id="gsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d3a6b"/><stop offset=".55" stop-color="#5b8ec4"/><stop offset=".85" stop-color="#f1d9a7"/><stop offset="1" stop-color="#f6c98a"/></linearGradient>

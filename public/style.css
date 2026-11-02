@@ -504,7 +504,7 @@ textarea {
 
 /* ---------- acts: each one reskins the whole app ----------
    Fonts are the closest free matches to each game's own type:
-   GTA: Pricedown (HUD/stamps) -> Anton; Chalet London 1960 (menus) -> Roboto / Roboto Condensed.
+   GTA VI: "GTA Art Deco" (marketing type) -> Outfit, set wide like the key art.
    Genshin Impact: HYWenHei-85W itself (supplied by the host), Noto Sans as fallback.
    TFT / League client: Beaufort (headings) -> Cinzel; Spiegel (body) -> Source Sans 3.
    Among Us: rounded, outlined UI text -> Fredoka. */
@@ -513,7 +513,27 @@ textarea {
 .crew { width: 22px; height: 26px; vertical-align: -6px; margin-right: 8px; }
 
 /* ===== Act I · Vice City (GTA): HUD overlay, pause-menu tabs and panels ===== */
-body[data-era='gta'] { --body: 'Roboto', system-ui, sans-serif; --ui: 'Roboto Condensed', 'Arial Narrow', sans-serif; }
+/* Type: the GTA VI marketing face ("GTA Art Deco") isn't public, so Outfit stands in: same geometric shapes, wide-tracked caps.
+   Art: the VI key art's painted sunset (indigo -> violet -> pink -> peach), mauve palms and pastel Art Deco. */
+body[data-era='gta'] {
+  --body: 'Outfit', system-ui, sans-serif; --ui: 'Outfit', system-ui, sans-serif; --stencil: 'Outfit', system-ui, sans-serif; --script: 'Outfit', system-ui, sans-serif;
+  --bg: #1d1838; --concrete: #262048; --card: #272149; --card2: #332a5c; --line: #4a3f7a; --text: #fff6f2; --muted: #c9bddf;
+  --orange: #ff5fa2; --orange2: #ff9a5c; --yellow: #ffd166; --teal: #8fd8ff; --purple: #9b7be0; --cash: #7ee08a;
+  --sunset: linear-gradient(180deg, #ff4fa0 0%, #ff7a63 45%, #ffb24d 75%, #ffe08a 100%);
+  --sky: #5a4a9c; --divider: #3a3168; --tint: #4a2a5c; --card-line: #463c78; --card-top: #2c2552; --input: #17132e; --on-accent: #2a1236;
+  background: linear-gradient(180deg, #5a5aa8 0%, #9563b5 18%, #3a2d66 42%, #1d1838 70%) fixed;
+}
+body[data-era='gta'] .logo {
+  font-weight: 800; letter-spacing: 0.06em; line-height: 1; filter: drop-shadow(0 0 0 #3d2a8a) drop-shadow(2px 2px 0 #3d2a8a) drop-shadow(0 6px 18px #ff5fa255);
+}
+body[data-era='gta'] .tagline { font-weight: 500; font-size: 15px; letter-spacing: 0.32em; text-transform: uppercase; color: #fff; text-shadow: 0 1px 6px #0006; }
+body[data-era='gta'] h2, body[data-era='gta'] .who-name, body[data-era='gta'] .phase, body[data-era='gta'] .splash-t, body[data-era='gta'] .splash-s { font-weight: 700; letter-spacing: 0.14em; }
+body[data-era='gta'] h3 { letter-spacing: 0.22em; font-weight: 600; }
+body[data-era='gta'] .splash-t { -webkit-text-stroke: 0; text-shadow: 0 4px 0 #3d2a8a, 0 8px 24px #000a; }
+body[data-era='gta'] .splash.passed .splash-t { background: var(--sunset); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(3px 3px 0 #3d2a8a); text-shadow: none; }
+body[data-era='gta'] .credits-n, body[data-era='gta'] .ph-money b, body[data-era='gta'] .ph-hcash, body[data-era='gta'] .ph-balance, body[data-era='gta'] .item-p, body[data-era='gta'] .stats b, body[data-era='gta'] .b-s b { font-weight: 700; -webkit-text-stroke: 0; }
+body[data-era='gta'] .ph-rank { font-weight: 800; background: radial-gradient(circle at 40% 35%, #ff9ac6, #c2357a); box-shadow: 0 0 0 3px #fff, 0 0 0 5px #3d2a8a; }
+body[data-era='gta'] .stamp { font-weight: 700; letter-spacing: 0.3em; color: #fff; border-color: #fff; text-shadow: none; box-shadow: none; background: #ffffff1f; }
 body[data-era='gta'] h3, body[data-era='gta'] .eyebrow { font-family: var(--ui); }
 body[data-era='gta'] .card { background: rgba(0, 0, 0, 0.66); border: 0; border-radius: 0; backdrop-filter: blur(6px); }
 body[data-era='gta'] .card > h3:first-child, body[data-era='gta'] .card > .eyebrow:first-child {
@@ -1133,3 +1153,13 @@ body[data-era='gta'] .ph-body .todo-card .todo { border: 0; margin: 6px 0; paddi
 }
 body[data-era='gta'] .ph-body .drinkcard .fine { color: #6b5a1c; }
 body[data-era='gta'] .ph-body .drinkcard .drink-n { color: #a36c00; }
+body[data-era='gta'] .ph-id b, body[data-era='gta'] .ph-head b { letter-spacing: 0.16em; }
+body[data-era='gta'] .ph-app span:last-child { letter-spacing: 0.04em; font-weight: 500; }
+body[data-era='gta'] .ph-status { background: #0000; text-shadow: 0 1px 2px #0008; }
+body[data-era='gta'] .ph-home .ph-status { position: relative; z-index: 2; }
+body[data-era='gta'] .ph-card { background: #1d1838cc; backdrop-filter: blur(8px); border-radius: 14px; border: 0; box-shadow: inset 0 0 0 1px #ffffff2a; }
+/* The wallpaper is composed for a tall screen: sky above, the scene in the middle, the road below. */
+body[data-era='gta'] .ph-wall { background: linear-gradient(180deg, #343c86 0%, #4c57a8 30%, #5a4888 30%, #3a2d66 100%); }
+body[data-era='gta'] .ph-wall .hero { inset: auto; left: -25%; right: -25%; top: 24%; height: auto; aspect-ratio: 400 / 210; }
+body[data-era='gta'] .ph-wall .hero::after { display: none; }
+body[data-era='gta'] .ph-wall::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, #0000 58%, #1d183899 74%, #1d1838ee 88%); }
