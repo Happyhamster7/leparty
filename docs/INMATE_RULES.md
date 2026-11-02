@@ -38,7 +38,7 @@ You play in a block of 4 or 5 (Block A, Block B and so on). Each block starts wi
 The night changes game every couple of rounds. When the hosts flip the act, your phone (and the TV) switch to a new look, and a card explains the new rules. Your block keeps its balance; only the money's name changes.
 
 - **Act I · Vice City (GTA):** Stick-Ups let your block rob 10 cash from another (they can deflect it back). Watch your wanted level in the corner.
-- **Act II · Warp Drive (Honkai: Star Rail):** buy Warps, gacha pulls for your block. Usually trash, sometimes a jackpot, and every 8th pull without a 5★ is guaranteed one.
+- **Act II · Wish Upon Teyvat (Genshin Impact):** turn your phone sideways. Wish ×1 or ×10 on the Wish screen for your party. Usually trash, sometimes a jackpot, and every 8th wish without a 5★ is guaranteed one.
 - **Act III · Convergence (TFT):** your block picks one augment. Unspent gold earns interest after every game, and win or loss streaks pay bonus gold.
 - **Act IV · Emergency Meeting (Among Us):** snitches are Impostors, and the stakes double. Every Block Vote is an Emergency Meeting.
 

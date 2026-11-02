@@ -62,7 +62,7 @@
   function hudExtra(me, myTeam) {
     const id = actId();
     if (id === 'gta') return wantedStars(me);
-    if (id === 'honkai' && myTeam) return `<div class="hud-x" title="Pulls since your last 5★">✦ Pity ${myTeam.pity ?? 0}/${S.settings.warpPity}</div>`;
+    if (id === 'genshin' && myTeam) return `<div class="hud-x" title="Pulls since your last 5★">✦ Pity ${myTeam.pity ?? 0}/${S.settings.warpPity}</div>`;
     if (id === 'tft' && myTeam) {
       const st = myTeam.streak || 0;
       return `<div class="hud-x">${myTeam.augment ? `${S.augments[myTeam.augment].emoji} ` : ''}${st > 1 ? `🔥 ${st} win streak` : st < -1 ? `💧 ${-st} loss streak` : 'No streak'}</div>`;
@@ -71,7 +71,7 @@
     return '';
   }
 
-  // Price bands double as rarity: 1★ cheap mixers up to 5★ big-ticket items (Honkai rarity, TFT champion cost).
+  // Price bands double as rarity: 1★ cheap mixers up to 5★ big-ticket items (Genshin rarity, TFT champion cost).
   const tierOf = (price) => (price <= 5 ? 1 : price <= 12 ? 2 : price <= 20 ? 3 : price <= 30 ? 4 : 5);
 
   // Among Us act: everyone gets a crewmate colour, fixed by booking order.
@@ -191,24 +191,21 @@
       <g fill="#1fe0d0" opacity=".25"><rect x="20" y="168" width="70" height="1"/><rect x="300" y="174" width="80" height="1"/></g>
       <path d="M0 210V178Q70 160 150 186L250 192Q330 162 400 174V210Z" fill="#0e0818"/>
       <g fill="#0e0818">${palm(52, 62, 1)}${palm(104, 104, 0.62)}${palm(348, 54, 1.08, true)}${palm(300, 108, 0.55, true)}</g>`,
-    honkai: () => `
+    genshin: () => `
       <defs>
-        <linearGradient id="hsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#05081c"/><stop offset=".6" stop-color="#1a1650"/><stop offset="1" stop-color="#3a2a7a"/></linearGradient>
-        <radialGradient id="neb" cx=".3" cy=".55" r=".5"><stop offset="0" stop-color="#b48cff" stop-opacity=".55"/><stop offset="1" stop-color="#b48cff" stop-opacity="0"/></radialGradient>
-        <radialGradient id="neb2" cx=".75" cy=".35" r=".4"><stop offset="0" stop-color="#5fd0ff" stop-opacity=".35"/><stop offset="1" stop-color="#5fd0ff" stop-opacity="0"/></radialGradient>
-        <linearGradient id="planet" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f5e3b3"/><stop offset=".45" stop-color="#c79ae8"/><stop offset="1" stop-color="#1b1f5c"/></linearGradient>
+        <linearGradient id="gsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d3a6b"/><stop offset=".55" stop-color="#5b8ec4"/><stop offset=".85" stop-color="#f1d9a7"/><stop offset="1" stop-color="#f6c98a"/></linearGradient>
+        <radialGradient id="gsun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff8e0"/><stop offset=".4" stop-color="#ffe7a8" stop-opacity=".8"/><stop offset="1" stop-color="#ffe7a8" stop-opacity="0"/></radialGradient>
       </defs>
-      <rect width="400" height="210" fill="url(#hsky)"/>
-      <rect width="400" height="210" fill="url(#neb)"/><rect width="400" height="210" fill="url(#neb2)"/>
-      <g stroke="#f7dc9a" stroke-width=".6" opacity=".35">${Array.from({ length: 14 }, (_, i) => { const a = (i / 14) * Math.PI * 2; return `<line x1="${200 + Math.cos(a) * 30}" y1="${110 + Math.sin(a) * 18}" x2="${200 + Math.cos(a) * 260}" y2="${110 + Math.sin(a) * 160}"/>`; }).join('')}</g>
-      ${starField(0.9)}
-      <circle cx="292" cy="96" r="46" fill="url(#planet)"/>
-      <ellipse cx="292" cy="98" rx="84" ry="16" fill="none" stroke="#f7dc9a" stroke-width="2.5" opacity=".85" transform="rotate(-14 292 98)"/>
-      <path d="M208 98a84 16 0 0 0 168 0" fill="none" stroke="#05081c" stroke-width="0" />
-      <g fill="#f7dc9a"><path d="M86 52l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"/><path d="M150 140l2 6 6 2-6 2-2 6-2-6-6-2 6-2z" opacity=".8"/><path d="M360 160l1.6 5 5 1.6-5 1.6-1.6 5-1.6-5-5-1.6 5-1.6z" opacity=".7"/></g>
-      <path d="M0 210V186Q120 170 220 182T400 176V210Z" fill="#070a1f"/>
-      <g fill="#070a1f"><rect x="40" y="168" width="120" height="16" rx="6"/><rect x="164" y="170" width="70" height="14" rx="6"/><rect x="238" y="171" width="60" height="13" rx="6"/></g>
-      <g fill="#f7dc9a" opacity=".85">${[52, 70, 88, 106, 124, 142, 176, 194, 212, 250, 268, 286].map((x) => `<rect x="${x}" y="173" width="9" height="4" rx="1"/>`).join('')}</g>`,
+      <rect width="400" height="210" fill="url(#gsky)"/>
+      <circle cx="270" cy="128" r="70" fill="url(#gsun)"/>
+      <g fill="#fff" opacity=".85">${STARS.slice(0, 18).map(([x, y, r]) => `<circle cx="${x}" cy="${y * 0.4}" r="${r * 0.7}"/>`).join('')}</g>
+      <g transform="translate(118 26)"><ellipse cx="0" cy="10" rx="30" ry="6" fill="#e9eef8" opacity=".9"/><path d="M-26 10Q0 34 26 10Z" fill="#9db1cf"/><rect x="-6" y="-8" width="12" height="18" fill="#f4f6fb"/><path d="M-9-8L0-20L9-8Z" fill="#d3bc8e"/></g>
+      <g fill="#fff" opacity=".7"><ellipse cx="60" cy="96" rx="44" ry="9"/><ellipse cx="330" cy="70" rx="50" ry="8"/><ellipse cx="200" cy="110" rx="30" ry="6"/></g>
+      <path d="M0 210V150L30 112L46 140L70 96L92 138L118 120L140 150L170 128L200 156L230 118L252 146L282 104L300 132L330 92L352 136L376 114L400 140V210Z" fill="#3f5f7f" opacity=".75"/>
+      <path d="M0 210V170L40 150L80 168L130 148L180 172L240 150L300 170L350 152L400 166V210Z" fill="#2b4561"/>
+      <path d="M0 210V188Q100 176 200 190T400 184V210Z" fill="#1c2b40"/>
+      <g transform="translate(330 170)" fill="#1c2b40"><rect x="-3" y="-30" width="6" height="30"/><path d="M-18-30H18L12-38H-12Z"/><path d="M-12-38H12L6-46H-6Z"/></g>
+      <g fill="#ffe7a8"><path d="M200 40l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"/><path d="M40 52l2 6 6 2-6 2-2 6-2-6-6-2 6-2z" opacity=".8"/></g>`,
     tft: () => `
       <defs>
         <linearGradient id="tsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#03171c"/><stop offset=".7" stop-color="#0b2f38"/><stop offset="1" stop-color="#103c45"/></linearGradient>
@@ -445,13 +442,12 @@
         else if (n > 0) splash('passed', words.passed, sub);
         else splash('failed', words.failed, sub);
       }
-      // Honkai act: everyone on the block sees the pull land.
+      // Genshin act: everyone in the party sees the wish land.
       const seen = new Set((prev.orders || []).map((o) => o.id));
       const pull = (next.orders || []).find((o) => o.warp && !seen.has(o.id) && o.fromTeamId === b.teamId);
       if (pull) {
-        const w = pull.warp;
-        splash(`warp r${w.stars}`, '★'.repeat(w.stars), `${w.emoji} ${w.name} · ${w.text}`, w.stars === 5 ? 4200 : 3000);
-        if (w.stars === 5) buzz([100, 60, 100, 60, 400]);
+        wishReveal(pull.warps || [pull.warp], pull.buyerName);
+        if (pull.warp.stars === 5) buzz([100, 60, 100, 60, 400]);
       }
     }
     if (a.status !== b.status || a.teamId !== b.teamId) {
@@ -563,6 +559,7 @@
 
   // ---------- player ----------
   function playerPage() {
+    if (actId() === 'genshin') return genshinPage();
     const me = S.me;
     const myTeam = team(me.teamId);
     const tabs = [
@@ -597,6 +594,98 @@
       <nav class="tabs">
         ${tabs.map(([k, icon, label]) => `<button data-act="tab" data-tab="${k}" class="${ui.tab === k ? 'on' : ''}"><i class="ti">${icon}</i><span>${label}</span>${k === 'rap' && needsMafiaAction() ? '<i class="dot"></i>' : ''}${k === 'yard' && ui.tab !== 'yard' && todoItems().length ? '<i class="dot"></i>' : ''}${k === 'cell' && (myIncoming().length || actionableRequests().length) ? '<i class="dot"></i>' : ''}</button>`).join('')}
       </nav>`;
+  }
+
+  // ---------- Act II: Genshin Impact, played in landscape ----------
+  const PRIMO = '<svg class="gi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1l3 8 8 3-8 3-3 8-3-8-8-3 8-3z" fill="#f4ecd6" stroke="#b5925a" stroke-width="1"/><path d="M12 6l1.6 4.4L18 12l-4.4 1.6L12 18l-1.6-4.4L6 12l4.4-1.6z" fill="#9fd3f5"/></svg>';
+  const FATE = '<svg class="gi-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#c98ad8" stroke="#f6e7b4" stroke-width="1.5"/><path d="M12 5l1.8 5.2L19 12l-5.2 1.8L12 19l-1.8-5.2L5 12l5.2-1.8z" fill="#fff6dc"/></svg>';
+  const tabDot = (k) =>
+    (k === 'rap' && needsMafiaAction()) || (k === 'yard' && ui.tab !== 'yard' && todoItems().length) || (k === 'cell' && (myIncoming().length || actionableRequests().length)) ? '<i class="dot"></i>' : '';
+
+  function genshinPage() {
+    const me = S.me;
+    const myTeam = team(me.teamId);
+    const tabs = [
+      ['yard', '📜', 'Adventurer Handbook'],
+      ['wish', '✨', 'Wish'],
+      ['shop', '🛍️', 'Paimon’s Bargains'],
+      ['cell', me.status === 'block' ? '👥' : me.status === 'holding' ? '🕳️' : '🔒', me.status === 'block' ? 'Party Setup' : me.status === 'holding' ? 'Holding Cell' : 'Solitary'],
+      ['rap', '📖', 'Archive'],
+      ['board', '🏆', 'Leaderboard'],
+    ];
+    const cur = tabs.find((t) => t[0] === ui.tab) || tabs[0];
+    const body = { yard: yardTab, wish: wishTab, shop: shopTab, cell: cellTab, rap: rapTab, board: boardTab }[cur[0]];
+    return `<div class="gi">
+      <div class="gi-bg">${hero()}</div>
+      <div class="gi-rotate" role="alert"><div class="gi-phone"></div><b>Rotate your device</b><small>Act II is played in landscape, like the game.</small></div>
+      <header class="gi-top">
+        <div class="gi-title"><span class="gi-ico">${cur[1]}</span><div><b>${h(cur[2])}</b><small>${h(me.name)}${me.isCaptain ? ' 👑' : ''} · #${h(me.inmateNo)} · ${statusChip(me)}</small></div></div>
+        <div class="gi-cur">
+          ${myTeam ? `<span class="gi-pill" title="Wishes until a guaranteed 5★">${FATE}<b>${S.settings.warpPity - (myTeam.pity || 0)}</b><small>to 5★</small></span>` : ''}
+          ${myTeam ? `<span class="gi-pill" title="${h(myTeam.name)} Primogems">${PRIMO}<b>${myTeam.budget}</b><i>+</i></span>` : ''}
+        </div>
+      </header>
+      <nav class="gi-nav">${tabs.map(([k, icon, label]) => `<button data-act="tab" data-tab="${k}" class="${cur[0] === k ? 'on' : ''}"><span class="gi-ni">${icon}</span><span>${h(label)}</span>${tabDot(k)}</button>`).join('')}</nav>
+      <main class="gi-main">
+        ${phaseBanner()}${announcement()}${drinkCard()}${dealerCard()}${incomingAlerts()}
+        ${body()}
+      </main>
+      ${ui.sheet ? buySheet() : ''}
+      ${actUnseen() ? actModal() : briefingUnseen() ? briefingModal() : ''}
+    </div>`;
+  }
+
+  // The event wish banner: Wish ×1 / ×10, rates, pity, and the party's history.
+  function wishTab() {
+    const me = S.me;
+    const t = team(me.teamId);
+    const st = S.settings;
+    const fate = S.items.find((i) => i.type === 'warp');
+    if (!fate) return '<section class="card"><h3>Wish</h3><p class="empty">No banner is running right now.</p></section>';
+    const left = t ? st.warpPity - (t.pity || 0) : st.warpPity;
+    const one = priceOf(fate);
+    const blocked = !t ? 'Only adventurers in a party can wish. Get bailed onto a block first.' : me.status === 'solitary' ? 'No wishing from Solitary.' : '';
+    const ask = !blocked && willRequest();
+    const wishBtn = (n) => `<button class="gi-wish" data-act="wish" data-count="${n}" ${blocked || t.budget < one * n ? 'disabled' : ''}>
+        <small>${ask ? 'Ask the party: ' : ''}Wish ×${n}</small><span>${FATE} × ${n} <em>(${PRIMO}${one * n})</em></span></button>`;
+    const history = (S.orders || []).filter((o) => o.warp && o.fromTeamId === t?.id).slice(0, 12);
+    const panel =
+      ui.wishPanel === 'details'
+        ? `<section class="card gi-panel"><h3>Details</h3><p class="fine">Base rates: 5★ ${st.warp5}% · 4★ ${st.warp4}% · 3★ ${Math.max(0, 100 - st.warp5 - st.warp4)}%. Every ${st.warpPity}th wish without a 5★ is a guaranteed 5★. Prizes go to the whole party; drinks and sips go to whoever wished.</p>
+            ${[5, 4, 3].map((r) => `<div class="gi-rate r${r}"><b>${'★'.repeat(r)}</b>${S.warpPrizes[r].map((x) => `<span>${h(x.emoji)} ${h(x.name)}: ${h(x.text)}</span>`).join('')}</div>`).join('')}</section>`
+        : ui.wishPanel === 'history'
+          ? `<section class="card gi-panel"><h3>Wish History</h3>${history.length ? `<ul class="roster">${history.flatMap((o) => (o.warps || [o.warp]).map((w) => `<li class="r${w.stars}"><b>${'★'.repeat(w.stars)}</b> ${h(w.emoji)} ${h(w.name)} <span class="fine">${h(o.buyerName)} · ${time(o.ts)}</span></li>`)).join('')}</ul>` : '<p class="empty">No wishes yet.</p>'}</section>`
+          : '';
+    return `<section class="gi-banner">
+        <div class="gi-banner-art"><span class="gi-feat">${h(t ? t.name : 'The Slammer')}</span><span class="gi-sub">Featured party</span></div>
+        <div class="gi-banner-info">
+          <div class="gi-tag">Event Wish</div>
+          <h2>Ballad in Shot Glasses</h2>
+          <p>Wish for your party with ${h(curAct().currency.name)}. Probability boosted for 5★ prizes!</p>
+          <p class="gi-pity">${FATE} Guaranteed 5★ within <b>${left}</b> wish${left === 1 ? '' : 'es'}.</p>
+          ${blocked ? `<p class="gi-warn">${h(blocked)}</p>` : ''}
+        </div>
+      </section>
+      <div class="gi-wishbar">
+        <div class="row"><button class="btn ghost sm" data-act="wish-panel" data-panel="details">Details</button><button class="btn ghost sm" data-act="wish-panel" data-panel="history">History</button></div>
+        <div class="gi-wishes">${wishBtn(1)}${wishBtn(10)}</div>
+      </div>
+      ${panel}`;
+  }
+
+  // The game's wish animation: a shooting star in the best rarity's colour, then the results.
+  function wishReveal(warps, by) {
+    document.querySelectorAll('.wish-fx').forEach((x) => x.remove());
+    const best = Math.max(...warps.map((w) => w.stars));
+    const el = document.createElement('div');
+    el.className = `wish-fx r${best}`;
+    el.setAttribute('role', 'status');
+    const card = (w) => `<div class="wish-card r${w.stars}"><span class="wc-e">${h(w.emoji)}</span><b>${h(w.name)}</b><span class="wc-s">${'★'.repeat(w.stars)}</span>${warps.length === 1 ? `<small>${h(w.text)}</small>` : ''}</div>`;
+    el.innerHTML = `<div class="meteor"></div><div class="wish-res ${warps.length > 1 ? 'ten' : 'one'}">${warps.map(card).join('')}</div><div class="wish-by">${by ? `${h(by)} wished · ` : ''}tap to close</div>`;
+    const close = () => { el.classList.add('out'); setTimeout(() => el.remove(), 400); };
+    el.addEventListener('click', close);
+    document.body.append(el);
+    setTimeout(close, warps.length > 1 ? 9000 : 6000);
   }
 
   // Every phone gets the same briefing when a game goes live (or its rules change).
@@ -852,7 +941,7 @@
     ].filter(([, , list]) => list.length);
     return `
       <section class="card shop-head">
-        <div><div class="eyebrow">Commissary · ${h(curAct().name)}</div><h2>${myTeam ? h(money(myTeam.budget)) : 'No account'}</h2>${myTeam && actId() === 'honkai' ? `<p class="pity">✦ Pity ${myTeam.pity}/${S.settings.warpPity}: a 5★ is guaranteed in ${S.settings.warpPity - myTeam.pity} pull${S.settings.warpPity - myTeam.pity === 1 ? '' : 's'}.</p>` : ''}${myTeam && actId() === 'tft' && myTeam.augment === 'hustler' ? '<p class="pity">🏷️ Hustler: 25% off everything.</p>' : ''}<p class="fine">${myTeam && willRequest() ? `Spending is a block decision: your picks go to your block, and need the Shot Caller 👑 or ${plural(S.settings.requestSeconds, 'blockmate')} to second them.` : 'Spending comes out of your whole block’s budget.'}</p></div>
+        <div><div class="eyebrow">Commissary · ${h(curAct().name)}</div><h2>${myTeam ? h(money(myTeam.budget)) : 'No account'}</h2>${myTeam && actId() === 'genshin' ? `<p class="pity">✦ Pity ${myTeam.pity}/${S.settings.warpPity}: a 5★ is guaranteed within ${S.settings.warpPity - myTeam.pity} wish${S.settings.warpPity - myTeam.pity === 1 ? '' : 'es'}.</p>` : ''}${myTeam && actId() === 'tft' && myTeam.augment === 'hustler' ? '<p class="pity">🏷️ Hustler: 25% off everything.</p>' : ''}<p class="fine">${myTeam && willRequest() ? `Spending is a block decision: your picks go to your block, and need the Shot Caller 👑 or ${plural(S.settings.requestSeconds, 'blockmate')} to second them.` : 'Spending comes out of your whole block’s budget.'}</p></div>
         ${myTeam ? `<div class="inv-mini"><span title="Deflect cards">🔄 ${myTeam.inventory?.deflect || 0}</span><span title="Bribes">💵 ${myTeam.inventory?.immunity || 0}</span></div>` : ''}
       </section>
       ${blocked ? `<p class="warnbox">${h(blocked)}</p>` : ''}
@@ -866,7 +955,7 @@
               const soldOut = it.stock !== null && it.stock <= 0;
               const broke = myTeam && myTeam.budget < priceOf(it);
               const disabled = blocked || soldOut || broke;
-              const tier = tierOf(it.price);
+              const tier = it.type === 'warp' ? 5 : tierOf(it.price);
               return `<button class="item t-${h(it.type)} tier-${tier}" data-act="buy-open" data-item-id="${it.id}" ${disabled ? 'disabled' : ''}>
                 <span class="item-e">${h(it.emoji)}</span>
                 <span class="item-r" aria-label="${tier} star">${'★'.repeat(tier)}</span>
@@ -1727,6 +1816,15 @@
     reveal: () => { ui.reveal = !ui.reveal; render(); },
     'reveal-task': () => {
       ui.revealTask = !ui.revealTask;
+      render();
+    },
+    wish: async (d) => {
+      const fate = S.items.find((i) => i.type === 'warp');
+      const res = await act('buy', { itemId: fate.id, count: Number(d.count) });
+      if (res.ok && res.result?.status === 'requested') toast(`✨ Wish ×${d.count} sent to your party. Get it seconded (or ask the Shot Caller).`, 'ok');
+    },
+    'wish-panel': (d) => {
+      ui.wishPanel = ui.wishPanel === d.panel ? null : d.panel;
       render();
     },
     'act-ok': () => {

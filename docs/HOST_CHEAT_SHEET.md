@@ -53,7 +53,7 @@ The act bar at the top of your console shows the current act. Tap **Next** to mo
 | Act | Turn it on | What changes |
 | --- | --- | --- |
 | I · Vice City (GTA) | It's on from the start | Stick-Ups in the shop (rob 10 from a block), wanted levels |
-| II · Warp Drive (Honkai) | After about 2 games | Warps in the shop (gacha pulls, guaranteed 5★ every 8th) |
+| II · Wish Upon Teyvat (Genshin) | After about 2 games | Phones go landscape; Wish ×1 / ×10 on the Wish screen (guaranteed 5★ every 8th). Tell everyone to turn their phones sideways. |
 | III · Convergence (TFT) | After about 4 games | Blocks pick an augment; interest after each game; streak gold after each heat |
 | IV · Emergency Meeting (Among Us) | Before the last Block Vote | Sabotage skims and snitch bounties double; meetings and ejections take over every screen |
 

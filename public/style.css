@@ -496,7 +496,7 @@ textarea {
 /* ---------- acts: each one reskins the whole app ----------
    Fonts are the closest free matches to each game's own type:
    GTA: Pricedown (HUD/stamps) -> Anton; Chalet London 1960 (menus) -> Roboto / Roboto Condensed.
-   Honkai: Star Rail: DIN-style UI -> Barlow.
+   Genshin Impact: HYWenHei-85W -> Noto Sans.
    TFT / League client: Beaufort (headings) -> Cinzel; Spiegel (body) -> Source Sans 3.
    Among Us: rounded, outlined UI text -> Fredoka. */
 .tabs .ti { font-style: normal; }
@@ -539,66 +539,204 @@ body[data-era='gta'][data-kind='player'] .tabs .dot { top: 4px; right: 4px; }
 body[data-era='gta'][data-kind='player'] .content { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
 body[data-era='gta'][data-kind='player'] #toasts { bottom: 18px; }
 
-/* ===== Act II · Warp Drive (Honkai: Star Rail): starfield, glass panels, pill buttons, rarity tiles ===== */
-body[data-era='honkai'] {
-  --bg: #05081a; --concrete: #0b1029; --card: #0c1230; --card2: #151c40; --line: #2e3769; --text: #f2f1ec; --muted: #a9b0cc;
-  --orange: #e2c78f; --orange2: #c9a8ff; --yellow: #f3dfae; --teal: #9ad7ff; --purple: #b48cff; --cash: #f3dfae;
-  --sunset: linear-gradient(180deg, #f8eed8 0%, #e2c78f 100%);
-  --on-accent: #191629; --divider: #222a55; --tint: #241f45; --card-line: #2a3263; --card-top: #10173a; --input: #070b20; --sky: #10153c;
-  --body: 'Barlow', system-ui, sans-serif; --stencil: 'Barlow', system-ui, sans-serif; --script: 'Barlow', system-ui, sans-serif;
-  background:
-    radial-gradient(1px 1px at 12% 18%, #fff 50%, transparent), radial-gradient(1px 1px at 72% 8%, #fffc 50%, transparent),
-    radial-gradient(1.5px 1.5px at 40% 60%, #fff 50%, transparent), radial-gradient(1px 1px at 88% 44%, #fffa 50%, transparent),
-    radial-gradient(1px 1px at 22% 82%, #fff9 50%, transparent), radial-gradient(1.5px 1.5px at 60% 92%, #fffb 50%, transparent),
-    radial-gradient(60% 40% at 80% 0%, #6d4bd03a, transparent), radial-gradient(70% 50% at 0% 30%, #2a5bd02e, transparent),
-    linear-gradient(180deg, #0d1236, #05081a 70%) fixed;
-  background-size: 260px 260px, 300px 300px, 340px 340px, 220px 220px, 280px 280px, 320px 320px, auto, auto, auto;
+/* ===== Act II · Wish Upon Teyvat (Genshin Impact) =====
+   Palette from the game's own settings screen: Paimon white #ece5d8, gold #d3bc8e / #eddbbb, slate text #495366.
+   The UI font (HYWenHei-85W) is personal-use only, so Noto Sans stands in. */
+body[data-era='genshin'] {
+  --bg: #121a2c; --concrete: #1a2238; --card: #1f2840; --card2: #29334f; --line: #3a4664; --text: #ece5d8; --muted: #b9b1a2;
+  --orange: #d3bc8e; --orange2: #eddbbb; --yellow: #ffd780; --teal: #8fd3ff; --purple: #b78ae0; --cash: #f4ecd6;
+  --sunset: linear-gradient(180deg, #f6eedc, #d3bc8e);
+  --on-accent: #495366; --divider: #313b57; --tint: #2a2f45; --card-line: #3a4664; --card-top: #1f2840; --input: #0f1524; --sky: #1d3a6b;
+  --body: 'Noto Sans', system-ui, sans-serif; --stencil: 'Noto Sans', system-ui, sans-serif; --script: 'Noto Sans', system-ui, sans-serif;
+  background: radial-gradient(70% 50% at 70% 0%, #3d5a8a, transparent), linear-gradient(180deg, #1d2d4d, #121a2c 70%) fixed;
 }
-body[data-era='honkai'] .logo { font-weight: 700; letter-spacing: 2px; text-transform: none; filter: drop-shadow(0 0 16px #e2c78f66); font-size: clamp(34px, 10vw, 56px); line-height: 1.02; }
-body[data-era='honkai'] h2, body[data-era='honkai'] .who-name { font-weight: 700; letter-spacing: 1px; text-transform: none; }
-body[data-era='honkai'] .tagline { font-size: 15px; letter-spacing: 3px; text-transform: uppercase; color: var(--yellow); text-shadow: 0 0 10px #e2c78f66; }
-body[data-era='honkai'] .card {
-  position: relative; border-radius: 3px; background: linear-gradient(180deg, rgba(22, 28, 64, 0.78), rgba(8, 11, 30, 0.86));
-  border: 1px solid rgba(255, 255, 255, 0.13); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 10px 30px #0006; backdrop-filter: blur(8px);
+body[data-era='genshin'] .logo { font-weight: 700; letter-spacing: 1px; text-transform: none; filter: drop-shadow(0 2px 6px #0008); font-size: clamp(32px, 9vw, 54px); line-height: 1.05; }
+body[data-era='genshin'] h2, body[data-era='genshin'] .who-name { font-weight: 700; text-transform: none; letter-spacing: 0.2px; }
+body[data-era='genshin'] .tagline { font-size: 15px; font-weight: 600; color: var(--orange2); letter-spacing: 0.5px; text-shadow: 0 1px 4px #000a; }
+body[data-era='genshin'] h3 { color: var(--orange); text-transform: none; letter-spacing: 0.3px; font-size: 15px; font-weight: 700; }
+body[data-era='genshin'] .card { border-radius: 6px; border: 1px solid #d3bc8e55; background: #1f2840e6; }
+body[data-era='genshin'] .btn { border-radius: 999px; text-transform: none; letter-spacing: 0; box-shadow: inset 0 0 0 2px #d3bc8e; background: #ece5d8; color: #495366; }
+body[data-era='genshin'] .btn.ghost { background: #2c3550; color: #ece5d8; box-shadow: inset 0 0 0 1px #d3bc8e88; }
+body[data-era='genshin'] .toast { border-radius: 999px; background: #1f2840f2; border: 1px solid #d3bc8e66; }
+body[data-era='genshin'] .gi .item.t-warp { --rar: linear-gradient(160deg, #8a5a2c, #dca454 60%, #b78ae0); }
+body[data-era='genshin'] .gi .dealercard { background: #ece5d8; color: #495366; border: 0; box-shadow: inset 0 0 0 1px #d3bc8e, 0 0 0 2px #b78ae0; }
+body[data-era='genshin'] .gi .dealercard .drink-n { color: #6f5ab1; }
+
+/* --- the player app becomes a landscape game screen --- */
+body[data-era='genshin'][data-kind='player'] { overflow: hidden; }
+body[data-era='genshin'] .gi {
+  position: fixed; inset: 0; display: grid; grid-template-columns: minmax(150px, 22vw) 1fr; grid-template-rows: auto 1fr;
+  color: #ece5d8; font-family: var(--body);
 }
-body[data-era='honkai'] .card::before, body[data-era='honkai'] .card::after { content: ''; position: absolute; width: 14px; height: 14px; border: 0 solid var(--orange); pointer-events: none; }
-body[data-era='honkai'] .card::before { top: -1px; left: -1px; border-top-width: 2px; border-left-width: 2px; }
-body[data-era='honkai'] .card::after { bottom: -1px; right: -1px; border-bottom-width: 2px; border-right-width: 2px; }
-body[data-era='honkai'] h3 { color: var(--orange); font-weight: 600; letter-spacing: 2.5px; display: flex; align-items: center; gap: 8px; }
-body[data-era='honkai'] h3::before { content: '◆'; font-size: 9px; color: var(--orange); }
-body[data-era='honkai'] .btn { border-radius: 999px; text-transform: none; letter-spacing: 0.3px; font-weight: 700; box-shadow: 0 0 0 1px #fff3 inset, 0 4px 16px #0008; }
-body[data-era='honkai'] .btn.ghost { background: rgba(0, 0, 0, 0.35); color: var(--text); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35); }
-body[data-era='honkai'] input, body[data-era='honkai'] select, body[data-era='honkai'] textarea { border-radius: 999px; }
-body[data-era='honkai'] textarea { border-radius: 14px; }
-body[data-era='honkai'] .chip { border-radius: 4px; }
-body[data-era='honkai'] .target, body[data-era='honkai'] .vote { border-radius: 999px; }
-body[data-era='honkai'] .top { background: linear-gradient(180deg, #05081af2, #05081ab0); border-bottom: 1px solid rgba(255, 255, 255, 0.12); box-shadow: none; }
-body[data-era='honkai'] .credits { display: flex; align-items: center; gap: 8px; background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 999px; padding: 4px 14px 4px 10px; }
-body[data-era='honkai'] .credits-n { font: 700 20px var(--body); -webkit-text-stroke: 0; text-shadow: 0 0 8px #e2c78f88; color: var(--yellow); }
-body[data-era='honkai'] .credits-l { display: none; }
-body[data-era='honkai'] .tabs { background: linear-gradient(180deg, transparent, #05081af5 35%); border-top: 0; box-shadow: none; padding-top: 6px; }
-body[data-era='honkai'] .tabs .ti {
-  display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; font-size: 19px;
-  background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+.gi-bg { position: absolute; inset: 0; z-index: -1; overflow: hidden; }
+.gi-bg .hero { position: absolute; inset: -20px; height: auto; filter: blur(5px) brightness(0.5) saturate(1.1); }
+.gi-bg .hero::after { display: none; }
+.gi-top {
+  grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 8px max(16px, env(safe-area-inset-right)) 6px max(16px, env(safe-area-inset-left)); background: linear-gradient(180deg, #000a, transparent);
 }
-body[data-era='honkai'] .tabs button.on .ti { background: radial-gradient(circle, #e2c78f55, #e2c78f18); box-shadow: inset 0 0 0 2px var(--orange), 0 0 14px #e2c78f88; }
-body[data-era='honkai'] .tabs button.on::before { display: none; }
-body[data-era='honkai'] .tabs button span { text-transform: none; letter-spacing: 0.3px; font-weight: 600; }
-body[data-era='honkai'] .tabs button.on span { color: var(--yellow); text-shadow: none; }
-/* Shop tiles in Star Rail's rarity colours: grey 1★, green 2★, blue 3★, purple 4★, gold 5★. */
-body[data-era='honkai'] .item { border: 0; border-radius: 6px 6px 18px 6px; padding: 0; overflow: hidden; background: #e9e6df; color: #1d1b2a; gap: 0; }
-body[data-era='honkai'] .item-e { display: grid; place-items: center; height: 92px; font-size: 44px; background: var(--rar); }
-body[data-era='honkai'] .item-r { display: block; padding: 2px 10px; background: var(--rar); color: #ffe9a8; font-size: 12px; letter-spacing: 1px; text-shadow: 0 1px 2px #0008; }
-body[data-era='honkai'] .item-n, body[data-era='honkai'] .item-d, body[data-era='honkai'] .item-p { padding: 0 10px; }
-body[data-era='honkai'] .item-n { margin-top: 8px; color: #1d1b2a; }
-body[data-era='honkai'] .item-d { color: #5b5868; }
-body[data-era='honkai'] .item-p { color: #7a5a1c; font: 700 17px var(--body); padding-bottom: 10px; }
-body[data-era='honkai'] .tier-1 { --rar: linear-gradient(160deg, #5d6070, #8a8d99); }
-body[data-era='honkai'] .tier-2 { --rar: linear-gradient(160deg, #3c6b5c, #5aa184); }
-body[data-era='honkai'] .tier-3 { --rar: linear-gradient(160deg, #36508f, #5a8ee8); }
-body[data-era='honkai'] .tier-4 { --rar: linear-gradient(160deg, #5b3e9b, #a874e8); }
-body[data-era='honkai'] .tier-5 { --rar: linear-gradient(160deg, #a8652c, #e8b25a); }
-body[data-era='honkai'] .item:hover:not(:disabled) { box-shadow: 0 0 0 2px var(--orange), 0 0 20px #e2c78f66; }
+.gi-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.gi-title > div { min-width: 0; }
+.gi-title b { display: block; font-size: 19px; font-weight: 700; color: #ece5d8; text-shadow: 0 1px 3px #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gi-title small { display: flex; gap: 6px; align-items: center; color: #ece5d8bb; font-size: 11.5px; white-space: nowrap; }
+.gi-title small .chip { font-size: 10.5px; padding: 0 7px 0 5px; }
+.gi-ico { flex: 0 0 auto; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: #ece5d8; box-shadow: 0 0 0 2px #d3bc8e, 0 2px 8px #0008; font-size: 18px; }
+.gi-cur { display: flex; gap: 8px; flex: 0 0 auto; }
+.gi-pill { display: flex; align-items: center; gap: 5px; height: 30px; padding: 0 4px 0 6px; border-radius: 999px; background: #00000080; box-shadow: inset 0 0 0 1px #ffffff26; font-size: 14px; }
+.gi-pill b { font-weight: 700; min-width: 24px; text-align: center; }
+.gi-pill small { color: #ece5d8aa; font-size: 10.5px; padding-right: 6px; }
+.gi-pill i { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #ece5d8; color: #495366; font-style: normal; font-weight: 800; }
+.gi-icon { width: 20px; height: 20px; flex: 0 0 auto; vertical-align: -5px; }
+.gi-nav { display: flex; flex-direction: column; gap: 5px; padding: 6px 0 12px; padding-left: env(safe-area-inset-left); overflow-y: auto; }
+.gi-nav button {
+  position: relative; display: flex; align-items: center; gap: 9px; padding: 7px 12px; border: 0; border-radius: 0 999px 999px 0; cursor: pointer;
+  background: linear-gradient(90deg, #00000070, #00000030); color: #ece5d8; font: 600 13px var(--body); text-align: left;
+}
+.gi-nav button.on { background: #ece5d8; color: #495366; box-shadow: inset 0 0 0 1px #d3bc8e, 0 0 12px #ece5d855; }
+.gi-ni { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #ffffff1c; font-size: 14px; flex: 0 0 auto; }
+.gi-nav button.on .gi-ni { background: #495366; }
+.gi-nav .dot { top: 4px; right: 10px; }
+.gi-main { overflow-y: auto; padding: 4px max(16px, env(safe-area-inset-right)) 18px 12px; -webkit-overflow-scrolling: touch; }
+.gi-main > .phase, .gi-main > .announce, .gi-main > .drinkcard, .gi-main > .dealercard, .gi-main > .incoming { width: 100%; max-width: none; margin: 0 0 10px; border-radius: 6px; }
+/* Menus are cream panels with slate text, like the game's inventory and dialogs. */
+body[data-era='genshin'] .gi .card {
+  --text: #495366; --muted: #7d7464; --card2: #e2d9c8; --line: #cfc3ad; --divider: #d9ccb4; --yellow: #a8762a; --orange: #b9903f; --orange2: #a06b30; --teal: #3f7aa3;
+  background: #ece5d8; color: #495366; border: 0; border-radius: 6px; box-shadow: inset 0 0 0 1px #d3bc8e, 0 6px 18px #0007; margin: 0 0 10px;
+}
+body[data-era='genshin'] .gi .card h3 { color: #495366; font-size: 15px; border-bottom: 1px solid #d3bc8e; padding-bottom: 6px; display: flex; gap: 8px; align-items: center; }
+body[data-era='genshin'] .gi .card h3::before { content: ''; width: 8px; height: 8px; background: #d3bc8e; transform: rotate(45deg); flex: 0 0 auto; }
+body[data-era='genshin'] .gi .card h2 { color: #3b4458; }
+body[data-era='genshin'] .gi .card .eyebrow { color: #a06b30; }
+body[data-era='genshin'] .gi .card .btn { background: #495366; color: #ece5d8; box-shadow: none; }
+body[data-era='genshin'] .gi .card .btn.ghost { background: transparent; color: #495366; box-shadow: inset 0 0 0 1.5px #495366; }
+body[data-era='genshin'] .gi .btn { position: relative; padding-left: 38px; }
+body[data-era='genshin'] .gi .btn::before {
+  content: ''; position: absolute; left: 7px; top: 50%; width: 22px; height: 22px; margin-top: -11px; border-radius: 50%;
+  background: radial-gradient(circle, transparent 0 5px, #ffcc33 5.5px 8px, #313131 8.5px);
+}
+body[data-era='genshin'] .gi .btn.ghost::before { background: #3b80c4; content: '✕'; color: #fff; font-size: 12px; line-height: 22px; text-align: center; }
+body[data-era='genshin'] .gi .btn.sm, body[data-era='genshin'] .gi .btn.xs { padding-left: 32px; }
+body[data-era='genshin'] .gi .btn.sm::before { width: 18px; height: 18px; margin-top: -9px; left: 6px; background: radial-gradient(circle, transparent 0 4px, #ffcc33 4.5px 6.5px, #313131 7px); }
+body[data-era='genshin'] .gi .btn.ghost.sm::before { background: #3b80c4; line-height: 18px; font-size: 10px; }
+body[data-era='genshin'] .gi .todo, body[data-era='genshin'] .gi .schedule li, body[data-era='genshin'] .gi .feed li, body[data-era='genshin'] .gi .roster li, body[data-era='genshin'] .gi .orders li { border-color: #d9ccb4; }
+body[data-era='genshin'] .gi .chip { color: #2b3242; }
+body[data-era='genshin'] .gi .gi-title .chip, body[data-era='genshin'] .gi .gi-pill .chip { color: #ece5d8; }
+body[data-era='genshin'] .gi .stats div, body[data-era='genshin'] .gi .stash-i, body[data-era='genshin'] .gi .inv-mini { background: #e2d9c8; color: #495366; }
+body[data-era='genshin'] .gi .stats b { color: #a06b30; }
+body[data-era='genshin'] .gi .item-p, body[data-era='genshin'] .gi .b-s b, body[data-era='genshin'] .gi .rank { color: #a06b30; }
+body[data-era='genshin'] .gi input, body[data-era='genshin'] .gi select, body[data-era='genshin'] .gi textarea { background: #f6f1e7; color: #495366; border-color: #cfc3ad; border-radius: 6px; }
+body[data-era='genshin'] .gi .target, body[data-era='genshin'] .gi .vote { background: #e2d9c8; color: #495366; border-color: #cfc3ad; border-radius: 999px; }
+body[data-era='genshin'] .gi .target.on, body[data-era='genshin'] .gi .vote.on { border-color: #d3bc8e; background: #fff6df; box-shadow: 0 0 0 2px #d3bc8e; }
+body[data-era='genshin'] .gi .vote .v-c { color: #a06b30; }
+body[data-era='genshin'] .gi .drinkcard { background: #ece5d8; color: #495366; border: 0; box-shadow: inset 0 0 0 1px #d3bc8e; }
+body[data-era='genshin'] .gi .drinkcard .drink-n { color: #a06b30; }
+body[data-era='genshin'] .gi .drinkcard .fine { color: #7d7464; }
+body[data-era='genshin'] .gi .board li, body[data-era='genshin'] .gi .roster-team { background: #e2d9c8; }
+body[data-era='genshin'] .gi .mugshot { box-shadow: inset 0 0 0 1px #d3bc8e; }
+body[data-era='genshin'] .gi .feed .k-mafia .f-t { color: #6c4fae; }
+/* Paimon's Bargains: rarity-backed cards with a cream price band. */
+body[data-era='genshin'] .gi .items { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+body[data-era='genshin'] .gi .item { position: relative; padding: 0; gap: 0; border: 0; border-radius: 6px 6px 22px 6px; overflow: hidden; background: #ece5d8; color: #495366; box-shadow: 0 4px 10px #0006; }
+body[data-era='genshin'] .gi .item-e { display: grid; place-items: center; height: 78px; font-size: 38px; background: var(--rar); }
+body[data-era='genshin'] .gi .item-r { display: block; position: absolute; top: 58px; left: 0; right: 0; text-align: center; color: #ffe08a; font-size: 11px; letter-spacing: 1px; text-shadow: 0 1px 2px #000; }
+body[data-era='genshin'] .gi .item-n { padding: 6px 8px 0; font-size: 12.5px; font-weight: 700; line-height: 1.2; }
+body[data-era='genshin'] .gi .item-d { display: none; }
+body[data-era='genshin'] .gi .item-p { margin: 4px 0 0; padding: 4px 8px 6px; font: 700 14px var(--body); border-top: 1px solid #d9ccb4; }
+body[data-era='genshin'] .gi .item:hover:not(:disabled) { box-shadow: 0 0 0 2px #fff, 0 0 16px #fff9; }
+body[data-era='genshin'] .gi .tier-1 { --rar: linear-gradient(160deg, #6b6f7a, #8d9099); }
+body[data-era='genshin'] .gi .tier-2 { --rar: linear-gradient(160deg, #4a8574, #5ea988); }
+body[data-era='genshin'] .gi .tier-3 { --rar: linear-gradient(160deg, #4c6fb1, #5a98c9); }
+body[data-era='genshin'] .gi .tier-4 { --rar: linear-gradient(160deg, #6f5ab1, #a77ad6); }
+body[data-era='genshin'] .gi .tier-5 { --rar: linear-gradient(160deg, #a86d2a, #e2a85a); }
+body[data-era='genshin'] .gi .section-h { color: #ece5d8; text-shadow: 0 1px 3px #000; }
+/* Dialogs sit in the middle of the screen, like the game's purchase window. */
+body[data-era='genshin'] .gi .sheet {
+  left: 50%; right: auto; top: 50%; bottom: auto; transform: translate(-50%, -50%); width: min(560px, 86vw); max-height: 86vh;
+  border: 0; border-radius: 8px; background: #ece5d8; color: #495366; box-shadow: inset 0 0 0 1px #d3bc8e, 0 20px 60px #000c;
+  --text: #495366; --muted: #7d7464; --card2: #e2d9c8; --line: #cfc3ad;
+}
+body[data-era='genshin'] .gi .sheet.enter { animation: none; }
+body[data-era='genshin'] .gi .sheet h2 { color: #3b4458; }
+body[data-era='genshin'] .gi .sheet .tagline { color: #a06b30; text-shadow: none; }
+body[data-era='genshin'] .gi .sheet-bg { background: #000b; }
+body[data-era='genshin'] .gi .sheet .btn { background: #ece5d8; color: #495366; box-shadow: inset 0 0 0 2px #cfc3ad; }
+/* Wish screen */
+.gi-banner { display: grid; grid-template-columns: 1.15fr 1fr; min-height: 210px; border-radius: 8px; overflow: hidden; box-shadow: 0 0 0 1px #d3bc8e88, 0 10px 30px #0008; margin-bottom: 10px; }
+.gi-banner-art {
+  position: relative; display: flex; flex-direction: column; justify-content: flex-end; padding: 14px 16px;
+  background: radial-gradient(circle at 40% 40%, #ffe7a888, transparent 45%), radial-gradient(circle at 75% 30%, #c98ad877, transparent 40%), linear-gradient(160deg, #6a3d8f, #2b2a62 55%, #a8662c);
+}
+.gi-banner-art::before { content: '✦ ✧ ✦'; position: absolute; top: 18px; left: 18px; color: #ffe7a8; letter-spacing: 8px; text-shadow: 0 0 10px #ffe7a8; }
+.gi-feat { font-size: clamp(26px, 5vw, 44px); font-weight: 800; color: #fff; text-shadow: 0 2px 10px #000a; line-height: 1; }
+.gi-sub { color: #ffe7a8; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
+.gi-banner-info { background: linear-gradient(90deg, #1b2236ee, #1b2236cc); padding: 14px 16px; }
+.gi-banner-info h2 { color: #ffe7a8; font-size: 22px; margin: 4px 0 6px; }
+.gi-banner-info p { font-size: 13px; color: #ece5d8; }
+.gi-tag { display: inline-block; padding: 1px 10px; border-radius: 999px; background: #d3bc8e; color: #3b3022; font-size: 11px; font-weight: 700; }
+.gi-pity { color: #ffe7a8 !important; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.gi-warn { color: #ffb3a3 !important; }
+.gi-wishbar { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.gi-wishes { display: flex; gap: 10px; }
+.gi-wish {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 150px; padding: 6px 14px; cursor: pointer;
+  background: #ece5d8; color: #495366; border: 0; border-radius: 999px; box-shadow: inset 0 0 0 2px #d3bc8e, 0 4px 14px #0008; font-family: var(--body);
+}
+.gi-wish small { font-size: 12.5px; font-weight: 700; }
+.gi-wish span { display: flex; align-items: center; gap: 4px; font-size: 12px; }
+.gi-wish em { font-style: normal; color: #a06b30; display: flex; align-items: center; }
+.gi-wish em .gi-icon { width: 14px; height: 14px; }
+.gi-wish:disabled { opacity: 0.55; cursor: not-allowed; }
+.gi-wish:hover:not(:disabled) { box-shadow: inset 0 0 0 2px #fff, 0 0 18px #ffe7a8aa; }
+.gi-rate { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 6px 0; border-top: 1px solid #d9ccb4; font-size: 12.5px; }
+.gi-rate b { width: 100%; }
+.gi-rate.r5 b, body[data-era='genshin'] .gi li.r5 b { color: #c0812c; }
+.gi-rate.r4 b, body[data-era='genshin'] .gi li.r4 b { color: #8a5fc0; }
+.gi-rate.r3 b, body[data-era='genshin'] .gi li.r3 b { color: #4f7fc0; }
+/* Rotate prompt: phones held upright see this instead of the game. */
+.gi-rotate { display: none; }
+@media (orientation: portrait) {
+  .gi-rotate {
+    display: flex; position: fixed; inset: 0; z-index: 150; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; padding: 24px;
+    background: #121a2c; color: #ece5d8;
+  }
+  .gi-rotate b { font-size: 20px; }
+  .gi-rotate small { color: #b9b1a2; }
+  .gi-phone { width: 54px; height: 92px; border: 4px solid #ece5d8; border-radius: 12px; animation: tilt 2.2s ease-in-out infinite; box-shadow: 0 0 20px #d3bc8e55; }
+  @keyframes tilt { 0%, 25% { transform: rotate(0); } 55%, 85% { transform: rotate(-90deg); } 100% { transform: rotate(0); } }
+}
+/* Landscape phones are short: tighten everything. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .gi .card { padding: 12px; }
+  .gi .todo { padding: 7px 0; }
+  .gi-banner { min-height: 170px; }
+}
+/* Wish animation */
+.wish-fx { position: fixed; inset: 0; z-index: 220; overflow: hidden; cursor: pointer; background: radial-gradient(ellipse at 50% 30%, #2f4a7d, #0b1124 75%); animation: fade-in 0.3s; }
+.wish-fx.r3 { --mc: #8fc1ff; } .wish-fx.r4 { --mc: #d39bff; } .wish-fx.r5 { --mc: #ffd36a; }
+.wish-fx.out { opacity: 0; transition: opacity 0.4s; }
+.wish-fx .meteor {
+  position: absolute; top: 12%; left: -45vmax; width: 45vmax; height: 6px; border-radius: 3px; transform: rotate(16deg);
+  background: linear-gradient(90deg, transparent, var(--mc)); box-shadow: 0 0 26px 6px var(--mc); animation: meteor 1.25s ease-in forwards;
+}
+.wish-fx::after { content: ''; position: absolute; inset: 0; background: #fff; opacity: 0; animation: wish-flash 0.5s 1.15s; pointer-events: none; }
+@keyframes meteor { to { left: 105vw; top: 70%; } }
+@keyframes wish-flash { 30% { opacity: 0.9; } }
+@keyframes fade-in { from { opacity: 0; } }
+.wish-res { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 16px; opacity: 0; animation: wish-show 0.45s 1.45s forwards; }
+@keyframes wish-show { from { opacity: 0; transform: scale(1.08); } to { opacity: 1; transform: none; } }
+.wish-card { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; padding: 10px 4px; color: #fff; text-align: center; border-radius: 40px 40px 8px 8px / 20px 20px 8px 8px; box-shadow: 0 0 0 2px #ffffff55, 0 0 22px var(--glow); }
+.wish-card.r3 { --glow: #8fc1ff99; background: linear-gradient(180deg, #4c6fb1, #22345e); }
+.wish-card.r4 { --glow: #d39bffaa; background: linear-gradient(180deg, #8a5fc0, #3b2763); }
+.wish-card.r5 { --glow: #ffd36acc; background: linear-gradient(180deg, #e2a85a, #6e3e14); }
+.wish-res.ten .wish-card { width: min(8.6vw, 74px); height: min(62vh, 260px); }
+.wish-res.ten .wish-card b { font-size: 10px; line-height: 1.15; }
+.wish-res.one .wish-card { width: min(280px, 70vw); height: min(70vh, 320px); justify-content: center; }
+.wish-res.one .wish-card b { font-size: 22px; }
+.wc-e { font-size: 34px; }
+.wish-res.one .wc-e { font-size: 72px; }
+.wc-s { color: #ffe08a; font-size: 11px; letter-spacing: 1px; text-shadow: 0 1px 2px #000; }
+.wish-card small { font-size: 13px; color: #fff; padding: 0 10px; }
+.wish-by { position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; color: #ece5d8aa; font-size: 12px; opacity: 0; animation: wish-show 0.3s 2s forwards; }
 
 /* ===== Act III · Convergence (TFT): League client panels, hextech buttons, champion-cost shop cards ===== */
 body[data-era='tft'] {
@@ -754,9 +892,6 @@ body[data-era='amongus'] .item { border-radius: 16px; border: 3px solid #000; ba
 /* per-act drink card, toasts and banners */
 body[data-era='gta'] .drinkcard { border-radius: 0; border: 0; border-left: 5px solid var(--yellow); background: rgba(0, 0, 0, 0.72); }
 body[data-era='gta'] .toast { border-radius: 0; background: #000d; }
-body[data-era='honkai'] .drinkcard { border-radius: 3px; border: 1px solid var(--orange); background: linear-gradient(180deg, rgba(40, 34, 20, 0.85), rgba(10, 12, 30, 0.9)); }
-body[data-era='honkai'] .toast { border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.2); background: #0b1029e8; }
-body[data-era='honkai'] .item.t-warp { --rar: linear-gradient(160deg, #a8652c, #e8b25a 55%, #b48cff); }
 body[data-era='tft'] .drinkcard { border-radius: 0; border: 2px solid; border-image: linear-gradient(180deg, #f0c75e, #785a28) 1; background: linear-gradient(180deg, #2a2210, #010a13); }
 body[data-era='tft'] .drinkcard .btn { background: linear-gradient(180deg, #1e2328, #0a1428); }
 body[data-era='tft'] .stats div, body[data-era='tft'] .stash-i, body[data-era='tft'] .inv-mini { border-radius: 0; background: #010a13; border: 1px solid #463714; }

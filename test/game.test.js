@@ -632,10 +632,10 @@ test('hosts flip through the four acts; act-only items follow the act', () => {
   const visible = () => g.viewFor(players[0].id).items.map((i) => i.name);
   assert.equal(g.act.id, 'gta');
   assert.ok(visible().includes('Stick-Up'));
-  assert.ok(!visible().includes('Warp'));
+  assert.ok(!visible().includes('Intertwined Fate'));
   g.setAct({ index: 1 });
-  assert.equal(g.act.id, 'honkai');
-  assert.ok(visible().includes('Warp'));
+  assert.equal(g.act.id, 'genshin');
+  assert.ok(visible().includes('Intertwined Fate'));
   assert.ok(!visible().includes('Stick-Up'));
   const stickUp = itemOf(g, 'punishment', (i) => i.steal);
   assert.throws(() => g.buy(players[0].id, { itemId: stickUp.id, targetTeamId: g.s.teams[1].id }), /off the shelf/);
@@ -671,7 +671,7 @@ test('GTA: a Stick-Up moves cash from the victim to the robbers, or back if defl
   assert.equal(a.budget, 200 - 2 * stickUp.price);
 });
 
-test('Honkai: warps roll prizes and pity guarantees a 5-star', () => {
+test('Genshin: wishes roll prizes and pity guarantees a 5-star', () => {
   const { g, a, players } = setup(4);
   g.setAct({ index: 1 });
   g.updateSettings({ warp5: 0, warp4: 0, warpPity: 3 });
@@ -736,4 +736,36 @@ test('Among Us: sabotage skims and snitch bounties double', () => {
   g.closeVote();
   assert.equal(a.budget - mid, g.s.settings.snitchBounty * 2 + g.s.settings.sabotageSkim * 2);
   assert.deepEqual(g.s.mafia.lastResult.ejected.map((x) => [x.name, x.snitch]), [[snitch.name, true]]);
+});
+
+test('Genshin: Wish ×10 charges ten and rolls ten, also through a block request', () => {
+  const { g, a, players } = setup(4);
+  g.setAct({ index: 1 });
+  const fate = itemOf(g, 'warp');
+  const before = a.budget;
+  const o = g.buy(players[0].id, { itemId: fate.id, count: 10 });
+  assert.equal(o.warps.length, 10);
+  assert.equal(o.name, 'Intertwined Fate ×10');
+  assert.ok(a.budget >= before - 10 * fate.price);
+  assert.equal(o.warp.stars, Math.max(...o.warps.map((w) => w.stars)));
+  a.budget = 5;
+  assert.throws(() => g.buy(players[0].id, { itemId: fate.id, count: 10 }), /Not enough/);
+  a.budget = 500;
+  g.updateSettings({ spendMode: 'request' });
+  const r = g.buy(players[0].id, { itemId: fate.id, count: 10 });
+  assert.equal(r.status, 'requested');
+  const req = a.requests[0];
+  assert.equal(req.price, 10 * fate.price);
+  const done = g.secondRequest(players[2].id, { requestId: req.id });
+  assert.equal(done.warps.length, 10);
+});
+
+test('saves from the Honkai act move to Genshin', () => {
+  const s = new Game().s;
+  const fate = s.items.find((i) => i.type === 'warp');
+  Object.assign(fate, { act: 'honkai', name: 'Warp' });
+  const g = new Game(s);
+  assert.equal(fate.act, 'genshin');
+  assert.equal(fate.name, 'Intertwined Fate');
+  assert.equal(g.s.items.filter((i) => i.act).length, 2);
 });
