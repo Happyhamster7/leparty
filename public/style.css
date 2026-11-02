@@ -1193,3 +1193,67 @@ body[data-era='tft'] .eyebrow { color: #0ac8b9; letter-spacing: 0.14em; }
 .lc-banner-copy .btn { margin-top: 10px; }
 .lc-me > span:not(.lc-icon) { overflow: hidden; }
 .lc-me em, .lc-me small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ===================== TV act intros ===================== */
+.intro { position: fixed; inset: 0; z-index: 400; background: #000; overflow: hidden; color: #fff; font-family: var(--stencil); animation: fade-in 0.5s; }
+.intro.out { opacity: 0; transition: opacity 0.7s; }
+.i-bar { position: absolute; left: 0; right: 0; height: 9vh; background: #000; z-index: 3; }
+.i-bar.i-top { top: 0; }
+.i-bar.i-bottom { bottom: 0; }
+.i-stage { position: absolute; inset: 0; }
+.i-skip { position: absolute; right: 24px; bottom: 2.5vh; z-index: 4; background: #ffffff1a; color: #fff; border: 1px solid #fff5; border-radius: 999px; padding: 6px 16px; font: 600 14px var(--body); cursor: pointer; }
+.i-scene { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 12vh 6vw; animation: i-in 0.45s ease-out; }
+@keyframes i-in { from { opacity: 0; } }
+.i-scene .hero { position: absolute; inset: 0; height: 100%; }
+.i-scene .hero::after { display: none; }
+.i-pre span { font: 600 clamp(16px, 2vw, 26px) var(--body); letter-spacing: 0.5em; text-transform: uppercase; color: #ddd; animation: i-breathe 2.2s ease-in-out both; }
+@keyframes i-breathe { 0% { opacity: 0; letter-spacing: 0.3em; } 30%, 70% { opacity: 1; } 100% { opacity: 0; letter-spacing: 0.6em; } }
+.i-art .hero { animation: i-kenburns 3.6s ease-out both; }
+@keyframes i-kenburns { from { transform: scale(1.04); } to { transform: scale(1.2) translateX(-2%); } }
+.i-cap { position: absolute; left: 6vw; bottom: 14vh; z-index: 1; font-size: clamp(30px, 5vw, 72px); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; text-shadow: 0 4px 20px #000c; animation: i-slide 0.8s 0.3s ease-out both; }
+@keyframes i-slide { from { opacity: 0; transform: translateX(-40px); } }
+.i-word { background: radial-gradient(ellipse at center, color-mix(in srgb, var(--orange) 30%, #000), #000 70%); }
+.i-word b {
+  font-size: clamp(56px, 11vw, 170px); font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1;
+  background: var(--sunset); -webkit-background-clip: text; background-clip: text; color: transparent; animation: i-pop 1.15s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes i-pop { 0% { opacity: 0; transform: scale(1.35); filter: blur(10px); } 25% { opacity: 1; transform: scale(1); filter: blur(0); } 100% { transform: scale(0.96); } }
+.i-features { flex-direction: row; gap: 4vw; background: linear-gradient(180deg, var(--bg), #000); }
+.i-features > div { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 22vw; animation: i-rise 0.7s var(--d) ease-out both; }
+.i-features span { font-size: clamp(48px, 7vw, 110px); line-height: 1; filter: drop-shadow(0 0 24px color-mix(in srgb, var(--orange) 70%, transparent)); }
+.i-features b { font-size: clamp(22px, 2.8vw, 44px); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--orange2); }
+.i-features small { font: 500 clamp(14px, 1.4vw, 22px) var(--body); color: #ccc; }
+@keyframes i-rise { from { opacity: 0; transform: translateY(40px); } }
+.i-starring { gap: 6px; background: radial-gradient(ellipse at center, #222, #000 70%); }
+.i-starring small { font: 600 clamp(14px, 1.6vw, 22px) var(--body); letter-spacing: 0.5em; text-transform: uppercase; color: #aaa; margin-bottom: 10px; }
+.i-starring b { font-size: clamp(30px, 4.6vw, 70px); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; animation: i-rise 0.6s ease-out both; }
+.i-starring b:nth-of-type(2) { animation-delay: 0.25s; } .i-starring b:nth-of-type(3) { animation-delay: 0.5s; } .i-starring b:nth-of-type(4) { animation-delay: 0.75s; }
+.i-title { background: radial-gradient(ellipse at center, color-mix(in srgb, var(--orange) 35%, #000) 0, #000 72%); gap: 8px; }
+.i-act { font: 700 clamp(16px, 2vw, 28px) var(--body); letter-spacing: 0.6em; text-transform: uppercase; color: var(--orange2); animation: i-rise 0.6s ease-out both; }
+.i-logo {
+  margin: 0; font-size: clamp(60px, 10vw, 160px); font-weight: 800; line-height: 1; letter-spacing: 0.03em; text-transform: uppercase;
+  background: var(--sunset); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 6px 30px color-mix(in srgb, var(--orange) 60%, transparent));
+  animation: i-pop 4.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.i-party { font: 600 clamp(18px, 2.2vw, 32px) var(--body); letter-spacing: 0.3em; text-transform: uppercase; color: #fff; animation: i-rise 0.6s 0.6s ease-out both; }
+.i-cta { font: 500 clamp(14px, 1.6vw, 22px) var(--body); letter-spacing: 0.2em; text-transform: uppercase; color: #bbb; animation: i-rise 0.6s 1s ease-out both; }
+.i-rating { flex-direction: row; gap: 3vw; background: #000; }
+.i-box { display: flex; flex-direction: column; align-items: center; justify-content: center; width: clamp(110px, 12vw, 180px); aspect-ratio: 3 / 4; background: #fff; color: #000; border: 6px solid #000; box-shadow: 0 0 0 4px #fff; }
+.i-box b { font: 900 clamp(70px, 8vw, 130px) Arial, sans-serif; line-height: 1; }
+.i-box small { font: 800 clamp(11px, 1vw, 15px) Arial, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; }
+.i-desc { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; font-family: Arial, sans-serif; }
+.i-desc b { font-size: clamp(20px, 2vw, 30px); margin-bottom: 6px; }
+.i-desc span { font-size: clamp(16px, 1.6vw, 24px); color: #ddd; }
+.i-desc em { margin-top: 10px; font-size: clamp(12px, 1.1vw, 16px); color: #888; font-style: normal; }
+.i-shh { background: radial-gradient(circle at center, #3a0000 0, #000 70%); gap: 10px; }
+.i-shh .crew { width: clamp(120px, 16vw, 240px); height: auto; margin: 0; animation: i-pop 2.4s ease-out both; }
+.i-shh b { font-size: clamp(60px, 10vw, 150px); font-weight: 700; color: #ff2a2a; letter-spacing: 0.04em; text-shadow: -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000, 4px 4px 0 #000; animation: i-pop 2.4s ease-out both; }
+.i-space { background: radial-gradient(1.5px 1.5px at 10% 20%, #fff 50%, transparent), radial-gradient(1px 1px at 70% 30%, #fff 50%, transparent), radial-gradient(2px 2px at 40% 80%, #fff 50%, transparent), #02030c; background-size: 220px 220px, 300px 300px, 260px 260px, auto; }
+.i-type { font-size: clamp(32px, 5vw, 76px); font-weight: 600; white-space: nowrap; clip-path: inset(0 100% 0 0); animation: i-type 2.2s steps(30) forwards; }
+.i-type em { color: #ff2a2a; font-style: normal; }
+@keyframes i-type { to { clip-path: inset(0 0 0 0); } }
+.i-meeting { background: #b00000; animation: i-alarm 0.45s steps(1) infinite; }
+.i-meeting b { font-size: clamp(56px, 9vw, 140px); font-weight: 700; text-transform: uppercase; text-shadow: -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000, 4px 4px 0 #000; animation: shake 0.3s infinite; }
+@keyframes i-alarm { 50% { background: #4a0000; } }
+.i-video { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; object-fit: contain; z-index: 2; }
+.tv-sound { position: fixed; top: 12px; left: 12px; z-index: 30; background: #000a; color: #fff; border: 1px solid #fff4; border-radius: 999px; padding: 6px 14px; font: 600 13px var(--body); cursor: pointer; }

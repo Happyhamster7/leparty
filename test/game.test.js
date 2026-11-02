@@ -804,3 +804,20 @@ test('every inmate has a stable Vision, even from old saves', () => {
   const v2 = new Game(JSON.parse(JSON.stringify(s))).s.players[0].vision;
   assert.equal(v1, v2);
 });
+
+test('the TV intro replays on act changes and on demand; intro links must be https', () => {
+  const g = new Game();
+  assert.equal(g.s.introAt, 0);
+  g.setAct({ index: 1 });
+  const first = g.s.introAt;
+  assert.ok(first > 0);
+  g.s.introAt = 1;
+  g.playIntro();
+  assert.ok(g.s.introAt > 1);
+  assert.equal(g.tvView().introAt, g.s.introAt);
+  g.updateSettings({ introVideo_gta: 'https://example.com/gta.mp4' });
+  assert.equal(g.s.settings.introVideos.gta, 'https://example.com/gta.mp4');
+  assert.throws(() => g.updateSettings({ introVideo_tft: 'javascript:alert(1)' }), /https/);
+  g.updateSettings({ introVideo_gta: '' });
+  assert.equal(g.s.settings.introVideos.gta, '');
+});

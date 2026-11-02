@@ -332,8 +332,174 @@
     kind = res.kind;
     S = res.view;
     if (kind === 'player') notifyChanges(prev, S);
+    if (kind === 'tv' && prev && S.introAt && S.introAt !== prev.introAt) playIntro();
     if (kind !== 'admin') actEvents(prev, S);
     render();
+  }
+
+  // ---------- TV act intros: a short trailer between acts ----------
+  // Browsers only allow sound after someone has clicked the page, so the TV asks once.
+  let audio = null;
+  const unlockAudio = () => {
+    try {
+      audio ||= new (window.AudioContext || window.webkitAudioContext)();
+      audio.resume();
+    } catch {}
+  };
+  function tone(freq, at, dur, type = 'sine', vol = 0.18, slideTo) {
+    if (!audio || audio.state !== 'running') return;
+    const t = audio.currentTime + at;
+    const o = audio.createOscillator();
+    const g = audio.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(audio.destination);
+    o.start(t);
+    o.stop(t + dur + 0.05);
+  }
+  function hush(at, dur, vol = 0.25) {
+    if (!audio || audio.state !== 'running') return;
+    const len = Math.floor(audio.sampleRate * dur);
+    const buf = audio.createBuffer(1, len, audio.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const src = audio.createBufferSource();
+    const f = audio.createBiquadFilter();
+    const g = audio.createGain();
+    f.type = 'highpass';
+    f.frequency.value = 2500;
+    g.gain.value = vol;
+    src.buffer = buf;
+    src.connect(f).connect(g).connect(audio.destination);
+    src.start(audio.currentTime + at);
+  }
+  // A sound per scene type, voiced for each game.
+  function sting(act, cue) {
+    const boom = () => tone(90, 0, 0.9, 'sine', 0.5, 32);
+    if (cue === 'title') {
+      boom();
+      const chord = { gta: [220, 277, 330, 440], genshin: [523, 659, 784, 1047], tft: [196, 247, 294, 392], amongus: [262, 311, 392] }[act];
+      chord.forEach((f, i) => tone(f, 0.05 + i * 0.04, 2.4, act === 'genshin' ? 'sine' : act === 'tft' ? 'square' : 'sawtooth', act === 'tft' ? 0.05 : 0.08));
+      return;
+    }
+    if (cue === 'shh') return hush(0, 1.6, 0.3);
+    if (cue === 'alarm') return [0, 0.45, 0.9].forEach((at) => tone(880, at, 0.35, 'square', 0.12, 660));
+    if (act === 'genshin') return [784, 988, 1175].forEach((f, i) => tone(f, i * 0.09, 0.9, 'sine', 0.12));
+    if (act === 'tft') {
+      tone(147, 0, 0.5, 'square', 0.08);
+      return boom();
+    }
+    if (act === 'amongus') return tone(330, 0, 0.25, 'triangle', 0.15, 220);
+    boom();
+    tone(110, 0, 0.35, 'sawtooth', 0.12);
+  }
+
+  // Each act's trailer, built from its own art, words and tonight's blocks.
+  function introScenes(a) {
+    const top = standings().slice(0, 4).map((t) => t.name);
+    const party = S.settings.partyName;
+    const starring = (label = 'Starring') => ({ ms: 2600, cls: 'i-starring', html: `<small>${label}</small>${(top.length ? top : ['Every inmate in the building']).map((n) => `<b>${h(n)}</b>`).join('')}` });
+    const words = (list, cls = '') => list.map((w) => ({ ms: 1150, cls: `i-word ${cls}`, cue: 'hit', html: `<b>${h(w)}</b>` }));
+    const features = (list) => ({ ms: 4200, cls: 'i-features', cue: 'hit', html: list.map(([icon, title, sub], i) => `<div style="--d:${i * 0.45}s"><span>${icon}</span><b>${h(title)}</b><small>${h(sub)}</small></div>`).join('') });
+    const art = (cap) => ({ ms: 3400, cls: 'i-art', cue: 'hit', html: `${hero()}<div class="i-cap">${h(cap)}</div>` });
+    const title = (extra) => ({
+      ms: 4200, cls: 'i-title', cue: 'title',
+      html: `<span class="i-act">Act ${a.numeral}</span><h1 class="i-logo">${h(a.name)}</h1><p class="i-party">${h(party)}</p><p class="i-cta">${h(extra)}</p>`,
+    });
+    const rating = (descriptors) => ({
+      ms: 3000, cls: 'i-rating',
+      html: `<div class="i-box"><b>D</b><small>Drinking</small></div><div class="i-desc"><b>Rated D for Drinking</b>${descriptors.map((d) => `<span>${h(d)}</span>`).join('')}<em>Every drink can be swapped for water. Look after each other.</em></div>`,
+    });
+    const pre = (text) => ({ ms: 2200, cls: 'i-pre', html: `<span>${h(text)}</span>` });
+    const scenes = {
+      gta: [
+        pre('Slammer Games presents'),
+        art('Vice City, USA.'),
+        ...words([`${S.teams.length || 'Every'} blocks.`, 'One night.', 'Zero rules.']),
+        features([['🔫', 'Stick-Ups', 'Rob another block blind'], ['★', 'Wanted levels', 'Owe drinks? The heat is on'], ['✅', 'Mission Passed', 'Win a heat, get paid']]),
+        starring(),
+        title('Now playing on your phone'),
+        rating(['Alcohol Reference', 'Strong Language', 'Use of Snitches']),
+      ],
+      genshin: [
+        pre('Ad astra abyssosque'),
+        art('A new journey begins, Traveler.'),
+        ...words(['Wish.', 'Explore.', 'Resonate.']),
+        features([['✨', 'Wish ×10', 'Guaranteed 5★ on pity'], ['📜', 'Daily Commissions', 'Primogems for your party'], ['🔥', 'Elemental Resonance', 'Find your Vision twin']]),
+        starring('Featured parties'),
+        title('Turn your phone sideways'),
+        rating(['Gacha Mechanics', 'Losing the 50/50', 'Fantasy Violence (Mild)']),
+      ],
+      tft: [
+        pre('The Convergence awaits'),
+        art('Every board tells a story.'),
+        ...words(['Econ.', 'Streak.', 'Augment.']),
+        features([['🎁', 'Augments', 'One pick per block'], ['🪙', 'Interest', '+1 per 10 gold saved'], ['🔥', 'Streaks', 'Win or lose in a row, get paid']]),
+        starring('Top of the ladder'),
+        title('Top four or bust · turn your phone sideways'),
+        rating(['Hextech Violence', 'In-Game Purchases', 'Rolling Down at Level 4']),
+      ],
+      amongus: [
+        { ms: 2400, cls: 'i-shh', cue: 'shh', html: `${crewIcon({ id: S.players[0]?.id })}<b>SHHHHHHH!</b>` },
+        { ms: 3200, cls: 'i-space', html: `<div class="i-type">There may be <em>Impostors</em> among us</div>` },
+        { ms: 1900, cls: 'i-meeting', cue: 'alarm', html: '<b>Emergency Meeting</b>' },
+        features([['🔪', 'Double sabotage', 'Impostors skim twice as much'], ['💰', 'Double bounty', 'Catch one, get paid twice'], ['🚀', 'Ejections', '... was not an Impostor']]),
+        starring('Crewmates'),
+        title('Turn your phone sideways · trust no one'),
+        rating(['Suspicious Behaviour', 'Venting', 'Sus']),
+      ],
+    };
+    return scenes[a.id] || [];
+  }
+
+  // Plays the current act's intro on the TV: the host's own video if one is set, otherwise the trailer.
+  function playIntro() {
+    document.querySelectorAll('.intro').forEach((x) => x.remove());
+    const a = curAct();
+    if (!a) return;
+    const el = document.createElement('div');
+    el.className = 'intro';
+    el.innerHTML = '<div class="i-bar i-top"></div><div class="i-stage"></div><div class="i-bar i-bottom"></div><button class="i-skip">Skip ›</button>';
+    document.body.append(el);
+    const timers = [];
+    const end = () => {
+      timers.forEach(clearTimeout);
+      el.classList.add('out');
+      setTimeout(() => el.remove(), 700);
+    };
+    el.querySelector('.i-skip').addEventListener('click', end);
+    const stage = el.querySelector('.i-stage');
+    const link = S.settings.introVideos?.[a.id];
+    if (link) {
+      const yt = link.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{6,})/);
+      if (yt) {
+        stage.innerHTML = `<iframe class="i-video" src="https://www.youtube.com/embed/${yt[1]}?autoplay=1&controls=0&rel=0&modestbranding=1&playsinline=1" allow="autoplay; encrypted-media; fullscreen" title="Act intro"></iframe>`;
+        timers.push(setTimeout(end, 120000));
+      } else {
+        const v = document.createElement('video');
+        v.className = 'i-video';
+        Object.assign(v, { src: link, autoplay: true, playsInline: true });
+        v.addEventListener('ended', end);
+        v.addEventListener('error', end);
+        stage.append(v);
+        v.play().catch(() => { v.muted = true; v.play().catch(end); });
+        timers.push(setTimeout(end, 180000));
+      }
+      return;
+    }
+    let at = 0;
+    for (const sc of introScenes(a)) {
+      timers.push(setTimeout(() => {
+        stage.innerHTML = `<div class="i-scene ${sc.cls}">${sc.html}</div>`;
+        if (sc.cue) sting(a.id, sc.cue);
+      }, at));
+      at += sc.ms;
+    }
+    timers.push(setTimeout(end, at));
   }
 
   // Big moments every screen (phones and the TV) shows: a new act, Among Us meetings and ejections.
@@ -342,6 +508,7 @@
     const a = next.acts[next.act];
     if (prev.act !== next.act) {
       if (kind === 'player') ui.tab = next.acts[next.act].id === 'tft' ? 'yard' : 'menu';
+      if (kind === 'tv') return; // the TV plays the act's intro instead
       splash('act', `Act ${a.numeral}`, `${a.emoji} ${a.name}`, 3600);
       buzz([200, 100, 200, 100, 400]);
       return;
@@ -1579,6 +1746,7 @@
       <div class="act-now"><span class="mega">${a.emoji}</span><div><div class="eyebrow">Act ${a.numeral} of ${S.acts.length} · ${h(a.game)}</div><b>${h(a.name)}</b></div></div>
       <div class="row">
         ${i > 0 ? btn('◀', 'setAct', { index: i - 1 }, 'ghost sm', `Go back to Act ${S.acts[i - 1].numeral}: ${S.acts[i - 1].name}?`) : ''}
+        ${btn('📺 Play intro on TV', 'playIntro', {}, 'ghost sm')}
         ${nextA ? btn(`Next: ${nextA.emoji} ${h(nextA.name)} ▶`, 'setAct', { index: i + 1 }, 'sm', `Start Act ${nextA.numeral}: ${nextA.name} (${nextA.game})? Every phone and the TV switch over now.`) : '<span class="fine">Final act</span>'}
       </div>
     </div>`;
@@ -2043,6 +2211,14 @@
         <form data-admin="freshStart" class="row wrap"><input id="fs_confirm" name="confirm" placeholder="Type RESET" autocomplete="off" /><button class="btn danger" data-confirm="Wipe every inmate, block and order and start fresh? This can't be undone.">Wipe it</button></form>
       </section>
       <section class="card">
+        <h3>📺 Act intros on the TV</h3>
+        <p class="fine">The TV plays a short trailer whenever you change acts (or tap “Play intro on TV”). Leave a box blank for the built-in trailer, or paste an https link to your own video (an .mp4 / .webm file or a YouTube link) to play that instead. Tap the TV once at the start of the night so it’s allowed to play sound.</p>
+        <form data-admin="updateSettings" class="grid2">
+          ${S.acts.map((a) => `<label>Act ${a.numeral}: ${h(a.name)}<input id="iv_${a.id}" name="introVideo_${a.id}" type="url" placeholder="Built-in trailer" value="${h(st.introVideos?.[a.id] || '')}" /></label>`).join('')}
+          <button class="btn span2">Save intros</button>
+        </form>
+      </section>
+      <section class="card">
         <h3>Links</h3>
         <p>Players join at <b>${h(location.origin)}/</b><br/>TV / projector: <b>${h(location.origin)}/tv</b><br/>Warden: <b>${h(location.origin)}/warden</b></p>
         <img class="qr" src="/qr.svg?url=${encodeURIComponent(`${location.origin}/`)}" alt="QR code to join" />
@@ -2060,6 +2236,7 @@
     const solitary = inSolitary();
     return `
       <div class="tv">
+        ${audio?.state === 'running' ? '' : '<button class="tv-sound" data-act="tv-sound">🔊 Tap once to enable intro sound</button>'}
         <header class="tv-h">${hero(true)}<div class="act-tag">${curAct().emoji} Act ${curAct().numeral} · ${h(curAct().name)}</div><h1 class="logo">${h(S.settings.partyName)}</h1><div class="tagline">${h(curAct().tagline)}</div></header>
         ${phaseBanner()}
         ${S.announcement ? `<div class="announce tv-ann"><span class="mega">📣</span><div class="announce-t">${h(S.announcement.text)}</div></div>` : ''}
@@ -2123,6 +2300,10 @@
     'wish-panel': (d) => {
       ui.wishPanel = ui.wishPanel === d.panel ? null : d.panel;
       render();
+    },
+    'tv-sound': () => {
+      unlockAudio();
+      setTimeout(render, 100);
     },
     'act-ok': () => {
       LS.set('sss_act', actId());
@@ -2364,6 +2545,8 @@
 
   render();
   poll().then(schedule);
+  // Any tap on the TV counts as the click browsers need before they'll play sound.
+  document.addEventListener('pointerdown', () => kind === 'tv' && unlockAudio());
   // Keep the phone's clock honest without re-rendering the page.
   setInterval(() => document.querySelectorAll('.ph-clock').forEach((el) => (el.textContent = clock())), 20000);
 })();

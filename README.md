@@ -56,6 +56,8 @@ On phones, each act turns the whole app into that game's own interface, with you
 
 Phones held upright in a landscape act see a "Rotate your device" screen.
 
+**TV intros.** Whenever a host changes act, the TV plays a ~25-second trailer for the new act, letterboxed like a cinema ad: a cold open, the act's painted scenery, three punchy title cards, its three new mechanics, tonight's top blocks as "Starring", the act's title card and a joke "Rated D for Drinking" card, with a synthesized sound sting per scene. Among Us opens with a "SHHHHHHH!" crewmate and an Emergency Meeting alarm. Hosts can replay it with **📺 Play intro on TV** in the act bar, and the TV has a Skip button. To show your own video instead, paste an https link (an .mp4/.webm file or a YouTube link) per act under Settings → Act intros on the TV. Browsers only play sound after someone taps the page, so tap the TV once at the start of the night.
+
 The look of each act, in more detail:
 
 - **GTA VI:** painted key-art scenery (an indigo → violet → pink → peach sunset, mauve palms, pastel Art Deco hotels on Ocean Drive) and titles in the VI logo's pink-to-gold gradient. Type: Outfit, set with wide tracking, standing in for the GTA VI marketing face ("GTA Art Deco"), which isn't publicly available.
