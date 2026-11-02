@@ -2,6 +2,7 @@
 const express = require('express');
 const path = require('path');
 const handlers = require('./lib/handlers');
+const { createFiles } = require('./lib/files');
 const { pinsFrom } = require('./lib/api');
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -18,6 +19,9 @@ app.get(['/tv', '/warden', '/officer'], (req, res) => res.sendFile(path.join(__d
 app.get('/qr.svg', handlers.qr);
 app.get('/api/state', handlers.state);
 app.post('/api/action', handlers.action);
+app.post('/api/clip', handlers.clip);
+const clipDir = createFiles().dir;
+if (clipDir) app.use('/clips', express.static(clipDir, { maxAge: '1h' }));
 
 app.listen(PORT, () => {
   console.log(`🔒 Shifty Shen Slammer is open on http://localhost:${PORT}`);

@@ -116,3 +116,39 @@ test('RedisStore speaks the Upstash REST protocol with an atomic compare-and-set
     delete global.fetch;
   }
 });
+
+test('Shot Cam upload stores the video, adds the clip, and cleans up after removals', async () => {
+  const saved = new Map();
+  const files = {
+    save: async (body, type) => {
+      const url = `/clips/${saved.size}.${type.includes('webm') ? 'webm' : 'mp4'}`;
+      saved.set(url, body);
+      return url;
+    },
+    remove: async (url) => saved.delete(url),
+  };
+  const api = createApi({ store: new FileStore({ file: null }), pins, files });
+  const host = (await api.action({ kind: 'login', pin: '1111' }, {})).result.adminToken;
+  const tokens = [];
+  for (const n of ['A', 'B', 'C', 'D']) tokens.push((await api.action({ kind: 'join', name: n }, {})).result.token);
+  const lonely = (await api.action({ kind: 'join', name: 'Late' }, {})).result.token;
+  await api.action({ kind: 'admin', type: 'buildBlocks' }, { host });
+  const late = (await api.getState({ host })).view.players.find((p) => p.name === 'Late');
+  await api.action({ kind: 'admin', type: 'updatePlayer', args: { playerId: late.id, teamId: '' } }, { host });
+
+  const bad = await api.uploadClip({ player: tokens[0] }, { body: Buffer.from('x'), type: 'image/png' });
+  assert.equal(bad.ok, false);
+  const notOnBlock = await api.uploadClip({ player: lonely }, { body: Buffer.from('x'), type: 'video/mp4' });
+  assert.equal(notOnBlock.ok, false);
+  assert.equal(saved.size, 0, 'refused uploads never store a file');
+
+  const ok = await api.uploadClip({ player: tokens[0] }, { body: Buffer.from('video'), type: 'video/webm', caption: 'Cheers' });
+  assert.equal(ok.ok, true);
+  assert.equal(saved.size, 1);
+  const tv = await api.getState({ tv: true });
+  assert.equal(tv.view.clips[0].caption, 'Cheers');
+
+  await api.action({ kind: 'admin', type: 'reviewClip', args: { clipId: ok.result.clipId, action: 'remove' } }, { host });
+  await new Promise((r) => setImmediate(r));
+  assert.equal(saved.size, 0, 'removing a clip deletes its file');
+});

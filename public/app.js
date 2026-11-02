@@ -337,6 +337,225 @@
     render();
   }
 
+  // ---------- Shot Cam: film your block's shots for the TV ----------
+  // The camera lives outside the page so polling re-renders never interrupt a recording.
+  const CLIP_SECONDS = 12;
+  const CLIP_MAX = 4.2 * 1024 * 1024; // what a Vercel function accepts, with headroom
+  const canFilm = () => !!(S?.settings?.clipsEnabled && S.me?.status === 'block');
+  const cam = { el: null, stream: null, rec: null, chunks: [], blob: null, type: '', facing: 'environment', timers: [], url: null };
+  const recType = () =>
+    ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'].find((t) => window.MediaRecorder?.isTypeSupported?.(t)) || '';
+
+  function openCam() {
+    closeCam();
+    const mine = (S.clips || []).filter((c) => c.teamId === S.me.teamId);
+    const el = document.createElement('div');
+    el.className = 'cam';
+    el.innerHTML = `<header class="cam-top"><button class="cam-x" data-cam="close" aria-label="Close">✕</button><b>🎥 Shot Cam</b><span>${h(teamName(S.me.teamId))} → the TV</span></header>
+      <div class="cam-view"><video class="cam-live" muted playsinline autoplay></video><video class="cam-play" playsinline controls loop hidden></video><div class="cam-count" hidden></div><div class="cam-bar" hidden><i></i></div><p class="cam-msg" role="status"></p></div>
+      <div class="cam-ctl">
+        <div class="cam-shoot"><label class="cam-side">📁<span>Upload</span><input type="file" accept="video/*" hidden /></label><button class="cam-rec" data-cam="rec" aria-label="Record"></button><button class="cam-side" data-cam="flip">🔄<span>Flip</span></button></div>
+        <div class="cam-send" hidden><input class="cam-cap" maxlength="80" placeholder="Caption for the TV (optional)" /><div class="row"><button class="btn ghost" data-cam="retake">Retake</button><button class="btn" data-cam="send">Send to the TV</button></div></div>
+        <p class="cam-note">Up to ${CLIP_SECONDS} seconds. Get the whole block in shot.${mine.length ? ` Your block has ${plural(mine.filter((c) => c.status === 'live').length, 'clip')} on the TV${mine.some((c) => c.status === 'pending') ? ', more waiting for a host' : ''}.` : ''}</p>
+      </div>`;
+    document.body.append(el);
+    cam.el = el;
+    el.addEventListener('click', onCam);
+    el.querySelector('input[type=file]').addEventListener('change', (e) => pickClip(e.target.files[0]));
+    startPreview();
+  }
+
+  const camMsg = (text) => cam.el && (cam.el.querySelector('.cam-msg').textContent = text);
+  const stopStream = () => {
+    cam.stream?.getTracks().forEach((t) => t.stop());
+    cam.stream = null;
+  };
+
+  async function startPreview() {
+    stopStream();
+    camMsg('');
+    const video = { facingMode: cam.facing, width: { ideal: 720 }, height: { ideal: 1280 }, frameRate: { ideal: 30, max: 30 } };
+    try {
+      cam.stream = await navigator.mediaDevices.getUserMedia({ video, audio: true }).catch(() => navigator.mediaDevices.getUserMedia({ video }));
+      if (!cam.el) return stopStream();
+      cam.el.querySelector('.cam-live').srcObject = cam.stream;
+    } catch {
+      camMsg('No camera access. Allow the camera in your browser, or tap Upload to send a video you already took.');
+    }
+  }
+
+  function startRecording() {
+    if (!cam.stream || cam.rec) return;
+    if (!window.MediaRecorder) return camMsg('This browser can’t record video. Tap Upload instead.');
+    const count = cam.el.querySelector('.cam-count');
+    count.hidden = false;
+    [3, 2, 1].forEach((n, i) => cam.timers.push(setTimeout(() => (count.textContent = n), i * 700)));
+    cam.timers.push(
+      setTimeout(() => {
+        count.hidden = true;
+        cam.type = recType();
+        cam.chunks = [];
+        try {
+          cam.rec = new MediaRecorder(cam.stream, { ...(cam.type && { mimeType: cam.type }), videoBitsPerSecond: 1_500_000, audioBitsPerSecond: 64_000 });
+        } catch {
+          return camMsg('Recording failed to start. Tap Upload instead.');
+        }
+        cam.rec.ondataavailable = (e) => e.data.size && cam.chunks.push(e.data);
+        cam.rec.onstop = () => review(new Blob(cam.chunks, { type: (cam.rec.mimeType || cam.type || 'video/webm').split(';')[0] }));
+        cam.rec.start(250);
+        cam.el.classList.add('recording');
+        const bar = cam.el.querySelector('.cam-bar');
+        bar.hidden = false;
+        bar.firstChild.style.animationDuration = `${CLIP_SECONDS}s`;
+        cam.timers.push(setTimeout(stopRecording, CLIP_SECONDS * 1000));
+      }, 2100),
+    );
+  }
+
+  function stopRecording() {
+    if (cam.rec?.state === 'recording') cam.rec.stop();
+    cam.el?.classList.remove('recording');
+  }
+
+  function review(blob) {
+    if (!cam.el) return;
+    cam.rec = null;
+    cam.blob = blob;
+    cam.el.querySelector('.cam-bar').hidden = true;
+    if (blob.size > CLIP_MAX) return camMsg('That clip is too big for the TV. Try a shorter one.');
+    stopStream();
+    if (cam.url) URL.revokeObjectURL(cam.url);
+    cam.url = URL.createObjectURL(blob);
+    const play = cam.el.querySelector('.cam-play');
+    play.src = cam.url;
+    play.hidden = false;
+    play.play().catch(() => {});
+    cam.el.querySelector('.cam-live').hidden = true;
+    cam.el.querySelector('.cam-shoot').hidden = true;
+    cam.el.querySelector('.cam-send').hidden = false;
+    camMsg('');
+  }
+
+  function pickClip(file) {
+    if (!file) return;
+    if (!/^video\//.test(file.type)) return camMsg('That isn’t a video.');
+    if (file.size > CLIP_MAX) return camMsg('That video is over 4 MB, too big for the TV. Record it here instead: Shot Cam shrinks it for you.');
+    review(file);
+  }
+
+  async function sendClip() {
+    if (!cam.blob) return;
+    const btnEl = cam.el.querySelector('[data-cam=send]');
+    btnEl.disabled = true;
+    btnEl.textContent = 'Sending…';
+    let res;
+    try {
+      const r = await fetch('/api/clip', {
+        method: 'POST',
+        headers: { ...creds(), 'content-type': cam.blob.type || 'video/mp4', 'x-clip-caption': encodeURIComponent(cam.el.querySelector('.cam-cap').value.trim()) },
+        body: cam.blob,
+      });
+      res = await r.json();
+    } catch {
+      res = { ok: false, error: 'The upload didn’t make it. Check your signal and try again.' };
+    }
+    if (!res.ok) {
+      btnEl.disabled = false;
+      btnEl.textContent = 'Send to the TV';
+      return camMsg(res.error);
+    }
+    toast(res.result?.status === 'pending' ? '🎥 Sent! A host will okay it for the TV.' : '🎥 You’re on the TV!', 'ok');
+    closeCam();
+    poll();
+  }
+
+  function closeCam() {
+    cam.timers.forEach(clearTimeout);
+    cam.timers = [];
+    if (cam.rec?.state === 'recording') {
+      cam.rec.onstop = null;
+      cam.rec.stop();
+    }
+    cam.rec = null;
+    stopStream();
+    if (cam.url) URL.revokeObjectURL(cam.url);
+    cam.url = null;
+    cam.blob = null;
+    cam.el?.remove();
+    cam.el = null;
+  }
+
+  function onCam(e) {
+    const b = e.target.closest('[data-cam]');
+    if (!b) return;
+    const what = b.dataset.cam;
+    if (what === 'close') closeCam();
+    if (what === 'rec') (cam.rec ? stopRecording() : startRecording());
+    if (what === 'flip') {
+      cam.facing = cam.facing === 'user' ? 'environment' : 'user';
+      startPreview();
+    }
+    if (what === 'retake') {
+      cam.el.querySelector('.cam-play').hidden = true;
+      cam.el.querySelector('.cam-live').hidden = false;
+      cam.el.querySelector('.cam-shoot').hidden = false;
+      cam.el.querySelector('.cam-send').hidden = true;
+      cam.blob = null;
+      startPreview();
+    }
+    if (what === 'send') sendClip();
+  }
+
+  // ---------- TV: the Shot Cam reel ----------
+  // One video element kept across re-renders and moved into each new slot, so playback never restarts.
+  const reel = { el: null, cur: null, seen: new Set(), timer: null, primed: false };
+  function syncReel() {
+    const slot = document.getElementById('reel-slot');
+    const clips = S?.clips || [];
+    if (!slot || !clips.length) {
+      if (reel.el) {
+        reel.el.querySelector('video').pause();
+        reel.el.remove();
+      }
+      reel.cur = null;
+      return;
+    }
+    if (!reel.el) {
+      reel.el = document.createElement('div');
+      reel.el.className = 'reel';
+      reel.el.innerHTML = '<video muted playsinline></video><span class="reel-new">NEW</span><div class="reel-cap"></div><div class="reel-dots"></div>';
+      const v = reel.el.querySelector('video');
+      v.addEventListener('ended', nextClip);
+      v.addEventListener('error', () => setTimeout(nextClip, 1500));
+    }
+    if (reel.el.parentNode !== slot) slot.append(reel.el);
+    const fresh = reel.primed ? clips.find((c) => !reel.seen.has(c.id)) : null;
+    clips.forEach((c) => reel.seen.add(c.id));
+    reel.primed = true;
+    if (fresh) playClip(fresh, true);
+    else if (!clips.some((c) => c.id === reel.cur)) playClip(clips[0]);
+    reel.el.querySelector('.reel-dots').innerHTML = clips.slice(0, 20).map((c) => `<i class="${c.id === reel.cur ? 'on' : ''}"></i>`).join('');
+  }
+  function playClip(c, isNew = false) {
+    const v = reel.el.querySelector('video');
+    reel.cur = c.id;
+    v.loop = (S.clips || []).length === 1;
+    v.src = c.url;
+    v.play().catch(() => {});
+    const t = team(c.teamId);
+    reel.el.querySelector('.reel-cap').innerHTML = `${t ? chip(t) : ''}<b>${h(c.caption || `${t ? t.name : 'Someone'} takes their shots`)}</b><small>filmed by ${h(c.playerName)} · ${time(c.ts)}</small>`;
+    reel.el.classList.toggle('is-new', isNew);
+    reel.el.querySelectorAll('.reel-dots i').forEach((d, i) => d.classList.toggle('on', S.clips[i]?.id === c.id));
+    clearTimeout(reel.timer);
+    if (!v.loop) reel.timer = setTimeout(nextClip, 30000); // a clip that never ends still moves on
+  }
+  function nextClip() {
+    const clips = S?.clips || [];
+    if (!reel.el || !clips.length) return;
+    const i = clips.findIndex((c) => c.id === reel.cur);
+    playClip(clips[(i + 1) % clips.length]);
+  }
+
   // ---------- TV act intros: a short trailer between acts ----------
   // Browsers only allow sound after someone has clicked the page, so the TV asks once.
   let audio = null;
@@ -682,6 +901,7 @@
     document.body.dataset.status = S?.me?.status || '';
     $app.innerHTML = page();
 
+    if (kind === 'tv') syncReel();
     for (const [id, val] of Object.entries(drafts)) {
       const el = document.getElementById(id);
       if (!el) continue;
@@ -815,6 +1035,7 @@
       ['rap', '📖', 'Archive', rapTab],
       ['board', '🏆', 'Leaderboard', boardTab],
       ['mail', '✉️', 'Mail', mailTab],
+      ['cam', '📷', 'Camera', null],
     ];
   }
 
@@ -865,7 +1086,7 @@
       <section class="gi-menu">
         <div class="gi-menu-top"><span class="gi-paimon">✦ Paimon Menu</span>${giPills(myTeam)}</div>
         <div class="gi-notices">${phaseBanner()}${announcement()}${incomingAlerts()}${dealerCard()}</div>
-        <div class="gi-grid">${screens.map(([k, icon, label]) => `<button class="gi-app" data-act="tab" data-tab="${k}"><span class="gi-app-i">${icon}${giDot(k)}</span><span>${h(label)}</span></button>`).join('')}</div>
+        <div class="gi-grid">${screens.map(([k, icon, label]) => `<button class="gi-app" data-act="${k === 'cam' ? 'shotcam' : 'tab'}" data-tab="${k}"><span class="gi-app-i">${icon}${giDot(k)}</span><span>${h(label)}</span></button>`).join('')}</div>
       </section>`);
   }
 
@@ -897,12 +1118,8 @@
       ['rap', '🚓', 'LSPD', '#24418f', rapTab],
       ['board', '📊', 'Stats', '#7b4bb3', boardTab],
       ['mail', '🐦', 'Bleeter', '#1d9bf0', mailTab],
-      ['brief', '🎬', 'Snapmatic', '#e2245c', briefingTab],
+      ['cam', '📸', 'Snapmatic', '#e2245c', null],
     ];
-  }
-
-  function briefingTab() {
-    return `${briefingCard()}${lockupRules(S.me.status, liveGame())}`;
   }
 
   function gtaPhone() {
@@ -927,7 +1144,7 @@
         <div class="ph-money">${t ? `<b>${h(money(t.budget))}</b><small>Bank ${h(money(t.earned))}</small>` : ''}</div>
       </section>
       <div class="ph-notices">${alerts()}</div>
-      <div class="ph-grid">${apps.map(([k, icon, label, color]) => `<button class="ph-app" data-act="tab" data-tab="${k}" style="--ac:${color}"><span class="ph-icon">${icon}${dotFor(k) ? '<i class="dot"></i>' : ''}</span><span>${h(label)}</span></button>`).join('')}</div>
+      <div class="ph-grid">${apps.map(([k, icon, label, color]) => `<button class="ph-app" data-act="${k === 'cam' ? 'shotcam' : 'tab'}" data-tab="${k}" style="--ac:${color}"><span class="ph-icon">${icon}${dotFor(k) ? '<i class="dot"></i>' : ''}</span><span>${h(label)}</span></button>`).join('')}</div>
       <p class="ph-hint">${n >= 3 ? '★ Lose the cops: serve your time.' : 'Tap an app.'}</p>
       ${sheetsAndModals()}</div>`;
   }
@@ -982,7 +1199,7 @@
         <span class="lc-crest" aria-hidden="true">♟</span>
         <button class="lc-play ${ui.tab === 'events' ? 'on' : ''}" data-act="tab" data-tab="events">PLAY${dotFor('events') ? '<i class="dot"></i>' : ''}</button>
         <nav class="lc-nav">${tabs.map(([k, label]) => `<button data-act="tab" data-tab="${k}" class="${cur[0] === k ? 'on' : ''}">${label}${dotFor(k) ? '<i class="dot"></i>' : ''}</button>`).join('')}</nav>
-        <div class="lc-cur">${t ? `<span class="lc-streak">${t.augment ? `${S.augments[t.augment].emoji} ` : ''}${t.streak > 1 ? `🔥${t.streak}` : t.streak < -1 ? `💧${-t.streak}` : ''}</span><span class="lc-gold">🪙 ${t.budget}</span>` : ''}</div>
+        <div class="lc-cur">${canFilm() ? '<button class="lc-cam" data-act="shotcam">🎥 Clip</button>' : ''}${t ? `<span class="lc-streak">${t.augment ? `${S.augments[t.augment].emoji} ` : ''}${t.streak > 1 ? `🔥${t.streak}` : t.streak < -1 ? `💧${-t.streak}` : ''}</span><span class="lc-gold">🪙 ${t.budget}</span>` : ''}</div>
       </header>
       <main class="lc-main">${alerts()}${cur[0] === 'yard' ? tftBanner(t) : ''}${cur[2]()}</main>
       <aside class="lc-social">
@@ -1007,6 +1224,7 @@
       ['rap', '🚨', S.mafia.phase === 'vote' ? 'Meeting' : 'Role'],
       ['board', '🏆', 'Stats'],
       ['mail', '💬', 'Chat'],
+      ['cam', '📹', 'Cams'],
     ];
     const bodies = { yard: yardTab, events: eventsTab, shop: shopTab, cell: cellTab, rap: rapTab, board: boardTab, mail: mailTab };
     const cur = screens.find((x) => x[0] === ui.tab);
@@ -1026,7 +1244,7 @@
       </header>
       <div class="au-notices">${alerts(false)}</div>
       <div class="au-floor">${crowd.map((p) => `<div class="au-crew ${p.id === me.id ? 'me' : ''} ${p.status === 'solitary' ? 'out' : ''}"><span class="au-name">${h(p.name)}</span>${crewIcon(p)}</div>`).join('')}</div>
-      <nav class="au-btns">${screens.map(([k, icon, label]) => `<button data-act="tab" data-tab="${k}"><span class="au-bi">${icon}${dotFor(k) ? '<i class="dot"></i>' : ''}</span><span>${h(label)}</span></button>`).join('')}</nav>
+      <nav class="au-btns">${screens.map(([k, icon, label]) => `<button data-act="${k === 'cam' ? 'shotcam' : 'tab'}" data-tab="${k}"><span class="au-bi">${icon}${dotFor(k) ? '<i class="dot"></i>' : ''}</span><span>${h(label)}</span></button>`).join('')}</nav>
       ${sheetsAndModals()}</div>`;
   }
 
@@ -1235,7 +1453,7 @@
     if (!me.drinksOwed || ui.tab === 'yard') return '';
     return `<div class="drinkcard">
       <div><div class="drink-n">🍺 ×${me.drinksOwed}</div><div class="fine">${plural(me.drinksOwed, 'penalty drink')} owed. ${h(S.settings.houseRules)}</div></div>
-      <button class="btn" data-act="drank">Drank one ✅</button>
+      <div class="row"><button class="btn" data-act="drank">Drank one ✅</button>${canFilm() ? '<button class="btn ghost" data-act="shotcam">🎥 Film it</button>' : ''}</div>
     </div>`;
   }
 
@@ -1316,7 +1534,7 @@
     const m = S.mafia;
     const items = [];
     if (me.drinksOwed) {
-      items.push(`<li class="todo drink"><span class="mega">🍺</span><div><b>${plural(me.drinksOwed, 'penalty drink')}</b><div class="fine">${h(S.settings.houseRules)}</div></div><button class="btn sm" data-act="drank">Drank one ✅</button></li>`);
+      items.push(`<li class="todo drink"><span class="mega">🍺</span><div><b>${plural(me.drinksOwed, 'penalty drink')}</b><div class="fine">${h(S.settings.houseRules)}</div></div><div class="row"><button class="btn sm" data-act="drank">Drank one ✅</button>${canFilm() ? '<button class="btn ghost sm" data-act="shotcam" aria-label="Film it for the TV">🎥</button>' : ''}</div></li>`);
     }
     for (const x of (me.sentences || []).filter((y) => y.status === 'open')) {
       items.push(`<li class="todo sentence"><span class="mega">⚖️</span><div><b>${h(x.text)}</b><div class="fine">from ${h(x.from)}${x.reason ? ` · ${h(x.reason)}` : ''} · ${time(x.ts)}</div></div><button class="btn sm" data-act="sentence-done" data-sentence-id="${x.id}">Done ✅</button></li>`);
@@ -1721,9 +1939,10 @@
       ['shop', '🛒 Commissary'],
       ['tasks', `🕵️ Sabotage${pendingClaims ? ` <b class="badge">${pendingClaims}</b>` : ''}`],
       ['mafia', '🐀 Snitches'],
+      ['clips', `🎥 Clips${S.clips.filter((c) => c.status === 'pending').length ? ` <b class="badge">${S.clips.filter((c) => c.status === 'pending').length}</b>` : ''}`],
       ['settings', '⚙️ Settings'],
     ];
-    const body = { orders: aOrders, money: aMoney, games: aGames, blocks: aBlocks, lockup: aLockup, tasks: aTasks, shop: aShop, mafia: aMafia, settings: aSettings }[ui.atab] || aOrders;
+    const body = { orders: aOrders, money: aMoney, games: aGames, blocks: aBlocks, lockup: aLockup, tasks: aTasks, shop: aShop, mafia: aMafia, clips: aClips, settings: aSettings }[ui.atab] || aOrders;
     return `
       <header class="top admin-top">
         <div class="top-row">
@@ -2178,6 +2397,31 @@
     </section>`;
   }
 
+  function aClips() {
+    const st = S.settings;
+    const tag = { live: 'ON THE TV', pending: 'WAITING', hidden: 'HIDDEN' };
+    return `<section class="card">
+        <h3>🎥 Shot Cam</h3>
+        <p class="fine">Inmates on a block film their shots (up to ${CLIP_SECONDS} seconds) from the app, and live clips rotate on the TV. Hide anything that shouldn’t be on the big screen; Remove deletes it for good.</p>
+        <form data-admin="updateSettings" class="grid2">
+          <label class="check"><input type="checkbox" id="cl_on" name="clipsEnabled" ${st.clipsEnabled ? 'checked' : ''} /> Shot Cam on</label>
+          <label class="check"><input type="checkbox" id="cl_ok" name="clipsNeedApproval" ${st.clipsNeedApproval ? 'checked' : ''} /> A host okays each clip before the TV shows it</label>
+          <button class="btn span2">Save</button>
+        </form>
+      </section>
+      <section class="card">
+        <h3>Clips (${S.clips.length})</h3>
+        ${S.clips.length ? `<div class="clip-grid">${S.clips
+          .map((c) => `<div class="clip-card s-${c.status}">
+            <video src="${h(c.url)}" preload="metadata" muted playsinline controls></video>
+            <div><span class="tag">${tag[c.status]}</span> ${chip(team(c.teamId))}</div>
+            <div class="fine">${h(c.playerName)} · ${time(c.ts)}${c.caption ? ` · “${h(c.caption)}”` : ''}</div>
+            <div class="row wrap">${c.status !== 'live' ? btn('Show on TV', 'reviewClip', { clipId: c.id, action: 'live' }, 'sm') : btn('Hide', 'reviewClip', { clipId: c.id, action: 'hidden' }, 'ghost sm')}${btn('🗑 Remove', 'reviewClip', { clipId: c.id, action: 'remove' }, 'ghost sm', 'Delete this clip for good?')}</div>
+          </div>`)
+          .join('')}</div>` : '<p class="empty">No clips yet. They’ll show up here as blocks send them.</p>'}
+      </section>`;
+  }
+
   function aSettings() {
     const st = S.settings;
     return `
@@ -2255,7 +2499,7 @@
             ${m.phase === 'night' ? '<div class="tv-night">🌙<br/>LIGHTS OUT<br/><small>Everyone pick a name on your phone.</small></div>' : ''}
             ${S.orders.length ? `<h3>⚠️ Incoming punishments</h3><ul class="feed">${S.orders.map((o) => `<li><span class="f-e">${h(o.emoji)}</span><span class="f-t">${h(o.name)}: ${h(teamName(o.fromTeamId))} → <b>${h(teamName(o.targetTeamId))}</b> (deciding…)</span></li>`).join('')}</ul>` : ''}
           </section>
-          <section class="card tv-feed"><h2>Yard Gossip</h2>${feedList(12)}</section>
+          ${(S.clips || []).length ? `<section class="card tv-feed tv-reel"><h2>🎥 Shot Cam</h2><div id="reel-slot"></div>${feedList(3)}</section>` : `<section class="card tv-feed"><h2>Yard Gossip</h2>${feedList(12)}${S.settings.clipsEnabled ? '<p class="fine">🎥 Film your block taking its shots in the app to get on the Shot Cam.</p>' : ''}</section>`}
           <section class="card tv-lockup">
             <div><h3>🕳️ Holding Cell</h3><div class="tv-names">${holding.map((p) => `<span>${h(p.name)}${p.drinksOwed ? ` <b>🍺${p.drinksOwed}</b>` : ''}</span>`).join('') || '<span class="fine">empty</span>'}</div><div class="fine">${h(S.settings.holdingRules)}</div></div>
             <div><h3>🔒 Solitary</h3><div class="tv-names">${solitary.map((p) => `<span>${h(p.name)} <small>${p.solitary.rounds}r</small>${p.drinksOwed ? ` <b>🍺${p.drinksOwed}</b>` : ''}</span>`).join('') || '<span class="fine">empty</span>'}</div><div class="fine">${h(S.settings.solitaryRules)}</div></div>
@@ -2300,6 +2544,10 @@
     'wish-panel': (d) => {
       ui.wishPanel = ui.wishPanel === d.panel ? null : d.panel;
       render();
+    },
+    shotcam: () => {
+      if (!canFilm()) return toast('Only inmates on a block can film for the TV.', 'warn');
+      openCam();
     },
     'tv-sound': () => {
       unlockAudio();

@@ -44,6 +44,8 @@ The night changes game every couple of rounds. When the hosts flip the act, your
 
 Each act also turns your phone into that game's screen: a GTA smartphone, the Genshin Paimon Menu, the League client and the Among Us lobby. Acts II–IV are played with your phone sideways.
 
+**Shot Cam:** film your block taking its shots (up to 12 seconds) from the camera in the app, add a caption, and it plays on the TV.
+
 ## The commissary
 
 | Item | Credits | What it does |

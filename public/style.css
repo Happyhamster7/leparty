@@ -959,7 +959,7 @@ body[data-era='amongus'][data-kind='player'] .tabs::before { content: ''; positi
 .gi-menu-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .gi-paimon { font-size: 15px; font-weight: 700; color: #ece5d8; text-shadow: 0 1px 3px #000; }
 .gi-notices > * { width: 100%; max-width: none; margin: 0 0 8px; border-radius: 6px; }
-.gi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px 6px; margin-top: auto; padding-bottom: 6px; }
+.gi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px 6px; margin-top: auto; padding-bottom: 6px; }
 .gi-app { display: flex; flex-direction: column; align-items: center; gap: 5px; background: none; border: 0; color: #ece5d8; font: 600 11.5px var(--body); cursor: pointer; text-shadow: 0 1px 3px #000; }
 .gi-app-i {
   position: relative; display: grid; place-items: center; width: 54px; height: 54px; border-radius: 50%; font-size: 24px;
@@ -1257,3 +1257,60 @@ body[data-era='tft'] .eyebrow { color: #0ac8b9; letter-spacing: 0.14em; }
 @keyframes i-alarm { 50% { background: #4a0000; } }
 .i-video { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; object-fit: contain; z-index: 2; }
 .tv-sound { position: fixed; top: 12px; left: 12px; z-index: 30; background: #000a; color: #fff; border: 1px solid #fff4; border-radius: 999px; padding: 6px 14px; font: 600 13px var(--body); cursor: pointer; }
+
+/* ===================== Shot Cam ===================== */
+.cam { position: fixed; inset: 0; z-index: 300; display: flex; flex-direction: column; background: #000; color: #fff; font-family: var(--body); }
+.cam-top { display: flex; align-items: center; gap: 10px; padding: max(10px, env(safe-area-inset-top)) 14px 10px; background: linear-gradient(180deg, #000d, #0000); position: absolute; top: 0; left: 0; right: 0; z-index: 2; }
+.cam-top b { font-family: var(--stencil); font-size: 18px; letter-spacing: 0.04em; }
+.cam-top span { margin-left: auto; font-size: 12px; color: #ddd; }
+.cam-x { width: 36px; height: 36px; border-radius: 50%; border: 0; background: #ffffff26; color: #fff; font-size: 16px; cursor: pointer; }
+.cam-view { position: relative; flex: 1; min-height: 0; display: grid; place-items: center; overflow: hidden; }
+.cam-view video { width: 100%; height: 100%; object-fit: cover; }
+.cam-play { object-fit: contain !important; background: #000; }
+.cam-count { position: absolute; font: 800 120px var(--stencil); color: #fff; text-shadow: 0 6px 30px #000; animation: i-pop 0.7s ease-out infinite; }
+.cam-bar { position: absolute; left: 0; right: 0; top: 0; height: 6px; background: #ffffff33; z-index: 3; }
+.cam-bar i { display: block; height: 100%; width: 0; background: #ff2d55; animation: cam-fill linear forwards; }
+@keyframes cam-fill { to { width: 100%; } }
+.cam-msg { position: absolute; left: 16px; right: 16px; bottom: 12px; margin: 0; text-align: center; font-weight: 600; text-shadow: 0 1px 4px #000; }
+.cam-msg:empty { display: none; }
+.cam-ctl { padding: 12px 16px max(14px, env(safe-area-inset-bottom)); background: #000; }
+.cam-shoot { display: flex; align-items: center; justify-content: space-around; }
+.cam-side { display: flex; flex-direction: column; align-items: center; gap: 2px; background: none; border: 0; color: #fff; font-size: 24px; cursor: pointer; width: 70px; }
+.cam-side span { font-size: 11px; color: #ccc; }
+.cam-rec { width: 74px; height: 74px; border-radius: 50%; border: 5px solid #fff; background: radial-gradient(circle, #ff2d55 0 58%, transparent 60%); cursor: pointer; transition: background 0.2s; }
+.cam.recording .cam-rec { background: radial-gradient(circle, #ff2d55 0 30%, transparent 32%); animation: pulse 1.2s infinite; }
+.cam-send { display: grid; gap: 10px; }
+.cam-send .row .btn { flex: 1; }
+.cam-cap { width: 100%; }
+.cam-note { margin: 10px 0 0; text-align: center; font-size: 12px; color: #aaa; }
+@media (orientation: landscape) {
+  .cam { flex-direction: row; }
+  .cam-ctl { width: min(300px, 40vw); display: flex; flex-direction: column; justify-content: center; padding-right: max(16px, env(safe-area-inset-right)); }
+  .cam-shoot { flex-direction: column; gap: 14px; }
+  .cam-top { right: min(300px, 40vw); }
+}
+.lc-cam { padding: 4px 10px; background: #010a13; color: #f0e6d2; border: 1px solid #785a28; font: 700 13px var(--body); cursor: pointer; }
+body[data-era='gta'] .drinkcard .row .btn.ghost { color: #fff; }
+
+/* TV reel: portrait clips fill the right-hand column */
+.tv-reel { display: flex; flex-direction: column; }
+#reel-slot { flex: 1; min-height: 0; margin-bottom: 8px; }
+.reel { position: relative; height: 100%; border-radius: 12px; overflow: hidden; background: #000; }
+.reel video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.reel-cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 40px 14px 22px; background: linear-gradient(transparent, #000d); display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.reel-cap b { font-size: clamp(16px, 1.6vw, 26px); color: #fff; line-height: 1.2; }
+.reel-cap small { color: #ccc; font-size: clamp(11px, 0.9vw, 14px); }
+.reel-dots { position: absolute; left: 0; right: 0; bottom: 8px; display: flex; justify-content: center; gap: 5px; }
+.reel-dots i { width: 7px; height: 7px; border-radius: 50%; background: #fff6; }
+.reel-dots i.on { background: #fff; }
+.reel-new { position: absolute; top: 12px; left: 12px; padding: 3px 10px; border-radius: 999px; background: #ff2d55; color: #fff; font: 800 13px var(--body); letter-spacing: 1px; display: none; animation: pulse 1.2s infinite; }
+.reel.is-new .reel-new { display: block; }
+.tv-reel .feed li { font-size: clamp(12px, 1vw, 15px) !important; }
+
+/* Host clip review */
+.clip-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.clip-card { display: grid; gap: 6px; padding: 8px; border-radius: 10px; background: var(--card2); }
+.clip-card video { width: 100%; aspect-ratio: 9 / 16; max-height: 240px; object-fit: cover; border-radius: 8px; background: #000; }
+.clip-card.s-pending { box-shadow: inset 0 0 0 2px var(--yellow); }
+.clip-card.s-hidden { opacity: 0.55; }
+.cam [hidden] { display: none !important; }

@@ -821,3 +821,30 @@ test('the TV intro replays on act changes and on demand; intro links must be htt
   g.updateSettings({ introVideo_gta: '' });
   assert.equal(g.s.settings.introVideos.gta, '');
 });
+
+test('Shot Cam: block members send clips; hosts can require approval, hide and remove them', () => {
+  const { g, a, b, players } = setup(4);
+  const holding = g.join('Late');
+  assert.throws(() => g.canClip(holding.id), /on a block/);
+  const r = g.addClip(players[0].id, { url: '/clips/one.mp4', type: 'video/mp4', caption: 'Bottoms up' });
+  assert.equal(r.status, 'live');
+  assert.throws(() => g.canClip(players[0].id), /Wait a few seconds/);
+  assert.equal(g.tvView().clips.length, 1);
+  assert.equal(g.tvView().clips[0].playerId, undefined, 'the TV never gets player ids');
+  g.updateSettings({ clipsNeedApproval: true });
+  const r2 = g.addClip(players[1].id, { url: '/clips/two.mp4', type: 'video/webm' });
+  assert.equal(r2.status, 'pending');
+  assert.equal(g.tvView().clips.length, 1, 'pending clips stay off the TV');
+  assert.equal(g.viewFor(players[1].id).clips.length, 2, 'your block sees its own pending clip');
+  assert.equal(g.viewFor(players[0].id).clips.length, 1, 'other blocks do not');
+  g.reviewClip({ clipId: r2.clipId, action: 'live' });
+  assert.equal(g.tvView().clips.length, 2);
+  g.reviewClip({ clipId: r.clipId, action: 'hidden' });
+  assert.equal(g.tvView().clips.length, 1);
+  assert.deepEqual(g.reviewClip({ clipId: r2.clipId, action: 'remove' }).deleteFiles, ['/clips/two.mp4']);
+  g.updateSettings({ clipsEnabled: false });
+  assert.throws(() => g.canClip(players[2].id), /switched off/);
+  assert.deepEqual(g.freshStart({ confirm: 'RESET' }).deleteFiles, ['/clips/one.mp4']);
+  assert.equal(g.s.clips.length, 0);
+  assert.ok(a && b);
+});
