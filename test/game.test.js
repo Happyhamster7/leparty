@@ -626,3 +626,114 @@ test('fresh start wipes the night but keeps the setup', () => {
   assert.ok(g.s.items.length > 0);
   assert.ok(players);
 });
+
+test('hosts flip through the four acts; act-only items follow the act', () => {
+  const { g, a, players } = setup(4);
+  const visible = () => g.viewFor(players[0].id).items.map((i) => i.name);
+  assert.equal(g.act.id, 'gta');
+  assert.ok(visible().includes('Stick-Up'));
+  assert.ok(!visible().includes('Warp'));
+  g.setAct({ index: 1 });
+  assert.equal(g.act.id, 'honkai');
+  assert.ok(visible().includes('Warp'));
+  assert.ok(!visible().includes('Stick-Up'));
+  const stickUp = itemOf(g, 'punishment', (i) => i.steal);
+  assert.throws(() => g.buy(players[0].id, { itemId: stickUp.id, targetTeamId: g.s.teams[1].id }), /off the shelf/);
+  assert.throws(() => g.setAct({ index: 9 }), /No such act/);
+  g.freshStart({ confirm: 'RESET' });
+  assert.equal(g.s.act, 0);
+  assert.ok(a);
+});
+
+test('old saves get the act-only items stocked once', () => {
+  const s = new Game().s;
+  s.items = s.items.filter((i) => !i.act);
+  delete s.actItems;
+  delete s.act;
+  const g = new Game(s);
+  assert.equal(g.s.act, 0);
+  assert.equal(g.s.items.filter((i) => i.act).length, 2);
+  assert.equal(new Game(g.s).s.items.filter((i) => i.act).length, 2);
+});
+
+test('GTA: a Stick-Up moves cash from the victim to the robbers, or back if deflected', () => {
+  const { g, a, b, players } = setup(4);
+  const stickUp = itemOf(g, 'punishment', (i) => i.steal);
+  const o = g.buy(players[0].id, { itemId: stickUp.id, targetTeamId: b.id });
+  g.respondPunishment(players[1].id, { orderId: o.id, choice: 'accept' });
+  assert.equal(b.budget, 190);
+  assert.equal(a.budget, 200 - stickUp.price + 10);
+  b.inventory.deflect = 1;
+  const o2 = g.buy(players[0].id, { itemId: stickUp.id, targetTeamId: b.id });
+  g.respondPunishment(players[1].id, { orderId: o2.id, choice: 'deflect' });
+  g.respondPunishment(players[0].id, { orderId: o2.id, choice: 'accept' });
+  assert.equal(b.budget, 200);
+  assert.equal(a.budget, 200 - 2 * stickUp.price);
+});
+
+test('Honkai: warps roll prizes and pity guarantees a 5-star', () => {
+  const { g, a, players } = setup(4);
+  g.setAct({ index: 1 });
+  g.updateSettings({ warp5: 0, warp4: 0, warpPity: 3 });
+  const warp = itemOf(g, 'warp');
+  const pulls = [1, 2, 3].map(() => g.buy(players[0].id, { itemId: warp.id }).warp);
+  assert.deepEqual(pulls.map((w) => w.stars), [3, 3, 5]);
+  assert.equal(a.pity, 0);
+  assert.equal(g.viewFor(players[0].id).teams.find((t) => t.id === a.id).pity, 0);
+  assert.equal(g.viewFor(players[1].id).teams.find((t) => t.id === a.id).pity, null, 'other blocks can’t see your pity');
+  g.updateSettings({ warp5: 100 });
+  const before = { budget: a.budget, deflect: a.inventory.deflect, dealer: players[0].dealerDrinks };
+  const w = g.buy(players[0].id, { itemId: warp.id }).warp;
+  assert.equal(w.stars, 5);
+  const gained = a.budget - (before.budget - warp.price) + (a.inventory.deflect - before.deflect) + (players[0].dealerDrinks - before.dealer);
+  assert.ok(gained > 0, 'a 5-star always pays something');
+});
+
+test('TFT: augments, streak gold, interest and the Hustler discount', () => {
+  const { g, a, b, players } = setup(4);
+  g.updatePlayer({ playerId: players[0].id, isCaptain: true });
+  assert.throws(() => g.pickAugment(players[0].id, { augmentId: a.augmentOffer[0] }), /TFT act/);
+  g.setAct({ index: 2 });
+  assert.equal(a.augmentOffer.length, 3);
+  a.augmentOffer = ['hustler', 'windfall', 'crown'];
+  assert.throws(() => g.pickAugment(players[2].id, { augmentId: 'hustler' }), /Shot Caller/);
+  assert.throws(() => g.pickAugment(players[0].id, { augmentId: 'hunt' }), /on offer/);
+  g.pickAugment(players[0].id, { augmentId: 'hustler' });
+  assert.throws(() => g.pickAugment(players[0].id, { augmentId: 'windfall' }), /already picked/);
+  const red = g.s.items.find((i) => i.name === 'Red Bull');
+  const before = a.budget;
+  g.buy(players[0].id, { itemId: red.id });
+  assert.equal(before - a.budget, Math.ceil(red.price * 0.75));
+
+  const game = g.addGame({ name: 'Pong' });
+  for (let i = 0; i < 3; i++) {
+    g.addHeat({ gameId: game.id, teamIds: [a.id, b.id] });
+    const h = game.heats[game.heats.length - 1];
+    g.finishHeat({ gameId: game.id, heatId: h.id, results: { [a.id]: 10 } });
+  }
+  assert.equal(a.streak, 3);
+  assert.equal(b.streak, -3);
+  a.budget = 47;
+  b.budget = 200;
+  g.finishGame({ gameId: game.id, results: {}, penalties: false });
+  assert.equal(a.budget, 51, 'interest is 1 per 10, so 4');
+  assert.equal(b.budget, 205, 'interest caps at 5');
+});
+
+test('Among Us: sabotage skims and snitch bounties double', () => {
+  const { g, a, players } = setup(6);
+  g.setAct({ index: 3 });
+  const snitch = players[0];
+  snitch.role = 'snitch';
+  g.s.mafia.phase = 'idle';
+  g.dealTasks();
+  const before = a.budget;
+  complete(g, snitch);
+  assert.equal(before - a.budget, g.s.settings.sabotageSkim * 2);
+  g.openVote();
+  for (const p of [players[2], players[4]]) g.castVote(p.id, { targetId: snitch.id });
+  const mid = a.budget;
+  g.closeVote();
+  assert.equal(a.budget - mid, g.s.settings.snitchBounty * 2 + g.s.settings.sabotageSkim * 2);
+  assert.deepEqual(g.s.mafia.lastResult.ejected.map((x) => [x.name, x.snitch]), [[snitch.name, true]]);
+});

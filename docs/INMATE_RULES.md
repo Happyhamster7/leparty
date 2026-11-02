@@ -33,6 +33,15 @@ You play in a block of 4 or 5 (Block A, Block B and so on). Each block starts wi
 - **Name your block:** your Shot Caller (or anyone, if your block has none) sets a nickname and motto on the My Block tab. It shows on everyone's phones and the TV.
 - **Standings:** blocks are ranked by credits earned tonight, so spending doesn't cost you rank.
 
+## The four acts
+
+The night changes game every couple of rounds. When the hosts flip the act, your phone (and the TV) switch to a new look, and a card explains the new rules. Your block keeps its balance; only the money's name changes.
+
+- **Act I · Vice City (GTA):** Stick-Ups let your block rob 10 cash from another (they can deflect it back). Watch your wanted level in the corner.
+- **Act II · Warp Drive (Honkai: Star Rail):** buy Warps, gacha pulls for your block. Usually trash, sometimes a jackpot, and every 8th pull without a 5★ is guaranteed one.
+- **Act III · Convergence (TFT):** your block picks one augment. Unspent gold earns interest after every game, and win or loss streaks pay bonus gold.
+- **Act IV · Emergency Meeting (Among Us):** snitches are Impostors, and the stakes double. Every Block Vote is an Emergency Meeting.
+
 ## The commissary
 
 | Item | Credits | What it does |

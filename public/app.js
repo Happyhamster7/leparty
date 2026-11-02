@@ -58,6 +58,19 @@
     return `<div class="wanted${n >= 3 ? ' hot' : ''}" title="Wanted level ${n} of 5" aria-label="Wanted level ${n} of 5">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= n ? 'on' : ''}">★</i>`).join('')}</div>`;
   };
 
+  // The top-corner HUD changes with the act: wanted level, pity counter, streak, or an emergency light.
+  function hudExtra(me, myTeam) {
+    const id = actId();
+    if (id === 'gta') return wantedStars(me);
+    if (id === 'honkai' && myTeam) return `<div class="hud-x" title="Pulls since your last 5★">✦ Pity ${myTeam.pity ?? 0}/${S.settings.warpPity}</div>`;
+    if (id === 'tft' && myTeam) {
+      const st = myTeam.streak || 0;
+      return `<div class="hud-x">${myTeam.augment ? `${S.augments[myTeam.augment].emoji} ` : ''}${st > 1 ? `🔥 ${st} win streak` : st < -1 ? `💧 ${-st} loss streak` : 'No streak'}</div>`;
+    }
+    if (id === 'amongus') return `<div class="hud-x">${S.mafia.phase === 'vote' ? '🚨 Meeting' : '🛰️ On task'}</div>`;
+    return '';
+  }
+
   const rankOf = (id) => standings().findIndex((t) => t.id === id) + 1;
   const nick = (t) => (t?.nickname ? ` <span class="nick">“${h(t.nickname)}”</span>` : '');
 
@@ -116,7 +129,7 @@
           const mine = r.by === me.id;
           const target = r.targetPlayerName ? ` → ${h(r.targetPlayerName)}` : r.targetTeamId ? ` → ${h(teamName(r.targetTeamId))}` : '';
           return `<li>
-            <div><span class="mega">${h(r.emoji)}</span> <b>${h(r.name)}</b>${target} <span class="fine">${r.price} cr · asked by ${mine ? 'you' : h(r.byName)}${r.note ? ` · “${h(r.note)}”` : ''}</span></div>
+            <div><span class="mega">${h(r.emoji)}</span> <b>${h(r.name)}</b>${target} <span class="fine">${h(money(r.price))} · asked by ${mine ? 'you' : h(r.byName)}${r.note ? ` · “${h(r.note)}”` : ''}</span></div>
             <div class="row wrap"><span class="tag">${r.seconds.length}/${need} seconds</span>
               ${!mine && !r.seconds.includes(me.id) && me.status === 'block' ? `<button class="btn sm" data-act="second" data-request-id="${r.id}">👍 Second it</button>` : ''}
               ${me.isCaptain ? `<button class="btn sm" data-act="approve" data-request-id="${r.id}">👑 Approve</button>` : ''}
@@ -140,15 +153,20 @@
       .join('');
   }
 
-  // Vice City sunset with palms, drawn inline so it needs no image files.
+  // Each act's banner art, drawn inline so it needs no image files.
   const PALM_LEAF = 'M0 0C20-14 44-10 64 8C44-2 22-4 0 4Z';
   const palm = (x, y, k, flip) => `<g transform="translate(${x} ${y}) scale(${flip ? -k : k} ${k})">
       <path d="M0 0Q-12 70 10 150" stroke="#0e0818" stroke-width="7" fill="none" stroke-linecap="round"/>
       ${[-40, -8, 24].map((a) => `<path d="${PALM_LEAF}" transform="rotate(${a})"/><path d="${PALM_LEAF}" transform="scale(-1 1) rotate(${a})"/>`).join('')}
       <path d="${PALM_LEAF}" transform="rotate(-78)"/>
     </g>`;
-  const hero = (thin) => `<div class="hero${thin ? ' thin' : ''}" aria-hidden="true">
-    <svg viewBox="0 0 400 210" preserveAspectRatio="xMidYM${thin ? 'id' : 'ax'} slice">
+  // Fixed star positions so the sky doesn't reshuffle on every render.
+  const STARS = Array.from({ length: 46 }, (_, i) => [(i * 89 + 17) % 400, (i * 53 + 11) % 150, ((i * 7) % 3) * 0.4 + 0.6]);
+  const starField = (op = 0.8) => `<g fill="#fff" opacity="${op}">${STARS.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}"/>`).join('')}</g>`;
+  const hex = (cx, cy, r) => Array.from({ length: 6 }, (_, i) => { const a = (Math.PI / 3) * i + Math.PI / 6; return `${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`; }).join(' ');
+  const CREWMATE = 'M0 40Q0 0 30 0Q60 0 60 40V80Q60 90 50 90H42V78H18V90H10Q0 90 0 80Z';
+  const HERO_ART = {
+    gta: () => `
       <defs>
         <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c0b35"/><stop offset=".45" stop-color="#6a1f6e"/><stop offset=".75" stop-color="#ff3d8b"/><stop offset="1" stop-color="#ff9b3d"/></linearGradient>
         <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe066"/><stop offset=".6" stop-color="#ff9b3d"/><stop offset="1" stop-color="#ff3d8b"/></linearGradient>
@@ -162,12 +180,80 @@
       <g fill="#ff9b3d" opacity=".55">${[156, 163, 171, 180].map((y, i) => `<rect x="${170 - i * 8}" y="${y}" width="${60 + i * 16}" height="1.6" rx=".8"/>`).join('')}</g>
       <g fill="#1fe0d0" opacity=".25"><rect x="20" y="168" width="70" height="1"/><rect x="300" y="174" width="80" height="1"/></g>
       <path d="M0 210V178Q70 160 150 186L250 192Q330 162 400 174V210Z" fill="#0e0818"/>
-      <g fill="#0e0818">${palm(52, 62, 1)}${palm(104, 104, 0.62)}${palm(348, 54, 1.08, true)}${palm(300, 108, 0.55, true)}</g>
-    </svg>
+      <g fill="#0e0818">${palm(52, 62, 1)}${palm(104, 104, 0.62)}${palm(348, 54, 1.08, true)}${palm(300, 108, 0.55, true)}</g>`,
+    honkai: () => `
+      <defs>
+        <linearGradient id="hsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#05081c"/><stop offset=".6" stop-color="#1a1650"/><stop offset="1" stop-color="#3a2a7a"/></linearGradient>
+        <radialGradient id="neb" cx=".3" cy=".55" r=".5"><stop offset="0" stop-color="#b48cff" stop-opacity=".55"/><stop offset="1" stop-color="#b48cff" stop-opacity="0"/></radialGradient>
+        <radialGradient id="neb2" cx=".75" cy=".35" r=".4"><stop offset="0" stop-color="#5fd0ff" stop-opacity=".35"/><stop offset="1" stop-color="#5fd0ff" stop-opacity="0"/></radialGradient>
+        <linearGradient id="planet" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f5e3b3"/><stop offset=".45" stop-color="#c79ae8"/><stop offset="1" stop-color="#1b1f5c"/></linearGradient>
+      </defs>
+      <rect width="400" height="210" fill="url(#hsky)"/>
+      <rect width="400" height="210" fill="url(#neb)"/><rect width="400" height="210" fill="url(#neb2)"/>
+      <g stroke="#f7dc9a" stroke-width=".6" opacity=".35">${Array.from({ length: 14 }, (_, i) => { const a = (i / 14) * Math.PI * 2; return `<line x1="${200 + Math.cos(a) * 30}" y1="${110 + Math.sin(a) * 18}" x2="${200 + Math.cos(a) * 260}" y2="${110 + Math.sin(a) * 160}"/>`; }).join('')}</g>
+      ${starField(0.9)}
+      <circle cx="292" cy="96" r="46" fill="url(#planet)"/>
+      <ellipse cx="292" cy="98" rx="84" ry="16" fill="none" stroke="#f7dc9a" stroke-width="2.5" opacity=".85" transform="rotate(-14 292 98)"/>
+      <path d="M208 98a84 16 0 0 0 168 0" fill="none" stroke="#05081c" stroke-width="0" />
+      <g fill="#f7dc9a"><path d="M86 52l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"/><path d="M150 140l2 6 6 2-6 2-2 6-2-6-6-2 6-2z" opacity=".8"/><path d="M360 160l1.6 5 5 1.6-5 1.6-1.6 5-1.6-5-5-1.6 5-1.6z" opacity=".7"/></g>
+      <path d="M0 210V186Q120 170 220 182T400 176V210Z" fill="#070a1f"/>
+      <g fill="#070a1f"><rect x="40" y="168" width="120" height="16" rx="6"/><rect x="164" y="170" width="70" height="14" rx="6"/><rect x="238" y="171" width="60" height="13" rx="6"/></g>
+      <g fill="#f7dc9a" opacity=".85">${[52, 70, 88, 106, 124, 142, 176, 194, 212, 250, 268, 286].map((x) => `<rect x="${x}" y="173" width="9" height="4" rx="1"/>`).join('')}</g>`,
+    tft: () => `
+      <defs>
+        <linearGradient id="tsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#03171c"/><stop offset=".7" stop-color="#0b2f38"/><stop offset="1" stop-color="#103c45"/></linearGradient>
+        <radialGradient id="tglow" cx=".5" cy=".9" r=".6"><stop offset="0" stop-color="#0ac8b9" stop-opacity=".45"/><stop offset="1" stop-color="#0ac8b9" stop-opacity="0"/></radialGradient>
+        <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0e6d2"/><stop offset=".5" stop-color="#c8aa6e"/><stop offset="1" stop-color="#785a28"/></linearGradient>
+      </defs>
+      <rect width="400" height="210" fill="url(#tsky)"/><rect width="400" height="210" fill="url(#tglow)"/>
+      ${starField(0.35)}
+      <g transform="translate(200 150) scale(1 .5)" fill="none" stroke="#c8aa6e" stroke-width="1.6">
+        ${[-3, -2, -1, 0, 1, 2, 3].flatMap((c) => [-2, -1, 0, 1].map((r) => { const x = c * 52 + (r % 2 ? 26 : 0); const y = r * 46; const near = Math.abs(c) < 2 && Math.abs(r) < 2; return `<polygon points="${hex(x, y, 28)}" opacity="${near ? 0.95 : 0.45}" ${near ? 'fill="#0ac8b922"' : ''}/>`; })).join('')}
+      </g>
+      <g stroke="url(#gold)" stroke-width="2.5" fill="none" opacity=".9"><path d="M0 24H140L156 10H244L260 24H400"/></g>
+      <g fill="url(#gold)">${[[70, 74], [330, 66], [300, 116], [96, 120]].map(([x, y]) => `<g transform="translate(${x} ${y})"><circle r="9"/><circle r="6" fill="#785a28"/><text y="3.5" text-anchor="middle" font-size="9" font-weight="900" fill="#f0e6d2">g</text></g>`).join('')}</g>`,
+    amongus: () => `
+      <defs>
+        <linearGradient id="asky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#02030c"/><stop offset="1" stop-color="#101736"/></linearGradient>
+        <radialGradient id="mars" cx=".4" cy=".2" r=".9"><stop offset="0" stop-color="#ff8a5c"/><stop offset=".6" stop-color="#c2352b"/><stop offset="1" stop-color="#4a0f14"/></radialGradient>
+      </defs>
+      <rect width="400" height="210" fill="url(#asky)"/>
+      ${starField(1)}
+      <circle cx="200" cy="420" r="260" fill="url(#mars)"/>
+      <g transform="translate(300 52) rotate(22) scale(.62)">
+        <rect x="-12" y="34" width="16" height="38" rx="6" fill="#9b1c22"/>
+        <path d="${CREWMATE}" fill="#e3242b" stroke="#000" stroke-width="4"/>
+        <ellipse cx="40" cy="30" rx="20" ry="12" fill="#9fe7ff" stroke="#000" stroke-width="4"/>
+        <ellipse cx="46" cy="25" rx="8" ry="4" fill="#fff" opacity=".8"/>
+      </g>
+      <g transform="translate(70 96) rotate(-18) scale(.34)" opacity=".85">
+        <rect x="-12" y="34" width="16" height="38" rx="6" fill="#0d6e66"/>
+        <path d="${CREWMATE}" fill="#38fedc" stroke="#000" stroke-width="5"/>
+        <ellipse cx="40" cy="30" rx="20" ry="12" fill="#9fe7ff" stroke="#000" stroke-width="5"/>
+      </g>`,
+  };
+  const actId = () => (S ? S.acts?.[S.act]?.id : guest.act) || 'gta';
+  const curAct = () => S?.acts?.[S.act] || null;
+  const hero = (thin) => `<div class="hero${thin ? ' thin' : ''}" aria-hidden="true">
+    <svg viewBox="0 0 400 210" preserveAspectRatio="xMidYM${thin ? 'id' : 'ax'} slice">${(HERO_ART[actId()] || HERO_ART.gta)()}</svg>
   </div>`;
 
+  // Money in the current act's currency: $20, ✦20, 🪙20, or 20 cr.
+  const money = (n) => {
+    const sym = curAct()?.currency.symbol;
+    return sym ? `${sym}${n}` : `${n} cr`;
+  };
+  const priceOf = (it) => {
+    const t = team(S.me?.teamId);
+    return actId() === 'tft' && t?.augment === 'hustler' ? Math.ceil(it.price * 0.75) : it.price;
+  };
+  const ordinal = (n) => {
+    const v = n % 100;
+    return `${n}${v >= 11 && v <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th'}`;
+  };
+
   // GTA-style full-screen stamp: MISSION PASSED, BUSTED, WASTED. Tap or wait to clear it.
-  function splash(kind, title, sub = '') {
+  function splash(kind, title, sub = '', ms = 2800) {
     document.querySelectorAll('.splash').forEach((x) => x.remove());
     const el = document.createElement('div');
     el.className = `splash ${kind}`;
@@ -176,7 +262,7 @@
     const close = () => { el.classList.add('out'); setTimeout(() => el.remove(), 500); };
     el.addEventListener('click', close);
     document.body.append(el);
-    setTimeout(close, 2800);
+    setTimeout(close, ms);
   }
 
   function toast(msg, type = 'info') {
@@ -220,7 +306,26 @@
     kind = res.kind;
     S = res.view;
     if (kind === 'player') notifyChanges(prev, S);
+    if (kind !== 'admin') actEvents(prev, S);
     render();
+  }
+
+  // Big moments every screen (phones and the TV) shows: a new act, Among Us meetings and ejections.
+  function actEvents(prev, next) {
+    if (!prev) return;
+    const a = next.acts[next.act];
+    if (prev.act !== next.act) {
+      splash('act', `Act ${a.numeral}`, `${a.emoji} ${a.name}`, 3600);
+      buzz([200, 100, 200, 100, 400]);
+      return;
+    }
+    if (a.id !== 'amongus') return;
+    if (prev.mafia.phase !== 'vote' && next.mafia.phase === 'vote') splash('meeting', 'Emergency Meeting', 'Block votes are open', 3200);
+    const r = next.mafia.lastResult;
+    if (r?.kind === 'vote' && r.ts && r.ts !== prev.mafia.lastResult?.ts) {
+      const lines = (r.ejected || []).map((x) => `${x.name} was ${x.snitch ? '' : 'not '}an Impostor.`);
+      splash('ejected', lines.length ? lines.join(' ') : 'No one was ejected.', lines.length ? '' : '(Skipped)', 4200);
+    }
   }
 
   function setOnline(on) {
@@ -301,25 +406,42 @@
       if (b.task.status === 'active') toast('❌ The hosts didn’t buy it. Try again.', 'warn');
     }
     if (a.status !== b.status) {
-      if (b.status === 'solitary') splash('busted', 'Busted', `Solitary · ${plural(b.solitary.rounds, 'round')}`);
-      else if (b.status === 'holding' && a.status === 'block') splash('wasted', 'Wasted', 'Kicked to the Holding Cell');
+      const words = next.acts[next.act].splash;
+      if (b.status === 'solitary') splash('busted', words.solitary, `Solitary · ${plural(b.solitary.rounds, 'round')}`);
+      else if (b.status === 'holding' && a.status === 'block') splash('wasted', words.kicked, 'Kicked to the Holding Cell');
     }
     if (b.teamId) {
       // A heat (or a game played without heats) just got scored with this block in it.
       const scored = [];
+      let place = 0;
       for (const g of next.games) {
         const old = prev.games.find((x) => x.id === g.id);
         if (!old) continue;
         for (const x of g.heats || []) {
           const was = (old.heats || []).find((y) => y.id === x.id);
-          if (x.status === 'done' && was && was.status !== 'done' && x.teamIds.includes(b.teamId)) scored.push(x.results?.[b.teamId] || 0);
+          if (x.status === 'done' && was && was.status !== 'done' && x.teamIds.includes(b.teamId)) {
+            scored.push(x.results?.[b.teamId] || 0);
+            const mine = x.results?.[b.teamId] || 0;
+            place = 1 + x.teamIds.filter((id) => (x.results?.[id] || 0) > mine).length;
+          }
         }
         if (g.status === 'done' && old.status !== 'done' && !(g.heats || []).length && g.results && b.teamId in g.results) scored.push(g.results[b.teamId] || 0);
       }
       if (scored.length) {
         const n = scored.reduce((x, y) => x + y, 0);
-        if (n > 0) splash('passed', 'Mission passed', `+$${n} credits`);
-        else splash('failed', 'Mission failed', n < 0 ? `-$${-n} credits` : 'No credits this time');
+        const words = next.acts[next.act].splash;
+        const sub = n > 0 ? `+${money(n)}` : n < 0 ? `−${money(-n)}` : 'Nothing this time';
+        if (next.acts[next.act].id === 'tft' && place) splash(place === 1 ? 'passed' : 'failed', `${ordinal(place)} place`, sub);
+        else if (n > 0) splash('passed', words.passed, sub);
+        else splash('failed', words.failed, sub);
+      }
+      // Honkai act: everyone on the block sees the pull land.
+      const seen = new Set((prev.orders || []).map((o) => o.id));
+      const pull = (next.orders || []).find((o) => o.warp && !seen.has(o.id) && o.fromTeamId === b.teamId);
+      if (pull) {
+        const w = pull.warp;
+        splash(`warp r${w.stars}`, '★'.repeat(w.stars), `${w.emoji} ${w.name} · ${w.text}`, w.stars === 5 ? 4200 : 3000);
+        if (w.stars === 5) buzz([100, 60, 100, 60, 400]);
       }
     }
     if (a.status !== b.status || a.teamId !== b.teamId) {
@@ -362,6 +484,7 @@
     try { sel = focusId && active.selectionStart != null ? [active.selectionStart, active.selectionEnd] : null; } catch {}
 
     document.body.dataset.kind = kind;
+    document.body.dataset.era = actId();
     document.body.dataset.phase = S?.mafia?.phase || 'off';
     document.body.dataset.status = S?.me?.status || '';
     $app.innerHTML = page();
@@ -448,8 +571,8 @@
             <div class="who-sub">#${h(me.inmateNo)} · ${statusChip(me)}</div>
           </div>
           <div class="hud">
-            ${wantedStars(me)}
-            ${myTeam ? `<div class="credits" title="${h(myTeam.name)} credits"><div class="credits-n">${myTeam.budget}</div><div class="credits-l">block credits</div></div>` : ''}
+            ${hudExtra(me, myTeam)}
+            ${myTeam ? `<div class="credits" title="${h(myTeam.name)} credits"><div class="credits-n">${h(money(myTeam.budget))}</div><div class="credits-l">block ${h(curAct().currency.name)}</div></div>` : ''}
           </div>
         </div>
       </header>
@@ -460,7 +583,7 @@
       ${incomingAlerts()}
       <main class="content">${body()}</main>
       ${ui.sheet ? buySheet() : ''}
-      ${briefingUnseen() ? briefingModal() : ''}
+      ${actUnseen() ? actModal() : briefingUnseen() ? briefingModal() : ''}
       <nav class="tabs">
         ${tabs.map(([k, icon, label]) => `<button data-act="tab" data-tab="${k}" class="${ui.tab === k ? 'on' : ''}">${icon}<span>${label}</span>${k === 'rap' && needsMafiaAction() ? '<i class="dot"></i>' : ''}${k === 'yard' && ui.tab !== 'yard' && todoItems().length ? '<i class="dot"></i>' : ''}${k === 'cell' && (myIncoming().length || actionableRequests().length) ? '<i class="dot"></i>' : ''}</button>`).join('')}
       </nav>`;
@@ -481,6 +604,42 @@
     LS.set('sss_brief', [...seenBriefs].slice(-40).join(','));
   }
 
+  // A new act gets its own briefing on every phone.
+  const actUnseen = () => S && LS.get('sss_act') !== actId() && kind === 'player';
+  function actModal() {
+    const a = curAct();
+    return `<div class="sheet-bg"></div>
+      <div class="sheet briefing act-brief ${enter(`act:${a.id}`)}" role="dialog" aria-label="New act">
+        <div class="eyebrow">🎬 Act ${a.numeral} · ${h(a.game)}</div>
+        <h2>${a.emoji} ${h(a.name)}</h2>
+        <p class="tagline">${h(a.tagline)}</p>
+        <ul class="act-rules">${a.rules.map((r) => `<li>${h(r)}</li>`).join('')}</ul>
+        <p class="fine">Money is now ${h(a.currency.name)}${a.currency.symbol ? ` (${h(a.currency.symbol)})` : ''}. Same balance, new name.</p>
+        <button class="btn big" data-act="act-ok">Let’s go</button>
+      </div>`;
+  }
+
+  // TFT act: the block picks one augment from three.
+  function augmentCard() {
+    if (actId() !== 'tft' || S.me.status !== 'block') return '';
+    const t = team(S.me.teamId);
+    if (!t) return '';
+    if (t.augment) return '';
+    if (!t.augmentOffer?.length) return '';
+    const hasCaptain = blockmates(t.id).some((p) => p.isCaptain);
+    const canPick = !hasCaptain || S.me.isCaptain;
+    return `<section class="card augments">
+      <div class="eyebrow">♟️ Pick your block's augment</div>
+      <div class="aug-list">${t.augmentOffer
+        .map((k) => {
+          const a = S.augments[k];
+          return `<button class="aug" data-act="augment" data-augment-id="${k}" ${canPick ? '' : 'disabled'} ${canPick ? `data-confirm="Lock in ${h(a.name)} for ${h(t.name)}? You can’t change it."` : ''}><span class="mega">${a.emoji}</span><b>${h(a.name)}</b><span class="fine">${h(a.desc)}</span></button>`;
+        })
+        .join('')}</div>
+      <p class="fine">${canPick ? 'One pick for the whole block, and it lasts the act.' : 'Your Shot Caller 👑 makes the pick. Lobby them.'}</p>
+    </section>`;
+  }
+
   function needsMafiaAction() {
     const m = S.mafia;
     const me = S.me;
@@ -496,7 +655,7 @@
   function phaseBanner() {
     const m = S.mafia;
     if (m.phase === 'night') return `<div class="phase night">🌙 LIGHTS OUT — Night ${m.round}${kind === 'player' ? ' · everyone pick a name on your Rap Sheet' : ''}</div>`;
-    if (m.phase === 'vote') return `<div class="phase vote">🗳️ BLOCK VOTES OPEN · ${plural(m.votesCast, 'vote')} cast</div>`;
+    if (m.phase === 'vote') return `<div class="phase vote">${actId() === 'amongus' ? '🚨 EMERGENCY MEETING' : '🗳️ BLOCK VOTES OPEN'} · ${plural(m.votesCast, 'vote')} cast</div>`;
     if (m.phase === 'over') return `<div class="phase over">${m.winner === 'snitches' ? '🐀 Snitches got away with it!' : '🎉 Every snitch was caught!'}</div>`;
     return '';
   }
@@ -512,8 +671,9 @@
     if (!me.dealerDrinks) return '';
     const targets = S.players.filter((p) => p.id !== me.id);
     return `<div class="dealercard">
-      <div class="drink-n">🐀 You got away with it!</div>
-      <p>Hand out <b>${plural(me.dealerDrinks, 'drink')}</b> to anyone you like.${S.settings.snitchPrize ? ` Plus: <b>${h(S.settings.snitchPrize)}</b>` : ''}</p>
+      ${me.role === 'snitch' && me.revealed ? `<div class="drink-n">🐀 You got away with it!</div>
+      <p>Hand out <b>${plural(me.dealerDrinks, 'drink')}</b> to anyone you like.${S.settings.snitchPrize ? ` Plus: <b>${h(S.settings.snitchPrize)}</b>` : ''}</p>` : `<div class="drink-n">🥃 Drinks to hand out</div>
+      <p>You’ve got <b>${plural(me.dealerDrinks, 'drink')}</b> to give to anyone you like.</p>`}
       <div class="targets">${targets.map((p) => `<button class="target" data-act="dealDrink" data-target-id="${p.id}">🥃 ${h(p.name)}${p.drinksOwed ? ` <small>(${p.drinksOwed})</small>` : ''}</button>`).join('')}</div>
     </div>`;
   }
@@ -610,7 +770,7 @@
       items.push(`<li class="todo sentence"><span class="mega">⚖️</span><div><b>${h(x.text)}</b><div class="fine">from ${h(x.from)}${x.reason ? ` · ${h(x.reason)}` : ''} · ${time(x.ts)}</div></div><button class="btn sm" data-act="sentence-done" data-sentence-id="${x.id}">Done ✅</button></li>`);
     }
     for (const o of myIncoming()) items.push(goItem('⚠️', `${o.name} incoming from ${teamName(o.fromTeamId)}`, 'Take it or deflect it in the alert at the top.'));
-    if (me.dealerDrinks) items.push(goItem('🥃', `Hand out ${plural(me.dealerDrinks, 'drink')}`, 'Your snitch reward is at the top of the screen.'));
+    if (me.dealerDrinks) items.push(goItem('🥃', `Hand out ${plural(me.dealerDrinks, 'drink')}`, 'Pick who drinks at the top of the screen.'));
     if (m.phase === 'night' && me.status !== 'solitary' && !m.myNight) items.push(goItem('🌙', 'Lights Out: pick a name', 'Everyone picks, so nobody can tell who the snitch is.', 'rap'));
     if (m.phase === 'vote' && me.status === 'block' && !m.myVote) items.push(goItem('🗳️', 'Vote in your block vote', 'Majority kicks someone off the block.', 'rap'));
     const reqs = actionableRequests();
@@ -631,6 +791,7 @@
   function yardTab() {
     const live = S.games.find((g) => g.status === 'live');
     return `
+      ${augmentCard()}
       ${todoCard()}
       ${lockupRules(S.me.status, live)}
       ${matchCard()}
@@ -659,12 +820,15 @@
           : S.settings.spendMode === 'captain' && !me.isCaptain
             ? 'Only your Shot Caller 👑 can spend tonight. Lobby them.'
             : '';
-    const groups = Object.entries(S.itemTypes)
-      .map(([type, info]) => [type, info, S.items.filter((i) => i.type === type)])
-      .filter(([, , list]) => list.length);
+    // This act's specials go first, then the regular shelf by type.
+    const a = curAct();
+    const groups = [
+      ['act', { label: `${a.emoji} ${a.name} specials` }, S.items.filter((i) => i.act === a.id)],
+      ...Object.entries(S.itemTypes).map(([type, info]) => [type, info, S.items.filter((i) => i.type === type && !i.act)]),
+    ].filter(([, , list]) => list.length);
     return `
       <section class="card shop-head">
-        <div><div class="eyebrow">Commissary</div><h2>${myTeam ? `${myTeam.budget} credits` : 'No account'}</h2><p class="fine">${myTeam && willRequest() ? `Spending is a block decision: your picks go to your block, and need the Shot Caller 👑 or ${plural(S.settings.requestSeconds, 'blockmate')} to second them.` : 'Spending comes out of your whole block’s budget.'}</p></div>
+        <div><div class="eyebrow">Commissary · ${h(curAct().name)}</div><h2>${myTeam ? h(money(myTeam.budget)) : 'No account'}</h2>${myTeam && actId() === 'honkai' ? `<p class="pity">✦ Pity ${myTeam.pity}/${S.settings.warpPity}: a 5★ is guaranteed in ${S.settings.warpPity - myTeam.pity} pull${S.settings.warpPity - myTeam.pity === 1 ? '' : 's'}.</p>` : ''}${myTeam && actId() === 'tft' && myTeam.augment === 'hustler' ? '<p class="pity">🏷️ Hustler: 25% off everything.</p>' : ''}<p class="fine">${myTeam && willRequest() ? `Spending is a block decision: your picks go to your block, and need the Shot Caller 👑 or ${plural(S.settings.requestSeconds, 'blockmate')} to second them.` : 'Spending comes out of your whole block’s budget.'}</p></div>
         ${myTeam ? `<div class="inv-mini"><span title="Deflect cards">🔄 ${myTeam.inventory?.deflect || 0}</span><span title="Bribes">💵 ${myTeam.inventory?.immunity || 0}</span></div>` : ''}
       </section>
       ${blocked ? `<p class="warnbox">${h(blocked)}</p>` : ''}
@@ -676,13 +840,13 @@
           ${list
             .map((it) => {
               const soldOut = it.stock !== null && it.stock <= 0;
-              const broke = myTeam && myTeam.budget < it.price;
+              const broke = myTeam && myTeam.budget < priceOf(it);
               const disabled = blocked || soldOut || broke;
               return `<button class="item t-${h(it.type)}" data-act="buy-open" data-item-id="${it.id}" ${disabled ? 'disabled' : ''}>
                 <span class="item-e">${h(it.emoji)}</span>
                 <span class="item-n">${h(it.name)}</span>
                 <span class="item-d">${h(it.desc)}</span>
-                <span class="item-p">${soldOut ? 'SOLD OUT' : `${it.price} cr`}${it.stock !== null && !soldOut ? ` · ${it.stock} left` : ''}${it.drinks ? ` · 🍺×${it.drinks}` : ''}</span>
+                <span class="item-p">${soldOut ? 'SOLD OUT' : h(money(priceOf(it)))}${it.stock !== null && !soldOut ? ` · ${it.stock} left` : ''}${it.drinks ? ` · 🍺×${it.drinks}` : ''}</span>
               </button>`;
             })
             .join('')}
@@ -721,10 +885,10 @@
           <input id="buy_note" maxlength="120" placeholder="${it.type === 'punishment' ? 'Enjoy, losers' : 'e.g. vodka soda, extra lime'}" />` : ''}
         <div class="row sheet-actions">
           <button class="btn ghost" data-act="sheet-close">Cancel</button>
-          <button class="btn" data-act="buy-confirm" ${ready ? '' : 'disabled'}>${willRequest() ? 'Ask the block' : 'Buy'} for ${it.price} cr</button>
+          <button class="btn" data-act="buy-confirm" ${ready ? '' : 'disabled'}>${willRequest() ? 'Ask the block' : it.type === 'warp' ? 'Warp' : 'Buy'} for ${h(money(priceOf(it)))}</button>
         </div>
         ${willRequest() ? `<p class="fine center">Goes to your block. It goes through when the Shot Caller approves it or ${plural(secondsNeeded(myTeam, S.me.id), 'blockmate')} second it.</p>` : ''}
-        <p class="fine center">${myTeam ? `${h(myTeam.name)} has ${myTeam.budget} credits.` : ''}</p>
+        <p class="fine center">${myTeam ? `${h(myTeam.name)} has ${h(money(myTeam.budget))}.` : ''}</p>
       </div>`;
   }
 
@@ -741,11 +905,13 @@
     const immune = new Set(S.mafia.immune);
     return `
       ${me.status === 'solitary' ? lockupRules('solitary') : ''}
+      ${augmentCard()}
       <section class="card cell-head block-banner" style="--c:${h(myTeam.color)}">
         <div class="eyebrow">Your block · #${rankOf(myTeam.id)} of ${S.teams.length}</div>
         <h2>${h(myTeam.name)}${nick(myTeam)}</h2>
         ${myTeam.motto ? `<p class="motto">${h(myTeam.motto)}</p>` : ''}
-        <div class="stats"><div><b>${myTeam.budget}</b><span>credits</span></div><div><b>${myTeam.earned}</b><span>earned tonight</span></div><div><b>${members.length}/${S.settings.maxBlockSize}</b><span>inmates</span></div></div>
+        ${actId() === 'tft' && myTeam.augment ? `<p class="aug-chip">${S.augments[myTeam.augment].emoji} <b>${h(S.augments[myTeam.augment].name)}</b> · ${h(S.augments[myTeam.augment].desc)}</p>` : ''}
+        <div class="stats"><div><b>${h(money(myTeam.budget))}</b><span>${h(curAct().currency.name)}</span></div><div><b>${myTeam.earned}</b><span>earned tonight</span></div><div><b>${members.length}/${S.settings.maxBlockSize}</b><span>inmates</span></div></div>
         ${renameControls(myTeam, members)}
       </section>
       ${matchCard()}
@@ -946,13 +1112,18 @@
     return owing.length ? `<ul class="roster">${owing.map((p) => `<li>${h(p.name)} <span class="fine">${statusChip(p)}</span> <b class="drink-owed">🍺×${p.drinksOwed}</b></li>`).join('')}</ul>` : '<p class="empty">Everyone’s paid up. For now.</p>';
   }
 
+  // TFT act: a block's augment and streak, shown next to its name.
+  const streakBits = (t) =>
+    actId() !== 'tft' ? [] : [t.augment && S.augments[t.augment].emoji, t.streak > 1 ? `🔥${t.streak}` : t.streak < -1 ? `💧${-t.streak}` : ''].filter(Boolean);
+  const streakTag = (t) => streakBits(t).map((x) => ` · ${x}`).join('');
+
   function boardTab() {
     const rows = standings();
     return `
       <section class="card">
         <h3>🏆 Block Standings</h3>
         ${rows.length ? `<ol class="board">${rows
-          .map((t, i) => `<li style="--c:${h(t.color)}" class="${t.id === S.me?.teamId ? 'mine' : ''}"><span class="rank">${i + 1}</span><span class="b-n">${h(t.name)}${nick(t)}<small>${t.motto ? `${h(t.motto)} · ` : ''}${plural(blockmates(t.id).length, 'inmate')}</small></span><span class="b-s"><b>${t.earned}</b><small>earned · ${t.budget} left</small></span></li>`)
+          .map((t, i) => `<li style="--c:${h(t.color)}" class="${t.id === S.me?.teamId ? 'mine' : ''}"><span class="rank">${i + 1}</span><span class="b-n">${h(t.name)}${nick(t)}<small>${t.motto ? `${h(t.motto)} · ` : ''}${plural(blockmates(t.id).length, 'inmate')}</small></span><span class="b-s"><b>${t.earned}</b><small>earned · ${h(money(t.budget))} left${streakTag(t)}</small></span></li>`)
           .join('')}</ol>` : '<p class="empty">No blocks yet.</p>'}
       </section>
       <section class="card">
@@ -988,10 +1159,25 @@
           <div class="who"><div class="who-name">${S.hostRole === 'officer' ? '🧾 Commissary Office' : '🔑 Warden Control Room'}</div><div class="who-sub">${h(S.settings.partyName)} · ${plural(S.players.length, 'inmate')} · ${plural(S.teams.length, 'block')}</div></div>
           <div class="row"><a class="btn ghost sm" href="/tv" target="_blank">📺 TV</a><button class="btn ghost sm" data-act="logout">Log out</button></div>
         </div>
+        ${actSwitcher()}
         <nav class="atabs">${tabs.map(([k, l]) => `<button data-act="atab" data-tab="${k}" class="${ui.atab === k ? 'on' : ''}">${l}</button>`).join('')}</nav>
       </header>
       ${phaseBanner()}
       <main class="content admin">${body()}</main>`;
+  }
+
+  // Hosts flip the whole party from one act to the next.
+  function actSwitcher() {
+    const i = S.act;
+    const a = S.acts[i];
+    const nextA = S.acts[i + 1];
+    return `<div class="act-switch">
+      <div class="act-now"><span class="mega">${a.emoji}</span><div><div class="eyebrow">Act ${a.numeral} of ${S.acts.length} · ${h(a.game)}</div><b>${h(a.name)}</b></div></div>
+      <div class="row">
+        ${i > 0 ? btn('◀', 'setAct', { index: i - 1 }, 'ghost sm', `Go back to Act ${S.acts[i - 1].numeral}: ${S.acts[i - 1].name}?`) : ''}
+        ${nextA ? btn(`Next: ${nextA.emoji} ${h(nextA.name)} ▶`, 'setAct', { index: i + 1 }, 'sm', `Start Act ${nextA.numeral}: ${nextA.name} (${nextA.game})? Every phone and the TV switch over now.`) : '<span class="fine">Final act</span>'}
+      </div>
+    </div>`;
   }
 
   const btn = (label, type, args = {}, cls = '', confirm = '') =>
@@ -1282,7 +1468,9 @@
       <label>Type<select id="${prefix}_type" name="type">${types}</select></label>
       <label>Stock (blank = ∞)<input id="${prefix}_stock" name="stock" type="number" min="0" value="${it.stock ?? ''}" /></label>
       <label>Penalty drinks each (punishments)<input id="${prefix}_drinks" name="drinks" type="number" min="0" max="5" value="${h(it.drinks ?? 0)}" /></label>
-      <label>Credit drain (punishments)<input id="${prefix}_drain" name="drain" type="number" min="0" value="${h(it.drain ?? 0)}" /></label>`;
+      <label>Credit drain (punishments)<input id="${prefix}_drain" name="drain" type="number" min="0" value="${h(it.drain ?? 0)}" /></label>
+      <label>Drained credits go to the buyer<select id="${prefix}_steal" name="steal"><option value="false">No, they vanish</option><option value="true" ${it.steal ? 'selected' : ''}>Yes, it's a robbery</option></select></label>
+      <label>On the shelf during<select id="${prefix}_act" name="act"><option value="">Every act</option>${S.acts.map((a) => `<option value="${a.id}" ${it.act === a.id ? 'selected' : ''}>Act ${a.numeral} only: ${h(a.name)}</option>`).join('')}</select></label>`;
   }
 
   function aShop() {
@@ -1297,7 +1485,7 @@
         <ul class="ilist">${S.items
           .map((it) => `<li class="${it.active ? '' : 'inactive'}">
             <details>
-              <summary><span class="mega">${h(it.emoji)}</span> <b>${h(it.name)}</b> <span class="fine">${it.price} cr · ${h(S.itemTypes[it.type]?.label)}${it.drinks ? ` · 🍺×${it.drinks}` : ''}${it.stock !== null ? ` · ${it.stock} left` : ''}${it.active ? '' : ' · HIDDEN'}</span></summary>
+              <summary><span class="mega">${h(it.emoji)}</span> <b>${h(it.name)}</b> <span class="fine">${it.price} cr · ${h(S.itemTypes[it.type]?.label)}${it.act ? ` · Act ${S.acts.find((a) => a.id === it.act)?.numeral} only` : ''}${it.drinks ? ` · 🍺×${it.drinks}` : ''}${it.stock !== null ? ` · ${it.stock} left` : ''}${it.active ? '' : ' · HIDDEN'}</span></summary>
               <form data-admin="updateItem" class="grid2"><input type="hidden" name="itemId" value="${it.id}" />${itemFields(`it_${it.id}`, it)}
                 <div class="row span2">${btn(it.active ? 'Hide' : 'Show', 'updateItem', { itemId: it.id, active: !it.active }, 'ghost sm')}${btn('🗑 Delete', 'removeItem', { itemId: it.id }, 'ghost sm', `Delete ${it.name}?`)}<button class="btn sm">Save</button></div>
               </form>
@@ -1439,6 +1627,9 @@
             <option value="anyone" ${st.spendMode === 'anyone' ? 'selected' : ''}>Anyone on the block, instantly</option>
           </select></label>
           <label>Seconds needed (block decides)<input id="s_sec" name="requestSeconds" type="number" min="1" max="5" value="${st.requestSeconds}" /></label>
+          <label>🌠 Warp: 5★ chance %<input id="s_w5" name="warp5" type="number" min="0" max="100" value="${st.warp5}" /></label>
+          <label>🌠 Warp: 4★ chance %<input id="s_w4" name="warp4" type="number" min="0" max="100" value="${st.warp4}" /></label>
+          <label>🌠 Warp: guaranteed 5★ every N pulls<input id="s_wp" name="warpPity" type="number" min="1" max="50" value="${st.warpPity}" /></label>
           <button class="btn span2">Save settings</button>
         </form>
       </section>
@@ -1465,13 +1656,13 @@
     const solitary = inSolitary();
     return `
       <div class="tv">
-        <header class="tv-h">${hero(true)}<h1 class="logo">${h(S.settings.partyName)}</h1><div class="tagline">${h(S.settings.tagline)}</div></header>
+        <header class="tv-h">${hero(true)}<div class="act-tag">${curAct().emoji} Act ${curAct().numeral} · ${h(curAct().name)}</div><h1 class="logo">${h(S.settings.partyName)}</h1><div class="tagline">${h(curAct().tagline)}</div></header>
         ${phaseBanner()}
         ${S.announcement ? `<div class="announce tv-ann"><span class="mega">📣</span><div class="announce-t">${h(S.announcement.text)}</div></div>` : ''}
         <div class="tv-grid">
           <section class="card">
             <h2>🏆 Standings</h2>
-            <ol class="tv-board">${rows.map((t, i) => `<li style="--c:${h(t.color)}"><span class="rank">${i + 1}</span><span class="b-n">${h(t.name)}${t.nickname ? `<small>${h(t.nickname)}</small>` : ''}</span><span class="tv-bar"><i style="width:${(t.earned / max) * 100}%"></i></span><b>${t.earned}</b></li>`).join('') || '<p class="empty">No blocks yet</p>'}</ol>
+            <ol class="tv-board">${rows.map((t, i) => `<li style="--c:${h(t.color)}"><span class="rank">${i + 1}</span><span class="b-n">${h(t.name)}${t.nickname || streakBits(t).length ? `<small>${[t.nickname && h(t.nickname), ...streakBits(t)].filter(Boolean).join(' · ')}</small>` : ''}</span><span class="tv-bar"><i style="width:${(t.earned / max) * 100}%"></i></span><b>${t.earned}</b></li>`).join('') || '<p class="empty">No blocks yet</p>'}</ol>
             ${m.phase === 'vote' ? `<h3 class="section-h">🗳️ Block votes</h3>${S.teams.map((t) => {
               const tally = m.tallies?.[t.id] || {};
               const top = Object.entries(tally).filter(([id]) => id !== 'skip').sort((a, b) => b[1] - a[1])[0];
@@ -1512,6 +1703,15 @@
       ui.revealTask = !ui.revealTask;
       render();
     },
+    'act-ok': () => {
+      LS.set('sss_act', actId());
+      render();
+    },
+    augment: async (d) => {
+      if (d.confirm && !confirm(d.confirm)) return;
+      const res = await act('augment', { augmentId: d.augmentId });
+      if (res.ok) toast(`${S.augments[d.augmentId].emoji} ${S.augments[d.augmentId].name} locked in.`, 'ok');
+    },
     'brief-ok': () => {
       markBriefSeen();
       ui.revealTask = false;
@@ -1546,6 +1746,7 @@
       const r = res.result || {};
       if (r.status === 'requested') toast('🛒 Sent to your block. Get them to second it (or ask the Shot Caller).', 'ok');
       else if (r.status === 'intel') toast(r.hasSnitch ? '📡 Wiretap says: there IS a snitch on your block. 🐀' : '📡 Wiretap says: your block is clean. For now.', r.hasSnitch ? 'warn' : 'ok');
+      else if (r.warp) { /* the pull splash says it all */ }
       else if (r.status === 'stashed') toast(`${it?.emoji || ''} Stashed on your block. Shhh.`, 'ok');
       else if (it?.type === 'bail') toast('🔑 Bail posted. Welcome your new blockmate.', 'ok');
       else toast(`${it?.emoji || ''} Ordered! The hosts are on it.`, 'ok');

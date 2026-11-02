@@ -36,13 +36,20 @@ Players still spend their block's credits at the commissary themselves, and trac
 | `/officer`| Commissary Officer | Host console (Officer PIN)                                                            |
 | `/tv`     | Projector   | Standings, current game and its lockup rules, Holding/Solitary with drinks owed, block-vote progress, gossip feed, QR code to join |
 
-### The look
+### The four acts
 
-The app is styled like a Vice City night out: a sunset-and-palms banner, neon pink, orange and teal, and big condensed headlines. Phones show a GTA-style HUD in the top corner: block credits as cash and a wanted level. Solitary is 5 stars and Holding 3; on a block, owed drinks and open punishments add a star each. Big full-screen stamps pop up at key moments:
+The night runs in four acts. A host moves to the next one with the act bar at the top of the host console. Every phone and the TV switch over at once: a big **ACT II** stamp, a new look, a briefing card explaining what changed, and a new name for the money (same balance). Each act's special items only appear in the shop during that act, at the top of the shelf. Hosts can go back an act if they flip too early.
 
-- **MISSION PASSED / MISSION FAILED** when your block's heat (or a game without heats) gets scored.
-- **BUSTED** when you're sent to Solitary.
-- **WASTED** when you're kicked off your block into the Holding Cell.
+| Act | Look | Mechanics | Stamps |
+| --- | --- | --- | --- |
+| I · Vice City (GTA) | Neon sunset and palms; money is **$cash** | **Stick-Up** (12): steal up to 10 from another block; they can deflect it back. A **wanted level** in the top corner: Solitary 5 stars, Holding 3, owed drinks and open punishments 1 each. | MISSION PASSED / FAILED, BUSTED, WASTED |
+| II · Warp Drive (Honkai: Star Rail) | Space, Express gold and lilac; money is **✦Stellar Jade** | **Warp** (10): a gacha pull for the block. 3★ (69%) is mostly trash, 4★ (25%) is decent, 5★ (6%) is a jackpot, and every block's 8th pull without one is a guaranteed 5★. The pity counter shows in the corner and the shop, and every blockmate sees the pull land. Some pulls give the puller drinks to hand out. | VICTORY / DEFEATED, IMPRISONED, KNOCKED OUT |
+| III · Convergence (TFT) | Hextech teal and gold; money is **🪙gold** | **Augments**: each block picks one of three (Shot Caller picks if there is one). **Interest**: after every game, +1 gold per 10 unspent, up to 5. **Streaks**: win or lose heats in a row for +1 at 2, +2 at 3, +3 at 4 or more. | 1ST / 2ND / … PLACE, BENCHED, ELIMINATED |
+| IV · Emergency Meeting (Among Us) | Deep space and impostor red; money is **credits** | Snitches are Impostors and the stakes double: sabotage skims twice as much and catching one pays double. Opening Block Votes calls an **EMERGENCY MEETING** on every screen, and closing them shows "*Name* was / was not an Impostor." | VICTORY / DEFEAT, LOCKED IN MEDBAY, EJECTED |
+
+Augments (Act III): Windfall (+20 now), Rich Get Richer (+5 now and an interest cap of 10), Hustler (25% off the shop), Thrill of the Hunt (+4 per heat win), Built Different (a free Deflect and Bribe), Cursed Crown (+30 now, but 2 drinks each).
+
+Warp odds and pity are in Settings. Any shop item can be limited to one act in the Commissary tab ("On the shelf during").
 
 ### Player tabs
 

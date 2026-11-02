@@ -44,6 +44,23 @@ About 3 hours for 5 games. Snitch phases go every other game so Solitary doesn't
 | 8 | Game 5 + Block Vote | Game loop, then Block Votes | Games, Snitches |
 | 9 | Finale | Reveal all snitches; survivors hand out drinks; crown the top block | Snitches, TV |
 
+Flip acts along the way: Act II after game 2, Act III after game 4, Act IV before the last Block Vote.
+
+## The four acts
+
+The act bar at the top of your console shows the current act. Tap **Next** to move everyone on; phones and the TV switch over and every phone gets a briefing. Plan on about two games per act.
+
+| Act | Turn it on | What changes |
+| --- | --- | --- |
+| I · Vice City (GTA) | It's on from the start | Stick-Ups in the shop (rob 10 from a block), wanted levels |
+| II · Warp Drive (Honkai) | After about 2 games | Warps in the shop (gacha pulls, guaranteed 5★ every 8th) |
+| III · Convergence (TFT) | After about 4 games | Blocks pick an augment; interest after each game; streak gold after each heat |
+| IV · Emergency Meeting (Among Us) | Before the last Block Vote | Sabotage skims and snitch bounties double; meetings and ejections take over every screen |
+
+- Go back with ◀ if you flipped too early. Augments picked in Act III stay picked.
+- Warp odds and pity live in Settings. Limit any shop item to one act in the Commissary tab.
+- In Act III, remind Shot Callers to pick their augment (it's at the top of their Now tab).
+
 ## Every game
 
 1. **Games tab, set matchups.** Tap **Pairs** (or Threes, Fours, All blocks). A leftover block joins the last heat, so nobody plays alone. Use **Custom heat** for a final between winners.
