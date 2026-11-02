@@ -20,6 +20,7 @@ app.get('/qr.svg', handlers.qr);
 app.get('/api/state', handlers.state);
 app.post('/api/action', handlers.action);
 app.post('/api/clip', handlers.clip);
+app.post('/api/clip-token', handlers.clipToken);
 const clipDir = createFiles().dir;
 if (clipDir) app.use('/clips', express.static(clipDir, { maxAge: '1h' }));
 

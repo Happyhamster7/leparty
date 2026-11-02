@@ -152,3 +152,28 @@ test('Shot Cam upload stores the video, adds the clip, and cleans up after remov
   await new Promise((r) => setImmediate(r));
   assert.equal(saved.size, 0, 'removing a clip deletes its file');
 });
+
+test('Shot Cam direct uploads: pre-check, Blob-only URLs, and a clear message when storage is missing', async () => {
+  const blob = { mode: 'blob', owns: (u) => /^https:\/\/s\.public\.blob\.vercel-storage\.com\/clips\//.test(u), save: async () => '', remove: async () => {} };
+  const api = createApi({ store: new FileStore({ file: null }), pins, files: blob });
+  const host = (await api.action({ kind: 'login', pin: '1111' }, {})).result.adminToken;
+  const tokens = [];
+  for (const n of ['A', 'B', 'C', 'D']) tokens.push((await api.action({ kind: 'join', name: n }, {})).result.token);
+  const req = (player) => ({ headers: { 'x-player-token': player }, query: {} });
+  assert.equal((await api.clipToken(req(tokens[0]), { type: 'check' })).ok, false, 'not on a block yet');
+  await api.action({ kind: 'admin', type: 'buildBlocks' }, { host });
+  assert.deepEqual(await api.clipToken(req(tokens[0]), { type: 'check' }), { ok: true, uploads: 'blob' });
+  assert.match((await api.clipToken(req('nope'), { type: 'check' })).error, /not booked in/);
+  const view = await api.getState({ player: tokens[0] });
+  assert.equal(view.view.uploads, 'blob');
+  const bad = await api.action({ kind: 'act', type: 'clip', args: { url: 'https://evil.example/x.mp4' } }, { player: tokens[0] });
+  assert.equal(bad.ok, false);
+  const good = await api.action({ kind: 'act', type: 'clip', args: { url: 'https://s.public.blob.vercel-storage.com/clips/x.mp4', type: 'video/mp4', caption: 'Hi' } }, { player: tokens[0] });
+  assert.equal(good.ok, true);
+  assert.equal(good.result.status, 'live');
+  assert.equal('deleteFiles' in good.result, false);
+
+  const off = createApi({ store: new FileStore({ file: null }), pins, files: { mode: 'off', owns: () => false, save: async () => {}, remove: async () => {} } });
+  const t = (await off.action({ kind: 'join', name: 'Z' }, {})).result.token;
+  assert.equal((await off.getState({ player: t })).view.uploads, 'off');
+});

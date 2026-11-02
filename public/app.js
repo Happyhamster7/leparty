@@ -340,7 +340,8 @@
   // ---------- Shot Cam: film your block's shots for the TV ----------
   // The camera lives outside the page so polling re-renders never interrupt a recording.
   const CLIP_SECONDS = 12;
-  const CLIP_MAX = 4.2 * 1024 * 1024; // what a Vercel function accepts, with headroom
+  const CLIP_MAX = 60 * 1024 * 1024;
+  const CLIP_UPLOAD_SECONDS = 30; // longest video you can pick from your camera roll
   const canFilm = () => !!(S?.settings?.clipsEnabled && S.me?.status === 'block');
   const cam = { el: null, stream: null, rec: null, chunks: [], blob: null, type: '', facing: 'environment', timers: [], url: null };
   const recType = () =>
@@ -363,7 +364,37 @@
     el.addEventListener('click', onCam);
     el.querySelector('input[type=file]').addEventListener('change', (e) => pickClip(e.target.files[0]));
     startPreview();
+    checkCanClip();
   }
+
+  // Ask the server up front, so nobody films a clip that can't be sent.
+  async function checkCanClip() {
+    try {
+      const r = await fetch('/api/clip-token', { method: 'POST', headers: { ...creds(), 'content-type': 'application/json' }, body: '{"type":"check"}' });
+      const res = await r.json();
+      if (!cam.el) return;
+      cam.mode = res.uploads;
+      if (res.ok === false || res.uploads === 'off') {
+        cam.el.classList.add('blocked');
+        camMsg(res.error || 'Shot Cam isn’t set up yet: a host needs to connect a Vercel Blob store to the site.');
+      }
+    } catch {}
+  }
+
+  // Loads the Vercel Blob uploader the first time someone sends a clip.
+  let blobLib = null;
+  const loadBlobLib = () =>
+    (blobLib ||= new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = '/vendor/blob-upload.js';
+      s.onload = () => resolve(window.BlobUpload);
+      s.onerror = () => {
+        blobLib = null;
+        reject(new Error('load'));
+      };
+      document.head.append(s);
+    }));
+  const extOf = (type) => ({ 'video/quicktime': 'mov', 'video/webm': 'webm' })[type.split(';')[0]] || 'mp4';
 
   const camMsg = (text) => cam.el && (cam.el.querySelector('.cam-msg').textContent = text);
   const stopStream = () => {
@@ -422,7 +453,7 @@
     cam.rec = null;
     cam.blob = blob;
     cam.el.querySelector('.cam-bar').hidden = true;
-    if (blob.size > CLIP_MAX) return camMsg('That clip is too big for the TV. Try a shorter one.');
+    if (blob.size > CLIP_MAX) return camMsg('That clip is too big. Try a shorter one.');
     stopStream();
     if (cam.url) URL.revokeObjectURL(cam.url);
     cam.url = URL.createObjectURL(blob);
@@ -439,29 +470,58 @@
   function pickClip(file) {
     if (!file) return;
     if (!/^video\//.test(file.type)) return camMsg('That isn’t a video.');
-    if (file.size > CLIP_MAX) return camMsg('That video is over 4 MB, too big for the TV. Record it here instead: Shot Cam shrinks it for you.');
-    review(file);
+    if (file.size > CLIP_MAX) return camMsg('That video is too big (over 60 MB). Pick a shorter one, or record it here.');
+    // Check the length before uploading anything.
+    const probe = document.createElement('video');
+    probe.preload = 'metadata';
+    probe.onloadedmetadata = () => {
+      URL.revokeObjectURL(probe.src);
+      if (probe.duration > CLIP_UPLOAD_SECONDS + 1) return camMsg(`That video is ${Math.round(probe.duration)} seconds. Keep it under ${CLIP_UPLOAD_SECONDS}.`);
+      review(file);
+    };
+    probe.onerror = () => review(file);
+    probe.src = URL.createObjectURL(file);
   }
 
   async function sendClip() {
     if (!cam.blob) return;
     const btnEl = cam.el.querySelector('[data-cam=send]');
-    btnEl.disabled = true;
-    btnEl.textContent = 'Sending…';
+    const busy = (text) => {
+      btnEl.disabled = !!text;
+      btnEl.textContent = text || 'Send to the TV';
+    };
+    const caption = cam.el.querySelector('.cam-cap').value.trim();
+    const type = (cam.blob.type || 'video/mp4').split(';')[0];
+    busy('Sending…');
     let res;
     try {
-      const r = await fetch('/api/clip', {
-        method: 'POST',
-        headers: { ...creds(), 'content-type': cam.blob.type || 'video/mp4', 'x-clip-caption': encodeURIComponent(cam.el.querySelector('.cam-cap').value.trim()) },
-        body: cam.blob,
-      });
-      res = await r.json();
-    } catch {
-      res = { ok: false, error: 'The upload didn’t make it. Check your signal and try again.' };
+      if (cam.mode === 'blob' || S.uploads === 'blob') {
+        // Straight to Vercel Blob, then tell the game where it landed.
+        const lib = await loadBlobLib();
+        const out = await lib.upload(`clips/${S.me.id}.${extOf(type)}`, cam.blob, {
+          access: 'public',
+          handleUploadUrl: '/api/clip-token',
+          clientPayload: JSON.stringify({ player: LS.get('sss_token') || '' }),
+          contentType: type,
+          multipart: cam.blob.size > 8 * 1024 * 1024,
+          onUploadProgress: ({ percentage }) => cam.el && busy(`Sending… ${Math.round(percentage)}%`),
+        });
+        res = await act('clip', { url: out.url, type, caption });
+        if (!res.ok) return busy(), camMsg(res.error);
+      } else {
+        const r = await fetch('/api/clip', {
+          method: 'POST',
+          headers: { ...creds(), 'content-type': type, 'x-clip-caption': encodeURIComponent(caption) },
+          body: cam.blob,
+        });
+        res = await r.json().catch(() => ({ ok: false, error: r.status === 413 ? 'That video is too big. Keep it short.' : `The server said no (${r.status}). Try again.` }));
+      }
+    } catch (err) {
+      console.error(err);
+      res = { ok: false, error: err?.message === 'load' ? 'Couldn’t load the uploader. Check your signal and try again.' : 'The upload didn’t make it. Check your signal and try again.' };
     }
     if (!res.ok) {
-      btnEl.disabled = false;
-      btnEl.textContent = 'Send to the TV';
+      busy();
       return camMsg(res.error);
     }
     toast(res.result?.status === 'pending' ? '🎥 Sent! A host will okay it for the TV.' : '🎥 You’re on the TV!', 'ok');
