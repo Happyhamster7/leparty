@@ -42,6 +42,8 @@ The night changes game every couple of rounds. When the hosts flip the act, your
 - **Act III · Convergence (TFT):** your block picks one augment. Unspent gold earns interest after every game, and win or loss streaks pay bonus gold.
 - **Act IV · Emergency Meeting (Among Us):** snitches are Impostors, and the stakes double. Every Block Vote is an Emergency Meeting.
 
+Each act also turns your phone into that game's screen: a GTA smartphone, the Genshin Paimon Menu, the League client and the Among Us lobby. Acts II–IV are played with your phone sideways.
+
 ## The commissary
 
 | Item | Credits | What it does |

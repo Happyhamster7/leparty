@@ -47,7 +47,16 @@ The night runs in four acts. A host moves to the next one with the act bar at th
 | III · Convergence (TFT) | Hextech teal and gold; money is **🪙gold** | **Augments**: each block picks one of three (Shot Caller picks if there is one). **Interest**: after every game, +1 gold per 10 unspent, up to 5. **Streaks**: win or lose heats in a row for +1 at 2, +2 at 3, +3 at 4 or more. | 1ST / 2ND / … PLACE, BENCHED, ELIMINATED |
 | IV · Emergency Meeting (Among Us) | Deep space and impostor red; money is **credits** | Snitches are Impostors and the stakes double: sabotage skims twice as much and catching one pays double. Opening Block Votes calls an **EMERGENCY MEETING** on every screen, and closing them shows "*Name* was / was not an Impostor." | VICTORY / DEFEAT, LOCKED IN MEDBAY, EJECTED |
 
-Each act also changes the layout and type on phones, to look as close to its game as free fonts allow:
+On phones, each act turns the whole app into that game's own interface, with your profile in the corner:
+
+- **Act I · GTA:** the in-game smartphone. A status bar with the clock, a Vice City wallpaper, a GTA Online-style player card (rank, crew, wanted stars, cash) and app icons: Texts (to-dos), Job List (games and matchups), Internet (the shop), Contacts (your block), Maze Bank (balance and account activity), LSPD (Rap Sheet and votes), Stats, Bleeter (the feed) and Snapmatic (the game briefing). Apps open with a coloured title bar and a back button.
+- **Act II · Genshin Impact:** the Paimon Menu, in landscape (see below).
+- **Act III · TFT:** the League client, in landscape. A PLAY button (the current game) and HOME / PROFILE / COLLECTION / STORE / RANKED tabs, gold and streak on top, and the social sidebar on the right: your summoner icon, status and rank, then every block as a friends group with live statuses (In Lobby, In Game, In Solitary).
+- **Act IV · Among Us:** the lobby, in landscape. Your crewmate card in the corner, your block as the lobby code with its crewmates standing on the floor, and big Tasks / Schedule / Shop / Crew / Meeting / Stats / Chat buttons that open each screen as a tablet with a red ✕.
+
+Phones held upright in a landscape act see a "Rotate your device" screen.
+
+The look of each act, in more detail:
 
 - **GTA:** HUD-style header with cash and wanted stars, pause-menu tabs across the top, square black panels with title bars. Type: Anton for the HUD and stamps (in place of Pricedown) and Roboto for menus (in place of Chalet).
 - **Genshin Impact:** phones held upright see a "Rotate your device" screen; sideways, the app opens on the Paimon Menu: your profile card in the corner (avatar with Vision, nickname, signature, Adventure Rank and EXP bar, World Level, UID) and round icons for Adventurer Handbook, Wish, Paimon's Bargains, Party Setup, Events, Archive, Leaderboard and Mail. Each screen has the game's title bar, Primogem/Fate counters and ✕ back to the menu; cream panels with slate text, round confirm/cancel buttons, rarity-backed shop cards, centred purchase dialogs, and the wish banner and animation. Colours come from the game's settings screen. Type: Noto Sans (the game's HYWenHei-85W is personal-use only).

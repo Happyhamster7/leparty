@@ -57,6 +57,7 @@ The act bar at the top of your console shows the current act. Tap **Next** to mo
 | III · Convergence (TFT) | After about 4 games | Blocks pick an augment; interest after each game; streak gold after each heat |
 | IV · Emergency Meeting (Among Us) | Before the last Block Vote | Sabotage skims and snitch bounties double; meetings and ejections take over every screen |
 
+- Each act changes guests' phones into that game's interface: Act I a GTA smartphone (upright), Act II the Genshin Paimon Menu, Act III the League client and Act IV the Among Us lobby (all three sideways). Tell the room to rotate their phones when you flip to Acts II–IV.
 - Go back with ◀ if you flipped too early. Augments picked in Act III stay picked.
 - Warp odds and pity live in Settings. Limit any shop item to one act in the Commissary tab.
 - In Act III, remind Shot Callers to pick their augment (it's at the top of their Now tab).

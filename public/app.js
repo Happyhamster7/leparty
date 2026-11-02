@@ -322,7 +322,7 @@
     if (!prev) return;
     const a = next.acts[next.act];
     if (prev.act !== next.act) {
-      if (kind === 'player') ui.tab = next.acts[next.act].id === 'genshin' ? 'menu' : 'yard';
+      if (kind === 'player') ui.tab = next.acts[next.act].id === 'tft' ? 'yard' : 'menu';
       splash('act', `Act ${a.numeral}`, `${a.emoji} ${a.name}`, 3600);
       buzz([200, 100, 200, 100, 400]);
       return;
@@ -560,7 +560,8 @@
 
   // ---------- player ----------
   function playerPage() {
-    if (actId() === 'genshin') return genshinPage();
+    const shell = { genshin: genshinPage, gta: gtaPhone, tft: tftClient, amongus: amongLobby }[actId()];
+    if (shell) return shell();
     const me = S.me;
     const myTeam = team(me.teamId);
     const tabs = [
@@ -646,9 +647,9 @@
     const cur = screens.find((x) => x[0] === ui.tab);
     const ar = arOf(me);
     const into = (me.adventureExp || 0) % 200;
-    const shell = (inner) => `<div class="gi ${cur ? 'gi-screen' : 'gi-home'}">
+    const shell = (inner) => `<div class="gi landscape ${cur ? 'gi-screen' : 'gi-home'}">
       <div class="gi-bg">${hero()}</div>
-      <div class="gi-rotate" role="alert"><div class="gi-phone"></div><b>Rotate your device</b><small>Act II is played in landscape, like the game.</small></div>
+      ${rotatePrompt()}
       ${inner}
       ${ui.sheet ? buySheet() : ''}
       ${actUnseen() ? actModal() : briefingUnseen() ? briefingModal() : ''}
@@ -680,6 +681,152 @@
         <div class="gi-notices">${phaseBanner()}${announcement()}${incomingAlerts()}${dealerCard()}</div>
         <div class="gi-grid">${screens.map(([k, icon, label]) => `<button class="gi-app" data-act="tab" data-tab="${k}"><span class="gi-app-i">${icon}${giDot(k)}</span><span>${h(label)}</span></button>`).join('')}</div>
       </section>`);
+  }
+
+  // Landscape acts show this to phones held upright.
+  const rotatePrompt = () => `<div class="rot" role="alert"><div class="rot-phone"></div><b>Rotate your device</b><small>Act ${curAct().numeral} · ${h(curAct().name)} is played in landscape, like the game.</small></div>`;
+  const sheetsAndModals = () => `${ui.sheet ? buySheet() : ''}${actUnseen() ? actModal() : briefingUnseen() ? briefingModal() : ''}`;
+  const alerts = (withDrinks = true) => `${phaseBanner()}${announcement()}${incomingAlerts()}${dealerCard()}${withDrinks ? drinkCard() : ''}`;
+  const dotFor = (k) => {
+    const me = S.me;
+    return tabDot(k) || (k === 'yard' && todoItems().length) || (k === 'events' && !!liveGame() && briefingUnseen()) || (k === 'rap' && S.mafia.phase === 'vote' && me.status === 'block' && !S.mafia.myVote);
+  };
+  const clock = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  // ---------- Act I: GTA, played on the in-game smartphone ----------
+  function bankApp() {
+    const t = team(S.me.teamId);
+    if (!t) return '<section class="card"><h3>Maze Bank</h3><p class="empty">No account. Get bailed onto a block to open one.</p></section>';
+    return `<section class="card ph-bank"><div class="eyebrow">${h(t.name)} · Checking</div><div class="ph-balance">${h(money(t.budget))}</div><p class="fine">Earned tonight: ${h(money(t.earned))}</p></section>
+      <section class="card"><h3>Account activity</h3>${(t.ledger || []).length ? `<ul class="roster ledger">${t.ledger.map((l) => `<li><span class="${l.amount < 0 ? 'red-t' : 'green-t'}">${l.amount > 0 ? '+' : ''}${l.amount}</span> <span>${h(l.text)}</span> <span class="fine">${time(l.ts)}</span></li>`).join('')}</ul>` : '<p class="empty">No transactions yet.</p>'}</section>`;
+  }
+
+  function gtaApps() {
+    return [
+      ['yard', '💬', 'Texts', '#30a64a', () => `${todoCard()}${matchCard()}`],
+      ['events', '📋', 'Job List', '#3d7bd9', eventsTab],
+      ['shop', '🌐', 'Internet', '#2f6fd1', shopTab],
+      ['cell', '👥', 'Contacts', '#e08a1e', cellTab],
+      ['bank', '🏦', 'Maze Bank', '#c62f3b', bankApp],
+      ['rap', '🚓', 'LSPD', '#24418f', rapTab],
+      ['board', '📊', 'Stats', '#7b4bb3', boardTab],
+      ['mail', '🐦', 'Bleeter', '#1d9bf0', mailTab],
+      ['brief', '🎬', 'Snapmatic', '#e2245c', briefingTab],
+    ];
+  }
+
+  function briefingTab() {
+    return `${briefingCard()}${lockupRules(S.me.status, liveGame())}`;
+  }
+
+  function gtaPhone() {
+    const me = S.me;
+    const t = team(me.teamId);
+    const apps = gtaApps();
+    const cur = apps.find((a) => a[0] === ui.tab);
+    const status = `<div class="ph-status"><span class="ph-clock">${clock()}</span><span class="ph-carrier">Vice City · iFruit</span><span>▂▄▆█ 5G 🔋</span></div>`;
+    if (cur) {
+      return `<div class="ph" style="--ac:${cur[3]}">${status}
+        <header class="ph-head"><button class="ph-back" data-act="tab" data-tab="menu" aria-label="Back to the home screen">‹</button><b>${h(cur[2])}</b><span class="ph-hcash">${t ? h(money(t.budget)) : ''}</span></header>
+        <main class="ph-body">${alerts(cur[0] !== 'yard')}${cur[4]()}</main>
+        <button class="ph-homebar" data-act="tab" data-tab="menu" aria-label="Home"></button>
+        ${sheetsAndModals()}</div>`;
+    }
+    const n = wantedLevel(me);
+    return `<div class="ph ph-home">${status}
+      <div class="ph-wall">${hero()}</div>
+      <section class="ph-card">
+        <span class="ph-rank" title="Rank">${arOf(me)}</span>
+        <div class="ph-id"><b>${h(me.name)}${me.isCaptain ? ' 👑' : ''}</b><small>${t ? `Crew: ${h(t.name)}${t.nickname ? ` “${h(t.nickname)}”` : ''}` : statusChip(me)}</small>${wantedStars(me)}</div>
+        <div class="ph-money">${t ? `<b>${h(money(t.budget))}</b><small>Bank ${h(money(t.earned))}</small>` : ''}</div>
+      </section>
+      <div class="ph-notices">${alerts()}</div>
+      <div class="ph-grid">${apps.map(([k, icon, label, color]) => `<button class="ph-app" data-act="tab" data-tab="${k}" style="--ac:${color}"><span class="ph-icon">${icon}${dotFor(k) ? '<i class="dot"></i>' : ''}</span><span>${h(label)}</span></button>`).join('')}</div>
+      <p class="ph-hint">${n >= 3 ? '★ Lose the cops: serve your time.' : 'Tap an app.'}</p>
+      ${sheetsAndModals()}</div>`;
+  }
+
+  // ---------- Act III: TFT, played in the League client ----------
+  const RANKS = ['Challenger', 'Grandmaster', 'Master', 'Diamond', 'Emerald', 'Platinum', 'Gold', 'Silver', 'Bronze', 'Iron'];
+  const rankName = (t) => (t ? RANKS[Math.min(RANKS.length - 1, Math.round(((rankOf(t.id) - 1) / Math.max(1, S.teams.length - 1)) * 6))] : 'Unranked');
+  function socialStatus(p) {
+    if (p.status === 'solitary') return ['busy', 'In Solitary'];
+    if (p.status === 'holding') return ['away', 'In Queue (Holding)'];
+    const g = liveGame();
+    const heat = g?.heats?.find((x) => x.status === 'live');
+    if (g && (!heat || heat.teamIds.includes(p.teamId))) return ['game', `In Game: ${g.name}`];
+    return ['online', 'In Lobby'];
+  }
+  function tftClient() {
+    const me = S.me;
+    const t = team(me.teamId);
+    const tabs = [
+      ['yard', 'Home', yardTab],
+      ['rap', 'Profile', rapTab],
+      ['cell', 'Collection', cellTab],
+      ['shop', 'Store', shopTab],
+      ['board', 'Ranked', boardTab],
+    ];
+    const play = ['events', 'Play', eventsTab];
+    const cur = ui.tab === 'events' ? play : tabs.find((x) => x[0] === ui.tab) || tabs[0];
+    const icon = (p, big) => `<span class="lc-icon ${big ? 'big' : ''}" style="--tc:${h(team(p.teamId)?.color || '#785a28')}">${h(p.name.trim()[0].toUpperCase())}${big ? `<i>${arOf(p)}</i>` : ''}</span>`;
+    const row = (p) => {
+      const [cls, text] = socialStatus(p);
+      return `<li class="lc-friend ${cls}">${icon(p)}<span><b>${h(p.name)}${p.isCaptain ? ' 👑' : ''}</b><small>${h(text)}</small></span></li>`;
+    };
+    const mates = t ? blockmates(t.id).filter((p) => p.id !== me.id) : [];
+    const others = S.teams.filter((x) => x.id !== t?.id);
+    const [mcls, mtext] = socialStatus(me);
+    return `<div class="lc landscape">${rotatePrompt()}
+      <header class="lc-top">
+        <button class="lc-play ${ui.tab === 'events' ? 'on' : ''}" data-act="tab" data-tab="events">PLAY${dotFor('events') ? '<i class="dot"></i>' : ''}</button>
+        <nav class="lc-nav">${tabs.map(([k, label]) => `<button data-act="tab" data-tab="${k}" class="${cur[0] === k ? 'on' : ''}">${label}${dotFor(k) ? '<i class="dot"></i>' : ''}</button>`).join('')}</nav>
+        <div class="lc-cur">${t ? `<span class="lc-streak">${t.augment ? `${S.augments[t.augment].emoji} ` : ''}${t.streak > 1 ? `🔥${t.streak}` : t.streak < -1 ? `💧${-t.streak}` : ''}</span><span class="lc-gold">🪙 ${t.budget}</span>` : ''}</div>
+      </header>
+      <main class="lc-main">${alerts()}${cur[2]()}</main>
+      <aside class="lc-social">
+        <div class="lc-me ${mcls}">${icon(me, true)}<span><b>${h(me.name)}</b><small>${h(mtext)}</small><em>${h(rankName(t))} · ${t ? h(t.name) : 'No party'}</em></span></div>
+        <div class="lc-group">${t ? `${h(t.name)}${t.nickname ? ` “${h(t.nickname)}”` : ''} (${mates.length + 1})` : 'Holding Cell'}</div>
+        <ul class="lc-friends">${(t ? mates : inHolding().filter((p) => p.id !== me.id)).map(row).join('') || '<li class="lc-empty">Nobody else here</li>'}</ul>
+        ${others.map((o) => `<div class="lc-group">${h(o.name)} (${blockmates(o.id).length})</div><ul class="lc-friends">${blockmates(o.id).map(row).join('')}</ul>`).join('')}
+        ${t && inHolding().length ? `<div class="lc-group">Holding Cell (${inHolding().length})</div><ul class="lc-friends">${inHolding().map(row).join('')}</ul>` : ''}
+      </aside>
+      ${sheetsAndModals()}</div>`;
+  }
+
+  // ---------- Act IV: Among Us, played from the lobby ----------
+  function amongLobby() {
+    const me = S.me;
+    const t = team(me.teamId);
+    const screens = [
+      ['yard', '📋', 'Tasks'],
+      ['events', '🛸', 'Schedule'],
+      ['shop', '🛒', 'Shop'],
+      ['cell', '👥', 'Crew'],
+      ['rap', '🚨', S.mafia.phase === 'vote' ? 'Meeting' : 'Role'],
+      ['board', '🏆', 'Stats'],
+      ['mail', '💬', 'Chat'],
+    ];
+    const bodies = { yard: yardTab, events: eventsTab, shop: shopTab, cell: cellTab, rap: rapTab, board: boardTab, mail: mailTab };
+    const cur = screens.find((x) => x[0] === ui.tab);
+    const crowd = t ? blockmates(t.id) : inHolding();
+    const lvl = arOf(me);
+    if (cur) {
+      return `<div class="au landscape">${rotatePrompt()}
+        <div class="au-tablet"><header><button class="au-x" data-act="tab" data-tab="menu" aria-label="Back to the lobby">✕</button><b>${cur[1]} ${h(cur[2])}</b><span class="au-money">${t ? h(money(t.budget)) : ''}</span></header>
+        <main>${alerts()}${bodies[cur[0]]()}</main></div>
+        ${sheetsAndModals()}</div>`;
+    }
+    return `<div class="au au-lobby landscape">${rotatePrompt()}
+      <header class="au-top">
+        <div class="au-me">${crewIcon(me)}<span><b>${h(me.name)}</b><small>Lvl ${lvl}</small></span></div>
+        <div class="au-code"><small>${t ? 'Lobby' : 'Waiting room'}</small><b>${t ? h(t.name.toUpperCase()) : 'HOLDING'}</b><small>${crowd.length}/${t ? S.settings.maxBlockSize : '∞'} players</small></div>
+        <div class="au-money">${t ? h(money(t.budget)) : ''}</div>
+      </header>
+      <div class="au-notices">${alerts(false)}</div>
+      <div class="au-floor">${crowd.map((p) => `<div class="au-crew ${p.id === me.id ? 'me' : ''} ${p.status === 'solitary' ? 'out' : ''}"><span class="au-name">${h(p.name)}</span>${crewIcon(p)}</div>`).join('')}</div>
+      <nav class="au-btns">${screens.map(([k, icon, label]) => `<button data-act="tab" data-tab="${k}"><span class="au-bi">${icon}${dotFor(k) ? '<i class="dot"></i>' : ''}</span><span>${h(label)}</span></button>`).join('')}</nav>
+      ${sheetsAndModals()}</div>`;
   }
 
   // Red dots on the menu, like the game's notification badges.
@@ -2183,4 +2330,6 @@
 
   render();
   poll().then(schedule);
+  // Keep the phone's clock honest without re-rendering the page.
+  setInterval(() => document.querySelectorAll('.ph-clock').forEach((el) => (el.textContent = clock())), 20000);
 })();
