@@ -55,19 +55,19 @@
     p.status === 'solitary' ? 5 : p.status === 'holding' ? 3 : (p.drinksOwed > 0 ? 1 : 0) + ((p.sentences || []).some((x) => x.status === 'open') ? 1 : 0);
   const wantedStars = (p) => {
     const n = wantedLevel(p);
-    return `<div class="wanted${n >= 3 ? ' hot' : ''}" title="Wanted level ${n} of 5" aria-label="Wanted level ${n} of 5">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= n ? 'on' : ''}">★</i>`).join('')}</div>`;
+    return `<div class="wanted${n >= 3 ? ' hot' : ''}" title="${h(W('wanted', 'Wanted level'))} ${n} of 5" aria-label="${h(W('wanted', 'Wanted level'))} ${n} of 5">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= n ? 'on' : ''}">★</i>`).join('')}</div>`;
   };
 
   // The top-corner HUD changes with the act: wanted level, pity counter, streak, or an emergency light.
   function hudExtra(me, myTeam) {
-    const id = actId();
+    const id = eng();
     if (id === 'gta') return wantedStars(me);
     if (id === 'genshin' && myTeam) return `<div class="hud-x" title="Pulls since your last 5★">✦ Pity ${myTeam.pity ?? 0}/${S.settings.warpPity}</div>`;
     if (id === 'tft' && myTeam) {
       const st = myTeam.streak || 0;
       return `<div class="hud-x">${myTeam.augment ? `${S.augments[myTeam.augment].emoji} ` : ''}${st > 1 ? `🔥 ${st} win streak` : st < -1 ? `💧 ${-st} loss streak` : 'No streak'}</div>`;
     }
-    if (id === 'amongus') return `<div class="hud-x">${S.mafia.phase === 'vote' ? '🚨 Meeting' : '🛰️ On task'}</div>`;
+    if (id === 'amongus') return `<div class="hud-x">${S.mafia.phase === 'vote' ? W('inMeeting', '🚨 Meeting') : W('onTask', '🛰️ On task')}</div>`;
     return '';
   }
 
@@ -238,6 +238,72 @@
       </g>
       <g fill="#fff6d8">${[[60, 40], [340, 30], [300, 110], [120, 116], [250, 18]].map(([x, y]) => `<path transform="translate(${x} ${y})" d="M0-5L1.2-1.2 5 0 1.2 1.2 0 5-1.2 1.2-5 0-1.2-1.2Z"/>`).join('')}</g>
       <g stroke="url(#gold)" stroke-width="2.5" fill="none" opacity=".95"><path d="M0 14H150L162 4H238L250 14H400"/><path d="M196 4L200 0L204 4L200 8Z" fill="#c8aa6e"/></g>`,
+    // ---- The Long Night ----
+    booking: () => `
+      <defs>
+        <linearGradient id="bsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b3440"/><stop offset=".6" stop-color="#5a6470"/><stop offset="1" stop-color="#c9b79c"/></linearGradient>
+        <linearGradient id="bwall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9a9488"/><stop offset="1" stop-color="#6f6a61"/></linearGradient>
+        <linearGradient id="bbeam" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff6c8" stop-opacity=".55"/><stop offset="1" stop-color="#fff6c8" stop-opacity="0"/></linearGradient>
+      </defs>
+      <rect width="400" height="210" fill="url(#bsky)"/>
+      <path d="M78 52L330 20L330 44Z" fill="url(#bbeam)"/>
+      <g fill="#3b3f45"><rect x="62" y="40" width="22" height="110"/><rect x="56" y="34" width="34" height="12"/><rect x="316" y="48" width="22" height="102"/><rect x="310" y="42" width="34" height="12"/></g>
+      <circle cx="78" cy="44" r="4" fill="#fff6c8"/>
+      <rect y="112" width="400" height="98" fill="url(#bwall)"/>
+      <g stroke="#5c574f" stroke-width="1" opacity=".55">${Array.from({ length: 6 }, (_, r) => `<line x1="0" y1="${120 + r * 15}" x2="400" y2="${120 + r * 15}"/>`).join('')}${Array.from({ length: 22 }, (_, c) => `<line x1="${c * 19 + (c % 2) * 9}" y1="112" x2="${c * 19 + (c % 2) * 9}" y2="210"/>`).join('')}</g>
+      <g fill="none" stroke="#2a2d31" stroke-width="1.4">${Array.from({ length: 20 }, (_, i) => `<path d="M${i * 21} 108l5 -6 5 6 5 -6 5 6"/>`).join('')}<line x1="0" y1="108" x2="400" y2="108"/></g>
+      <g transform="translate(150 132)"><rect width="100" height="78" fill="#3a352f"/>${Array.from({ length: 9 }, (_, i) => `<rect x="${6 + i * 10.5}" y="0" width="3.5" height="78" fill="#1c1a17"/>`).join('')}</g>
+      <rect x="152" y="118" width="96" height="14" fill="#c8642a"/><text x="200" y="128.5" text-anchor="middle" font-size="9" font-weight="900" fill="#fff" letter-spacing="2">SLAMMER STATE PEN</text>
+      <g fill="#e2742f" opacity=".95">${[[40, 190], [92, 196], [300, 188], [352, 194]].map(([x, y]) => `<rect x="${x}" y="${y - 22}" width="10" height="22" rx="4"/><circle cx="${x + 5}" cy="${y - 27}" r="5" fill="#d9b48f"/>`).join('')}</g>`,
+    arkham: () => `
+      <defs>
+        <linearGradient id="ksky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a0712"/><stop offset=".55" stop-color="#2a1640"/><stop offset="1" stop-color="#14301c"/></linearGradient>
+        <radialGradient id="kmoon" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#e8f7d0"/><stop offset=".55" stop-color="#9fd18a" stop-opacity=".6"/><stop offset="1" stop-color="#9fd18a" stop-opacity="0"/></radialGradient>
+      </defs>
+      <rect width="400" height="210" fill="url(#ksky)"/>
+      <circle cx="300" cy="50" r="46" fill="url(#kmoon)"/><circle cx="300" cy="50" r="20" fill="#eaf7d8"/>
+      <path d="M120 0L108 40L122 44L96 96" fill="none" stroke="#b6ff7a" stroke-width="2.5" opacity=".85"/>
+      <g fill="#0b0810">${[[240, 30], [262, 42], [218, 52], [340, 28]].map(([x, y]) => `<path transform="translate(${x} ${y})" d="M0 0q-6-6-12 0q4-1 6 3q2-4 6-3z M0 0q6-6 12 0q-4-1-6 3q-2-4-6-3z"/>`).join('')}</g>
+      <path d="M0 210V170Q100 130 200 150T400 160V210Z" fill="#0d1a10"/>
+      <g fill="#120c1c">
+        <rect x="120" y="96" width="160" height="70"/><path d="M110 98L200 58L290 98Z"/>
+        <rect x="186" y="34" width="28" height="40"/><path d="M182 36L200 14L218 36Z"/>
+        <rect x="92" y="110" width="30" height="56"/><path d="M88 112L107 88L126 112Z"/><rect x="278" y="110" width="30" height="56"/><path d="M274 112L293 88L312 112Z"/>
+      </g>
+      <g fill="#b6ff7a" opacity=".9">${[[140, 110], [164, 110], [228, 110], [252, 110], [140, 132], [252, 132], [196, 48]].map(([x, y]) => `<rect x="${x}" y="${y}" width="8" height="12" rx="4"/>`).join('')}</g>
+      <rect x="190" y="132" width="20" height="34" rx="10" fill="#2a1640"/>
+      <text x="200" y="128" text-anchor="middle" font-size="8" font-weight="900" fill="#c084fc" letter-spacing="2">ARKHAM</text>
+      <g fill="#1a2b14">${Array.from({ length: 30 }, (_, i) => `<rect x="${i * 14}" y="${178 + (i % 3) * 3}" width="3" height="${32 - (i % 3) * 3}"/>`).join('')}</g>`,
+    heist: () => `
+      <defs>
+        <linearGradient id="hsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a0606"/><stop offset=".7" stop-color="#4a0d0d"/><stop offset="1" stop-color="#7a1414"/></linearGradient>
+        <linearGradient id="hgold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3d27a"/><stop offset="1" stop-color="#9c6b1c"/></linearGradient>
+      </defs>
+      <rect width="400" height="210" fill="url(#hsky)"/>
+      <g fill="#e9e1d2" opacity=".95"><rect x="70" y="70" width="260" height="100"/><path d="M60 72L200 30L340 72Z"/><rect x="60" y="166" width="280" height="10"/></g>
+      <g fill="#c9bfae">${[90, 130, 170, 210, 250, 290].map((x) => `<rect x="${x}" y="78" width="14" height="88"/>`).join('')}</g>
+      <text x="200" y="64" text-anchor="middle" font-size="9" font-weight="900" fill="#7a1414" letter-spacing="2">FÁBRICA NACIONAL DE MONEDA</text>
+      ${[[96, 74], [304, 74]].map(([x, y]) => `<rect x="${x - 7}" y="${y}" width="14" height="60" fill="#b3121b"/>`).join('')}
+      <g transform="translate(200 132)"><circle r="30" fill="url(#hgold)" stroke="#5a3a0c" stroke-width="3"/><circle r="20" fill="none" stroke="#5a3a0c" stroke-width="2"/>${[0, 60, 120, 180, 240, 300].map((a) => `<line x1="0" y1="0" x2="${(Math.cos((a * Math.PI) / 180) * 18).toFixed(1)}" y2="${(Math.sin((a * Math.PI) / 180) * 18).toFixed(1)}" stroke="#5a3a0c" stroke-width="3"/>`).join('')}<circle r="5" fill="#5a3a0c"/></g>
+      <g fill="#7ec46b" opacity=".9">${Array.from({ length: 22 }, (_, i) => `<rect transform="rotate(${(i * 37) % 60 - 30} ${(i * 53) % 400} ${(i * 29) % 70})" x="${(i * 53) % 400}" y="${(i * 29) % 70}" width="14" height="7" rx="1"/>`).join('')}</g>
+      <g transform="translate(40 150) scale(.7)"><path d="M0 0Q30 -40 60 0Q60 40 30 50Q0 40 0 0Z" fill="#f4efe6" stroke="#222" stroke-width="2"/><path d="M14 8q8 -6 14 0M34 8q8 -6 14 0" stroke="#222" stroke-width="3" fill="none"/><path d="M14 26q16 10 32 0q-4 -8 -16 -6q-12 -2 -16 6z" fill="#222"/><path d="M30 14v10" stroke="#222" stroke-width="2"/></g>
+      <g transform="translate(320 150) scale(.7)"><path d="M0 0Q30 -40 60 0Q60 40 30 50Q0 40 0 0Z" fill="#f4efe6" stroke="#222" stroke-width="2"/><path d="M14 8q8 -6 14 0M34 8q8 -6 14 0" stroke="#222" stroke-width="3" fill="none"/><path d="M14 26q16 10 32 0q-4 -8 -16 -6q-12 -2 -16 6z" fill="#222"/></g>`,
+    escape: () => `
+      <defs>
+        <linearGradient id="esky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#030712"/><stop offset="1" stop-color="#14213d"/></linearGradient>
+        <linearGradient id="ebeam" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff8c4" stop-opacity=".6"/><stop offset="1" stop-color="#fff8c4" stop-opacity="0"/></linearGradient>
+      </defs>
+      <rect width="400" height="210" fill="url(#esky)"/>
+      ${starField(0.6)}
+      <circle cx="70" cy="40" r="16" fill="#f4f1de"/><circle cx="64" cy="36" r="16" fill="#030712" opacity=".9"/>
+      <path d="M300 40L190 210L260 210Z" fill="url(#ebeam)"/><path d="M110 50L60 210L120 210Z" fill="url(#ebeam)" opacity=".6"/>
+      <g fill="#0a0f1c"><rect x="292" y="34" width="18" height="100"/><rect x="284" y="28" width="34" height="12"/><rect x="104" y="44" width="14" height="90"/><rect x="98" y="38" width="26" height="10"/></g>
+      <rect y="126" width="400" height="84" fill="#1c2333"/>
+      <g stroke="#3a4560" stroke-width="1" opacity=".7">${Array.from({ length: 5 }, (_, r) => `<line x1="0" y1="${136 + r * 16}" x2="400" y2="${136 + r * 16}"/>`).join('')}</g>
+      <g fill="none" stroke="#7a869e" stroke-width="1.2">${Array.from({ length: 26 }, (_, i) => `<circle cx="${i * 16}" cy="120" r="6"/>`).join('')}</g>
+      <path d="M208 126v84" stroke="#0a0f1c" stroke-width="2"/>
+      <g fill="#e2742f"><rect x="226" y="98" width="9" height="26" rx="4" transform="rotate(-12 230 110)"/><circle cx="229" cy="94" r="5" fill="#d9b48f"/></g>
+      <path d="M232 92L238 60" stroke="#c9b28a" stroke-width="2"/><g fill="#c9b28a">${[0, 1, 2, 3, 4].map((i) => `<rect x="${234 + i * 0.8}" y="${86 - i * 7}" width="6" height="1.5"/>`).join('')}</g>`,
     amongus: () => `
       <defs>
         <linearGradient id="asky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#02030c"/><stop offset="1" stop-color="#101736"/></linearGradient>
@@ -258,20 +324,24 @@
         <ellipse cx="40" cy="30" rx="20" ry="12" fill="#9fe7ff" stroke="#000" stroke-width="5"/>
       </g>`,
   };
-  const actId = () => (S ? S.acts?.[S.act]?.id : guest.act) || 'gta';
+  const actId = () => (S ? S.acts?.[S.act]?.id : guest.act) || 'booking';
   const curAct = () => S?.acts?.[S.act] || null;
+  // Mechanics follow the act's engine (gta, genshin, tft or amongus); looks follow the act itself.
+  const eng = () => curAct()?.engine || actId();
+  // The current act's word for something, e.g. W('rank', 'Adventure Rank').
+  const W = (key, fallback) => curAct()?.words?.[key] ?? fallback;
   const hero = (thin) => `<div class="hero${thin ? ' thin' : ''}" aria-hidden="true">
-    <svg viewBox="0 0 400 210" preserveAspectRatio="xMidYM${thin ? 'id' : 'ax'} slice">${(HERO_ART[actId()] || HERO_ART.gta)()}</svg>
+    <svg viewBox="0 0 400 210" preserveAspectRatio="xMidYM${thin ? 'id' : 'ax'} slice">${(HERO_ART[actId()] || HERO_ART.booking)()}</svg>
   </div>`;
 
   // Money in the current act's currency: $20, ✦20, 🪙20, or 20 cr.
   const money = (n) => {
-    const sym = curAct()?.currency.symbol;
-    return sym ? `${sym}${n}` : `${n} cr`;
+    const c = curAct()?.currency || {};
+    return c.symbol ? `${c.symbol}${n}` : `${n} ${c.short || 'cr'}`;
   };
   const priceOf = (it) => {
     const t = team(S.me?.teamId);
-    return actId() === 'tft' && t?.augment === 'hustler' ? Math.ceil(it.price * 0.75) : it.price;
+    return eng() === 'tft' && t?.augment === 'hustler' ? Math.ceil(it.price * 0.75) : it.price;
   };
   const ordinal = (n) => {
     const v = n % 100;
@@ -661,18 +731,19 @@
     const boom = () => tone(90, 0, 0.9, 'sine', 0.5, 32);
     if (cue === 'title') {
       boom();
-      const chord = { gta: [220, 277, 330, 440], genshin: [523, 659, 784, 1047], tft: [196, 247, 294, 392], amongus: [262, 311, 392] }[act];
-      chord.forEach((f, i) => tone(f, 0.05 + i * 0.04, 2.4, act === 'genshin' ? 'sine' : act === 'tft' ? 'square' : 'sawtooth', act === 'tft' ? 0.05 : 0.08));
+      const chord = { gta: [220, 277, 330, 440], genshin: [523, 659, 784, 1047], tft: [196, 247, 294, 392], amongus: [262, 311, 392], booking: [196, 233, 294], arkham: [220, 262, 311, 370], heist: [147, 175, 220, 262], escape: [110, 131, 165] }[act] || [220, 277, 330];
+      chord.forEach((f, i) => tone(f, 0.05 + i * 0.04, 2.4, ['genshin', 'arkham'].includes(act) ? 'sine' : act === 'tft' ? 'square' : 'sawtooth', act === 'tft' ? 0.05 : 0.08));
       return;
     }
     if (cue === 'shh') return hush(0, 1.6, 0.3);
     if (cue === 'alarm') return [0, 0.45, 0.9].forEach((at) => tone(880, at, 0.35, 'square', 0.12, 660));
     if (act === 'genshin') return [784, 988, 1175].forEach((f, i) => tone(f, i * 0.09, 0.9, 'sine', 0.12));
+    if (act === 'arkham') return [523, 494, 466].forEach((f, i) => tone(f, i * 0.12, 0.5, 'triangle', 0.12));
     if (act === 'tft') {
       tone(147, 0, 0.5, 'square', 0.08);
       return boom();
     }
-    if (act === 'amongus') return tone(330, 0, 0.25, 'triangle', 0.15, 220);
+    if (act === 'amongus' || act === 'escape') return tone(330, 0, 0.25, 'triangle', 0.15, 220);
     boom();
     tone(110, 0, 0.35, 'sawtooth', 0.12);
   }
@@ -695,6 +766,42 @@
     });
     const pre = (text) => ({ ms: 2200, cls: 'i-pre', html: `<span>${h(text)}</span>` });
     const scenes = {
+      booking: [
+        pre('Slammer State Penitentiary presents'),
+        art('Day one. Lights out at 11.'),
+        ...words(['Strip.', 'Squat.', 'Smile.']),
+        features([['🍜', 'Soups are money', 'Ramen buys everything in here'], ['🧼', 'Cell Toss', 'Raid a block, pocket their soups'], ['🗂️', 'Rap sheet', 'Owe drinks? Your stars go up']]),
+        starring('Now booking'),
+        title('Check your inmate tablet'),
+        rating(['Alcohol Reference', 'Prison Food', 'Use of Snitches']),
+      ],
+      arkham: [
+        { ms: 2400, cls: 'i-glitch', cue: 'title', html: '<b>HA. HA. HA.</b>' },
+        art('Arkham Asylum. Visiting hours are over.'),
+        ...words(['Draw.', 'Riddle.', 'Gang up.']),
+        features([['🃏', 'Joker’s Wild', 'Royal flush on pity'], ['❓', 'Riddler’s Riddles', 'Four each, tokens for your gang'], ['🦇', 'Patron villains', 'Same villain, gang bonus']]),
+        starring('Most dangerous gangs'),
+        title('The inmates are running the asylum'),
+        rating(['Clown Violence (Comic)', 'Riddles', 'Questionable Sanity']),
+      ],
+      heist: [
+        pre('The Professor has a plan'),
+        art('The Royal Mint. Day one of the heist.'),
+        ...words(['No guns.', 'No victims.', 'All the money.']),
+        features([['🎭', 'Heist roles', 'Berlin, Nairobi, Tokyo…'], ['🖨️', 'The printing press', '+1 € per 10 you save'], ['🔥', 'Heist streaks', 'Win in a row, get paid']]),
+        starring('The crew'),
+        title('Bella ciao'),
+        rating(['Masks', 'Printing Money', 'Elaborate Plans']),
+      ],
+      escape: [
+        { ms: 2600, cls: 'i-search', cue: 'shh', html: '<b>LIGHTS OUT</b>' },
+        { ms: 3200, cls: 'i-space', html: `<div class="i-type">There’s a <em>rat</em> in every block</div>` },
+        { ms: 1900, cls: 'i-meeting', cue: 'alarm', html: '<b>Lockdown</b>' },
+        features([['🐀', 'Double the rats', 'Sabotage skims twice as much'], ['💰', 'Double bounty', 'Catch one, get paid twice'], ['🧱', 'Over the wall', 'The top block escapes']]),
+        starring('Escape crews'),
+        title('Trust no one'),
+        rating(['Tunnelling', 'Betrayal', 'Spoons']),
+      ],
       gta: [
         pre('Slammer Games presents'),
         art('Vice City, USA.'),
@@ -785,18 +892,20 @@
   function actEvents(prev, next) {
     if (!prev) return;
     const a = next.acts[next.act];
-    if (prev.act !== next.act) {
-      if (kind === 'player') ui.tab = next.acts[next.act].id === 'tft' ? 'yard' : 'menu';
+    if (prev.acts?.[prev.act]?.id !== a.id) {
+      if (kind === 'player') ui.tab = a.engine === 'tft' && !a.words ? 'yard' : 'menu';
       if (kind === 'tv') return; // the TV plays the act's intro instead
       splash('act', `Act ${a.numeral}`, `${a.emoji} ${a.name}`, 3600);
       buzz([200, 100, 200, 100, 400]);
       return;
     }
-    if (a.id !== 'amongus') return;
-    if (prev.mafia.phase !== 'vote' && next.mafia.phase === 'vote') splash('meeting', 'Emergency Meeting', 'Block votes are open', 3200);
+    if (a.engine !== 'amongus') return;
+    const word = a.words || {};
+    if (prev.mafia.phase !== 'vote' && next.mafia.phase === 'vote') splash('meeting', word.meeting || 'Emergency Meeting', word.meetingSub || 'Block votes are open', 3200);
     const r = next.mafia.lastResult;
     if (r?.kind === 'vote' && r.ts && r.ts !== prev.mafia.lastResult?.ts) {
-      const lines = (r.ejected || []).map((x) => `${x.name} was ${x.snitch ? '' : 'not '}an Impostor.`);
+      const rat = word.snitch || 'Impostor';
+      const lines = (r.ejected || []).map((x) => `${x.name} was ${x.snitch ? '' : 'not '}${/^[aeiou]/i.test(rat) ? 'an' : 'a'} ${rat}.`);
       splash('ejected', lines.length ? lines.join(' ') : 'No one was ejected.', lines.length ? '' : '(Skipped)', 4200);
     }
   }
@@ -904,7 +1013,7 @@
         const n = scored.reduce((x, y) => x + y, 0);
         const words = next.acts[next.act].splash;
         const sub = n > 0 ? `+${money(n)}` : n < 0 ? `−${money(-n)}` : 'Nothing this time';
-        if (next.acts[next.act].id === 'tft' && place) splash(place === 1 ? 'passed' : 'failed', `${ordinal(place)} place`, sub);
+        if (next.acts[next.act].engine === 'tft' && place) splash(place === 1 ? 'passed' : 'failed', `${ordinal(place)} place`, sub);
         else if (n > 0) splash('passed', words.passed, sub);
         else splash('failed', words.failed, sub);
       }
@@ -957,6 +1066,7 @@
 
     document.body.dataset.kind = kind;
     document.body.dataset.era = actId();
+    document.body.dataset.engine = eng();
     document.body.dataset.phase = S?.mafia?.phase || 'off';
     document.body.dataset.status = S?.me?.status || '';
     $app.innerHTML = page();
@@ -1026,7 +1136,7 @@
 
   // ---------- player ----------
   function playerPage() {
-    const shell = { genshin: genshinPage, gta: gtaPhone, tft: tftClient, amongus: amongLobby }[actId()];
+    const shell = TABLET_APPS[actId()] ? gtaPhone : { genshin: genshinPage, gta: gtaPhone, tft: tftClient, amongus: amongLobby }[eng()];
     if (shell) return shell();
     const me = S.me;
     const myTeam = team(me.teamId);
@@ -1074,8 +1184,10 @@
   const VISION_GLYPH = { Pyro: '🔥', Hydro: '💧', Anemo: '🌀', Electro: '⚡', Dendro: '🌿', Cryo: '❄️', Geo: '🪨' };
   const arOf = (p) => Math.min(60, 1 + Math.floor((p.adventureExp || 0) / 200));
   const visionColor = (p) => S.visions?.[p.vision]?.color || '#d3bc8e';
+  const visionGlyph = (v) => S.visions?.[v]?.emoji || VISION_GLYPH[v] || '✦';
+  const visionLabel = (v) => S.visions?.[v]?.label || v || '';
   const avatar = (p, cls = '') =>
-    `<span class="gi-avatar ${cls}" style="--vc:${visionColor(p)}">${h((p.name || '?').trim()[0].toUpperCase())}<i title="${h(p.vision)}">${VISION_GLYPH[p.vision] || '✦'}</i></span>`;
+    `<span class="gi-avatar ${cls}" style="--vc:${visionColor(p)}">${h((p.name || '?').trim()[0].toUpperCase())}<i title="${h(visionLabel(p.vision))}">${visionGlyph(p.vision)}</i></span>`;
   // Elemental Resonance: two or more of one Vision among a block's active members.
   const resonanceOf = (teamId) => {
     const counts = {};
@@ -1135,10 +1247,10 @@
           <div class="gi-who"><b>${h(me.name)}${me.isCaptain ? ' 👑' : ''}</b><small>${h(signature)}</small></div>
         </div>
         <div class="gi-stats">
-          <div class="gi-ar"><span>Adventure Rank</span><b>${ar}</b></div>
+          <div class="gi-ar"><span>${h(W('rank', 'Adventure Rank'))}</span><b>${ar}</b></div>
           <div class="gi-exp"><i style="width:${ar >= 60 ? 100 : (into / 200) * 100}%"></i><small>${ar >= 60 ? 'MAX' : `${into}/200`}</small></div>
           <div class="gi-row"><span>World Level</span><b>${Math.min(8, Math.floor(ar / 5))}</b></div>
-          <div class="gi-row"><span>Vision</span><b>${VISION_GLYPH[me.vision] || ''} ${h(me.vision || '')}</b></div>
+          <div class="gi-row"><span>${h(W('vision', 'Vision'))}</span><b>${visionGlyph(me.vision)} ${h(visionLabel(me.vision))}</b></div>
           <div class="gi-row"><span>Party</span><b>${myTeam ? chip(myTeam) : statusChip(me)}</b></div>
         </div>
         <div class="gi-uid">UID: 8${h(me.inmateNo)}26</div>
@@ -1156,7 +1268,7 @@
   const alerts = (withDrinks = true) => `${phaseBanner()}${announcement()}${incomingAlerts()}${dealerCard()}${withDrinks ? drinkCard() : ''}`;
   const dotFor = (k) => {
     const me = S.me;
-    return tabDot(k) || (k === 'yard' && todoItems().length) || (k === 'events' && !!liveGame() && briefingUnseen()) || (k === 'rap' && S.mafia.phase === 'vote' && me.status === 'block' && !S.mafia.myVote);
+    return tabDot(k) || (k === 'yard' && (todoItems().length || (eng() === 'genshin' && (me.commissions || []).some((c) => !c.done)))) || (k === 'events' && !!liveGame() && briefingUnseen()) || (k === 'rap' && S.mafia.phase === 'vote' && me.status === 'block' && !S.mafia.myVote);
   };
   const clock = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -1182,12 +1294,74 @@
     ];
   }
 
+  // The Long Night: one inmate tablet all night, re-skinned and re-stocked with apps each act.
+  const ledgerApp = () => bankApp();
+  const TABLET_APPS = {
+    booking: {
+      carrier: 'Slammer Pen · Inmate Tablet', crew: 'Block', bank: 'Trust fund', hint: 'Lights out at 11. Behave.',
+      apps: () => [
+        ['yard', '📨', 'Messages', '#c8642a', () => `${todoCard()}${matchCard()}`],
+        ['events', '📋', 'Yard Schedule', '#5b6b7c', eventsTab],
+        ['shop', '🛒', 'Commissary', '#d48a1d', shopTab],
+        ['cell', '🔐', 'My Block', '#8a5a3c', cellTab],
+        ['bank', '🍜', 'Trust Account', '#7a8f3a', ledgerApp],
+        ['rap', '🗂️', 'Rap Sheet', '#a8322d', rapTab],
+        ['board', '📊', 'Standings', '#3d5a80', boardTab],
+        ['mail', '📢', 'Yard Talk', '#6b4f8a', mailTab],
+        ['cam', '📸', 'Visitation Cam', '#2f7f7a', null],
+      ],
+    },
+    arkham: {
+      carrier: 'Arkham Asylum · Patient Terminal', crew: 'Gang', bank: 'Stash', hint: 'Ha. Ha. Ha.',
+      apps: () => [
+        ['yard', '📁', W('menu', 'Patient File'), '#3e7a3a', handbookTab],
+        ['wish', '🃏', 'Joker’s Wild', '#7b2fbf', wishTab],
+        ['shop', '🛒', 'Commissary', '#4f5d73', shopTab],
+        ['cell', '🦇', W('party', 'Your Gang'), '#2d6a4f', cellTab],
+        ['events', '🩺', 'Ward Rounds', '#5b7a8c', eventsTab],
+        ['rap', '🗂️', 'Case Notes', '#8a2c4b', rapTab],
+        ['board', '☠️', 'Threat Board', '#3a3a5c', boardTab],
+        ['mail', '📻', 'Intercom', '#6b5a2f', mailTab],
+        ['cam', '📹', 'Security Cam', '#1f6f6a', null],
+      ],
+    },
+    heist: {
+      carrier: 'The Professor · Burner', crew: 'Crew', bank: 'The Vault', hint: 'Nobody gets hurt.',
+      apps: () => [
+        ['yard', '🗺️', 'The Plan', '#b3121b', () => `${augmentCard()}${todoCard()}${matchCard()}`],
+        ['events', '⏱️', 'Heist Schedule', '#3a3a3a', eventsTab],
+        ['shop', '💼', 'Black Market', '#7a1016', shopTab],
+        ['cell', '🎭', 'The Crew', '#8c1c13', cellTab],
+        ['bank', '🏦', 'The Vault', '#a37a1c', ledgerApp],
+        ['rap', '📂', 'Dossier', '#4a4a4a', rapTab],
+        ['board', '💶', 'Most Wanted', '#5c1010', boardTab],
+        ['mail', '📻', 'Radio', '#2f3f4f', mailTab],
+        ['cam', '🎥', 'Inside Cam', '#1d1d1d', null],
+      ],
+    },
+    escape: {
+      carrier: 'Smuggled phone · no signal', crew: 'Cell', bank: 'Stash', hint: 'Keep your head down.',
+      apps: () => [
+        ['yard', '🗺️', W('task', 'Escape plan'), '#c9a227', () => `${todoCard()}${matchCard()}`],
+        ['events', '🕰️', 'Guard Rota', '#3b4a6b', eventsTab],
+        ['shop', '📦', 'Contraband', '#6b4a2b', shopTab],
+        ['cell', '⛓️', 'Cellmates', '#4a4f5c', cellTab],
+        ['rap', '🐀', S.mafia.phase === 'vote' ? 'Rat Hunt' : 'Rap Sheet', '#8a1c1c', rapTab],
+        ['board', '🏁', 'Escape Board', '#2d4f3a', boardTab],
+        ['mail', '🤫', 'Whispers', '#3a3a5a', mailTab],
+        ['cam', '📹', 'Guard Cams', '#1f2f3f', null],
+        ['bank', '🪙', 'Stash', '#7a6a2b', ledgerApp],
+      ],
+    },
+  };
+
   function gtaPhone() {
     const me = S.me;
     const t = team(me.teamId);
-    const apps = gtaApps();
+    const tablet = TABLET_APPS[actId()];
+    const apps = tablet ? tablet.apps() : gtaApps();
     const cur = apps.find((a) => a[0] === ui.tab);
-    const status = `<div class="ph-status"><span class="ph-clock">${clock()}</span><span class="ph-carrier">Vice City · iFruit</span><span>▂▄▆█ 5G 🔋</span></div>`;
+    const status = `<div class="ph-status"><span class="ph-clock">${clock()}</span><span class="ph-carrier">${h(tablet?.carrier || 'Vice City · iFruit')}</span><span>▂▄▆█ 5G 🔋</span></div>`;
     if (cur) {
       return `<div class="ph" style="--ac:${cur[3]}">${status}
         <header class="ph-head"><button class="ph-back" data-act="tab" data-tab="menu" aria-label="Back to the home screen">‹</button><b>${h(cur[2])}</b><span class="ph-hcash">${t ? h(money(t.budget)) : ''}</span></header>
@@ -1199,13 +1373,13 @@
     return `<div class="ph ph-home">${status}
       <div class="ph-wall">${hero()}</div>
       <section class="ph-card">
-        <span class="ph-rank" title="Rank">${arOf(me)}</span>
-        <div class="ph-id"><b>${h(me.name)}${me.isCaptain ? ' 👑' : ''}</b><small>${t ? `Crew: ${h(t.name)}${t.nickname ? ` “${h(t.nickname)}”` : ''}` : statusChip(me)}</small>${wantedStars(me)}</div>
-        <div class="ph-money">${t ? `<b>${h(money(t.budget))}</b><small>Bank ${h(money(t.earned))}</small>` : ''}</div>
+        <span class="ph-rank" title="${h(tablet ? 'Inmate number' : 'Rank')}">${tablet ? `<small>#</small>${h(String(me.inmateNo).slice(-3))}` : arOf(me)}</span>
+        <div class="ph-id"><b>${h(me.name)}${me.isCaptain ? ' 👑' : ''}</b><small>${t ? `${h(tablet?.crew || 'Crew')}: ${h(t.name)}${t.nickname ? ` “${h(t.nickname)}”` : ''}` : statusChip(me)}</small>${eng() === 'gta' ? wantedStars(me) : hudExtra(me, t)}</div>
+        <div class="ph-money">${t ? `<b>${h(money(t.budget))}</b><small>${h(tablet?.bank || 'Bank')} ${h(money(t.earned))}</small>` : ''}</div>
       </section>
       <div class="ph-notices">${alerts()}</div>
       <div class="ph-grid">${apps.map(([k, icon, label, color]) => `<button class="ph-app" data-act="${k === 'cam' ? 'shotcam' : 'tab'}" data-tab="${k}" style="--ac:${color}"><span class="ph-icon">${icon}${dotFor(k) ? '<i class="dot"></i>' : ''}</span><span>${h(label)}</span></button>`).join('')}</div>
-      <p class="ph-hint">${n >= 3 ? '★ Lose the cops: serve your time.' : 'Tap an app.'}</p>
+      <p class="ph-hint">${n >= 3 && eng() === 'gta' ? '★ Lose the heat: serve your time.' : h(tablet?.hint || 'Tap an app.')}</p>
       ${sheetsAndModals()}</div>`;
   }
 
@@ -1328,15 +1502,15 @@
     const myTeam = team(me.teamId);
     const res = myTeam ? resonanceOf(myTeam.id) : [];
     return `<section class="card gi-comms-card">
-        <h3>Daily Commissions <span class="gi-count">${done}/${list.length || 4}</span></h3>
+        <h3>${h(W('commissions', 'Daily Commissions'))} <span class="gi-count">${done}/${list.length || 4}</span></h3>
         ${list.length ? `<div class="gi-comms">${list
           .map((c) => `<div class="gi-comm ${c.done ? 'done' : ''}">
             <span class="gi-comm-i">${c.done ? '✔' : '!'}</span>
-            <div><b>${h(c.text)}</b><small>Rewards: ${PRIMO}${rw.primos}${res.length ? `+${res.length}` : ''} · ${rw.exp} Adventure EXP</small></div>
-            ${c.done ? '<span class="gi-claimed">Completed</span>' : `<button class="btn sm" data-act="commission" data-commission-id="${c.id}" data-confirm="Turn in: “${h(c.text)}”? Honour system, adventurer.">Complete</button>`}
+            <div><b>${h(c.text)}</b><small>Rewards: ${currencyIcon()}${rw.primos}${res.length ? `+${res.length}` : ''} · ${rw.exp} EXP</small></div>
+            ${c.done ? `<span class="gi-claimed">${h(W('complete', 'Completed'))}</span>` : `<button class="btn sm" data-act="commission" data-commission-id="${c.id}" data-confirm="Turn in: “${h(c.text)}”? Honour system.">${h(W('completeBtn', 'Complete'))}</button>`}
           </div>`)
-          .join('')}</div>` : '<p class="empty">The Adventurers’ Guild has no commissions for you yet.</p>'}
-        <p class="gi-guild">${me.commissionBonus ? '📜 Bonus claimed from the Adventurers’ Guild. Ad astra abyssosque!' : `📜 Finish all four for a Guild bonus: ${PRIMO}${rw.bonus.primos} · ${rw.bonus.exp} Adventure EXP${myTeam ? '' : ' (Primogems only go to adventurers in a party)'}.`}</p>
+          .join('')}</div>` : `<p class="empty">Nothing from ${h(W('guild', 'the Adventurers’ Guild'))} for you yet.</p>`}
+        <p class="gi-guild">${me.commissionBonus ? `📜 Bonus claimed from ${h(W('guild', 'the Adventurers’ Guild'))}.` : `📜 Finish all four for a bonus from ${h(W('guild', 'the Adventurers’ Guild'))}: ${currencyIcon()}${rw.bonus.primos} · ${rw.bonus.exp} EXP${myTeam ? '' : ' (Primogems only go to adventurers in a party)'}.`}</p>
       </section>
       ${todoCard()}
       ${matchCard()}`;
@@ -1357,12 +1531,12 @@
     const mates = blockmates(t.id);
     const res = resonanceOf(t.id);
     return `<section class="card gi-party">
-      <h3>Party Setup</h3>
+      <h3>${h(W('party', 'Party Setup'))}</h3>
       <div class="gi-lineup">${mates
         .map((p, i) => `<div class="gi-char ${p.id === S.me.id ? 'me' : ''} ${p.status === 'solitary' ? 'out' : ''}" style="--vc:${visionColor(p)}">
-          <span class="gi-slot">${i + 1}</span>${avatar(p)}<b>${h(p.name)}${p.isCaptain ? ' 👑' : ''}</b><small>AR ${arOf(p)} · ${h(p.vision)}${p.status === 'solitary' ? ' · 🔒' : ''}</small></div>`)
+          <span class="gi-slot">${i + 1}</span>${avatar(p)}<b>${h(p.name)}${p.isCaptain ? ' 👑' : ''}</b><small>${W('rank') ? 'Lv' : 'AR'} ${arOf(p)} · ${h(visionLabel(p.vision))}${p.status === 'solitary' ? ' · 🔒' : ''}</small></div>`)
         .join('')}</div>
-      <p class="gi-res">${res.length ? `Elemental Resonance: ${res.map((v) => `<b>${VISION_GLYPH[v]} ${h(S.visions[v].resonance)}</b>`).join(', ')}. Each commission pays ${PRIMO}+${res.length} extra.` : 'No Elemental Resonance. Two party members with the same Vision unlock one (and extra Primogems per commission).'}</p>
+      <p class="gi-res">${res.length ? `${h(W('resonance', 'Elemental Resonance'))}: ${res.map((v) => `<b>${visionGlyph(v)} ${h(S.visions[v].resonance)}</b>`).join(', ')}. Each commission pays ${PRIMO}+${res.length} extra.` : 'No Elemental Resonance. Two party members with the same Vision unlock one (and extra Primogems per commission).'}</p>
     </section>`;
   }
 
@@ -1378,7 +1552,7 @@
     const blocked = !t ? 'Only adventurers in a party can wish. Get bailed onto a block first.' : me.status === 'solitary' ? 'No wishing from Solitary.' : '';
     const ask = !blocked && willRequest();
     const wishBtn = (n) => `<button class="gi-wish" data-act="wish" data-count="${n}" ${blocked || t.budget < one * n ? 'disabled' : ''}>
-        <small>${ask ? 'Ask the party: ' : ''}Wish ×${n}</small><span>${FATE} × ${n} <em>(${PRIMO}${one * n})</em></span></button>`;
+        <small>${ask ? 'Ask the block: ' : ''}${h(W('draw', 'Wish'))} ×${n}</small><span>${drawIcon()} × ${n} <em>(${currencyIcon()}${one * n})</em></span></button>`;
     const history = (S.orders || []).filter((o) => o.warp && o.fromTeamId === t?.id).slice(0, 12);
     const panel =
       ui.wishPanel === 'details'
@@ -1388,12 +1562,12 @@
           ? `<section class="card gi-panel"><h3>Wish History</h3>${history.length ? `<ul class="roster">${history.flatMap((o) => (o.warps || [o.warp]).map((w) => `<li class="r${w.stars}"><b>${'★'.repeat(w.stars)}</b> ${h(w.emoji)} ${h(w.name)} <span class="fine">${h(o.buyerName)} · ${time(o.ts)}</span></li>`)).join('')}</ul>` : '<p class="empty">No wishes yet.</p>'}</section>`
           : '';
     return `<section class="gi-banner">
-        <div class="gi-banner-art"><span class="gi-feat">${h(t ? t.name : 'The Slammer')}</span><span class="gi-sub">Featured party</span></div>
+        <div class="gi-banner-art"><span class="gi-feat">${h(t ? t.name : 'The Slammer')}</span><span class="gi-sub">${h(W('bannerSub', 'Featured party'))}</span></div>
         <div class="gi-banner-info">
-          <div class="gi-tag">Event Wish</div>
-          <h2>Ballad in Shot Glasses</h2>
-          <p>Wish for your party with ${h(curAct().currency.name)}. Probability boosted for 5★ prizes!</p>
-          <p class="gi-pity">${FATE} Guaranteed 5★ within <b>${left}</b> wish${left === 1 ? '' : 'es'}.</p>
+          <div class="gi-tag">${h(W('bannerTag', 'Event Wish'))}</div>
+          <h2>${h(W('banner', 'Ballad in Shot Glasses'))}</h2>
+          <p>${h(W('bannerCopy', `Wish for your party with ${curAct().currency.name}. Probability boosted for 5★ prizes!`))}</p>
+          <p class="gi-pity">${drawIcon()} ${h(W('pity', 'Guaranteed 5★ within'))} <b>${left}</b> ${left === 1 ? h(W('draw', 'wish').toLowerCase()) : `${h(W('draw', 'wish').toLowerCase())}${W('draw') ? 's' : 'es'}`}.</p>
           ${blocked ? `<p class="gi-warn">${h(blocked)}</p>` : ''}
         </div>
       </section>
@@ -1412,12 +1586,16 @@
     el.className = `wish-fx r${best}`;
     el.setAttribute('role', 'status');
     const card = (w) => `<div class="wish-card r${w.stars}"><span class="wc-e">${h(w.emoji)}</span><b>${h(w.name)}</b><span class="wc-s">${'★'.repeat(w.stars)}</span>${warps.length === 1 ? `<small>${h(w.text)}</small>` : ''}</div>`;
-    el.innerHTML = `<div class="meteor"></div><div class="wish-res ${warps.length > 1 ? 'ten' : 'one'}">${warps.map(card).join('')}</div><div class="wish-by">${by ? `${h(by)} wished · ` : ''}tap to close</div>`;
+    el.innerHTML = `<div class="meteor"></div><div class="wish-res ${warps.length > 1 ? 'ten' : 'one'}">${warps.map(card).join('')}</div><div class="wish-by">${by ? `${h(by)} ${h(W('drew', 'wished'))} · ` : ''}tap to close</div>`;
     const close = () => { el.classList.add('out'); setTimeout(() => el.remove(), 400); };
     el.addEventListener('click', close);
     document.body.append(el);
     setTimeout(close, warps.length > 1 ? 9000 : 6000);
   }
+
+  // Currency and draw icons: Genshin's own artwork in Game Night, the act's emoji otherwise.
+  const currencyIcon = () => (actId() === 'genshin' ? PRIMO : `<span class="cur-i">${h(curAct()?.currency.symbol || '◆')}</span>`);
+  const drawIcon = () => (actId() === 'genshin' ? FATE : `<span class="cur-i">${h(curAct()?.itemSkin?.emoji || '✦')}</span>`);
 
   // Every phone gets the same briefing when a game goes live (or its rules change).
   const liveGame = () => S.games.find((g) => g.status === 'live') || null;
@@ -1451,7 +1629,7 @@
 
   // TFT act: the block picks one augment from three.
   function augmentCard() {
-    if (actId() !== 'tft' || S.me.status !== 'block') return '';
+    if (eng() !== 'tft' || S.me.status !== 'block') return '';
     const t = team(S.me.teamId);
     if (!t) return '';
     if (t.augment) return '';
@@ -1459,7 +1637,7 @@
     const hasCaptain = blockmates(t.id).some((p) => p.isCaptain);
     const canPick = !hasCaptain || S.me.isCaptain;
     return `<section class="card augments">
-      <div class="eyebrow">♟️ Pick your block's augment</div>
+      <div class="eyebrow">♟️ ${h(W('augmentPick', 'Pick your block’s augment'))}</div>
       <div class="aug-list">${t.augmentOffer
         .map((k) => {
           const a = S.augments[k];
@@ -1485,7 +1663,7 @@
   function phaseBanner() {
     const m = S.mafia;
     if (m.phase === 'night') return `<div class="phase night">🌙 LIGHTS OUT — Night ${m.round}${kind === 'player' ? ' · everyone pick a name on your Rap Sheet' : ''}</div>`;
-    if (m.phase === 'vote') return `<div class="phase vote">${actId() === 'amongus' ? '🚨 EMERGENCY MEETING' : '🗳️ BLOCK VOTES OPEN'} · ${plural(m.votesCast, 'vote')} cast</div>`;
+    if (m.phase === 'vote') return `<div class="phase vote">${eng() === 'amongus' ? `🚨 ${W('meeting', 'Emergency Meeting').toUpperCase()}` : '🗳️ BLOCK VOTES OPEN'} · ${plural(m.votesCast, 'vote')} cast</div>`;
     if (m.phase === 'over') return `<div class="phase over">${m.winner === 'snitches' ? '🐀 Snitches got away with it!' : '🎉 Every snitch was caught!'}</div>`;
     return '';
   }
@@ -1611,7 +1789,7 @@
   function todoCard() {
     const items = todoItems();
     const done = (S.me.sentences || []).filter((x) => x.status === 'done').slice(0, 3);
-    if (actId() === 'amongus') return taskList(items);
+    if (eng() === 'amongus') return taskList(items);
     return `<section class="card todo-card">
       <h3>📌 Your to-do</h3>
       ${items.length ? `<ul class="todos">${items.join('')}</ul>` : '<p class="empty">Nothing owed, nothing pending. Enjoy it while it lasts.</p>'}
@@ -1672,7 +1850,7 @@
     ].filter(([, , list]) => list.length);
     return `
       <section class="card shop-head">
-        <div><div class="eyebrow">Commissary · ${h(curAct().name)}</div><h2>${myTeam ? h(money(myTeam.budget)) : 'No account'}</h2>${myTeam && actId() === 'genshin' ? `<p class="pity">✦ Pity ${myTeam.pity}/${S.settings.warpPity}: a 5★ is guaranteed within ${S.settings.warpPity - myTeam.pity} wish${S.settings.warpPity - myTeam.pity === 1 ? '' : 'es'}.</p>` : ''}${myTeam && actId() === 'tft' && myTeam.augment === 'hustler' ? '<p class="pity">🏷️ Hustler: 25% off everything.</p>' : ''}<p class="fine">${myTeam && willRequest() ? `Spending is a block decision: your picks go to your block, and need the Shot Caller 👑 or ${plural(S.settings.requestSeconds, 'blockmate')} to second them.` : 'Spending comes out of your whole block’s budget.'}</p></div>
+        <div><div class="eyebrow">Commissary · ${h(curAct().name)}</div><h2>${myTeam ? h(money(myTeam.budget)) : 'No account'}</h2>${myTeam && eng() === 'genshin' ? `<p class="pity">✦ Pity ${myTeam.pity}/${S.settings.warpPity}: a 5★ is guaranteed within ${S.settings.warpPity - myTeam.pity} wish${S.settings.warpPity - myTeam.pity === 1 ? '' : 'es'}.</p>` : ''}${myTeam && eng() === 'tft' && myTeam.augment === 'hustler' ? '<p class="pity">🏷️ Hustler: 25% off everything.</p>' : ''}<p class="fine">${myTeam && willRequest() ? `Spending is a block decision: your picks go to your block, and need the Shot Caller 👑 or ${plural(S.settings.requestSeconds, 'blockmate')} to second them.` : 'Spending comes out of your whole block’s budget.'}</p></div>
         ${myTeam ? `<div class="inv-mini"><span title="Deflect cards">🔄 ${myTeam.inventory?.deflect || 0}</span><span title="Bribes">💵 ${myTeam.inventory?.immunity || 0}</span></div>` : ''}
       </section>
       ${blocked ? `<p class="warnbox">${h(blocked)}</p>` : ''}
@@ -1751,13 +1929,13 @@
     const immune = new Set(S.mafia.immune);
     return `
       ${me.status === 'solitary' ? lockupRules('solitary') : ''}
-      ${actId() === 'genshin' ? partyLineup(myTeam) : ''}
+      ${eng() === 'genshin' ? partyLineup(myTeam) : ''}
       ${augmentCard()}
       <section class="card cell-head block-banner" style="--c:${h(myTeam.color)}">
         <div class="eyebrow">Your block · #${rankOf(myTeam.id)} of ${S.teams.length}</div>
         <h2>${h(myTeam.name)}${nick(myTeam)}</h2>
         ${myTeam.motto ? `<p class="motto">${h(myTeam.motto)}</p>` : ''}
-        ${actId() === 'tft' && myTeam.augment ? `<p class="aug-chip">${S.augments[myTeam.augment].emoji} <b>${h(S.augments[myTeam.augment].name)}</b> · ${h(S.augments[myTeam.augment].desc)}</p>` : ''}
+        ${eng() === 'tft' && myTeam.augment ? `<p class="aug-chip">${S.augments[myTeam.augment].emoji} <b>${h(S.augments[myTeam.augment].name)}</b> · ${h(S.augments[myTeam.augment].desc)}</p>` : ''}
         <div class="stats"><div><b>${h(money(myTeam.budget))}</b><span>${h(curAct().currency.name)}</span></div><div><b>${myTeam.earned}</b><span>earned tonight</span></div><div><b>${members.length}/${S.settings.maxBlockSize}</b><span>inmates</span></div></div>
         ${renameControls(myTeam, members)}
       </section>
@@ -1940,11 +2118,11 @@
         <div class="votes">${mates
           .map((p) => `<button class="vote ${m.myVote === p.id ? 'on' : ''}" data-act="vote" data-target-id="${p.id}" ${p.id === me.id ? 'disabled' : ''}>
             <span class="bar" style="width:${((tally[p.id] || 0) / max) * 100}%"></span>
-            <span class="v-n">${actId() === 'amongus' ? crewIcon(p) : ''}${h(p.name)}${p.id === me.id ? ' (you)' : ''} ${immune.has(p.id) ? '🛡️' : ''}</span><span class="v-c">${tally[p.id] || 0}</span></button>`)
+            <span class="v-n">${eng() === 'amongus' ? crewIcon(p) : ''}${h(p.name)}${p.id === me.id ? ' (you)' : ''} ${immune.has(p.id) ? '🛡️' : ''}</span><span class="v-c">${tally[p.id] || 0}</span></button>`)
           .join('')}
           <button class="vote skip ${m.myVote === 'skip' ? 'on' : ''}" data-act="vote" data-target-id="skip"><span class="bar" style="width:${((tally.skip || 0) / max) * 100}%"></span><span class="v-n">Keep everyone</span><span class="v-c">${tally.skip || 0}</span></button>
         </div>
-        <p class="fine">Needs a majority of the block. Catch the ${actId() === 'amongus' ? 'Impostor' : 'snitch'}: +${S.settings.snitchBounty * (actId() === 'amongus' ? 2 : 1)} credits and they go to solitary. Kick an innocent: −${S.settings.wrongfulPenalty} credits and they go to the Holding Cell. 🛡️ = bribed.</p>
+        <p class="fine">Needs a majority of the block. Catch the ${eng() === 'amongus' ? W('snitch', 'Impostor').toLowerCase() : 'snitch'}: +${h(money(S.settings.snitchBounty * (eng() === 'amongus' ? 2 : 1)))} and they go to solitary. Kick an innocent: −${h(money(S.settings.wrongfulPenalty))} and they go to the Holding Cell. 🛡️ = bribed.</p>
       </section>`;
     }
     return `<section class="card"><h3>☀️ Daytime in the yard</h3>${m.lastResult ? `<p>${h(m.lastResult.text)}</p>` : ''}${m.lastResult?.whispers?.length ? `<p class="fine">Most suspected: ${h(m.lastResult.whispers.join(', '))}</p>` : ''}<p class="fine">Watch your blockmates. Who’s acting shifty? The hosts will call the next Lights Out or Block Vote.</p></section>`;
@@ -1961,14 +2139,14 @@
 
   // TFT act: a block's augment and streak, shown next to its name.
   const streakBits = (t) =>
-    actId() !== 'tft' ? [] : [t.augment && S.augments[t.augment].emoji, t.streak > 1 ? `🔥${t.streak}` : t.streak < -1 ? `💧${-t.streak}` : ''].filter(Boolean);
+    eng() !== 'tft' ? [] : [t.augment && S.augments[t.augment].emoji, t.streak > 1 ? `🔥${t.streak}` : t.streak < -1 ? `💧${-t.streak}` : ''].filter(Boolean);
   const streakTag = (t) => streakBits(t).map((x) => ` · ${x}`).join('');
 
   function boardTab() {
     const rows = standings();
-    const adventurers = actId() === 'genshin' ? [...S.players].sort((a, b) => (b.adventureExp || 0) - (a.adventureExp || 0)).slice(0, 10) : [];
+    const adventurers = eng() === 'genshin' ? [...S.players].sort((a, b) => (b.adventureExp || 0) - (a.adventureExp || 0)).slice(0, 10) : [];
     return `
-      ${adventurers.length ? `<section class="card"><h3>Top Adventurers</h3><ol class="gi-ranks">${adventurers.map((p, i) => `<li class="${p.id === S.me?.id ? 'mine' : ''}"><span class="rank">${i + 1}</span>${avatar(p)}<span class="b-n">${h(p.name)}<small>${h(teamName(p.teamId))}</small></span><b>AR ${arOf(p)}</b></li>`).join('')}</ol></section>` : ''}
+      ${adventurers.length ? `<section class="card"><h3>${h(W('topList', 'Top Adventurers'))}</h3><ol class="gi-ranks">${adventurers.map((p, i) => `<li class="${p.id === S.me?.id ? 'mine' : ''}"><span class="rank">${i + 1}</span>${avatar(p)}<span class="b-n">${h(p.name)}<small>${h(teamName(p.teamId))}</small></span><b>${eng() === 'genshin' && W('rank') ? 'Lv' : 'AR'} ${arOf(p)}</b></li>`).join('')}</ol></section>` : ''}
       <section class="card">
         <h3>🏆 Block Standings</h3>
         ${rows.length ? `<ol class="board">${rows
@@ -2321,7 +2499,7 @@
       <label>Penalty drinks each (punishments)<input id="${prefix}_drinks" name="drinks" type="number" min="0" max="5" value="${h(it.drinks ?? 0)}" /></label>
       <label>Credit drain (punishments)<input id="${prefix}_drain" name="drain" type="number" min="0" value="${h(it.drain ?? 0)}" /></label>
       <label>Drained credits go to the buyer<select id="${prefix}_steal" name="steal"><option value="false">No, they vanish</option><option value="true" ${it.steal ? 'selected' : ''}>Yes, it's a robbery</option></select></label>
-      <label>On the shelf during<select id="${prefix}_act" name="act"><option value="">Every act</option>${S.acts.map((a) => `<option value="${a.id}" ${it.act === a.id ? 'selected' : ''}>Act ${a.numeral} only: ${h(a.name)}</option>`).join('')}</select></label>`;
+      <label>On the shelf during<select id="${prefix}_act" name="act"><option value="">Every act</option>${S.acts.map((a) => `<option value="${a.engine}" ${it.act === a.engine ? 'selected' : ''}>Act ${a.numeral} only: ${h(a.name)}</option>`).join('')}</select></label>`;
   }
 
   function aShop() {
@@ -2336,7 +2514,7 @@
         <ul class="ilist">${S.items
           .map((it) => `<li class="${it.active ? '' : 'inactive'}">
             <details>
-              <summary><span class="mega">${h(it.emoji)}</span> <b>${h(it.name)}</b> <span class="fine">${it.price} cr · ${h(S.itemTypes[it.type]?.label)}${it.act ? ` · Act ${S.acts.find((a) => a.id === it.act)?.numeral} only` : ''}${it.drinks ? ` · 🍺×${it.drinks}` : ''}${it.stock !== null ? ` · ${it.stock} left` : ''}${it.active ? '' : ' · HIDDEN'}</span></summary>
+              <summary><span class="mega">${h(it.emoji)}</span> <b>${h(it.name)}</b> <span class="fine">${it.price} cr · ${h(S.itemTypes[it.type]?.label)}${it.act ? ` · Act ${S.acts.find((a) => a.engine === it.act)?.numeral} only` : ''}${it.drinks ? ` · 🍺×${it.drinks}` : ''}${it.stock !== null ? ` · ${it.stock} left` : ''}${it.active ? '' : ' · HIDDEN'}</span></summary>
               <form data-admin="updateItem" class="grid2"><input type="hidden" name="itemId" value="${it.id}" />${itemFields(`it_${it.id}`, it)}
                 <div class="row span2">${btn(it.active ? 'Hide' : 'Show', 'updateItem', { itemId: it.id, active: !it.active }, 'ghost sm')}${btn('🗑 Delete', 'removeItem', { itemId: it.id }, 'ghost sm', `Delete ${it.name}?`)}<button class="btn sm">Save</button></div>
               </form>
@@ -2503,6 +2681,7 @@
             <option value="anyone" ${st.spendMode === 'anyone' ? 'selected' : ''}>Anyone on the block, instantly</option>
           </select></label>
           <label>Seconds needed (block decides)<input id="s_sec" name="requestSeconds" type="number" min="1" max="5" value="${st.requestSeconds}" /></label>
+          <label class="span2">Act lineup (switching starts the same act number in the other lineup)<select id="s_set" name="actSet">${Object.entries(S.actSets || {}).map(([k, v]) => `<option value="${k}" ${st.actSet === k ? 'selected' : ''}>${h(v)}</option>`).join('')}</select></label>
           <label>🌠 Warp: 5★ chance %<input id="s_w5" name="warp5" type="number" min="0" max="100" value="${st.warp5}" /></label>
           <label>🌠 Warp: 4★ chance %<input id="s_w4" name="warp4" type="number" min="0" max="100" value="${st.warp4}" /></label>
           <label>🌠 Warp: guaranteed 5★ every N pulls<input id="s_wp" name="warpPity" type="number" min="1" max="50" value="${st.warpPity}" /></label>
@@ -2593,7 +2772,7 @@
       const res = await act('commission', { commissionId: d.commissionId });
       if (!res.ok) return;
       const r = res.result || {};
-      if (r.all) splash('passed', 'Commissions completed', `The Adventurers’ Guild pays out · AR ${r.rank}`, 3200);
+      if (r.all) splash('passed', `${W('commissions', 'Commissions')}: done`, `${W('guild', 'The Adventurers’ Guild')} pays out · ${W('rank', 'AR')} ${r.rank}`, 3200);
       else toast(`📜 Commission complete!${r.primos ? ` +${r.primos} Primogems for your party.` : ''}`, 'ok');
     },
     wish: async (d) => {

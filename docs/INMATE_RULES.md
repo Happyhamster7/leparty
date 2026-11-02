@@ -37,6 +37,15 @@ You play in a block of 4 or 5 (Block A, Block B and so on). Each block starts wi
 
 The night changes game every couple of rounds. When the hosts flip the act, your phone (and the TV) switch to a new look, and a card explains the new rules. Your block keeps its balance; only the money's name changes.
 
+Tonight is **The Long Night**:
+
+- **Act I · Booking Day:** soups (ramen) are money. Cell Tosses let your block raid another and pocket up to 10 soups.
+- **Act II · Arkham Asylum:** draw from the Joker's deck for your gang, solve the Riddler's four riddles in your Patient File, and find inmates who share your patron villain.
+- **Act III · The Heist:** your crew picks a heist role; unspent euros earn more after every game; win streaks pay.
+- **Act IV · The Great Escape:** there's a rat in every block, and every vote is a Lockdown.
+
+(If the hosts run the Game Night lineup instead, the acts are:)
+
 - **Act I · Vice City (GTA):** Stick-Ups let your block rob 10 cash from another (they can deflect it back). Watch your wanted level in the corner.
 - **Act II · Wish Upon Teyvat (Genshin Impact):** turn your phone sideways. Wish ×1 or ×10 for your party (every 8th wish without a 5★ is guaranteed one). Do your four Daily Commissions in the Adventurer Handbook for Primogems and Adventure Rank. Find blockmates with your Vision: an Elemental Resonance pays extra.
 - **Act III · Convergence (TFT):** your block picks one augment. Unspent gold earns interest after every game, and win or loss streaks pay bonus gold.

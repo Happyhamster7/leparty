@@ -1040,31 +1040,35 @@ body[data-era='amongus'][data-kind='player'] .tabs::before { content: ''; positi
 .ph-head b { flex: 1; font: 700 18px var(--ui); text-transform: uppercase; letter-spacing: 1px; }
 .ph-hcash { font: 400 18px var(--stencil); color: #fff; text-shadow: 1px 1px 0 #0008; }
 .ph-back { width: 34px; height: 34px; border-radius: 50%; border: 0; background: #0003; color: #fff; font-size: 26px; line-height: 1; cursor: pointer; }
-.ph-body {
-  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 10px 10px 30px; background: #eef0f3; color: #15171c;
-  --text: #15171c; --muted: #5d6470; --card2: #e6e9ee; --line: #d0d5dd; --divider: #e1e4ea; --yellow: #a36c00; --orange: #1f6fe0; --orange2: #c2410c; --teal: #0f7b8a; --cash: #138a36; --input: #fff;
+.ph {
+  --ph-paper: #fff; --ph-ink: #15171c; --ph-sub: #5d6470; --ph-bg: #eef0f3; --ph-soft: #f2f4f7; --ph-line: #d0d5dd; --ph-head: #f6f7f9;
+  --ph-bubble: #e9ecf1; --ph-money: #138a36; --ph-note: #fff7e0; --ph-note-edge: #f2b705;
 }
-body[data-era='gta'] .ph-body .card { background: #fff; color: #15171c; border-radius: 12px; box-shadow: 0 1px 3px #0002; backdrop-filter: none; }
-body[data-era='gta'] .ph-body .card > h3:first-child, body[data-era='gta'] .ph-body .card > .eyebrow:first-child { background: #f6f7f9; color: var(--ac); border-image: none; border-bottom: 1px solid #e1e4ea; border-radius: 12px 12px 0 0; }
-body[data-era='gta'] .ph-body .btn { background: var(--ac); color: #fff; border-radius: 8px; }
-body[data-era='gta'] .ph-body .btn.ghost { background: transparent; color: var(--ac); box-shadow: inset 0 0 0 1.5px var(--ac); }
-body[data-era='gta'] .ph-body .item { background: #fff; color: #15171c; border-left-color: var(--ac); border-radius: 10px; box-shadow: 0 1px 3px #0002; }
-body[data-era='gta'] .ph-body .item-d { color: #5d6470; }
-body[data-era='gta'] .ph-body .item-p { color: #138a36; -webkit-text-stroke: 0; }
-body[data-era='gta'] .ph-body .target, body[data-era='gta'] .ph-body .vote { background: #f2f4f7; color: #15171c; border-color: #d0d5dd; border-radius: 10px; }
-body[data-era='gta'] .ph-body .target.on, body[data-era='gta'] .ph-body .vote.on { background: var(--ac); color: #fff; border-color: var(--ac); }
-body[data-era='gta'] .ph-body .drinkcard, body[data-era='gta'] .ph-body .announce, body[data-era='gta'] .ph-body .incoming { max-width: none; width: 100%; margin: 0 0 10px; border-radius: 12px; }
-body[data-era='gta'] .ph-body .drinkcard { background: #fff7e0; color: #15171c; border-left: 5px solid #f2b705; }
-body[data-era='gta'] .ph-body .stats div, body[data-era='gta'] .ph-body .stash-i, body[data-era='gta'] .ph-body .inv-mini, body[data-era='gta'] .ph-body .board li, body[data-era='gta'] .ph-body .roster-team { background: #f2f4f7; color: #15171c; }
-body[data-era='gta'] .ph-body .section-h { color: #5d6470; }
-body[data-era='gta'] .ph-body .chip { color: #15171c; }
-body[data-era='gta'] .ph-body .mugshot { box-shadow: 0 1px 3px #0003; }
+.ph-body {
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 10px 10px 30px; background: var(--ph-bg); color: var(--ph-ink);
+  --text: var(--ph-ink); --muted: var(--ph-sub); --card2: var(--ph-soft); --line: var(--ph-line); --divider: var(--ph-line); --yellow: #a36c00; --orange: #1f6fe0; --orange2: #c2410c; --teal: #0f7b8a; --cash: var(--ph-money); --input: #fff;
+}
+.ph .ph-body .card { background: var(--ph-paper); color: var(--ph-ink); border-radius: 12px; box-shadow: 0 1px 3px #0002; backdrop-filter: none; }
+.ph .ph-body .card > h3:first-child, .ph .ph-body .card > .eyebrow:first-child { background: var(--ph-head); color: var(--ac); border-image: none; border-bottom: 1px solid var(--ph-line); border-radius: 12px 12px 0 0; }
+.ph .ph-body .btn { background: var(--ac); color: #fff; border-radius: 8px; }
+.ph .ph-body .btn.ghost { background: transparent; color: var(--ac); box-shadow: inset 0 0 0 1.5px var(--ac); }
+.ph .ph-body .item { background: var(--ph-paper); color: var(--ph-ink); border-left-color: var(--ac); border-radius: 10px; box-shadow: 0 1px 3px #0002; }
+.ph .ph-body .item-d { color: var(--ph-sub); }
+.ph .ph-body .item-p { color: var(--ph-money); -webkit-text-stroke: 0; }
+.ph .ph-body .target, .ph .ph-body .vote { background: var(--ph-soft); color: var(--ph-ink); border-color: var(--ph-line); border-radius: 10px; }
+.ph .ph-body .target.on, .ph .ph-body .vote.on { background: var(--ac); color: #fff; border-color: var(--ac); }
+.ph .ph-body .drinkcard, .ph .ph-body .announce, .ph .ph-body .incoming { max-width: none; width: 100%; margin: 0 0 10px; border-radius: 12px; }
+.ph .ph-body .drinkcard { background: var(--ph-note); color: var(--ph-ink); border-left: 5px solid var(--ph-note-edge); }
+.ph .ph-body .stats div, .ph .ph-body .stash-i, .ph .ph-body .inv-mini, .ph .ph-body .board li, .ph .ph-body .roster-team { background: var(--ph-soft); color: var(--ph-ink); }
+.ph .ph-body .section-h { color: var(--ph-sub); }
+.ph .ph-body .chip { color: var(--ph-ink); }
+.ph .ph-body .mugshot { box-shadow: 0 1px 3px #0003; }
 /* Texts: the to-do list reads like a message thread. */
-body[data-era='gta'] .ph-body .todo-card .todo { border: 0; margin: 6px 0; padding: 10px 12px; border-radius: 18px 18px 18px 4px; background: #e9ecf1; }
+.ph .ph-body .todo-card .todo { border: 0; margin: 6px 0; padding: 10px 12px; border-radius: 18px 18px 18px 4px; background: var(--ph-bubble); }
 .ph-bank { text-align: center; }
-.ph-balance { font: 400 44px var(--stencil); color: #138a36; }
-.ph-homebar { flex: 0 0 auto; align-self: center; width: 130px; height: 5px; margin: 6px 0 max(8px, env(safe-area-inset-bottom)); border: 0; border-radius: 3px; background: #15171c55; cursor: pointer; }
-.ph:not(.ph-home) { background: #eef0f3; }
+.ph-balance { font: 400 44px var(--stencil); color: var(--ph-money); }
+.ph-homebar { flex: 0 0 auto; align-self: center; width: 130px; height: 5px; margin: 6px 0 max(8px, env(safe-area-inset-bottom)); border: 0; border-radius: 3px; background: var(--ph-ink)55; cursor: pointer; }
+.ph:not(.ph-home) { background: var(--ph-bg); }
 
 /* ===================== Act III · the League client ===================== */
 .lc {
@@ -1151,8 +1155,8 @@ body[data-era='gta'] .ph-body .todo-card .todo { border: 0; margin: 6px 0; paddi
   .au-bi { width: 46px; height: 46px; font-size: 22px; }
   .ph-icon { width: 54px; height: 54px; }
 }
-body[data-era='gta'] .ph-body .drinkcard .fine { color: #6b5a1c; }
-body[data-era='gta'] .ph-body .drinkcard .drink-n { color: #a36c00; }
+.ph .ph-body .drinkcard .fine { color: var(--ph-sub); }
+.ph .ph-body .drinkcard .drink-n { color: var(--ph-note-edge); }
 body[data-era='gta'] .ph-id b, body[data-era='gta'] .ph-head b { letter-spacing: 0.16em; }
 body[data-era='gta'] .ph-app span:last-child { letter-spacing: 0.04em; font-weight: 500; }
 body[data-era='gta'] .ph-status { background: #0000; text-shadow: 0 1px 2px #0008; }
@@ -1160,8 +1164,8 @@ body[data-era='gta'] .ph-home .ph-status { position: relative; z-index: 2; }
 body[data-era='gta'] .ph-card { background: #1d1838cc; backdrop-filter: blur(8px); border-radius: 14px; border: 0; box-shadow: inset 0 0 0 1px #ffffff2a; }
 /* The wallpaper is composed for a tall screen: sky above, the scene in the middle, the road below. */
 body[data-era='gta'] .ph-wall { background: linear-gradient(180deg, #343c86 0%, #4c57a8 30%, #5a4888 30%, #3a2d66 100%); }
-body[data-era='gta'] .ph-wall .hero { inset: auto; left: -25%; right: -25%; top: 24%; height: auto; aspect-ratio: 400 / 210; }
-body[data-era='gta'] .ph-wall .hero::after { display: none; }
+.ph-wall .hero { inset: auto; left: -25%; right: -25%; top: 24%; height: auto; aspect-ratio: 400 / 210; }
+.ph-wall .hero::after { display: none; }
 body[data-era='gta'] .ph-wall::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, #0000 58%, #1d183899 74%, #1d1838ee 88%); }
 
 /* ---------- TFT: League client details ----------
@@ -1316,3 +1320,159 @@ body[data-era='gta'] .drinkcard .row .btn.ghost { color: #fff; }
 .cam [hidden] { display: none !important; }
 .cam.blocked .cam-rec, .cam.blocked .cam-side, .cam.blocked [data-cam=send] { opacity: 0.35; pointer-events: none; }
 .cam.blocked .cam-msg { top: 50%; bottom: auto; transform: translateY(-50%); font-size: 17px; padding: 14px; background: #000b; border-radius: 12px; }
+
+/* ===================== The Long Night ===================== */
+/* Shared: the inmate tablet's lock screen layout for every Long Night act. */
+body:is([data-era='booking'], [data-era='arkham'], [data-era='heist'], [data-era='escape']) .ph-card { backdrop-filter: blur(8px); border-radius: 14px; border: 0; box-shadow: inset 0 0 0 1px #ffffff2a; }
+body:is([data-era='booking'], [data-era='arkham'], [data-era='heist'], [data-era='escape']) .ph-status { background: #0000; text-shadow: 0 1px 2px #0008; }
+body:is([data-era='booking'], [data-era='arkham'], [data-era='heist'], [data-era='escape']) .ph-home .ph-status { position: relative; z-index: 2; }
+.ph-rank small { font-size: 0.55em; opacity: 0.8; }
+.cur-i { display: inline-block; min-width: 1em; text-align: center; }
+
+/* Act I · Booking Day: concrete, intake-form paper, jumpsuit orange, stencilled signage. */
+body[data-era='booking'] {
+  --bg: #1f2226; --concrete: #2a2e33; --card: #2c3036; --card2: #383d44; --line: #4a5058; --text: #f3efe6; --muted: #b9b3a7;
+  --orange: #e2742f; --orange2: #f0a35e; --yellow: #f2c14e; --teal: #8fb8c9; --purple: #7d8ca3; --cash: #f2c14e;
+  --sunset: linear-gradient(180deg, #f0a35e, #c8642a);
+  --on-accent: #1d140c; --divider: #3a3f46; --tint: #3d2a1d; --card-line: #474d55; --card-top: #30353b; --input: #17191c; --sky: #2b3440;
+  --stencil: 'Saira Stencil One', 'Black Ops One', Impact, sans-serif; --body: 'Roboto Condensed', 'Arial Narrow', sans-serif; --script: 'Special Elite', 'Courier New', monospace; --ui: var(--body);
+  background: radial-gradient(100% 40% at 50% 0%, #4a525c, transparent), #1f2226 fixed;
+}
+body[data-era='booking'] .logo { letter-spacing: 0.04em; filter: drop-shadow(3px 3px 0 #000); }
+body[data-era='booking'] .tagline { font-size: 17px; color: #f3efe6; text-shadow: none; }
+body[data-era='booking'] h2, body[data-era='booking'] .who-name { letter-spacing: 0.04em; }
+body[data-era='booking'] .card { border-radius: 4px; border: 1px solid #4a5058; }
+body[data-era='booking'] .btn { border-radius: 4px; }
+body[data-era='booking'] .ph-wall { background: linear-gradient(180deg, #2b3440 0%, #2b3440 30%, #6f6a61 30%, #4a4741 100%); }
+body[data-era='booking'] .ph-wall::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, #0000 58%, #1f2226aa 74%, #1f2226f0 88%); }
+body[data-era='booking'] .ph-card { background: #f4ecd8; color: #2a2620; }
+body[data-era='booking'] .ph-card .ph-id small, body[data-era='booking'] .ph-card .ph-money small { color: #6b6255; }
+body[data-era='booking'] .ph-card .ph-id b { font-family: 'Special Elite', monospace; letter-spacing: 0.06em; }
+body[data-era='booking'] .ph-card .ph-money b { color: #c8642a; -webkit-text-stroke: 0; text-shadow: none; font-family: var(--stencil); }
+body[data-era='booking'] .ph-card .wanted i { color: #2a262033; text-shadow: none; }
+body[data-era='booking'] .ph-card .wanted i.on { color: #c0392b; text-shadow: none; }
+body[data-era='booking'] .ph-rank { font-family: var(--stencil); background: #e2742f; color: #fff; box-shadow: 0 0 0 3px #2a2620; border-radius: 6px; }
+body[data-era='booking'] .ph {
+  --ph-paper: #fbf6ea; --ph-ink: #2a2620; --ph-sub: #6b6255; --ph-bg: #e5dfd2; --ph-soft: #efe8d8; --ph-line: #d3c8b2; --ph-head: #f4ecd8;
+  --ph-bubble: #efe5cf; --ph-money: #b5541f; --ph-note: #fff1d6; --ph-note-edge: #e2742f;
+}
+body[data-era='booking'] .ph-body .card { font-family: var(--body); }
+body[data-era='booking'] .ph-body .card > h3:first-child { font-family: 'Special Elite', monospace; text-transform: uppercase; letter-spacing: 0.12em; }
+body[data-era='booking'] .ph-head b { font-family: var(--stencil); letter-spacing: 0.06em; }
+
+/* Act II · Arkham Asylum: night-purple, toxic green, patient-file paper, a grin in the type. */
+body[data-era='arkham'] {
+  --bg: #0b0812; --concrete: #150f22; --card: #171126; --card2: #221a36; --line: #3a2d55; --text: #f1ecff; --muted: #b7a9d6;
+  --orange: #8bf55a; --orange2: #c084fc; --yellow: #d6f56a; --teal: #6ff0c4; --purple: #9b5de5; --cash: #8bf55a;
+  --sunset: linear-gradient(180deg, #d6f56a, #5fbf3a 60%, #3f8a2a);
+  --on-accent: #0b1407; --divider: #2c2240; --tint: #2a1640; --card-line: #3a2d55; --card-top: #1a132b; --input: #09060f; --sky: #2a1640;
+  --stencil: 'Creepster', 'Chiller', cursive; --body: 'Outfit', system-ui, sans-serif; --script: 'Special Elite', monospace; --ui: var(--body);
+  background: radial-gradient(70% 45% at 75% 0%, #2a164099, transparent), radial-gradient(60% 40% at 0% 100%, #14301c, transparent), #0b0812 fixed;
+}
+body[data-era='arkham'] .logo { letter-spacing: 0.06em; font-weight: 400; filter: drop-shadow(0 0 14px #8bf55a88) drop-shadow(3px 3px 0 #2a1640); }
+body[data-era='arkham'] h2, body[data-era='arkham'] .who-name, body[data-era='arkham'] .splash-t { letter-spacing: 0.05em; font-weight: 400; }
+body[data-era='arkham'] .tagline { font-family: var(--body); font-size: 16px; letter-spacing: 0.08em; color: #c084fc; }
+body[data-era='arkham'] .card { border-radius: 10px; border: 1px solid #3a2d55; box-shadow: 0 0 0 1px #00000066, 0 8px 24px #0008; }
+body[data-era='arkham'] .ph-wall { background: linear-gradient(180deg, #0a0712 0%, #2a1640 30%, #0d1a10 30%, #0b0812 100%); }
+body[data-era='arkham'] .ph-wall::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, #0000 58%, #0b0812aa 74%, #0b0812f0 88%); }
+body[data-era='arkham'] .ph-card { background: #1a132bcc; }
+body[data-era='arkham'] .ph-rank { background: radial-gradient(circle at 40% 35%, #b6ff7a, #3f8a2a); color: #0b1407; box-shadow: 0 0 0 3px #c084fc, 0 0 14px #8bf55a88; }
+body[data-era='arkham'] .ph-money b { color: #8bf55a; text-shadow: 0 0 10px #8bf55a88; -webkit-text-stroke: 0; }
+body[data-era='arkham'] .ph {
+  --ph-paper: #f2eedf; --ph-ink: #1d1a2a; --ph-sub: #5f5873; --ph-bg: #191225; --ph-soft: #e8e2cf; --ph-line: #cfc6ad; --ph-head: #ebe5d0;
+  --ph-bubble: #e8e2cf; --ph-money: #2f7d1f; --ph-note: #f3f7d8; --ph-note-edge: #5fbf3a;
+}
+body[data-era='arkham'] .ph-body .card > h3:first-child { font-family: 'Special Elite', monospace; letter-spacing: 0.08em; text-transform: uppercase; }
+body[data-era='arkham'] .ph-body .section-h { color: #c084fc; }
+body[data-era='arkham'] .gi-banner-art { background: radial-gradient(circle at 40% 40%, #8bf55a66, transparent 45%), radial-gradient(circle at 75% 30%, #c084fc77, transparent 40%), linear-gradient(160deg, #2a1640, #0b0812 55%, #14301c); }
+body[data-era='arkham'] .gi-banner-art::before { content: '♠ ♥ ♣ ♦'; color: #d6f56a; text-shadow: 0 0 10px #8bf55a; }
+body[data-era='arkham'] .gi-banner-info h2 { color: #d6f56a; font-family: var(--stencil); font-weight: 400; letter-spacing: 0.04em; }
+body[data-era='arkham'] .gi-wish { box-shadow: inset 0 0 0 2px #8bf55a, 0 4px 14px #0008; }
+body[data-era='arkham'] .wish-fx { background: radial-gradient(ellipse at 50% 30%, #2a1640, #0b0812 75%); }
+body[data-era='arkham'] .wish-fx.r5 { --mc: #d6f56a; } body[data-era='arkham'] .wish-fx.r4 { --mc: #c084fc; } body[data-era='arkham'] .wish-fx.r3 { --mc: #7a8fa8; }
+body[data-era='arkham'] .wish-card { border-radius: 10px; }
+body[data-era='arkham'] .wish-card.r5 { background: linear-gradient(180deg, #5fbf3a, #14301c); }
+body[data-era='arkham'] .wish-card.r4 { background: linear-gradient(180deg, #8e44c9, #2a1640); }
+body[data-era='arkham'] .wish-card.r3 { background: linear-gradient(180deg, #4a5568, #1a202c); }
+
+/* Act III · The Heist: Money Heist red, Royal Mint cream, gold vault, condensed caps. */
+body[data-era='heist'] {
+  --bg: #120404; --concrete: #1d0808; --card: #1f0909; --card2: #2c0e0e; --line: #5a1a1a; --text: #fdf3ec; --muted: #d6b3a8;
+  --orange: #e2131c; --orange2: #f3d27a; --yellow: #f3d27a; --teal: #f3d27a; --purple: #8c1c13; --cash: #7ec46b;
+  --sunset: linear-gradient(180deg, #ff3b3b, #b3121b);
+  --on-accent: #fff; --divider: #3a1010; --tint: #3a0a0a; --card-line: #5a1a1a; --card-top: #240a0a; --input: #0c0202; --sky: #4a0d0d;
+  --stencil: 'Bebas Neue', 'Oswald', Impact, sans-serif; --body: 'Roboto', system-ui, sans-serif; --script: 'Special Elite', monospace; --ui: var(--body);
+  background: radial-gradient(90% 40% at 50% 0%, #4a0d0d, transparent), #120404 fixed;
+}
+body[data-era='heist'] .logo { letter-spacing: 0.06em; font-weight: 400; filter: drop-shadow(3px 3px 0 #000); }
+body[data-era='heist'] h2, body[data-era='heist'] .who-name, body[data-era='heist'] .splash-t { letter-spacing: 0.06em; font-weight: 400; }
+body[data-era='heist'] .tagline { font-family: 'Special Elite', monospace; font-size: 16px; color: #f3d27a; }
+body[data-era='heist'] .card { border-radius: 2px; border: 1px solid #5a1a1a; border-left: 4px solid #e2131c; }
+body[data-era='heist'] .btn { border-radius: 2px; letter-spacing: 0.08em; }
+body[data-era='heist'] .ph-wall { background: linear-gradient(180deg, #1a0606 0%, #4a0d0d 30%, #7a1414 30%, #120404 100%); }
+body[data-era='heist'] .ph-wall::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, #0000 58%, #120404aa 74%, #120404f0 88%); }
+body[data-era='heist'] .ph-card { background: #1f0909cc; border-left: 4px solid #e2131c; border-radius: 4px; }
+body[data-era='heist'] .ph-rank { font-family: var(--stencil); background: #e2131c; color: #fff; border-radius: 4px; box-shadow: 0 0 0 3px #f3d27a; }
+body[data-era='heist'] .ph-money b { color: #f3d27a; -webkit-text-stroke: 0; text-shadow: 0 2px 0 #000; font-family: var(--stencil); }
+body[data-era='heist'] .ph {
+  --ph-paper: #fffaf3; --ph-ink: #1d0b0b; --ph-sub: #7a5a52; --ph-bg: #efe4d8; --ph-soft: #f6ece0; --ph-line: #dccbb8; --ph-head: #f6ece0;
+  --ph-bubble: #f3e3d3; --ph-money: #8c6a14; --ph-note: #fff1e6; --ph-note-edge: #e2131c;
+}
+body[data-era='heist'] .ph-head b { font-family: var(--stencil); font-size: 22px; letter-spacing: 0.08em; }
+body[data-era='heist'] .ph-body .card > h3:first-child { font-family: var(--stencil); font-size: 18px; letter-spacing: 0.08em; }
+body[data-era='heist'] .aug { border-color: #e2131c; background: linear-gradient(170deg, #3a0a0a, #1f0909); }
+body[data-era='heist'] .ph-body .aug { background: #fffaf3; color: #1d0b0b; border-left: 4px solid #e2131c; }
+
+/* Act IV · The Great Escape: midnight blue, searchlight yellow, chain-link, tattoo-blueprint type. */
+body[data-era='escape'] {
+  --bg: #050a16; --concrete: #0c1424; --card: #0e1628; --card2: #172238; --line: #2b3a58; --text: #eef3ff; --muted: #9fb0d0;
+  --orange: #f4d35e; --orange2: #ee964b; --yellow: #f4d35e; --teal: #7fd8ff; --purple: #3b4a6b; --cash: #f4d35e;
+  --sunset: linear-gradient(180deg, #fff3b0, #f4d35e 60%, #c9a227);
+  --on-accent: #0b0d12; --divider: #1d2a44; --tint: #1d2a44; --card-line: #2b3a58; --card-top: #0f1830; --input: #04070f; --sky: #14213d;
+  --stencil: 'Teko', 'Bebas Neue', Impact, sans-serif; --body: 'Roboto Condensed', 'Arial Narrow', sans-serif; --script: 'Special Elite', monospace; --ui: var(--body);
+  background: radial-gradient(40% 60% at 75% 0%, #fff8c41a, transparent), #050a16 fixed;
+}
+body[data-era='escape'] .logo { letter-spacing: 0.04em; font-weight: 600; line-height: 0.9; filter: drop-shadow(0 0 16px #f4d35e66); }
+body[data-era='escape'] h2, body[data-era='escape'] .who-name, body[data-era='escape'] .splash-t { letter-spacing: 0.04em; font-weight: 600; }
+body[data-era='escape'] .tagline { font-size: 17px; color: #f4d35e; }
+body[data-era='escape'] .card { border-radius: 6px; border: 1px solid #2b3a58; }
+body[data-era='escape'] .ph-wall { background: linear-gradient(180deg, #030712 0%, #14213d 30%, #1c2333 30%, #050a16 100%); }
+body[data-era='escape'] .ph-wall::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, #0000 58%, #050a16aa 74%, #050a16f0 88%); }
+body[data-era='escape'] .ph-card { background: #0e1628cc; }
+body[data-era='escape'] .ph-rank { font-family: var(--stencil); background: #f4d35e; color: #0b0d12; box-shadow: 0 0 0 3px #0b0d12, 0 0 16px #f4d35e88; }
+body[data-era='escape'] .ph-money b { color: #f4d35e; -webkit-text-stroke: 0; font-family: var(--stencil); font-size: 30px; }
+body[data-era='escape'] .ph {
+  --ph-paper: #11192c; --ph-ink: #eef3ff; --ph-sub: #9fb0d0; --ph-bg: #080e1c; --ph-soft: #172238; --ph-line: #2b3a58; --ph-head: #0e1628;
+  --ph-bubble: #172238; --ph-money: #f4d35e; --ph-note: #1d2a14; --ph-note-edge: #f4d35e;
+}
+body[data-era='escape'] .ph-head b { font-family: var(--stencil); font-size: 24px; letter-spacing: 0.06em; }
+body[data-era='escape'] .ph-body .btn { color: #0b0d12; }
+body[data-era='escape'] .task-bar i { background: #f4d35e; box-shadow: inset 0 -5px 0 #c9a227; }
+body[data-era='escape'] .ph-body .votes { background: #172238; border: 2px solid #f4d35e; border-radius: 10px; padding: 8px; }
+body[data-era='escape'] .ph-body .vote.on .v-c::after { content: ' ✔ RAT?'; color: #e84057; font-size: 11px; }
+
+/* Long Night TV trailer scenes */
+.i-glitch { background: radial-gradient(circle at center, #2a1640, #000 70%); }
+.i-glitch b { font: 400 clamp(70px, 12vw, 180px) 'Creepster', cursive; color: #8bf55a; text-shadow: 4px 0 #c084fc, -4px 0 #2fbf5a; animation: i-shake 0.12s infinite; }
+@keyframes i-shake { 50% { transform: translate(3px, -2px) skewX(3deg); } }
+.i-search { background: #02040a; overflow: hidden; }
+.i-search::before { content: ''; position: absolute; top: -20%; left: 50%; width: 40vw; height: 140%; background: linear-gradient(90deg, transparent, #fff8c455, transparent); transform-origin: top center; animation: i-sweep 2.6s ease-in-out; }
+@keyframes i-sweep { from { transform: translateX(-80vw) rotate(25deg); } to { transform: translateX(40vw) rotate(-25deg); } }
+.i-search b { position: relative; font: 600 clamp(70px, 12vw, 170px) 'Teko', sans-serif; color: #f4d35e; letter-spacing: 0.06em; }
+/* Phone shell fixes: readable status bar inside apps, buttons that fit, cards that keep their own colours. */
+.ph:not(.ph-home) .ph-status { background: var(--ac); color: #fff; }
+.ph:not(.ph-home) .ph-carrier { color: #ffffffcc; }
+.ph .drinkcard { flex-wrap: wrap; }
+.ph .drinkcard .row { flex-wrap: wrap; justify-content: flex-end; }
+.ph .ph-body .dealercard { width: 100%; max-width: none; margin: 0 0 10px; background: var(--ph-paper); color: var(--ph-ink); border: 2px solid #9b51e0; }
+.ph .ph-body .dealercard .drink-n { color: #7b2fbf; }
+.ph .ph-body .dealercard .target { background: var(--ph-soft); color: var(--ph-ink); }
+body[data-era='heist'] .drinkcard .btn { color: #1d0b0b; }
+.ph .gi-pity { display: block; }
+/* A ten-card pull on an upright phone: two rows of five. */
+@media (orientation: portrait) {
+  .wish-res.ten { flex-wrap: wrap; align-content: center; gap: 10px 6px; }
+  .wish-res.ten .wish-card { width: 17.5vw; height: 30vh; }
+  .wish-res.ten .wish-card b { font-size: 11px; }
+  .wish-res.ten .wc-s { font-size: 8px; letter-spacing: 0; }
+}

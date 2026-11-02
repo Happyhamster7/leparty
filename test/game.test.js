@@ -15,7 +15,7 @@ function setup(n = 6) {
   }
   a.budget = 200;
   b.budget = 200;
-  g.updateSettings({ spendMode: 'anyone' }); // request mode has its own tests
+  g.updateSettings({ spendMode: 'anyone', actSet: 'arcade' }); // request mode has its own tests; act tests use the Game Night lineup
   return { g, a, b, players };
 }
 const itemOf = (g, type, pred = () => true) => g.s.items.find((i) => i.type === type && pred(i));
@@ -692,7 +692,7 @@ test('Genshin: wishes roll prizes and pity guarantees a 5-star', () => {
 test('TFT: augments, streak gold, interest and the Hustler discount', () => {
   const { g, a, b, players } = setup(4);
   g.updatePlayer({ playerId: players[0].id, isCaptain: true });
-  assert.throws(() => g.pickAugment(players[0].id, { augmentId: a.augmentOffer[0] }), /TFT act/);
+  assert.throws(() => g.pickAugment(players[0].id, { augmentId: a.augmentOffer[0] }), /Act III/);
   g.setAct({ index: 2 });
   assert.equal(a.augmentOffer.length, 3);
   a.augmentOffer = ['hustler', 'windfall', 'crown'];
@@ -847,4 +847,54 @@ test('Shot Cam: block members send clips; hosts can require approval, hide and r
   assert.deepEqual(g.freshStart({ confirm: 'RESET' }).deleteFiles, ['/clips/one.mp4']);
   assert.equal(g.s.clips.length, 0);
   assert.ok(a && b);
+});
+
+test('The Long Night is the default lineup; each act renames its engine', () => {
+  const g = new Game();
+  g.seedTeams({ count: 2 });
+  const [a, b] = g.s.teams;
+  const players = [0, 1, 2, 3].map((i) => {
+    const p = g.join(`L${i}`);
+    g.updatePlayer({ playerId: p.id, teamId: i % 2 ? b.id : a.id });
+    return p;
+  });
+  a.budget = b.budget = 500;
+  g.updateSettings({ spendMode: 'anyone' });
+  assert.equal(g.act.id, 'booking');
+  assert.equal(g.act.engine, 'gta');
+  // Booking Day: the Stick-Up is a Cell Toss, priced and stocked as before.
+  const shelf = g.viewFor(players[0].id).items;
+  const shake = shelf.find((i) => i.name === 'Cell Toss');
+  assert.ok(shake && !shelf.some((i) => i.name === 'Stick-Up'));
+  const o = g.buy(players[0].id, { itemId: shake.id, targetTeamId: b.id });
+  assert.equal(o.name, 'Cell Toss');
+  assert.match(g.s.feed[0].text, /Cell Toss/);
+  assert.equal(g.adminView().items.find((i) => i.id === shake.id).name, 'Stick-Up', 'hosts edit the real item');
+
+  // Arkham: Joker's Wild draws use the Joker's prizes; riddles and patrons replace commissions and Visions.
+  g.setAct({ index: 1 });
+  assert.equal(g.act.id, 'arkham');
+  const draw = g.viewFor(players[0].id).items.find((i) => i.type === 'warp');
+  assert.equal(draw.name, 'Joker’s Wild');
+  const w = g.buy(players[0].id, { itemId: draw.id }).warp;
+  const jokers = Object.values(g.act.prizes).flat().map((x) => x.name);
+  assert.ok(jokers.includes(w.name));
+  assert.ok(g.act.commissions.includes(players[0].commissions[0].text));
+  assert.equal(g.viewFor(players[0].id).visions.Pyro.label, 'Joker');
+
+  // The Heist: augments are heist roles.
+  g.setAct({ index: 2 });
+  g.updatePlayer({ playerId: players[0].id, isCaptain: true });
+  a.augmentOffer = ['windfall', 'rich', 'hunt'];
+  g.pickAugment(players[0].id, { augmentId: 'windfall' });
+  assert.match(g.s.feed[0].text, /Berlin heist role/);
+  assert.equal(g.viewFor(players[0].id).augments.windfall.name, 'Berlin');
+  const game = g.addGame({ name: 'Cups' });
+  g.finishGame({ gameId: game.id, results: {}, penalties: false });
+  assert.ok(g.s.feed.some((f) => /printing press ran/.test(f.text)));
+
+  // Switching to Game Night keeps the act number but changes the act.
+  g.updateSettings({ actSet: 'arcade' });
+  assert.equal(g.act.id, 'tft');
+  assert.throws(() => g.updateSettings({ actSet: 'nope' }), /lineup/);
 });

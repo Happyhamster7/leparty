@@ -40,6 +40,19 @@ Players still spend their block's credits at the commissary themselves, and trac
 
 The night runs in four acts. A host moves to the next one with the act bar at the top of the host console. Every phone and the TV switch over at once: a big **ACT II** stamp, a new look, a briefing card explaining what changed, and a new name for the money (same balance). Each act's special items only appear in the shop during that act, at the top of the shelf. Hosts can go back an act if they flip too early.
 
+There are two act lineups, picked under Settings → Act lineup. Each act runs one of four rule sets (GTA, Genshin, TFT or Among Us) and renames its money, items, prizes, roles and riddles.
+
+**The Long Night (default).** One night at Slammer Penitentiary in four chapters. Guests keep the same **inmate tablet** all night, held upright; each act re-skins it and swaps in its own apps.
+
+| Act | Look | Mechanics |
+| --- | --- | --- |
+| I · Booking Day (*Shawshank*) | Concrete, intake-form paper, jumpsuit orange, stencilled type; money is **🍜 soups** | **Cell Toss**: raid another block and pocket up to 10 soups (deflectable). Your rap sheet stars rise with owed drinks, open punishments, Holding and Solitary. |
+| II · Arkham Asylum (Batman villains) | Night purple and toxic green, patient-file paper, Creepster type; money is **❓ Riddler tokens** | **Joker's Wild**: draw ×1 or ×10 for your gang (royal flush guaranteed every 8th). Four **Riddler's riddles** each in your Patient File. Every inmate has a **patron villain** (Joker, Riddler, Bane, Poison Ivy, Mr. Freeze, Scarecrow or Killer Croc); two of the same on a block is a gang bonus. |
+| III · The Heist (*Money Heist*) | Heist red, Royal Mint cream, gold vault; money is **€** | Each crew picks a **heist role** (Berlin, Nairobi, Tokyo, the Professor…); **the printing press** pays 1 € per 10 saved after every game; heist streaks pay extra. |
+| IV · The Great Escape (*Prison Break*) | Midnight blue, searchlight yellow; money is **favours** | Snitches are **rats** and the stakes double. Every Block Vote is a **Lockdown** ("… was a rat"). |
+
+**Game Night.** The original lineup: Vice City (GTA), Wish Upon Teyvat (Genshin Impact), Convergence (TFT) and Emergency Meeting (Among Us), each with its own game-style interface (detailed below).
+
 | Act | Look | Mechanics | Stamps |
 | --- | --- | --- | --- |
 | I · Vice City (GTA) | Neon sunset and palms; money is **$cash** | **Stick-Up** (12): steal up to 10 from another block; they can deflect it back. A **wanted level** in the top corner: Solitary 5 stars, Holding 3, owed drinks and open punishments 1 each. | MISSION PASSED / FAILED, BUSTED, WASTED |

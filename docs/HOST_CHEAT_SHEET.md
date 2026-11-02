@@ -50,6 +50,8 @@ Flip acts along the way: Act II after game 2, Act III after game 4, Act IV befor
 
 The act bar at the top of your console shows the current act. Tap **Next** to move everyone on; phones and the TV switch over and every phone gets a briefing. Plan on about two games per act.
 
+The default lineup is **The Long Night**: I · Booking Day (Cell Tosses, soups as money), II · Arkham Asylum (Joker's Wild draws, Riddler's riddles, patron villains), III · The Heist (heist roles, the printing press, streaks) and IV · The Great Escape (rats, Lockdowns, double stakes). Phones stay upright all night. To run the GTA / Genshin / TFT / Among Us lineup instead, pick it under Settings → Act lineup; the table below describes it.
+
 | Act | Turn it on | What changes |
 | --- | --- | --- |
 | I · Vice City (GTA) | It's on from the start | Stick-Ups in the shop (rob 10 from a block), wanted levels |
