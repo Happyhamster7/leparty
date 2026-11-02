@@ -564,10 +564,8 @@ body[data-era='genshin'] .gi .dealercard .drink-n { color: #6f5ab1; }
 
 /* --- the player app becomes a landscape game screen --- */
 body[data-era='genshin'][data-kind='player'] { overflow: hidden; }
-body[data-era='genshin'] .gi {
-  position: fixed; inset: 0; display: grid; grid-template-columns: minmax(150px, 22vw) 1fr; grid-template-rows: auto 1fr;
-  color: #ece5d8; font-family: var(--body);
-}
+body[data-era='genshin'] .gi { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr; color: #ece5d8; font-family: var(--body); }
+.gi-home { grid-template-columns: minmax(240px, 36vw) 1fr; grid-template-rows: 1fr; }
 .gi-bg { position: absolute; inset: 0; z-index: -1; overflow: hidden; }
 .gi-bg .hero { position: absolute; inset: -20px; height: auto; filter: blur(5px) brightness(0.5) saturate(1.1); }
 .gi-bg .hero::after { display: none; }
@@ -587,15 +585,6 @@ body[data-era='genshin'] .gi {
 .gi-pill small { color: #ece5d8aa; font-size: 10.5px; padding-right: 6px; }
 .gi-pill i { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #ece5d8; color: #495366; font-style: normal; font-weight: 800; }
 .gi-icon { width: 20px; height: 20px; flex: 0 0 auto; vertical-align: -5px; }
-.gi-nav { display: flex; flex-direction: column; gap: 5px; padding: 6px 0 12px; padding-left: env(safe-area-inset-left); overflow-y: auto; }
-.gi-nav button {
-  position: relative; display: flex; align-items: center; gap: 9px; padding: 7px 12px; border: 0; border-radius: 0 999px 999px 0; cursor: pointer;
-  background: linear-gradient(90deg, #00000070, #00000030); color: #ece5d8; font: 600 13px var(--body); text-align: left;
-}
-.gi-nav button.on { background: #ece5d8; color: #495366; box-shadow: inset 0 0 0 1px #d3bc8e, 0 0 12px #ece5d855; }
-.gi-ni { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #ffffff1c; font-size: 14px; flex: 0 0 auto; }
-.gi-nav button.on .gi-ni { background: #495366; }
-.gi-nav .dot { top: 4px; right: 10px; }
 .gi-main { overflow-y: auto; padding: 4px max(16px, env(safe-area-inset-right)) 18px 12px; -webkit-overflow-scrolling: touch; }
 .gi-main > .phase, .gi-main > .announce, .gi-main > .drinkcard, .gi-main > .dealercard, .gi-main > .incoming { width: 100%; max-width: none; margin: 0 0 10px; border-radius: 6px; }
 /* Menus are cream panels with slate text, like the game's inventory and dialogs. */
@@ -901,3 +890,88 @@ body[data-era='amongus'] .toast { border-radius: 14px; border: 3px solid #000; b
 body[data-era='amongus'] .phase.vote { background: #c51111; color: #fff; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; animation: alarm 1.2s steps(1) infinite; }
 @keyframes alarm { 50% { background: #7a0a0a; } }
 body[data-era='amongus'][data-kind='player'] .tabs::before { content: ''; position: absolute; inset: -24px 0 0; z-index: -1; background: linear-gradient(transparent, #04060f 45%); }
+
+/* ---------- Genshin: the Paimon Menu home ---------- */
+.gi-x { width: 34px; height: 34px; border-radius: 50%; border: 0; background: #ece5d8; color: #495366; font-size: 16px; font-weight: 800; cursor: pointer; box-shadow: 0 0 0 2px #d3bc8e, 0 2px 8px #0008; margin-left: 4px; }
+.gi-avatar {
+  position: relative; display: inline-grid; place-items: center; flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff8, transparent 55%), var(--vc); color: #fff; font-weight: 800; font-size: 15px;
+  box-shadow: 0 0 0 2px #ece5d8, 0 2px 6px #0008; text-shadow: 0 1px 2px #0008;
+}
+.gi-avatar i { position: absolute; right: -4px; bottom: -4px; width: 16px; height: 16px; border-radius: 50%; background: #1c2235; display: grid; place-items: center; font-size: 9px; font-style: normal; box-shadow: 0 0 0 1px var(--vc); }
+.gi-avatar.big { width: 76px; height: 76px; font-size: 34px; box-shadow: 0 0 0 3px #ece5d8, 0 0 0 5px #d3bc8e88, 0 4px 14px #000a; }
+.gi-avatar.big i { width: 26px; height: 26px; font-size: 14px; right: -2px; bottom: -2px; box-shadow: 0 0 0 2px var(--vc); }
+.gi-profile {
+  display: flex; flex-direction: column; gap: 10px; padding: max(14px, env(safe-area-inset-top)) 16px 12px max(16px, env(safe-area-inset-left));
+  background: linear-gradient(90deg, #0e1424ee, #0e1424b0 80%, transparent); overflow-y: auto;
+}
+.gi-namecard {
+  display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 8px; min-height: 104px;
+  background: linear-gradient(110deg, color-mix(in srgb, var(--vc) 55%, #1c2235) 0%, color-mix(in srgb, var(--vc) 22%, #1c2235) 55%, #1c2235cc 100%);
+  box-shadow: inset 0 0 0 1px #ffffff22, 0 6px 18px #0008; position: relative; overflow: hidden;
+}
+.gi-namecard::after { content: '✦'; position: absolute; right: 12px; top: 6px; font-size: 54px; color: #ffffff14; }
+.gi-who { min-width: 0; }
+.gi-who b { display: block; font-size: 20px; font-weight: 800; color: #fff; text-shadow: 0 1px 3px #000a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gi-who small { display: block; font-size: 12px; color: #ece5d8cc; line-height: 1.35; margin-top: 2px; }
+.gi-stats { display: grid; gap: 6px; padding: 10px 12px; border-radius: 8px; background: #ece5d8; color: #495366; box-shadow: inset 0 0 0 1px #d3bc8e; }
+.gi-ar { display: flex; justify-content: space-between; align-items: baseline; }
+.gi-ar span { font-weight: 700; font-size: 13px; }
+.gi-ar b { font-size: 24px; color: #a06b30; line-height: 1; }
+.gi-exp { position: relative; height: 12px; border-radius: 6px; background: #d9ccb4; overflow: hidden; }
+.gi-exp i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #f0c86a, #e09a3a); border-radius: 6px; }
+.gi-exp small { position: absolute; right: 6px; top: -1px; font-size: 9.5px; color: #495366; font-weight: 700; }
+.gi-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding-top: 5px; border-top: 1px solid #d9ccb4; }
+.gi-row b { font-weight: 700; }
+.gi-row .chip { color: #2b3242; }
+.gi-uid { margin-top: auto; font-size: 11px; color: #ece5d899; letter-spacing: 0.5px; text-shadow: 0 1px 2px #000; }
+.gi-menu { display: flex; flex-direction: column; gap: 8px; padding: max(10px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 12px 10px; overflow-y: auto; }
+.gi-menu-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.gi-paimon { font-size: 15px; font-weight: 700; color: #ece5d8; text-shadow: 0 1px 3px #000; }
+.gi-notices > * { width: 100%; max-width: none; margin: 0 0 8px; border-radius: 6px; }
+.gi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px 6px; margin-top: auto; padding-bottom: 6px; }
+.gi-app { display: flex; flex-direction: column; align-items: center; gap: 5px; background: none; border: 0; color: #ece5d8; font: 600 11.5px var(--body); cursor: pointer; text-shadow: 0 1px 3px #000; }
+.gi-app-i {
+  position: relative; display: grid; place-items: center; width: 54px; height: 54px; border-radius: 50%; font-size: 24px;
+  background: radial-gradient(circle at 50% 35%, #ffffff2e, #ffffff0a 70%); box-shadow: inset 0 0 0 1.5px #ece5d8aa, 0 3px 10px #0007; transition: transform 0.12s, box-shadow 0.12s;
+}
+.gi-app:hover .gi-app-i, .gi-app:active .gi-app-i { transform: scale(1.06); box-shadow: inset 0 0 0 2px #ffe7a8, 0 0 16px #ffe7a888; }
+.gi-app .dot { top: 2px; right: 2px; }
+.gi-screen { grid-template-columns: 1fr; }
+/* Adventurer Handbook: Daily Commissions */
+.gi-count { margin-left: auto; font-size: 13px; color: #a06b30; }
+.gi-comms { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+.gi-comm { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; background: #e2d9c8; box-shadow: inset 0 0 0 1px #d3bc8e; }
+.gi-comm > div { flex: 1; min-width: 0; }
+.gi-comm b { display: block; font-size: 13px; line-height: 1.3; }
+.gi-comm small { display: flex; align-items: center; gap: 3px; font-size: 11px; color: #7d7464; margin-top: 2px; }
+.gi-comm small .gi-icon { width: 13px; height: 13px; }
+.gi-comm-i { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #f0b43a; color: #fff; font-weight: 900; flex: 0 0 auto; box-shadow: 0 0 0 2px #fff8; }
+.gi-comm.done { opacity: 0.7; }
+.gi-comm.done .gi-comm-i { background: #6aa84f; }
+.gi-claimed { font-size: 11.5px; font-weight: 700; color: #6aa84f; }
+.gi-guild { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-size: 12.5px; color: #7d7464; margin-top: 8px; }
+.gi-guild .gi-icon { width: 14px; height: 14px; }
+/* Party Setup lineup */
+.gi-lineup { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.gi-char { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 6px 8px; border-radius: 8px 8px 22px 8px; text-align: center; background: linear-gradient(180deg, color-mix(in srgb, var(--vc) 45%, #ece5d8), #ece5d8 70%); box-shadow: inset 0 0 0 1px #d3bc8e; }
+.gi-char .gi-avatar { width: 46px; height: 46px; font-size: 20px; }
+.gi-char b { font-size: 13px; }
+.gi-char small { font-size: 11px; color: #7d7464; }
+.gi-char.me { box-shadow: inset 0 0 0 2px #a06b30, 0 0 12px #ffe7a888; }
+.gi-char.out { filter: grayscale(0.8); opacity: 0.7; }
+.gi-slot { position: absolute; top: 4px; left: 6px; font-size: 11px; font-weight: 800; color: #495366; }
+.gi-res { font-size: 12.5px; color: #7d7464; margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.gi-res .gi-icon { width: 14px; height: 14px; }
+.gi-ranks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.gi-ranks li { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 6px; background: #e2d9c8; }
+.gi-ranks li.mine { box-shadow: inset 0 0 0 2px #a06b30; }
+.gi-ranks .b-n { flex: 1; display: flex; flex-direction: column; font-weight: 700; }
+.gi-ranks .b-n small { font-weight: 400; color: #7d7464; }
+.gi-ranks b { color: #a06b30; }
+@media (orientation: landscape) and (max-height: 500px) {
+  .gi-avatar.big { width: 60px; height: 60px; font-size: 26px; }
+  .gi-namecard { min-height: 84px; padding: 10px; }
+  .gi-app-i { width: 46px; height: 46px; font-size: 20px; }
+  .gi-grid { gap: 6px 4px; }
+}

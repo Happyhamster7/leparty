@@ -322,6 +322,7 @@
     if (!prev) return;
     const a = next.acts[next.act];
     if (prev.act !== next.act) {
+      if (kind === 'player') ui.tab = next.acts[next.act].id === 'genshin' ? 'menu' : 'yard';
       splash('act', `Act ${a.numeral}`, `${a.emoji} ${a.name}`, 3600);
       buzz([200, 100, 200, 100, 400]);
       return;
@@ -570,6 +571,7 @@
       ['board', '🏆', 'Board'],
     ];
     const body = { yard: yardTab, shop: shopTab, cell: cellTab, rap: rapTab, board: boardTab }[ui.tab] || yardTab;
+    if (!['yard', 'shop', 'cell', 'rap', 'board'].includes(ui.tab)) ui.tab = 'yard';
     return `
       <header class="top" ${myTeam && me.status === 'block' ? `style="border-bottom-color:${h(myTeam.color)}"` : ''}>
         <div class="top-row">
@@ -602,37 +604,140 @@
   const tabDot = (k) =>
     (k === 'rap' && needsMafiaAction()) || (k === 'yard' && ui.tab !== 'yard' && todoItems().length) || (k === 'cell' && (myIncoming().length || actionableRequests().length)) ? '<i class="dot"></i>' : '';
 
+  const VISION_GLYPH = { Pyro: '🔥', Hydro: '💧', Anemo: '🌀', Electro: '⚡', Dendro: '🌿', Cryo: '❄️', Geo: '🪨' };
+  const arOf = (p) => Math.min(60, 1 + Math.floor((p.adventureExp || 0) / 200));
+  const visionColor = (p) => S.visions?.[p.vision]?.color || '#d3bc8e';
+  const avatar = (p, cls = '') =>
+    `<span class="gi-avatar ${cls}" style="--vc:${visionColor(p)}">${h((p.name || '?').trim()[0].toUpperCase())}<i title="${h(p.vision)}">${VISION_GLYPH[p.vision] || '✦'}</i></span>`;
+  // Elemental Resonance: two or more of one Vision among a block's active members.
+  const resonanceOf = (teamId) => {
+    const counts = {};
+    for (const m of blockmates(teamId)) if (m.status !== 'solitary') counts[m.vision] = (counts[m.vision] || 0) + 1;
+    return Object.keys(counts).filter((v) => counts[v] >= 2);
+  };
+
+  // The Genshin act's screens, in Paimon Menu order.
+  function giScreens() {
+    const me = S.me;
+    return [
+      ['yard', '📜', 'Adventurer Handbook', handbookTab],
+      ['wish', '✨', 'Wish', wishTab],
+      ['shop', '🛍️', 'Paimon’s Bargains', shopTab],
+      ['cell', me.status === 'block' ? '👥' : me.status === 'holding' ? '🕳️' : '🔒', me.status === 'block' ? 'Party Setup' : me.status === 'holding' ? 'Holding Cell' : 'Solitary', cellTab],
+      ['events', '🎪', 'Events', eventsTab],
+      ['rap', '📖', 'Archive', rapTab],
+      ['board', '🏆', 'Leaderboard', boardTab],
+      ['mail', '✉️', 'Mail', mailTab],
+    ];
+  }
+
+  function giPills(myTeam) {
+    return `<div class="gi-cur">
+      ${myTeam ? `<span class="gi-pill" title="Wishes until a guaranteed 5★">${FATE}<b>${S.settings.warpPity - (myTeam.pity || 0)}</b><small>to 5★</small></span>` : ''}
+      ${myTeam ? `<span class="gi-pill" title="${h(myTeam.name)} Primogems">${PRIMO}<b>${myTeam.budget}</b><i>+</i></span>` : ''}
+    </div>`;
+  }
+
+  // Home is the Paimon Menu: your profile in the corner, every screen one tap away.
   function genshinPage() {
     const me = S.me;
     const myTeam = team(me.teamId);
-    const tabs = [
-      ['yard', '📜', 'Adventurer Handbook'],
-      ['wish', '✨', 'Wish'],
-      ['shop', '🛍️', 'Paimon’s Bargains'],
-      ['cell', me.status === 'block' ? '👥' : me.status === 'holding' ? '🕳️' : '🔒', me.status === 'block' ? 'Party Setup' : me.status === 'holding' ? 'Holding Cell' : 'Solitary'],
-      ['rap', '📖', 'Archive'],
-      ['board', '🏆', 'Leaderboard'],
-    ];
-    const cur = tabs.find((t) => t[0] === ui.tab) || tabs[0];
-    const body = { yard: yardTab, wish: wishTab, shop: shopTab, cell: cellTab, rap: rapTab, board: boardTab }[cur[0]];
-    return `<div class="gi">
+    const screens = giScreens();
+    const cur = screens.find((x) => x[0] === ui.tab);
+    const ar = arOf(me);
+    const into = (me.adventureExp || 0) % 200;
+    const shell = (inner) => `<div class="gi ${cur ? 'gi-screen' : 'gi-home'}">
       <div class="gi-bg">${hero()}</div>
       <div class="gi-rotate" role="alert"><div class="gi-phone"></div><b>Rotate your device</b><small>Act II is played in landscape, like the game.</small></div>
-      <header class="gi-top">
-        <div class="gi-title"><span class="gi-ico">${cur[1]}</span><div><b>${h(cur[2])}</b><small>${h(me.name)}${me.isCaptain ? ' 👑' : ''} · #${h(me.inmateNo)} · ${statusChip(me)}</small></div></div>
-        <div class="gi-cur">
-          ${myTeam ? `<span class="gi-pill" title="Wishes until a guaranteed 5★">${FATE}<b>${S.settings.warpPity - (myTeam.pity || 0)}</b><small>to 5★</small></span>` : ''}
-          ${myTeam ? `<span class="gi-pill" title="${h(myTeam.name)} Primogems">${PRIMO}<b>${myTeam.budget}</b><i>+</i></span>` : ''}
-        </div>
-      </header>
-      <nav class="gi-nav">${tabs.map(([k, icon, label]) => `<button data-act="tab" data-tab="${k}" class="${cur[0] === k ? 'on' : ''}"><span class="gi-ni">${icon}</span><span>${h(label)}</span>${tabDot(k)}</button>`).join('')}</nav>
-      <main class="gi-main">
-        ${phaseBanner()}${announcement()}${drinkCard()}${dealerCard()}${incomingAlerts()}
-        ${body()}
-      </main>
+      ${inner}
       ${ui.sheet ? buySheet() : ''}
       ${actUnseen() ? actModal() : briefingUnseen() ? briefingModal() : ''}
     </div>`;
+    if (cur) {
+      return shell(`<header class="gi-top">
+          <div class="gi-title"><span class="gi-ico">${cur[1]}</span><div><b>${h(cur[2])}</b><small>${h(me.name)} · AR ${ar} · ${statusChip(me)}</small></div></div>
+          <div class="row">${giPills(myTeam)}<button class="gi-x" data-act="tab" data-tab="menu" aria-label="Back to the Paimon Menu">✕</button></div>
+        </header>
+        <main class="gi-main">${phaseBanner()}${announcement()}${incomingAlerts()}${dealerCard()}${cur[0] === 'yard' ? '' : drinkCard()}${cur[3]()}</main>`);
+    }
+    const signature = myTeam?.motto || (myTeam ? `Adventurer of ${myTeam.name}${myTeam.nickname ? ` “${myTeam.nickname}”` : ''}` : me.status === 'holding' ? 'Waiting in the Holding Cell…' : 'Doing time in Solitary.');
+    return shell(`<section class="gi-profile" style="--vc:${visionColor(me)}">
+        <div class="gi-namecard">
+          ${avatar(me, 'big')}
+          <div class="gi-who"><b>${h(me.name)}${me.isCaptain ? ' 👑' : ''}</b><small>${h(signature)}</small></div>
+        </div>
+        <div class="gi-stats">
+          <div class="gi-ar"><span>Adventure Rank</span><b>${ar}</b></div>
+          <div class="gi-exp"><i style="width:${ar >= 60 ? 100 : (into / 200) * 100}%"></i><small>${ar >= 60 ? 'MAX' : `${into}/200`}</small></div>
+          <div class="gi-row"><span>World Level</span><b>${Math.min(8, Math.floor(ar / 5))}</b></div>
+          <div class="gi-row"><span>Vision</span><b>${VISION_GLYPH[me.vision] || ''} ${h(me.vision || '')}</b></div>
+          <div class="gi-row"><span>Party</span><b>${myTeam ? chip(myTeam) : statusChip(me)}</b></div>
+        </div>
+        <div class="gi-uid">UID: 8${h(me.inmateNo)}26</div>
+      </section>
+      <section class="gi-menu">
+        <div class="gi-menu-top"><span class="gi-paimon">✦ Paimon Menu</span>${giPills(myTeam)}</div>
+        <div class="gi-notices">${phaseBanner()}${announcement()}${incomingAlerts()}${dealerCard()}</div>
+        <div class="gi-grid">${screens.map(([k, icon, label]) => `<button class="gi-app" data-act="tab" data-tab="${k}"><span class="gi-app-i">${icon}${giDot(k)}</span><span>${h(label)}</span></button>`).join('')}</div>
+      </section>`);
+  }
+
+  // Red dots on the menu, like the game's notification badges.
+  function giDot(k) {
+    const me = S.me;
+    const open = (me.commissions || []).some((c) => !c.done);
+    const show =
+      tabDot(k) ||
+      (k === 'yard' && (open || todoItems().length)) ||
+      (k === 'events' && !!liveGame() && briefingUnseen());
+    return show ? '<i class="dot"></i>' : '';
+  }
+
+  // Adventurer Handbook: Daily Commissions first, then everything else owed.
+  function handbookTab() {
+    const me = S.me;
+    const list = me.commissions || [];
+    const done = list.filter((c) => c.done).length;
+    const rw = S.commissionReward;
+    const myTeam = team(me.teamId);
+    const res = myTeam ? resonanceOf(myTeam.id) : [];
+    return `<section class="card gi-comms-card">
+        <h3>Daily Commissions <span class="gi-count">${done}/${list.length || 4}</span></h3>
+        ${list.length ? `<div class="gi-comms">${list
+          .map((c) => `<div class="gi-comm ${c.done ? 'done' : ''}">
+            <span class="gi-comm-i">${c.done ? '✔' : '!'}</span>
+            <div><b>${h(c.text)}</b><small>Rewards: ${PRIMO}${rw.primos}${res.length ? `+${res.length}` : ''} · ${rw.exp} Adventure EXP</small></div>
+            ${c.done ? '<span class="gi-claimed">Completed</span>' : `<button class="btn sm" data-act="commission" data-commission-id="${c.id}" data-confirm="Turn in: “${h(c.text)}”? Honour system, adventurer.">Complete</button>`}
+          </div>`)
+          .join('')}</div>` : '<p class="empty">The Adventurers’ Guild has no commissions for you yet.</p>'}
+        <p class="gi-guild">${me.commissionBonus ? '📜 Bonus claimed from the Adventurers’ Guild. Ad astra abyssosque!' : `📜 Finish all four for a Guild bonus: ${PRIMO}${rw.bonus.primos} · ${rw.bonus.exp} Adventure EXP${myTeam ? '' : ' (Primogems only go to adventurers in a party)'}.`}</p>
+      </section>
+      ${todoCard()}
+      ${matchCard()}`;
+  }
+
+  function eventsTab() {
+    const live = liveGame();
+    return `${lockupRules(S.me.status, live)}${matchCard()}${live ? liveGameCard(live) : '<section class="card"><h3>Current Event</h3><p class="empty">No event running. The hosts will start the next one soon.</p></section>'}
+      ${S.games.length ? `<section class="card"><h3>Event Schedule</h3><ol class="schedule">${S.games.map((g) => `<li class="g-${g.status}"><span>${h(g.name)}</span><span class="tag">${g.status === 'live' ? 'LIVE' : g.status === 'done' ? 'DONE' : 'UP NEXT'}</span></li>`).join('')}</ol></section>` : ''}`;
+  }
+
+  function mailTab() {
+    return `<section class="card"><h3>Mail</h3>${feedList()}</section>`;
+  }
+
+  // Party Setup: your blockmates as a lineup of characters, plus any Elemental Resonance.
+  function partyLineup(t) {
+    const mates = blockmates(t.id);
+    const res = resonanceOf(t.id);
+    return `<section class="card gi-party">
+      <h3>Party Setup</h3>
+      <div class="gi-lineup">${mates
+        .map((p, i) => `<div class="gi-char ${p.id === S.me.id ? 'me' : ''} ${p.status === 'solitary' ? 'out' : ''}" style="--vc:${visionColor(p)}">
+          <span class="gi-slot">${i + 1}</span>${avatar(p)}<b>${h(p.name)}${p.isCaptain ? ' 👑' : ''}</b><small>AR ${arOf(p)} · ${h(p.vision)}${p.status === 'solitary' ? ' · 🔒' : ''}</small></div>`)
+        .join('')}</div>
+      <p class="gi-res">${res.length ? `Elemental Resonance: ${res.map((v) => `<b>${VISION_GLYPH[v]} ${h(S.visions[v].resonance)}</b>`).join(', ')}. Each commission pays ${PRIMO}+${res.length} extra.` : 'No Elemental Resonance. Two party members with the same Vision unlock one (and extra Primogems per commission).'}</p>
+    </section>`;
   }
 
   // The event wish banner: Wish ×1 / ×10, rates, pity, and the party's history.
@@ -1020,6 +1125,7 @@
     const immune = new Set(S.mafia.immune);
     return `
       ${me.status === 'solitary' ? lockupRules('solitary') : ''}
+      ${actId() === 'genshin' ? partyLineup(myTeam) : ''}
       ${augmentCard()}
       <section class="card cell-head block-banner" style="--c:${h(myTeam.color)}">
         <div class="eyebrow">Your block · #${rankOf(myTeam.id)} of ${S.teams.length}</div>
@@ -1234,7 +1340,9 @@
 
   function boardTab() {
     const rows = standings();
+    const adventurers = actId() === 'genshin' ? [...S.players].sort((a, b) => (b.adventureExp || 0) - (a.adventureExp || 0)).slice(0, 10) : [];
     return `
+      ${adventurers.length ? `<section class="card"><h3>Top Adventurers</h3><ol class="gi-ranks">${adventurers.map((p, i) => `<li class="${p.id === S.me?.id ? 'mine' : ''}"><span class="rank">${i + 1}</span>${avatar(p)}<span class="b-n">${h(p.name)}<small>${h(teamName(p.teamId))}</small></span><b>AR ${arOf(p)}</b></li>`).join('')}</ol></section>` : ''}
       <section class="card">
         <h3>🏆 Block Standings</h3>
         ${rows.length ? `<ol class="board">${rows
@@ -1817,6 +1925,14 @@
     'reveal-task': () => {
       ui.revealTask = !ui.revealTask;
       render();
+    },
+    commission: async (d) => {
+      if (d.confirm && !confirm(d.confirm)) return;
+      const res = await act('commission', { commissionId: d.commissionId });
+      if (!res.ok) return;
+      const r = res.result || {};
+      if (r.all) splash('passed', 'Commissions completed', `The Adventurers’ Guild pays out · AR ${r.rank}`, 3200);
+      else toast(`📜 Commission complete!${r.primos ? ` +${r.primos} Primogems for your party.` : ''}`, 'ok');
     },
     wish: async (d) => {
       const fate = S.items.find((i) => i.type === 'warp');

@@ -769,3 +769,38 @@ test('saves from the Honkai act move to Genshin', () => {
   assert.equal(fate.name, 'Intertwined Fate');
   assert.equal(g.s.items.filter((i) => i.act).length, 2);
 });
+
+test('Genshin: Daily Commissions pay the party, Adventure EXP ranks you up, resonance pays extra', () => {
+  const { g, a, players } = setup(4);
+  const [p0, , p2] = players;
+  assert.throws(() => g.completeCommission(p0.id, { commissionId: 'x' }), /Act II/);
+  g.setAct({ index: 1 });
+  assert.equal(p0.commissions.length, 4);
+  const late = g.join('Latecomer');
+  assert.equal(late.commissions.length, 4, 'anyone joining mid-act gets commissions too');
+  p0.vision = 'Pyro';
+  p2.vision = 'Hydro';
+  const before = a.budget;
+  const r = g.completeCommission(p0.id, { commissionId: p0.commissions[0].id });
+  assert.equal(r.primos, 2);
+  assert.equal(a.budget, before + 2);
+  assert.throws(() => g.completeCommission(p0.id, { commissionId: p0.commissions[0].id }), /Already/);
+  p2.vision = 'Pyro';
+  assert.equal(g.completeCommission(p0.id, { commissionId: p0.commissions[1].id }).primos, 3, 'Pyro resonance adds 1');
+  g.completeCommission(p0.id, { commissionId: p0.commissions[2].id });
+  const last = g.completeCommission(p0.id, { commissionId: p0.commissions[3].id });
+  assert.ok(last.all);
+  assert.equal(p0.adventureExp, 4 * 100 + 250);
+  assert.equal(last.rank, 4);
+  assert.equal(g.viewFor(p0.id).me.commissions.length, 4);
+  assert.ok(g.viewFor(p2.id).players.find((x) => x.id === p0.id).vision);
+  assert.equal(g.viewFor(p2.id).players.find((x) => x.id === p0.id).commissions, undefined, 'commissions stay private');
+});
+
+test('every inmate has a stable Vision, even from old saves', () => {
+  const s = new Game().s;
+  s.players.push({ id: 'abc123', name: 'Old', token: 't', inmateNo: '12345', sentences: [] });
+  const v1 = new Game(s).s.players[0].vision;
+  const v2 = new Game(JSON.parse(JSON.stringify(s))).s.players[0].vision;
+  assert.equal(v1, v2);
+});
