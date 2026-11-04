@@ -316,3 +316,101 @@ A transaction log underpins money and points, so any balance can be rebuilt or c
 | Hosting | Online web app |
 | Source of truth | This document. It replaces the Phase 2 design in the repo's `CLAUDE.md` and `docs/schema.md` (Days, sentence and commissary, substitutes). |
 | Stack | Next.js 14 and Supabase on Vercel, as in Phase 1 |
+
+---
+
+## 12. User workflows
+
+What each person does, start to finish. Steps marked *(every round)* repeat until the night ends.
+
+### Guest (their own phone, Phase 1)
+
+```mermaid
+flowchart TD
+  G1[Open the signup link] --> G2[Enter name and tolerance]
+  G2 --> G3[Join the party and RSVP]
+  G3 --> G4[Mugshot and potluck]
+  G4 --> G5[Check in at the door]
+  G5 --> G6[Placed on a team by the draw]
+  G6 --> G7["Play when picked (every round)"]
+  G7 --> G8["Drink at the bar with the team (every round)"]
+  G8 -->|next round| G7
+```
+
+### Host (laptop, tabbed console)
+
+```mermaid
+flowchart TD
+  H1[Create the party] --> H2[Run check-in and the draw]
+  H2 --> H3[Print the team QR cards]
+  H3 --> H4[Press Start game]
+  H4 --> H5["Pick the game, start the timer (every round)"]
+  H5 --> H6[Enter placings and bonus money]
+  H6 --> H7[Open, then close the shop]
+  H7 --> H8[Start drinks: app builds the queue]
+  H8 -->|auto-advance when every team is done| H5
+  H8 -->|last round| H9[Confirm the winner]
+```
+
+Any time: add admin drinks, adjust balances, mark a team done, reissue a leaked QR code.
+
+### Team phone (whoever last scanned the team's QR)
+
+```mermaid
+flowchart TD
+  T1[Scan the team QR card: latest scan takes over] --> T2["Pick players within 1 minute (every round)"]
+  T2 --> T3[See balance after results]
+  T3 --> T4[Shop: buy items, send drinks in secret]
+  T4 --> T5[Called up to the bar]
+  T5 --> T6[Film the team drinking: 30-second countdown]
+  T6 --> T7[Press Punishment complete: clip uploads]
+  T7 -->|next round| T2
+```
+
+### Bartender (cafeteria iPad)
+
+```mermaid
+flowchart TD
+  B1[Open the cafeteria view with its own code] --> B2["See the next team's order (every drinks phase)"]
+  B2 --> B3[Pour ahead from Up next]
+  B3 --> B4[Serve and press Next: starts that team's 30 seconds]
+  B4 -->|more teams in the queue| B2
+  B4 -->|queue done| B5[Wait for the next drinks phase]
+  B5 --> B2
+```
+
+Back undoes a mistaken Next.
+
+### Public display (TV and 2 monitors)
+
+```mermaid
+flowchart TD
+  P1["Game, timer, livestream (every round)"] --> P2[All picks revealed at once]
+  P2 --> P3[Results and leaderboard]
+  P3 --> P4[Shop open, cooldown list]
+  P4 --> P5[Waiting page: team video grid, calls each team to the bar]
+  P5 -->|every team finished| P1
+```
+
+### Drinks phase hand-offs
+
+The one place everyone hands off to each other. Only the host and the bartender press anything to move the night on; the public display reacts on its own.
+
+```mermaid
+sequenceDiagram
+  participant H as Host
+  participant B as Bartender
+  participant T as Team phone
+  participant D as Public display
+  H->>D: Start drinks (queue built, waiting page shows a tile per team)
+  loop For each team, fewest drinks first
+    B->>T: Serve, press Next (points recorded, filming prompt opens)
+    B->>D: Calls the team, shows the 30-second countdown
+    T->>D: Upload clip (loops muted on the team's tile)
+    Note over B: Moves to the next team without waiting for clips
+  end
+  D->>D: Every team finished (timer ended or host marked done)
+  D->>H: Auto-advance to the next game
+```
+
+Each team's 30 seconds starts when the bartender presses Next, not when filming starts. A team that doesn't finish in time gets an extra shot next round.
