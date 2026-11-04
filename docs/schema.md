@@ -4,29 +4,29 @@ The full design, mirrored into the repo so it travels with the code.
 Source doc: https://claude.ai/code/artifact/636e45b5-2a0e-4c29-995d-da27e55d54fb
 
 Phase 1 (signup and intake) is built; its tables are in
-`supabase/migrations/0001_phase1.sql`. Phase 2 (the game) is designed
-here but not built.
+`supabase/migrations/0001_phase1.sql`. Phase 2 (the game) is not built.
+Its behaviour is specified in `docs/halloween-game-design.md`, the
+source of truth; this file holds its tables.
 
 ## How it's organised
 
 People persist across parties; everything else belongs to one event. A
 guest's profile is written once and reused, while their block,
-sentence, drinks and clips are all scoped to a single night.
+money, points, drinks and clips are all scoped to a single night.
 
 Four decisions drive the model:
 
-- **Blocks are the unit of play.** Sentence, commissary and drinks owed
-  all sit on the block. Inmates exist underneath as a roster for
-  nominating who drinks.
-- **Theme lives in data, not code.** Item names, prices, substitutes and
-  wildcards are rows in catalogue tables scoped to an event. A new party
-  is a new theme pack, not a rewrite.
-- **Intents, not state writes.** Phones write rows to `purchases`. One
-  resolver turns them into `drinks` and balance changes in a single
-  defined step. This is what makes last-write-wins safe and gives Roll
-  call something to reveal.
-- **Append-only history.** Nothing overwrites a balance. Sentence and
-  commissary are derived from a ledger, so you can always see why a
+- **Blocks are the unit of play.** A block is a team. Money, points and
+  drinks owed all sit on the block; drinks are sent to a block, and the
+  block decides who drinks.
+- **Theme lives in data, not code.** Games, drink types and items are
+  rows in catalogue tables scoped to an event. A new party is a new
+  theme pack, not a rewrite.
+- **Intents, not state writes.** Phones write `drink_orders` and
+  `item_uses`. One server-side step turns them into the drinks queue
+  when the host starts the drinks phase.
+- **Append-only history.** Nothing overwrites a balance. Money, points
+  and stars are derived from a ledger, so you can always see why a
   number is what it is, and rewind if a ruling goes wrong.
 
 Postgres via Supabase. All ids are `uuid` with `gen_random_uuid()`
@@ -87,13 +87,12 @@ what makes the app reusable.
 | held_on | date | |
 | starts_at_label | text | Free text: "7:00 PM" |
 | status | text | draft, open, checkin, running, archived |
-| config | jsonb | Starting sentence, commissary, block count |
-| current_day | int | Which Day the night is on |
-| phase | text | intake, yard, lights_out, roll_call, serving, wildcard, paused |
+| config | jsonb | Block count; phase 2 adds starting money |
+| current_day | int | Phase 2: the current round number |
+| phase | text | intake, then the current round's phase: game, results, spending, drinks; paused |
 
 `phase` and `current_day` are what every phone and the big screen
-subscribe to. Changing them is how you advance the night — the single
-most important realtime channel in the app.
+poll. Changing them is how you advance the night.
 
 `config` is jsonb rather than columns because these are knobs tuned
 between parties that shouldn't need a migration. Headcount is not one of
@@ -140,7 +139,9 @@ application code would race when two guests finish signup at once.
 | join_code | text | Six characters, typed fallback |
 | in_play | bool | False for a block the draw didn't need |
 | charge | text | The block's ridiculous crime |
-| captain_participant_id | uuid | Nullable, social only |
+| captain_participant_id | uuid | Unused: there are no captains |
+| team_device_id | text | Phase 2: the device that last scanned the QR |
+| team_device_claimed_at | timestamptz | Phase 2: when it took over |
 
 Never `?team=1`. `join_token` is random, scoped to the event, and
 rotatable — someone will try typing another block's id into the URL bar.
@@ -148,8 +149,13 @@ rotatable — someone will try typing another block's id into the URL bar.
 Join codes avoid O, 0, I and 1, because they get read aloud across a
 room in bad light.
 
-Balances are deliberately absent. Sentence and commissary are derived
+Balances are deliberately absent. Money, points and stars are derived
 from the ledger.
+
+**One team phone, latest scan wins** (phase 2). Scanning the QR sets
+`team_device_id` to that device and signs the previous one out. Because
+any scan takes over, rotating `join_token` is how the host shuts out a
+leaked card; the new code shows on the host console.
 
 ### Variable headcount
 
@@ -176,266 +182,261 @@ Three consequences:
 - **Two screens have to scale.** The check-in grid auto-fits columns and
   scrolls; the draw review shows blocks of different sizes side by side.
 
-Past roughly six per block, one shared phone stops working as a huddle,
-so multiple devices per block becomes the normal case rather than the
-fallback.
+Only one device per block acts for the team at a time (latest scan
+wins); everyone else watches the public screens.
 
 ---
 
 ## Game tables (phase 2, not built)
 
-The split that matters: `purchases` is what phones write, `drinks` and
-`ledger_entries` are what the resolver writes.
+The behaviour these tables serve is in `docs/halloween-game-design.md`,
+which is the source of truth for Phase 2. It replaced an earlier design
+(Days, Yard time, Lights out, Roll call, sentence and commissary,
+substitutes, wildcards); those tables are gone from this doc.
 
-### days
+A team is a `blocks` row. The split that matters: phones write
+`drink_orders` and `item_uses`; one server-side step turns them into a
+drinks queue (`serves`) when the host starts the drinks phase, and
+`ledger_entries` are written as things actually happen.
+
+### acts
+
+Rounds are grouped into Acts.
 
 | Column | Type | Notes |
 | --- | --- | --- |
 | id | uuid | PK |
 | event_id | uuid | FK events |
-| number | int | Day 1, Day 2 |
-| game_id | uuid | FK games, what was played |
-| lights_out_closes_at | timestamptz | Drives the countdown |
-| resolved_at | timestamptz | When Roll call ran |
+| number | int | Act 1, Act 2 |
+| name | text | Optional |
 
 ### games
+
+The catalogue for one event. Placeholder list until rules are settled.
 
 | Column | Type | Notes |
 | --- | --- | --- |
 | id | uuid | PK |
 | event_id | uuid | FK events |
 | name | text | |
-| rules | text | Shown on the phones |
-| grouping_mode | text | blocks, mixed, random, captains, losers |
-| payout | jsonb | Years off and commissary by placing |
-| played_at | timestamptz | Null until played |
+| rules | text | Shown on the team phones |
+| format | text | per_team, team_relay, all_teams, head_to_head |
+| players_needed | int | Per team. Null for group games |
+| is_group | bool | Whole team plays; no prompt, no cooldown |
+| result_type | text | placings, score, winner, per_player |
 
-`grouping_mode` is how events that cut across blocks are handled. Blocks
-are the default.
+### rounds
 
-### groupings
-
-One row per temporary team when a game isn't played by blocks.
+One game played. The heart of the state machine.
 
 | Column | Type | Notes |
 | --- | --- | --- |
 | id | uuid | PK |
+| event_id | uuid | FK events |
+| act_id | uuid | FK acts |
+| number | int | Across the whole night |
 | game_id | uuid | FK games |
-| label | text | "Group 3" |
-| participant_ids | uuid[] | Who's in it |
+| phase | text | game, results, spending, drinks, done |
+| pick_deadline | timestamptz | End of the 1-minute player pick |
+| picks_revealed_at | timestamptz | All picks shown at once |
+| shop_closed_at | timestamptz | Orders after this are rejected |
+| drinks_started_at | timestamptz | When the queue was built |
+| completed_at | timestamptz | Set by auto-advance |
+
+`events.phase` mirrors the current round's phase so every view can poll
+one row.
+
+### round_players
+
+Who played, for the reveal and for cooldowns.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| round_id | uuid | FK rounds |
+| block_id | uuid | FK blocks |
+| participant_id | uuid | FK participants |
+| picked_by | text | team or auto |
+
+Primary key `(round_id, participant_id)`. A participant is on cooldown
+if they appear in either of the two most recent non-group rounds.
+Auto-pick takes eligible players with the fewest rows here.
 
 ### game_results
 
 | Column | Type | Notes |
 | --- | --- | --- |
 | id | uuid | PK |
-| game_id | uuid | FK games |
+| round_id | uuid | FK rounds |
 | block_id | uuid | FK blocks |
 | placing | int | 1 is best |
-| note | text | For host overrides |
+| score | int | For score-type games |
+| note | text | Host overrides |
 
-### purchases
-
-What a phone writes during Lights out. Unresolved rows are intents, not
-facts.
+### drink_types
 
 | Column | Type | Notes |
 | --- | --- | --- |
 | id | uuid | PK |
-| day_id | uuid | FK days |
-| actor_block_id | uuid | Who spent |
-| item_key | text | FK items |
-| target_block_id | uuid | Nullable for self-cast items |
-| cost | int | Price at purchase time |
-| submitted_by_device | text | For debugging, not enforcement |
-| superseded | bool | Last write wins sets this on earlier rows |
-| resolved_at | timestamptz | Null until Roll call |
+| event_id | uuid | FK events |
+| name | text | Vodka shot, soju |
+| points | int | Points to the sender on serve |
+| cost | int | Money to send one |
 
-Last-write-wins is implemented here: a new submission from any device on
-the block flags previous rows `superseded` rather than deleting them, so
-you can see what a block changed its mind about.
+### drink_orders
 
-### drinks
-
-One row per drink owed, written by the resolver.
+What a team phone writes during spending. Admin drinks and penalty
+shots land here too, so the queue has one source.
 
 | Column | Type | Notes |
 | --- | --- | --- |
 | id | uuid | PK |
-| day_id | uuid | FK days |
-| block_id | uuid | Who owes it |
-| source_block_id | uuid | Who sent it, null for wildcards |
-| origin | text | purchase, wildcard, game_loss, host |
-| nominee_participant_id | uuid | Null until the block picks |
-| outcome | text | shot, substitute, years |
-| substitute_key | text | FK substitutes |
-| years_paid | int | When outcome is years |
-| settled_at | timestamptz | |
+| round_id | uuid | FK rounds |
+| sender_block_id | uuid | Null for admin and penalty drinks |
+| origin | text | team, admin, penalty |
+| target_block_id | uuid | Always a team, never a player |
+| drink_type_id | uuid | FK drink_types |
+| qty | int | |
+| status | text | pending, cancelled, reflected, served |
+| scores_for_block_id | uuid | Set by Reflect to the reflecting team |
+| penalty_id | uuid | FK penalties when origin is penalty |
 
-The block owes the drink; `nominee_participant_id` is filled in during
-Serve your time. Counting that column per participant is what shows the
-table who's been carrying the block.
+Drinks go to a team; the team decides who drinks. Nothing here names a
+player and nothing caps a player.
+
+### items and item_uses
+
+Placeholders. The four draft items are Eye Spy, Reflect, Bus ticket
+and Lock-up.
+
+| items column | Type | Notes |
+| --- | --- | --- |
+| id | uuid | PK |
+| event_id | uuid | FK events |
+| key | text | eye_spy, reflect, bus_ticket, lock_up |
+| name | text | |
+| description | text | |
+| price | int | Money |
+| buyer_rule | text | any, bottom_4 |
+| limit_per_round | int | Null for unlimited |
+| limit_per_night | int | Null for unlimited |
+
+| item_uses column | Type | Notes |
+| --- | --- | --- |
+| id | uuid | PK |
+| round_id | uuid | FK rounds |
+| block_id | uuid | Buyer |
+| item_id | uuid | FK items |
+| target_block_id | uuid | Nullable |
+| target_participant_id | uuid | Bus ticket and Lock-up only |
+| result | jsonb | E.g. what Eye Spy showed |
+
+### serves
+
+The drinks queue, one row per receiving team per round, built when the
+drinks phase starts.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | uuid | PK |
+| round_id | uuid | FK rounds |
+| block_id | uuid | Receiving team |
+| drink_count | int | Total owed this round |
+| queue_position | int | Fewest first, ties random |
+| served_at | timestamptz | Bartender pressed Next |
+| timer_ends_at | timestamptz | served_at plus 30 seconds |
+| finished_at | timestamptz | Timer ended or host marked done |
+| finished_by | text | timer or host |
+| missed_time | bool | Didn't finish in 30 seconds |
+
+A team with no drinks gets no row and shows "Safe this round". Auto-
+advance fires when every row in the round has `finished_at`.
+
+### penalties
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | uuid | PK |
+| block_id | uuid | FK blocks |
+| from_round_id | uuid | Where it was earned |
+| applies_round_id | uuid | Null until the next round's queue is built |
+| kind | text | extra_shot (others to be decided) |
+| reason | text | missed_time, host |
+
+Missing the 30 seconds writes one `extra_shot` row; the next queue
+build turns it into a `drink_orders` row with `origin = 'penalty'`.
 
 ### clips
 
 | Column | Type | Notes |
 | --- | --- | --- |
 | id | uuid | PK |
-| drink_id | uuid | FK drinks |
-| storage_path | text | Supabase Storage |
+| serve_id | uuid | FK serves |
+| storage_path | text | Supabase Storage, uploaded directly from the phone |
 | upload_state | text | pending, uploaded, failed |
-| duration_ms | int | |
-| featured | bool | For the big screen feed |
+| status | text | shown, removed |
+| uploaded_at | timestamptz | |
 
-`upload_state` is the important one. The Day advances when the drink is
-settled, never when the file finishes uploading.
+The queue never waits on `upload_state`. Clips are kept after the party.
 
 ### ledger_entries
 
-Append-only. Every change to a block's sentence or commissary is a row.
+Append-only. Every change to a team's money, points or stars is a row.
 
 | Column | Type | Notes |
 | --- | --- | --- |
 | id | uuid | PK |
 | block_id | uuid | FK blocks |
-| day_id | uuid | Nullable |
-| kind | text | sentence or commissary |
+| round_id | uuid | Nullable |
+| kind | text | money, points, stars |
 | delta | int | Signed |
-| reason | text | game_payout, purchase, bribe, wildcard, host_adjust |
-| ref_id | uuid | The purchase, drink or wildcard that caused it |
+| reason | text | placing, bonus, star, item, drink_cost, drink_served, host_adjust |
+| ref_id | uuid | The order, result or item use that caused it |
 
-Current balances are `sum(delta)` grouped by block and kind. Slower than
-a counter column, but a wrong ruling becomes one compensating row rather
-than a guess at what the number should have been.
-
----
-
-## Catalogue tables (phase 2, not built)
-
-Where reusability actually comes from. Swap these rows and the jail
-party becomes a heist or a cult without touching application code.
-
-### items
-
-| Column | Type | Notes |
-| --- | --- | --- |
-| id | uuid | PK |
-| event_id | uuid | FK events |
-| key | text | shank, bribe, snitch, riot |
-| name | text | Display name |
-| description | text | |
-| base_cost | int | Commissary |
-| effect | text | send, shield, reflect, multiply, split, bounty, reveal, cancel_all |
-| effect_value | int | Multiplier, count, whatever the effect needs |
-| targets | text | block, self, none |
-| stock_per_block | int | Null for unlimited |
-| available_from_day | int | Unlocks in later acts |
-
-`effect` is a small closed set the resolver understands. Adding an item
-is a row; adding a new kind of effect is code.
-
-### substitutes
-
-| Column | Type | Notes |
-| --- | --- | --- |
-| id | uuid | PK |
-| event_id | uuid | FK events |
-| key | text | vinegar, pickle_juice, hot_sauce |
-| name | text | "Toilet wine" |
-| years_cost | int | Usually 0 — the point is it's free |
-| in_mystery_pool | bool | For the roulette option |
-
-The bribe path — paying in years instead — is a config value on the
-event rather than a row here, since it's one number.
-
-### wildcards
-
-| Column | Type | Notes |
-| --- | --- | --- |
-| id | uuid | PK |
-| event_id | uuid | FK events |
-| key | text | lockdown, shakedown, riot, parole |
-| name | text | |
-| description | text | Shown on the big screen |
-| effect | jsonb | What it does when fired |
-| fired_on_day | int | Null until used |
-
-### theme_strings
-
-| Column | Type | Notes |
-| --- | --- | --- |
-| event_id | uuid | FK events |
-| key | text | points, currency, team, round, host |
-| value | text | sentence, commissary, block, day, warden |
-
-Every label in the UI reads from here. The cheapest possible way to make
-the next party feel like a different game.
+Balances are `sum(delta)` grouped by block and kind. A wrong ruling is
+one compensating row.
 
 ---
 
-## Lights out resolution order
+## Starting the drinks phase
 
-When the timer closes, one server-side function turns `purchases` into
-`drinks` and `ledger_entries`. Order matters, because shields, reflects
-and multipliers give different answers depending on when they apply.
+One server-side function, idempotent on `round_id`, run when the host
+starts drinks:
 
-1. **Take the final intents.** All `purchases` for the Day where
-   `superseded` is false. Anything submitted after
-   `lights_out_closes_at` is rejected.
-2. **Charge the costs.** One commissary `ledger_entries` row per
-   purchase. A block that overspent across devices has its most recent
-   purchases dropped until it's within budget — last write wins means
-   the latest intent survives, not the cheapest.
-3. **Apply cancels.** Any `cancel_all` effect voids every send in the
-   Day. Costs stay charged.
-4. **Build the send list.** One pending drink per `send` effect.
-5. **Apply reflects.** A reflect swaps source and target of the first
-   send aimed at its block. Resolve in purchase order so two reflects
-   can't ping-pong forever.
-6. **Apply shields.** A shield absorbs the first send still aimed at its
-   block after reflects. Shield before multiply, so blocking a doubled
-   drink blocks both.
-7. **Apply multipliers.** A `multiply` effect turns each remaining send
-   at its target into `effect_value` drinks.
-8. **Apply splits.** A split reassigns some incoming drinks to a
-   nominated other block.
-9. **Write the drinks.** Insert `drinks` rows with `origin = 'purchase'`.
-10. **Settle bounties.** Resolve against the Day's `game_results` and pay
-    out in commissary.
-11. **Stamp the Day.** Set `resolved_at`, mark purchases resolved, move
-    `phase` to `roll_call`.
+1. **Take the orders.** `drink_orders` for the round with status
+   `pending`. Money for team orders was charged when they were placed.
+2. **Apply Reflect.** Drinks aimed at the reflecting team go back to
+   their senders, with `scores_for_block_id` set to the reflecting team.
+3. **Add penalties.** Each unapplied `extra_shot` for a team becomes a
+   `penalty` order against it.
+4. **Count per team.** Sum `qty` per target team.
+5. **Build the queue.** Insert `serves` ordered by drink count
+   ascending, random among ties.
 
-The resolver must be idempotent, keyed on `day_id`. You will press the
-button twice at some point in the night.
-
-Roll call replays steps 4 to 8 as an animation on the big screen, block
-by block. The reveal is literally the resolution log played back slowly,
-so the drama comes for free once this function is right.
+On each Next press: set `served_at` and `timer_ends_at`, write one
+`points` ledger row per scoring team, and show the filming prompt on
+that team's phone. When the queue is finished, award the round's star.
 
 ---
 
 ## Queries the schema has to be good at
 
-**Leaderboard.** Sentence per block, ascending. A sum over
-`ledger_entries` filtered to `kind = 'sentence'`, grouped by block. Runs
-on every big-screen refresh — worth a materialised view if the TV ever
-feels sluggish.
+**Leaderboard.** Points per team: a sum over `ledger_entries` where
+`kind = 'points'`. Polled by every screen.
 
-**Drinks outstanding.** `drinks` where `settled_at is null`, grouped by
-block. Drives the "who's still pending" display and gates the Day
-closing.
+**Money balance.** Same shape with `kind = 'money'`. Checked on every
+order and purchase.
 
-**Who's carrying the block.** Count of `drinks` grouped by
-`nominee_participant_id` within a block. Shown on the team phone as
-information, not a lockout.
+**Drinks queue.** `serves` for the current round ordered by
+`queue_position`, with totals per drink type from `drink_orders`.
 
-**Commissary balance.** Same shape as the leaderboard with
-`kind = 'commissary'`. Must be correct at the instant Lights out closes,
-which is why the resolver recomputes rather than trusting a cache.
+**Eye Spy.** `drink_orders` grouped by round, sender and target, for
+every round so far, filtered to the buying team as target.
+
+**Cooldowns.** `round_players` for the last two non-group rounds.
 
 Indexes worth having from the start: `ledger_entries(block_id, kind)`,
-`drinks(day_id, block_id)`, `drinks(nominee_participant_id)`,
-`purchases(day_id) where superseded = false`, `blocks(join_token)`.
+`drink_orders(round_id, target_block_id)`, `serves(round_id)`,
+`round_players(participant_id)`, `blocks(join_token)`.
 
 ---
 
@@ -496,7 +497,7 @@ rather than something a reshuffle does implicitly.
 
 The block console at `/b/<join_token>` is what the printed QR codes
 point at. In phase 1 it confirms the scan worked and shows the block its
-roster, sentence and commissary; the Day loop lands there in phase 2.
+roster; in phase 2 it becomes the team phone (see the design doc).
 `/join` is the typed-code fallback, resolving a `join_code` against the
 ten most recent non-archived events.
 
@@ -571,28 +572,26 @@ and saving potluck sets it too.
 
 ## Open decisions
 
-- **Win condition.** Race to zero sentence, or lowest sentence after a
-  fixed number of Days. Changes whether blocks hoard commissary or spend
-  it, and it's the one open question that affects the schema — a race
-  needs a `released_at` on blocks and a rule for what released blocks
-  can still do. Nothing else can be balanced until this is settled.
-- **Secret objectives.** Block-level rather than individual, since the
-  phone is shared. Would add an `objectives` table.
-- **Reveal the sender.** Whether sends are anonymous by default, with
-  revealing sold as an item. Affects what Roll call shows.
-- **Captain enforcement.** Currently social only.
-  `captain_participant_id` exists but nothing checks it.
+Phase 2 open questions are tracked in `docs/halloween-game-design.md`
+(section 11). The ones that touch the schema:
+
+- **Drink types, points and costs.** Rows in `drink_types`; no schema
+  change, but nothing can be balanced without them.
+- **Other penalty kinds.** `penalties.kind` only has `extra_shot` so far.
+- **Holding cell and "on the bus".** Deferred. They will need a player
+  status (and a reason) on `participants` when they come back.
+- **Acts.** How many, and whether the night ends on a round or a time.
 - **Rosters on block cards.** Printed rosters force printing on the
   night; omitting them makes cards reusable between parties.
 
 ## Deliberately left out
 
-- No drink caps, rotation lockouts or confirmation prompts. Pacing is
-  managed in the room. The substitute menu is the pressure valve, and
-  it's a game mechanic, not a safety feature.
-- No highlight-reel stitching. Server-side ffmpeg is real work; compile
-  it the next day on a laptop.
+- No drink caps or per-player drink tracking. Drinks go to a team and
+  the team decides who drinks; pacing is managed in the room. (Player
+  *game* cooldowns are a different thing and are in.)
+- No video conversion. Clips play as recorded on a Mac display; see the
+  design doc.
+- No highlight-reel stitching.
 - No auth or accounts. Tokens all the way down.
 - No rebalancing after late arrivals.
-- No merge-blocks handling when people leave early. The block just has
-  fewer people to nominate.
+- No captains. `captain_participant_id` stays on `blocks` but is unused.

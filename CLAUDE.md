@@ -7,9 +7,12 @@ An app for running themed parties with games, teams, and a drinks
 economy. Phase 1 (signup and intake) is built. Phase 2 (the game) is
 designed but not built.
 
-Full design, including the phase-2 tables: `docs/schema.md`. Keep it
-updated when the schema or behaviour changes — it's the reference this
-file summarises.
+**Phase 2 source of truth: `docs/halloween-game-design.md`.** It
+replaced an earlier design (Days, sentence and commissary, substitutes,
+wildcards) — if you find traces of that anywhere, the design doc wins.
+Tables for both phases: `docs/schema.md`. Keep both updated when the
+schema or behaviour changes — they're the references this file
+summarises.
 
 ## Stack
 
@@ -72,14 +75,16 @@ exist with names, colours, tokens and join codes before anyone RSVPs,
 so cards can be printed in advance. The draw only fills rosters and
 sets `in_play`.
 
-**Balances are never stored** (phase 2). Sentence and commissary are
+**Balances are never stored** (phase 2). Money, points and stars are
 `sum(delta)` over an append-only ledger, so a wrong ruling is one
 compensating row rather than a guess.
 
-**No drink caps or limits anywhere.** Deliberate: pacing is managed in
-the room, not by the app. The substitute menu (shot / slop / pay in
-years) is the pressure valve, and it's a game mechanic, not a safety
-feature. Don't add caps, cooldowns or confirmation prompts.
+**No drink caps or per-player drink tracking.** Drinks are sent to a
+team, never a named player, and the team decides who drinks. Pacing is
+managed in the room, not by the app; non-drinkers swap to water at the
+bar. Don't add drink caps or confirmation prompts. This rule is about
+drinks only: player *game* cooldowns (sat out for two games after
+playing) are part of the design.
 
 ## Three bugs that were found by running it — don't reintroduce
 
@@ -140,33 +145,48 @@ reminders (needs an email/SMS provider).
 
 ## Phase 2 — the game, designed not built
 
-The night runs as Days. Each Day: **Yard time** (a game is played) →
-**Lights out** (blocks secretly spend commissary and play contraband) →
-**Roll call** (the reveal, on the big screen) → **Serve your time**
-(take the shot, take a substitute, or pay in years). Wildcard events sit
-between Days.
+Full spec: `docs/halloween-game-design.md`. Summary:
 
-Tables to add: `days`, `games`, `groupings`, `game_results`,
-`purchases`, `drinks`, `clips`, `ledger_entries`, `items`,
-`substitutes`, `wildcards`, `theme_strings`.
+The night runs as rounds grouped into Acts. Each round: **Game** (teams
+pick players on the team phone within a minute; picks revealed at once)
+→ **Results** (host enters placings; prize money paid) → **Spending**
+(teams secretly buy items and send drinks to other teams, which costs
+money) → **Drinks** (queue built fewest drinks first, ties random; each
+team drinks at the bar with 30 seconds on the clock, filmed on the
+team phone; the clip loops muted on the public screen; missing the 30
+seconds is an extra shot next round; auto-advances when every team is
+done). Points go to the sender **when a drink is served**. Most points
+wins. The holding cell, "on the bus", final items and game rules are
+deferred.
 
-**Phones write intents, not state.** A block's phone writes rows to
-`purchases`. One server-side resolver turns them into `drinks` and
-`ledger_entries` in a fixed order: take final intents → charge costs →
-apply cancels → build sends → reflects → shields → multipliers → splits
-→ write drinks → settle bounties → stamp the Day. That single
-resolution step is what makes last-write-wins safe and gives Roll call
-something to reveal. It must be idempotent, keyed on `day_id`.
+Tables to add: `acts`, `games`, `rounds`, `round_players`,
+`game_results`, `drink_types`, `drink_orders`, `items`, `item_uses`,
+`serves`, `penalties`, `clips`, `ledger_entries`.
 
-Multiple devices per block are normal; last write wins, and every
-device shows the current locked-in choice.
+**Phones write intents, not state.** Team phones write `drink_orders`
+and `item_uses`. One server-side function, idempotent on `round_id`,
+builds the drinks queue when the host starts drinks: take orders →
+apply Reflect → add penalty shots → count per team → build `serves`.
+
+**One team phone, latest scan wins.** Scanning a block's QR makes that
+device the team phone and signs the previous one out. The host can
+rotate `join_token` if a card leaks. `blocks.captain_participant_id`
+is unused — there are no captains.
+
+**Live updates are polling, not a browser database client.** Views poll
+the server about once a second; the rule above about no browser-side
+Supabase client still holds. Timers store a start or end time on the
+server and count down locally. If polling feels slow, add a data-free
+"something changed" ping over Supabase Realtime Broadcast.
+
+**Videos are not converted.** Phones upload straight to Supabase
+Storage with a signed upload URL (never through a Vercel function).
+Clips play as recorded, so the display laptop must be a Mac. Clips are
+kept after the party.
 
 ## Open decisions
 
-- **Win condition**: race to zero sentence, or lowest after a fixed
-  number of Days. Decides whether blocks hoard or spend commissary.
-  Nothing else can be balanced until this is settled.
-- Item pricing and balance — needs playtesting, not design.
-- Whether sends are anonymous, with "reveal the sender" sold as an item.
-- Whether rosters print on block cards (forces printing on the night) or
-  not (cards become reusable between parties).
+Tracked in `docs/halloween-game-design.md`, section 11. The big ones:
+drink types, points and costs; prize money and star value; how many
+Acts; other penalty kinds; whether the host can press Next as well as
+the bartender.
