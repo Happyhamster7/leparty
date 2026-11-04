@@ -7,6 +7,9 @@
  * `?skin=rpg`, `?skin=pixel` or `?skin=default` sets it (see
  * src/middleware.ts). Skins are on trial: nothing in the app links to
  * them, so guests only ever see the default unless given a ?skin= link.
+ *
+ * The pixel skin's component kit and gallery: src/components/pixel and
+ * /kit. Its design notes: docs/pixel-ui-reference.md.
  */
 
 export const SKINS = ['default', 'rpg', 'pixel'] as const;
@@ -17,15 +20,15 @@ export const SKIN_COOKIE = 'leparty_skin';
 export const SKIN_LABELS: Record<Skin, string> = {
   default: 'Original',
   rpg: 'Fantasy RPG',
-  pixel: 'Pixel retro',
+  pixel: 'Pixel farm',
 };
 
 /** Google Fonts stylesheet each skin needs, loaded only while it's on. */
 export const SKIN_FONTS: Record<Skin, string | null> = {
   default: null,
   rpg: 'https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;0,700;1,400&family=Alegreya+Sans+SC:wght@500&family=Cinzel:wght@600;700&display=swap',
-  pixel:
-    'https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=Press+Start+2P&family=VT323&display=swap',
+  // Self-hosted through @fontsource, imported in layout.tsx.
+  pixel: null,
 };
 
 export function parseSkin(value: string | null | undefined): Skin {

@@ -2,7 +2,13 @@ import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import './globals.css';
 import './skins/rpg.css';
+import '@fontsource/pixelify-sans/400.css';
+import '@fontsource/pixelify-sans/600.css';
+import '@fontsource/pixelify-sans/700.css';
+import '@fontsource/jersey-10/400.css';
 import './skins/pixel.css';
+import '@/components/pixel/sprites.css';
+import '@/components/pixel/kit.css';
 import { SKIN_COOKIE, SKIN_FONTS, parseSkin } from '@/lib/skin';
 import SkinSwitcher from '@/components/SkinSwitcher';
 

@@ -130,11 +130,17 @@ too.
   IBM Plex Mono for anything that reads as data, IBM Plex Sans for body.
 - Skins (on trial) are visual only and separate from the party theme
   in `src/lib/theme.ts`. `src/app/skins/rpg.css` and `pixel.css`
-  override the tokens and components under `html[data-skin=…]`; the
-  skin is the `leparty_skin` cookie, set by visiting any page with
-  `?skin=rpg|pixel|default` (`src/middleware.ts`). The pixel skin flips
-  `--ink` to a light colour, so new styles that paint an `--ink`
-  background need a pixel override.
+  override the tokens and components under `[data-skin=…]`; the skin
+  is the `leparty_skin` cookie, set by visiting any page with
+  `?skin=rpg|pixel|default` (`src/middleware.ts`).
+- The pixel skin follows Stardew Valley's menus with original art.
+  Design notes per screen (function, placement, spacing):
+  `docs/pixel-ui-reference.md`. Components: `src/components/pixel/`,
+  shown at `/kit`. Sprites are drawn by `scripts/pixel-sprites.py`,
+  which also writes `sprites.css` and `icons.ts` — edit the script,
+  never the PNGs or generated files. One art pixel is 3 CSS px: keep
+  every size a multiple of 3, use the `--s-*` spacing tokens, and draw
+  icons at scale 3 (or 6), never 2 or 4.
 
 ## State of play
 

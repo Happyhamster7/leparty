@@ -1,696 +1,904 @@
 /* ------------------------------------------------------------------ */
-/* Skin: pixel / retro — "16-bit dialog window"                        */
+/* Skin: pixel — cosy farm menus                                       */
 /*                                                                    */
-/* Every box is a console-RPG text window: deep blue fill, a white    */
-/* frame with stepped corners. Menu items get the ▶ pointer on hover  */
-/* and focus. Palette is Sweetie 16 (GrafxKid), so colours sit       */
-/* together the way a real sprite sheet's would.                      */
-/* Active when <html data-skin="pixel">. Fonts load from layout.tsx   */
-/* only while this skin is on.                                        */
+/* Wooden frames, parchment and slot grids, after Stardew Valley's    */
+/* menus (docs/pixel-ui-reference.md). All the art is original and is */
+/* drawn by scripts/pixel-sprites.py into public/pixel/.              */
 /*                                                                    */
-/* Note: --ink flips to a light colour here, so anything the base     */
-/* stylesheet paints with an --ink *background* is overridden below.  */
+/* Active under any element with data-skin="pixel" — normally <html>, */
+/* but the /kit gallery sets it on a wrapper so it always shows.      */
+/*                                                                    */
+/* One art pixel is 3 CSS px. Every size here is a multiple of 3, so  */
+/* frames, icons and gaps share one grid. Frame border widths match   */
+/* the slice sizes written by the sprite script:                      */
+/*   wood 18 · hud 12 · board 21 · paper 9 · tooltip 9 · slot 9       */
+/*   btn 12 · tab 12 · plank 12                                       */
 /* ------------------------------------------------------------------ */
 
-html[data-skin='pixel'] {
-  --night: #1a1c2c;
-  --window: #29366f;
-  --window-deep: #1f2858;
-  --frame: #f4f4f4;
-  --slate: #333c57;
-  --steel: #566c86;
-  --mist: #94b0c2;
-  --gold: #ffcd75;
-  --ember: #ef7d57;
-  --berry: #b13e53;
-  --leaf: #38b764;
-  --lime: #a7f070;
-  --sky: #41a6f6;
+[data-skin='pixel'] {
+  /* spacing, in art pixels x 3 */
+  --px: 3px;
+  --s-1: 6px;
+  --s-2: 12px;
+  --s-3: 18px;
+  --s-4: 24px;
+  --s-5: 36px;
+  --s-6: 48px;
+  --slot: 66px;
 
-  --paper: var(--night);
-  --card: var(--window);
-  --ink: var(--frame);
-  --ink-soft: #dfe7ee;
-  --muted: var(--mist);
-  --muted-2: var(--mist);
-  --line: var(--steel);
-  --line-soft: var(--slate);
-  --fill: var(--slate);
-  --rust: var(--gold);
-  --rust-dark: var(--ember);
+  /* palette */
+  --c-outline: #3b1d12;
+  --c-wood-dark: #6e3416;
+  --c-wood: #a3521f;
+  --c-wood-light: #eaa65a;
+  --c-paper: #fde6b2;
+  --c-paper-2: #f2cd8a;
+  --c-tan: #dcab68;
+  --c-cream: #fff6c8;
+  --c-text: #3b1d12;
+  --c-text-soft: #6b3a1c;
+  --c-gold: #f2b72c;
+  --c-gold-light: #ffe27a;
+  --c-green: #4f9e3a;
+  --c-green-light: #86cf4c;
+  --c-red: #c9402f;
+  --c-red-dark: #8a2222;
+  --c-blue: #24477e;
+  --c-iron: #3d3a40;
+  --c-iron-light: #6d6a73;
+
+  /* base tokens the rest of the app reads */
+  --paper: var(--c-paper);
+  --card: var(--c-cream);
+  --ink: var(--c-text);
+  --ink-soft: var(--c-text-soft);
+  --muted: #7a4a26;
+  --muted-2: #7a4a26;
+  --line: var(--c-tan);
+  --line-soft: var(--c-paper-2);
+  --fill: var(--c-paper-2);
+  --rust: var(--c-red-dark);
+  --rust-dark: #6a1a1a;
 
   --sans: 'Pixelify Sans', ui-monospace, monospace;
-  --mono: 'VT323', ui-monospace, monospace;
-  --display: 'Press Start 2P', ui-monospace, monospace;
+  --mono: 'Pixelify Sans', ui-monospace, monospace;
+  --display: 'Jersey 10', 'Pixelify Sans', ui-monospace, monospace;
 
-  /* Stepped-corner frame: four hard shadows, corners left empty. */
-  --px: 4px;
-  --frame-shadow:
-    0 calc(var(--px) * -1) 0 0 var(--frame),
-    0 var(--px) 0 0 var(--frame),
-    calc(var(--px) * -1) 0 0 0 var(--frame),
-    var(--px) 0 0 0 var(--frame);
-}
-
-html[data-skin='pixel'] body {
-  background-color: var(--night);
-  font-size: 18px;
-  line-height: 1.5;
-  -webkit-font-smoothing: none;
-  font-smooth: never;
+  font-family: var(--sans);
+  color: var(--ink);
   image-rendering: pixelated;
+  cursor: url('/pixel/cursor.png') 0 0, auto;
 }
 
-html[data-skin='pixel'] .shell {
-  background: var(--night);
-}
-
-html[data-skin='pixel'] .topbar {
-  background: var(--slate);
-  color: var(--gold);
-  font-size: 18px;
-  letter-spacing: 0.06em;
-  border-bottom: 4px solid var(--steel);
-}
-
-html[data-skin='pixel'] .topbar a {
-  color: var(--frame);
-}
-
-/* Type: Press Start 2P is very wide, so it runs much smaller. ------- */
-
-html[data-skin='pixel'] h1 {
-  font-weight: 400;
-  font-size: 22px;
+/* The world behind the menus: a dark plank floor. */
+html[data-skin='pixel'] body,
+.px-page {
+  background: #4a2e1c url('/pixel/floor.png') repeat;
+  font-size: 17px;
   line-height: 1.45;
-  margin-bottom: 12px;
-  color: var(--frame);
+  -webkit-font-smoothing: none;
 }
 
-html[data-skin='pixel'] h1.huge {
-  font-size: 28px;
-  line-height: 1.35;
-  color: var(--gold);
-  text-shadow: 4px 4px 0 var(--berry);
+[data-skin='pixel'] a,
+[data-skin='pixel'] button,
+[data-skin='pixel'] label,
+[data-skin='pixel'] summary {
+  cursor: url('/pixel/cursor.png') 0 0, pointer;
 }
 
-html[data-skin='pixel'] h2 {
-  font-weight: 400;
-  font-size: 15px;
-  line-height: 1.5;
+/* ------------------------------------------------------------------ */
+/* Layout: each page is one framed window, centred                     */
+/* ------------------------------------------------------------------ */
+
+[data-skin='pixel'] .shell {
+  margin: var(--s-2) auto;
+  max-width: 492px;
+  min-height: calc(100vh - var(--s-4));
+  background: none;
+  border-style: solid;
+  border-width: 18px;
+  border-image: url('/pixel/frame-wood.png') 18 fill / 18px stretch;
+  filter: drop-shadow(0 6px 0 rgba(20, 10, 5, 0.55));
 }
 
-html[data-skin='pixel'] .eyebrow,
-html[data-skin='pixel'] label.field {
-  font-size: 20px;
-  letter-spacing: 0.04em;
+[data-skin='pixel'] .shell--wide {
+  max-width: 1200px;
 }
 
-html[data-skin='pixel'] .mono {
-  font-size: 20px;
-  letter-spacing: 0.04em;
-}
-
-html[data-skin='pixel'] .lede {
-  font-size: 18px;
-}
-
-html[data-skin='pixel'] .small {
-  font-size: 16px;
-}
-
-/* A dotted rule, drawn the way a tile would be. */
-html[data-skin='pixel'] .rule {
-  height: 4px;
-  background: repeating-linear-gradient(90deg, var(--steel) 0 8px, transparent 8px 12px);
-}
-
-/* Forms ------------------------------------------------------------ */
-
-html[data-skin='pixel'] input[type='text'],
-html[data-skin='pixel'] input[type='date'],
-html[data-skin='pixel'] input[type='number'],
-html[data-skin='pixel'] input[type='password'],
-html[data-skin='pixel'] select,
-html[data-skin='pixel'] textarea {
-  border: 0;
-  background: var(--night);
-  color: var(--frame);
-  font-size: 18px;
-  box-shadow:
-    0 -4px 0 0 var(--steel),
-    0 4px 0 0 var(--steel),
-    -4px 0 0 0 var(--steel),
-    4px 0 0 0 var(--steel),
-    inset 4px 4px 0 0 #0f1020;
-  margin-top: 4px;
-  margin-bottom: 24px;
-}
-
-html[data-skin='pixel'] input:focus-visible,
-html[data-skin='pixel'] select:focus-visible,
-html[data-skin='pixel'] textarea:focus-visible {
-  outline: 0;
-  box-shadow:
-    0 -4px 0 0 var(--gold),
-    0 4px 0 0 var(--gold),
-    -4px 0 0 0 var(--gold),
-    4px 0 0 0 var(--gold),
-    inset 4px 4px 0 0 #0f1020;
-}
-
-html[data-skin='pixel'] button:focus-visible,
-html[data-skin='pixel'] a:focus-visible {
-  outline: 4px solid var(--sky);
-  outline-offset: 6px;
-}
-
-html[data-skin='pixel'] .radios {
-  gap: 14px;
-  padding: 4px;
-}
-
-html[data-skin='pixel'] .radio {
-  border: 0;
-  background: var(--window);
-  box-shadow: 0 -4px 0 0 var(--steel), 0 4px 0 0 var(--steel), -4px 0 0 0 var(--steel),
-    4px 0 0 0 var(--steel);
-}
-
-html[data-skin='pixel'] .radio input {
-  accent-color: var(--gold);
-}
-
-html[data-skin='pixel'] .radio:has(input:checked) {
-  border: 0;
-  background: var(--window);
-  box-shadow: var(--frame-shadow);
-}
-
-html[data-skin='pixel'] .radio:has(input:checked) .num {
-  color: var(--gold);
-}
-
-/* Buttons: chunky cartridge keys, with the menu pointer ------------ */
-
-html[data-skin='pixel'] .btn {
-  position: relative;
-  min-height: 56px;
-  margin: 4px 4px 8px;
-  width: calc(100% - 8px);
-  border: 0;
-  background: var(--gold);
-  color: var(--night);
-  font-weight: 400;
-  font-size: 13px;
-  line-height: 1.6;
-  letter-spacing: 0.04em;
-  box-shadow:
-    0 -4px 0 0 var(--night),
-    0 4px 0 0 var(--night),
-    -4px 0 0 0 var(--night),
-    4px 0 0 0 var(--night),
-    inset -4px -4px 0 0 #e0a24a,
-    inset 4px 4px 0 0 #fff1c8,
-    0 8px 0 0 #0a0b14;
-  transition-property: transform, box-shadow, background-color;
-  transition-duration: 60ms;
-  transition-timing-function: steps(2, end);
-}
-
-html[data-skin='pixel'] .btn--inline {
-  width: auto;
-}
-
-html[data-skin='pixel'] .btn:hover {
-  background: #ffd98f;
-}
-
-html[data-skin='pixel'] .btn:active:not([disabled]) {
-  transform: translateY(4px);
-  box-shadow:
-    0 -4px 0 0 var(--night),
-    0 4px 0 0 var(--night),
-    -4px 0 0 0 var(--night),
-    4px 0 0 0 var(--night),
-    inset 4px 4px 0 0 #e0a24a,
-    0 4px 0 0 #0a0b14;
-}
-
-/* The pointer. */
-html[data-skin='pixel'] .btn::before {
-  content: '▶';
-  position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 12px;
-  opacity: 0;
-}
-
-html[data-skin='pixel'] .btn:hover::before,
-html[data-skin='pixel'] .btn:focus-visible::before {
-  opacity: 1;
-  animation: px-blink 0.8s steps(1, end) infinite;
-}
-
-@keyframes px-blink {
-  50% {
-    opacity: 0;
+@media (max-width: 520px) {
+  [data-skin='pixel'] .shell {
+    margin: var(--s-1);
+    min-height: calc(100vh - var(--s-2));
   }
 }
 
-html[data-skin='pixel'] .btn--ghost {
-  background: var(--window);
-  color: var(--frame);
-  box-shadow:
-    var(--frame-shadow),
-    inset -4px -4px 0 0 var(--window-deep),
-    inset 4px 4px 0 0 #3b4d93,
-    0 8px 0 0 #0a0b14;
+/* The top bar is a wooden plank across the top of the window. */
+[data-skin='pixel'] .topbar {
+  margin: -6px -6px 0;
+  padding: var(--s-1) var(--s-2);
+  background: none;
+  border-style: solid;
+  border-width: 12px;
+  border-image: url('/pixel/frame-plank.png') 12 fill / 12px stretch;
+  color: var(--c-cream);
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-shadow: 0 3px 0 var(--c-outline);
 }
 
-html[data-skin='pixel'] .btn--ghost:hover {
-  background: #31418a;
+[data-skin='pixel'] .topbar a {
+  color: var(--c-gold-light);
 }
 
-html[data-skin='pixel'] .btn--ghost:active:not([disabled]) {
-  box-shadow: var(--frame-shadow), inset 4px 4px 0 0 var(--window-deep), 0 4px 0 0 #0a0b14;
+[data-skin='pixel'] .body {
+  padding: var(--s-4) var(--s-3) var(--s-5);
 }
 
-html[data-skin='pixel'] .btn--quiet {
-  background: transparent;
-  color: var(--mist);
-  font-family: var(--mono);
-  font-size: 20px;
-  box-shadow: 0 -4px 0 0 var(--slate), 0 4px 0 0 var(--slate), -4px 0 0 0 var(--slate),
-    4px 0 0 0 var(--slate);
-}
+/* ------------------------------------------------------------------ */
+/* Type                                                               */
+/* ------------------------------------------------------------------ */
 
-html[data-skin='pixel'] .btn--quiet:hover {
-  background: var(--slate);
-  color: var(--frame);
-}
-
-html[data-skin='pixel'] .btn--quiet:active:not([disabled]) {
-  box-shadow: 0 -4px 0 0 var(--slate), 0 4px 0 0 var(--slate), -4px 0 0 0 var(--slate),
-    4px 0 0 0 var(--slate);
-}
-
-/* Boxes: the dialog window ----------------------------------------- */
-
-html[data-skin='pixel'] .box,
-html[data-skin='pixel'] .box--quiet {
-  border: 0;
-  margin: 4px 4px 24px;
-  padding: 16px 18px;
-  color: var(--frame);
-  background: linear-gradient(180deg, #34479a 0%, var(--window) 40%, var(--window-deep) 100%);
-  box-shadow:
-    var(--frame-shadow),
-    inset 0 0 0 4px var(--night),
-    0 8px 0 0 #0a0b14;
-}
-
-html[data-skin='pixel'] .box--quiet {
-  background: var(--slate);
-}
-
-html[data-skin='pixel'] .box--dark {
-  background: #0f1020;
-}
-
-html[data-skin='pixel'] .box--dark .eyebrow {
-  color: var(--lime);
-}
-
-/* The stamp becomes a level-up banner. */
-html[data-skin='pixel'] .stamp {
-  border: 0;
-  transform: none;
-  margin: 4px 4px 28px;
-  padding: 12px 18px;
-  background: var(--berry);
-  color: var(--gold);
+[data-skin='pixel'] h1 {
+  font-family: var(--display);
   font-weight: 400;
-  font-size: 18px;
-  letter-spacing: 0.06em;
-  text-shadow: 3px 3px 0 #5d275d;
-  box-shadow: var(--frame-shadow), inset 0 -6px 0 0 #8a2d42, 0 8px 0 0 #0a0b14;
-  animation: px-pop 360ms steps(4, end) both;
+  font-size: 48px;
+  line-height: 0.9;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  margin: 0 0 var(--s-2);
 }
 
-html[data-skin='pixel'] .stamp--grey {
-  background: var(--steel);
-  color: var(--frame);
-  text-shadow: 3px 3px 0 var(--slate);
-  box-shadow: var(--frame-shadow), inset 0 -6px 0 0 #45576e, 0 8px 0 0 #0a0b14;
+/* The title-screen treatment: gold letters, thick brown outline. */
+[data-skin='pixel'] h1.huge {
+  font-size: 66px;
+  line-height: 0.86;
+  color: var(--c-gold-light);
+  text-shadow:
+    3px 0 0 var(--c-outline), -3px 0 0 var(--c-outline),
+    0 3px 0 var(--c-outline), 0 -3px 0 var(--c-outline),
+    3px 3px 0 var(--c-outline), -3px 3px 0 var(--c-outline),
+    3px -3px 0 var(--c-outline), -3px -3px 0 var(--c-outline),
+    0 9px 0 var(--c-outline);
+  margin: var(--s-1) 0 var(--s-4);
+}
+
+[data-skin='pixel'] h2 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 33px;
+  line-height: 0.95;
+  text-transform: none;
+  margin: 0 0 var(--s-2);
+}
+
+[data-skin='pixel'] p {
+  margin: 0 0 var(--s-2);
+}
+
+[data-skin='pixel'] .lede {
+  font-size: 17px;
+  color: var(--ink-soft);
+  margin-bottom: var(--s-4);
+}
+
+[data-skin='pixel'] .eyebrow,
+[data-skin='pixel'] label.field {
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--rust);
+  margin-bottom: var(--s-1);
+}
+
+[data-skin='pixel'] .eyebrow--quiet,
+[data-skin='pixel'] .box--quiet .eyebrow {
+  color: var(--muted);
+}
+
+[data-skin='pixel'] label.field span.opt {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+[data-skin='pixel'] .mono {
+  font-family: var(--sans);
+  font-size: 16px;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+}
+
+[data-skin='pixel'] .small {
+  font-size: 15px;
+  color: var(--muted);
+}
+
+/* A groove cut into the wood: dark line over a light one. */
+[data-skin='pixel'] .rule {
+  height: 6px;
+  margin: var(--s-3) 0 var(--s-2);
+  background: linear-gradient(var(--c-tan) 0 3px, var(--c-cream) 3px 6px);
+}
+
+/* ------------------------------------------------------------------ */
+/* Forms: inputs are recessed slots                                    */
+/* ------------------------------------------------------------------ */
+
+[data-skin='pixel'] input[type='text'],
+[data-skin='pixel'] input[type='date'],
+[data-skin='pixel'] input[type='number'],
+[data-skin='pixel'] input[type='password'],
+[data-skin='pixel'] select,
+[data-skin='pixel'] textarea {
+  min-height: 54px;
+  padding: var(--s-1) var(--s-2);
+  margin-bottom: var(--s-4);
+  background: none;
+  border-style: solid;
+  border-width: 9px;
+  border-image: url('/pixel/frame-slot.png') 9 fill / 9px stretch;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 18px;
+  cursor: text;
+}
+
+/* No fill on the frame here, so the drop-down arrow behind it shows. */
+[data-skin='pixel'] select {
+  cursor: url('/pixel/cursor.png') 0 0, pointer;
+  border-image: url('/pixel/frame-slot.png') 9 / 9px stretch;
+  background:
+    linear-gradient(to bottom right, var(--c-wood-dark) 50%, transparent 50%) no-repeat
+      right 9px center / 12px 12px padding-box,
+    linear-gradient(to bottom left, var(--c-wood-dark) 50%, transparent 50%) no-repeat
+      right 21px center / 12px 12px padding-box,
+    #f3c98a padding-box;
+  padding-right: var(--s-6);
+}
+
+[data-skin='pixel'] input:focus-visible,
+[data-skin='pixel'] select:focus-visible,
+[data-skin='pixel'] textarea:focus-visible {
+  outline: 0;
+  border-image-source: url('/pixel/frame-slot-active.png');
+}
+
+[data-skin='pixel'] button:focus-visible,
+[data-skin='pixel'] a:focus-visible,
+[data-skin='pixel'] [tabindex]:focus-visible {
+  outline: 3px solid var(--c-red);
+  outline-offset: 3px;
+}
+
+[data-skin='pixel'] .radios {
+  gap: var(--s-1);
+  margin-bottom: var(--s-4);
+}
+
+[data-skin='pixel'] .radio {
+  min-height: 54px;
+  padding: 0 var(--s-2);
+  background: none;
+  border-style: solid;
+  border-width: 12px;
+  border-image: url('/pixel/frame-btn-paper.png') 12 fill / 12px stretch;
+  font-size: 17px;
+}
+
+[data-skin='pixel'] .radio:has(input:checked) {
+  border-width: 12px;
+  border-image-source: url('/pixel/frame-btn.png');
+  background: none;
+}
+
+[data-skin='pixel'] .radio input {
+  accent-color: var(--c-red);
+}
+
+[data-skin='pixel'] .radio .num {
+  font-family: var(--sans);
+  font-size: 15px;
+  color: var(--muted);
+}
+
+/* ------------------------------------------------------------------ */
+/* Buttons: wooden keys that press down one art pixel                  */
+/* ------------------------------------------------------------------ */
+
+[data-skin='pixel'] .btn {
+  min-height: 60px;
+  padding: 0 var(--s-3);
+  background: none;
+  border-style: solid;
+  border-width: 12px;
+  border-image: url('/pixel/frame-btn.png') 12 fill / 12px stretch;
+  box-shadow: none;
+  filter: drop-shadow(0 3px 0 var(--c-outline));
+  color: var(--c-text);
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  transition: transform 80ms steps(2, end), filter 80ms steps(2, end);
+}
+
+[data-skin='pixel'] .btn:hover {
+  background: none;
+  transform: translateY(-3px);
+  filter: drop-shadow(0 6px 0 var(--c-outline));
+}
+
+[data-skin='pixel'] .btn:active:not([disabled]) {
+  border-image-source: url('/pixel/frame-btn-down.png');
+  transform: translateY(3px);
+  filter: none;
+  box-shadow: none;
+}
+
+[data-skin='pixel'] .btn--ghost {
+  background: none;
+  border-image-source: url('/pixel/frame-btn-paper.png');
+  box-shadow: none;
+  font-size: 24px;
+}
+
+[data-skin='pixel'] .btn--ghost:active:not([disabled]) {
+  border-image-source: url('/pixel/frame-btn-paper-down.png');
+}
+
+/* The quiet button is a plain text choice, like "No" in a dialogue. */
+[data-skin='pixel'] .btn--quiet,
+[data-skin='pixel'] .btn--quiet:hover,
+[data-skin='pixel'] .btn--quiet:active:not([disabled]) {
+  min-height: 48px;
+  border: 0;
+  border-image: none;
+  filter: none;
+  transform: none;
+  background: none;
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: underline dotted 3px;
+  text-underline-offset: 6px;
+}
+
+[data-skin='pixel'] .btn--quiet:hover {
+  color: var(--ink);
+}
+
+[data-skin='pixel'] .btn[disabled] {
+  filter: grayscale(0.7);
+  opacity: 0.6;
+  transform: none;
+}
+
+[data-skin='pixel'] .btn-row {
+  gap: var(--s-2);
+}
+
+/* ------------------------------------------------------------------ */
+/* Boxes                                                              */
+/* ------------------------------------------------------------------ */
+
+[data-skin='pixel'] .box {
+  padding: var(--s-2) var(--s-3);
+  margin-bottom: var(--s-4);
+  background: none;
+  border-style: solid;
+  border-width: 12px;
+  border-image: url('/pixel/frame-hud.png') 12 fill / 12px stretch;
+}
+
+[data-skin='pixel'] .box--quiet {
+  border-width: 9px;
+  border-image: url('/pixel/frame-paper.png') 9 fill / 9px stretch;
+}
+
+[data-skin='pixel'] .box--dark {
+  border-width: 21px;
+  border-image: url('/pixel/frame-board.png') 21 fill / 21px stretch;
+  color: var(--c-cream);
+}
+
+[data-skin='pixel'] .box--dark .eyebrow {
+  color: var(--c-gold-light);
+}
+
+/* "Booked" arrives like an item: a gold plate with a star. */
+[data-skin='pixel'] .stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  transform: none;
+  margin-bottom: var(--s-4);
+  padding: 0 var(--s-3) 0 var(--s-2);
+  border-style: solid;
+  border-width: 12px;
+  border-image: url('/pixel/frame-btn.png') 12 fill / 12px stretch;
+  filter: drop-shadow(0 3px 0 var(--c-outline));
+  color: var(--c-text);
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 42px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  animation: px-pop 300ms steps(3, end) both;
+}
+
+[data-skin='pixel'] .stamp::before {
+  content: '';
+  width: 48px;
+  height: 48px;
+  /* star: index 1 in icons.ts, 25 icons x 48px */
+  background: url('/pixel/icons.png') no-repeat;
+  background-size: var(--px-sheet);
+  background-position: var(--px-at-star);
+  image-rendering: pixelated;
+}
+
+[data-skin='pixel'] .stamp--grey {
+  border-image-source: url('/pixel/frame-btn-paper.png');
+}
+
+[data-skin='pixel'] .stamp--grey::before {
+  background-position: var(--px-at-scroll);
 }
 
 @keyframes px-pop {
   0% {
-    transform: scale(0.4);
+    transform: scale(0.6);
   }
-  60% {
-    transform: scale(1.12);
+  66% {
+    transform: scale(1.08);
   }
   100% {
     transform: scale(1);
   }
 }
 
-html[data-skin='pixel'] .notice {
-  border-left: 0;
-  margin: 4px 4px 22px;
-  background: var(--slate);
-  font-size: 17px;
-  box-shadow: inset 8px 0 0 0 var(--lime);
-  padding-left: 22px;
-}
-
-html[data-skin='pixel'] .error {
-  color: #ff8a8a;
+/* A notice reads like a line of dialogue. */
+[data-skin='pixel'] .notice {
+  margin-bottom: var(--s-4);
+  padding: var(--s-1) var(--s-2);
+  background: none;
+  border-style: solid;
+  border-width: 9px;
+  border-image: url('/pixel/frame-tooltip.png') 9 fill / 9px stretch;
   font-size: 17px;
 }
 
-/* Potluck meter as a HP bar ---------------------------------------- */
-
-html[data-skin='pixel'] .meter {
-  width: 64px;
-  height: 12px;
-  background: var(--night);
-  box-shadow: 0 0 0 2px var(--frame);
-}
-
-html[data-skin='pixel'] .meter > span {
-  height: 12px;
-  background: var(--leaf);
-  box-shadow: inset 0 3px 0 0 var(--lime);
-}
-
-html[data-skin='pixel'] .meter > span.short {
-  background: var(--berry);
-  box-shadow: inset 0 3px 0 0 var(--ember);
-}
-
-html[data-skin='pixel'] .meter-row .name,
-html[data-skin='pixel'] .roster__name,
-html[data-skin='pixel'] .roster__item {
+[data-skin='pixel'] .error {
+  color: var(--c-red-dark);
   font-size: 16px;
+  font-weight: 600;
+  margin: calc(var(--s-2) * -1) 0 var(--s-3);
 }
 
-html[data-skin='pixel'] .meter-row .count,
-html[data-skin='pixel'] .roster__category,
-html[data-skin='pixel'] .roster--head {
-  font-size: 18px;
+/* ------------------------------------------------------------------ */
+/* Potluck meter and roster                                           */
+/* ------------------------------------------------------------------ */
+
+[data-skin='pixel'] .meter-row {
+  gap: var(--s-2);
+  margin-bottom: var(--s-2);
 }
 
-/* Camera ----------------------------------------------------------- */
-
-html[data-skin='pixel'] .camera {
-  border: 0;
-  margin: 4px 4px 20px;
-  width: calc(100% - 8px);
-  box-shadow: var(--frame-shadow);
-  background: var(--slate);
+[data-skin='pixel'] .meter-row .name {
+  font-size: 17px;
 }
 
-html[data-skin='pixel'] .camera .plate {
-  background: var(--night);
-  color: var(--gold);
-  font-size: 18px;
-}
-
-html[data-skin='pixel'] .camera .hint {
-  font-size: 18px;
-}
-
-html[data-skin='pixel'] .hint__badge {
-  background: var(--berry);
-  color: var(--gold);
-}
-
-html[data-skin='pixel'] .shutter {
-  border-radius: 0;
-  border: 0;
-  background: var(--berry);
-  box-shadow: var(--frame-shadow), inset -6px -6px 0 0 #8a2d42, inset 6px 6px 0 0 var(--ember);
-}
-
-html[data-skin='pixel'] .shutter:hover {
-  background: #c24a60;
-}
-
-/* Who's going: a tile-map dungeon ---------------------------------- */
-
-html[data-skin='pixel'] .cellblock {
-  border: 0;
-  background: var(--night);
-  margin: 4px;
-  box-shadow: var(--frame-shadow);
-}
-
-html[data-skin='pixel'] .tier__label {
-  background: var(--slate);
-  color: var(--gold);
-  font-size: 18px;
-  font-weight: 400;
-}
-
-html[data-skin='pixel'] .tier__floor {
-  height: 12px;
-  background:
-    linear-gradient(90deg, var(--night) 4px, transparent 4px) 0 0 / 16px 12px,
-    linear-gradient(180deg, var(--steel) 4px, var(--slate) 4px);
-}
-
-html[data-skin='pixel'] .cell {
-  background: var(--window);
-  box-shadow: inset -4px 0 0 var(--night);
-}
-
-html[data-skin='pixel'] .cell__tag {
-  background: var(--window-deep);
-  color: var(--frame);
+[data-skin='pixel'] .meter-row .count,
+[data-skin='pixel'] .roster__category,
+[data-skin='pixel'] .roster--head {
+  font-family: var(--sans);
   font-size: 15px;
-  font-weight: 400;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
-html[data-skin='pixel'] .cell--empty .cell__tag {
-  background: var(--slate);
-  color: var(--mist);
+[data-skin='pixel'] .meter {
+  width: 72px;
+  height: 18px;
+  border: 3px solid var(--c-outline);
+  background: var(--c-iron);
 }
 
-html[data-skin='pixel'] .cell__frame {
-  background: var(--steel);
+[data-skin='pixel'] .meter > span {
+  height: 12px;
+  background: var(--c-green-light);
+  box-shadow: inset 0 -3px 0 var(--c-green);
 }
 
-html[data-skin='pixel'] .cell--empty .cell__frame {
-  background: var(--slate);
+[data-skin='pixel'] .meter > span.short {
+  background: #ee6e4e;
+  box-shadow: inset 0 -3px 0 var(--c-red);
 }
 
-html[data-skin='pixel'] .cell__frame .initials {
-  color: var(--frame);
+[data-skin='pixel'] .roster {
+  border-bottom: 3px solid var(--c-paper-2);
+}
+
+[data-skin='pixel'] .roster__name,
+[data-skin='pixel'] .roster__item {
+  font-size: 15px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Camera                                                             */
+/* ------------------------------------------------------------------ */
+
+[data-skin='pixel'] .camera {
+  background: var(--c-paper-2);
+  border-style: solid;
+  border-width: 9px;
+  border-image: url('/pixel/frame-slot.png') 9 fill / 9px stretch;
+}
+
+[data-skin='pixel'] .camera .chart {
+  background: rgba(253, 230, 178, 0.88);
+  border-left: 3px solid var(--c-tan);
+}
+
+[data-skin='pixel'] .camera .chart span,
+[data-skin='pixel'] .camera .hint {
+  font-family: var(--sans);
   font-size: 14px;
 }
 
-html[data-skin='pixel'] .cell__bars::before,
-html[data-skin='pixel'] .cell__bars span {
-  background: #0f1020;
-  box-shadow: 2px 0 0 0 var(--mist);
-}
-
-html[data-skin='pixel'] .cell__number {
-  background: var(--night);
-  color: var(--gold);
+[data-skin='pixel'] .camera .plate {
+  background: var(--c-outline);
+  color: var(--c-gold-light);
+  font-family: var(--sans);
   font-size: 15px;
 }
 
-/* Check-in, draw, cards, host -------------------------------------- */
-
-html[data-skin='pixel'] .face-grid,
-html[data-skin='pixel'] .draw-grid,
-html[data-skin='pixel'] .print-sheet,
-html[data-skin='pixel'] .stat-row {
-  gap: 20px;
-  padding: 4px;
+[data-skin='pixel'] .hint__badge {
+  background: var(--c-red);
 }
 
-html[data-skin='pixel'] .face {
-  border: 0;
-  background: var(--window);
-  color: var(--frame);
-  box-shadow: var(--frame-shadow), 0 8px 0 0 #0a0b14;
-}
-
-html[data-skin='pixel'] .face:hover {
-  background: #31418a;
-}
-
-html[data-skin='pixel'] .face--in {
-  background: var(--slate);
-  color: var(--mist);
-  box-shadow: 0 -4px 0 0 var(--steel), 0 4px 0 0 var(--steel), -4px 0 0 0 var(--steel),
-    4px 0 0 0 var(--steel);
-}
-
-html[data-skin='pixel'] .face__avatar,
-html[data-skin='pixel'] .face--in .face__avatar {
+[data-skin='pixel'] .shutter {
   border-radius: 0;
-  background: var(--night);
-  color: var(--gold);
-  font-size: 12px;
+  border-style: solid;
+  border-width: 12px;
+  border-image: url('/pixel/frame-btn-red.png') 12 fill / 12px stretch;
+  background: none;
+  filter: drop-shadow(0 3px 0 var(--c-outline));
 }
 
-html[data-skin='pixel'] .face__name {
-  font-size: 16px;
+[data-skin='pixel'] .shutter:hover {
+  background: none;
 }
 
-html[data-skin='pixel'] .face__num,
-html[data-skin='pixel'] .face--in .face__num {
-  font-size: 18px;
-  color: var(--gold);
+[data-skin='pixel'] .shutter:active {
+  border-image-source: url('/pixel/frame-btn-red-down.png');
+  transform: translateY(3px);
+  filter: none;
 }
 
-html[data-skin='pixel'] .block-card,
-html[data-skin='pixel'] .stat {
-  border: 0;
-  background: var(--window);
-  box-shadow: var(--frame-shadow);
+/* ------------------------------------------------------------------ */
+/* Who's going: a collection grid, empty places as dim slots           */
+/* ------------------------------------------------------------------ */
+
+[data-skin='pixel'] .cellblock {
+  background: none;
+  border-style: solid;
+  border-width: 12px;
+  border-image: url('/pixel/frame-hud.png') 12 fill / 12px stretch;
 }
 
-html[data-skin='pixel'] .block-card__head .nm,
-html[data-skin='pixel'] .card__head .nm {
-  font-weight: 400;
+[data-skin='pixel'] .tier__label {
+  background: none;
+  color: var(--ink-soft);
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 0 0 var(--s-1);
+}
+
+[data-skin='pixel'] .tier__floor {
+  height: 6px;
+  margin: var(--s-2) 0;
+  background: linear-gradient(var(--c-tan) 0 3px, var(--c-cream) 3px 6px);
+}
+
+[data-skin='pixel'] .cell,
+[data-skin='pixel'] .tier__row .cell:last-child {
+  background: none;
+  box-shadow: none;
+  border-style: solid;
+  border-width: 9px;
+  border-image: url('/pixel/frame-slot.png') 9 fill / 9px stretch;
+}
+
+[data-skin='pixel'] .cell--empty,
+[data-skin='pixel'] .tier__row .cell--empty:last-child {
+  border-image-source: url('/pixel/frame-slot-locked.png');
+}
+
+[data-skin='pixel'] .cell__tag,
+[data-skin='pixel'] .cell--empty .cell__tag {
+  background: none;
+  color: var(--ink);
+  font-family: var(--sans);
   font-size: 13px;
-  line-height: 1.5;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 0 0 3px;
+  opacity: 1;
 }
 
-html[data-skin='pixel'] .block-card__head .tot,
-html[data-skin='pixel'] .card__head .sub,
-html[data-skin='pixel'] .member .cap,
-html[data-skin='pixel'] .block-card__empty {
-  font-size: 18px;
+[data-skin='pixel'] .cell--empty .cell__tag {
+  color: var(--muted);
 }
 
-html[data-skin='pixel'] .member {
-  border-bottom-color: var(--slate);
+[data-skin='pixel'] .cell__frame {
+  background: var(--c-paper-2);
 }
 
-html[data-skin='pixel'] .member .nm {
+[data-skin='pixel'] .cell--empty .cell__frame {
+  background: var(--c-tan);
+}
+
+[data-skin='pixel'] .cell__frame .initials {
+  font-size: 24px;
+  color: var(--muted);
+}
+
+[data-skin='pixel'] .cell__bars::before,
+[data-skin='pixel'] .cell__bars span {
+  background: var(--c-iron);
+  box-shadow: 3px 0 0 rgba(255, 255, 255, 0.35);
+}
+
+[data-skin='pixel'] .cell__bars::before {
+  height: 3px;
+  box-shadow: 0 3px 0 rgba(255, 255, 255, 0.35);
+}
+
+[data-skin='pixel'] .cell__bars span {
+  width: 3px;
+}
+
+[data-skin='pixel'] .cell__number {
+  background: none;
+  color: var(--ink-soft);
+  font-family: var(--sans);
+  font-size: 14px;
+  padding: 3px 0 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Host: check-in, draw, stats, tables                                 */
+/* ------------------------------------------------------------------ */
+
+[data-skin='pixel'] .face-grid,
+[data-skin='pixel'] .draw-grid,
+[data-skin='pixel'] .stat-row {
+  gap: var(--s-2);
+}
+
+[data-skin='pixel'] .face {
+  background: none;
+  border-style: solid;
+  border-width: 12px;
+  border-image: url('/pixel/frame-btn-paper.png') 12 fill / 12px stretch;
+  filter: drop-shadow(0 3px 0 var(--c-outline));
+}
+
+[data-skin='pixel'] .face:hover {
+  background: none;
+  transform: translateY(-3px);
+}
+
+[data-skin='pixel'] .face:active {
+  border-image-source: url('/pixel/frame-btn-paper-down.png');
+  transform: translateY(3px);
+  filter: none;
+}
+
+[data-skin='pixel'] .face--in {
+  border-image: url('/pixel/frame-slot-locked.png') 12 fill / 12px stretch;
+  filter: none;
+  color: var(--muted);
+}
+
+[data-skin='pixel'] .face__avatar,
+[data-skin='pixel'] .face--in .face__avatar {
+  border-radius: 0;
+  width: 48px;
+  height: 48px;
+  background: var(--c-paper-2);
+  color: var(--ink-soft);
+  box-shadow: 0 0 0 3px var(--c-wood);
+}
+
+[data-skin='pixel'] .face__name {
   font-size: 16px;
 }
 
-html[data-skin='pixel'] .member select {
-  border: 0;
-  background: var(--night);
-  color: var(--frame);
-  font-size: 16px;
-  box-shadow: 0 0 0 2px var(--steel);
+[data-skin='pixel'] .face__num,
+[data-skin='pixel'] .face--in .face__num {
+  font-family: var(--sans);
+  font-size: 14px;
+  color: var(--rust);
 }
 
-html[data-skin='pixel'] .drag-ghost {
-  background: var(--gold);
-  color: var(--night);
-  font-size: 18px;
-  box-shadow: 4px 4px 0 #0a0b14;
+[data-skin='pixel'] .block-card,
+[data-skin='pixel'] .stat {
+  background: none;
+  border-style: solid;
+  border-width: 12px;
+  border-image: url('/pixel/frame-hud.png') 12 fill / 12px stretch;
 }
 
-html[data-skin='pixel'] .block-card[data-drag-over='true'] {
-  outline-color: var(--gold);
+[data-skin='pixel'] .block-card__head {
+  margin: -6px -6px 0;
 }
 
-html[data-skin='pixel'] .stat .label,
-html[data-skin='pixel'] table.list th,
-html[data-skin='pixel'] .copy-link {
-  font-size: 18px;
-}
-
-html[data-skin='pixel'] .stat .value {
+[data-skin='pixel'] .block-card__head .nm,
+[data-skin='pixel'] .card__head .nm {
   font-weight: 400;
-  font-size: 22px;
-  line-height: 1.3;
-  color: var(--gold);
+  text-transform: none;
 }
 
-html[data-skin='pixel'] table.list td {
-  border-bottom-color: var(--slate);
+[data-skin='pixel'] .block-card__head .nm {
+  font-size: 27px;
 }
 
-html[data-skin='pixel'] .pill {
-  font-size: 17px;
-  border: 0;
-  background: var(--slate);
-  color: var(--mist);
+[data-skin='pixel'] .block-card__head .tot,
+[data-skin='pixel'] .member .cap,
+[data-skin='pixel'] .block-card__empty {
+  font-family: var(--sans);
+  font-size: 15px;
+  letter-spacing: 0;
 }
 
-html[data-skin='pixel'] .pill--yes {
-  background: var(--leaf);
-  color: var(--night);
+[data-skin='pixel'] .member {
+  border-bottom: 3px solid var(--c-paper-2);
 }
 
-html[data-skin='pixel'] .pill--no {
-  background: var(--berry);
-  color: var(--frame);
+[data-skin='pixel'] .member .nm {
+  font-size: 16px;
 }
 
-html[data-skin='pixel'] .pill--done {
-  background: var(--gold);
-  color: var(--night);
+[data-skin='pixel'] .member select {
+  min-height: 36px;
+  border-width: 6px;
+  border-image: url('/pixel/frame-slot.png') 9 fill / 6px stretch;
+  box-shadow: none;
+  font-size: 14px;
+  padding-right: var(--s-4);
 }
 
-/* Printable team cards stay light so they print and scan cleanly. */
-html[data-skin='pixel'] .card {
-  border: 0;
+[data-skin='pixel'] .drag-ghost {
+  background: none;
+  border-style: solid;
+  border-width: 9px;
+  border-image: url('/pixel/frame-tooltip.png') 9 fill / 9px stretch;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  box-shadow: none;
+}
+
+[data-skin='pixel'] .block-card[data-drag-over='true'] {
+  outline: 3px dashed var(--c-red);
+}
+
+[data-skin='pixel'] .stat .label,
+[data-skin='pixel'] table.list th {
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
+}
+
+[data-skin='pixel'] .stat .value {
+  font-weight: 400;
+  font-size: 48px;
+}
+
+[data-skin='pixel'] table.list {
+  font-size: 16px;
+}
+
+[data-skin='pixel'] table.list th {
+  border-bottom: 3px solid var(--c-wood);
+}
+
+[data-skin='pixel'] table.list td {
+  border-bottom: 3px solid var(--c-paper-2);
+}
+
+[data-skin='pixel'] .pill {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 0 var(--s-1);
+  border: 3px solid var(--c-outline);
+  background: var(--c-cream);
+  color: var(--ink);
+}
+
+[data-skin='pixel'] .pill--yes {
+  background: var(--c-green-light);
+}
+
+[data-skin='pixel'] .pill--no {
+  background: #ee6e4e;
+}
+
+[data-skin='pixel'] .pill--done {
+  background: var(--c-gold);
+}
+
+[data-skin='pixel'] .copy-link {
+  font-family: var(--sans);
+  font-size: 15px;
+  color: var(--c-blue);
+}
+
+/* Printable team cards stay plain so they print and the QR scans. */
+[data-skin='pixel'] .card {
+  border: 3px solid var(--c-outline);
+  border-image: none;
   background: #fff;
-  color: #1a1c2c;
-  box-shadow: 0 0 0 4px #1a1c2c;
 }
 
-html[data-skin='pixel'] .card .where,
-html[data-skin='pixel'] .card .small {
-  color: #333c57;
+[data-skin='pixel'] .card__code .where,
+[data-skin='pixel'] .card__code .url,
+[data-skin='pixel'] .card__head .sub {
+  font-family: var(--sans);
+  letter-spacing: 0.02em;
 }
 
-html[data-skin='pixel'] .card__code .url {
-  color: #29366f;
-  font-size: 18px;
-}
-
-html[data-skin='pixel'] .card__code .code {
-  font-size: 36px;
-}
-
-html[data-skin='pixel'] .card__qr {
-  border-color: #1a1c2c;
+[data-skin='pixel'] .card__code .code {
+  font-family: var(--display);
+  font-size: 48px;
 }
 
 @media print {
-  html[data-skin='pixel'] body,
-  html[data-skin='pixel'] .shell {
+  html[data-skin='pixel'] body {
     background: #fff;
-    color: #1a1c2c;
+  }
+  [data-skin='pixel'] .shell {
+    border: 0;
+    border-image: none;
+    filter: none;
+    margin: 0;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html[data-skin='pixel'] .stamp,
-  html[data-skin='pixel'] .btn::before {
+  [data-skin='pixel'] .stamp {
     animation: none;
+  }
+  [data-skin='pixel'] .btn,
+  [data-skin='pixel'] .face {
+    transition: none;
   }
 }
 
 @media (max-width: 560px) {
-  html[data-skin='pixel'] h1.huge {
-    font-size: 22px;
+  [data-skin='pixel'] h1.huge {
+    font-size: 54px;
   }
-  html[data-skin='pixel'] h1 {
-    font-size: 18px;
+  [data-skin='pixel'] .body {
+    padding: var(--s-3) var(--s-2) var(--s-4);
   }
-}
-
-html[data-skin='pixel'] .topbar span,
-html[data-skin='pixel'] .topbar a {
-  white-space: nowrap;
 }
