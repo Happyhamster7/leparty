@@ -1,0 +1,696 @@
+/* ------------------------------------------------------------------ */
+/* Skin: pixel / retro — "16-bit dialog window"                        */
+/*                                                                    */
+/* Every box is a console-RPG text window: deep blue fill, a white    */
+/* frame with stepped corners. Menu items get the ▶ pointer on hover  */
+/* and focus. Palette is Sweetie 16 (GrafxKid), so colours sit       */
+/* together the way a real sprite sheet's would.                      */
+/* Active when <html data-skin="pixel">. Fonts load from layout.tsx   */
+/* only while this skin is on.                                        */
+/*                                                                    */
+/* Note: --ink flips to a light colour here, so anything the base     */
+/* stylesheet paints with an --ink *background* is overridden below.  */
+/* ------------------------------------------------------------------ */
+
+html[data-skin='pixel'] {
+  --night: #1a1c2c;
+  --window: #29366f;
+  --window-deep: #1f2858;
+  --frame: #f4f4f4;
+  --slate: #333c57;
+  --steel: #566c86;
+  --mist: #94b0c2;
+  --gold: #ffcd75;
+  --ember: #ef7d57;
+  --berry: #b13e53;
+  --leaf: #38b764;
+  --lime: #a7f070;
+  --sky: #41a6f6;
+
+  --paper: var(--night);
+  --card: var(--window);
+  --ink: var(--frame);
+  --ink-soft: #dfe7ee;
+  --muted: var(--mist);
+  --muted-2: var(--mist);
+  --line: var(--steel);
+  --line-soft: var(--slate);
+  --fill: var(--slate);
+  --rust: var(--gold);
+  --rust-dark: var(--ember);
+
+  --sans: 'Pixelify Sans', ui-monospace, monospace;
+  --mono: 'VT323', ui-monospace, monospace;
+  --display: 'Press Start 2P', ui-monospace, monospace;
+
+  /* Stepped-corner frame: four hard shadows, corners left empty. */
+  --px: 4px;
+  --frame-shadow:
+    0 calc(var(--px) * -1) 0 0 var(--frame),
+    0 var(--px) 0 0 var(--frame),
+    calc(var(--px) * -1) 0 0 0 var(--frame),
+    var(--px) 0 0 0 var(--frame);
+}
+
+html[data-skin='pixel'] body {
+  background-color: var(--night);
+  font-size: 18px;
+  line-height: 1.5;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+  image-rendering: pixelated;
+}
+
+html[data-skin='pixel'] .shell {
+  background: var(--night);
+}
+
+html[data-skin='pixel'] .topbar {
+  background: var(--slate);
+  color: var(--gold);
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  border-bottom: 4px solid var(--steel);
+}
+
+html[data-skin='pixel'] .topbar a {
+  color: var(--frame);
+}
+
+/* Type: Press Start 2P is very wide, so it runs much smaller. ------- */
+
+html[data-skin='pixel'] h1 {
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1.45;
+  margin-bottom: 12px;
+  color: var(--frame);
+}
+
+html[data-skin='pixel'] h1.huge {
+  font-size: 28px;
+  line-height: 1.35;
+  color: var(--gold);
+  text-shadow: 4px 4px 0 var(--berry);
+}
+
+html[data-skin='pixel'] h2 {
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+html[data-skin='pixel'] .eyebrow,
+html[data-skin='pixel'] label.field {
+  font-size: 20px;
+  letter-spacing: 0.04em;
+}
+
+html[data-skin='pixel'] .mono {
+  font-size: 20px;
+  letter-spacing: 0.04em;
+}
+
+html[data-skin='pixel'] .lede {
+  font-size: 18px;
+}
+
+html[data-skin='pixel'] .small {
+  font-size: 16px;
+}
+
+/* A dotted rule, drawn the way a tile would be. */
+html[data-skin='pixel'] .rule {
+  height: 4px;
+  background: repeating-linear-gradient(90deg, var(--steel) 0 8px, transparent 8px 12px);
+}
+
+/* Forms ------------------------------------------------------------ */
+
+html[data-skin='pixel'] input[type='text'],
+html[data-skin='pixel'] input[type='date'],
+html[data-skin='pixel'] input[type='number'],
+html[data-skin='pixel'] input[type='password'],
+html[data-skin='pixel'] select,
+html[data-skin='pixel'] textarea {
+  border: 0;
+  background: var(--night);
+  color: var(--frame);
+  font-size: 18px;
+  box-shadow:
+    0 -4px 0 0 var(--steel),
+    0 4px 0 0 var(--steel),
+    -4px 0 0 0 var(--steel),
+    4px 0 0 0 var(--steel),
+    inset 4px 4px 0 0 #0f1020;
+  margin-top: 4px;
+  margin-bottom: 24px;
+}
+
+html[data-skin='pixel'] input:focus-visible,
+html[data-skin='pixel'] select:focus-visible,
+html[data-skin='pixel'] textarea:focus-visible {
+  outline: 0;
+  box-shadow:
+    0 -4px 0 0 var(--gold),
+    0 4px 0 0 var(--gold),
+    -4px 0 0 0 var(--gold),
+    4px 0 0 0 var(--gold),
+    inset 4px 4px 0 0 #0f1020;
+}
+
+html[data-skin='pixel'] button:focus-visible,
+html[data-skin='pixel'] a:focus-visible {
+  outline: 4px solid var(--sky);
+  outline-offset: 6px;
+}
+
+html[data-skin='pixel'] .radios {
+  gap: 14px;
+  padding: 4px;
+}
+
+html[data-skin='pixel'] .radio {
+  border: 0;
+  background: var(--window);
+  box-shadow: 0 -4px 0 0 var(--steel), 0 4px 0 0 var(--steel), -4px 0 0 0 var(--steel),
+    4px 0 0 0 var(--steel);
+}
+
+html[data-skin='pixel'] .radio input {
+  accent-color: var(--gold);
+}
+
+html[data-skin='pixel'] .radio:has(input:checked) {
+  border: 0;
+  background: var(--window);
+  box-shadow: var(--frame-shadow);
+}
+
+html[data-skin='pixel'] .radio:has(input:checked) .num {
+  color: var(--gold);
+}
+
+/* Buttons: chunky cartridge keys, with the menu pointer ------------ */
+
+html[data-skin='pixel'] .btn {
+  position: relative;
+  min-height: 56px;
+  margin: 4px 4px 8px;
+  width: calc(100% - 8px);
+  border: 0;
+  background: var(--gold);
+  color: var(--night);
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 1.6;
+  letter-spacing: 0.04em;
+  box-shadow:
+    0 -4px 0 0 var(--night),
+    0 4px 0 0 var(--night),
+    -4px 0 0 0 var(--night),
+    4px 0 0 0 var(--night),
+    inset -4px -4px 0 0 #e0a24a,
+    inset 4px 4px 0 0 #fff1c8,
+    0 8px 0 0 #0a0b14;
+  transition-property: transform, box-shadow, background-color;
+  transition-duration: 60ms;
+  transition-timing-function: steps(2, end);
+}
+
+html[data-skin='pixel'] .btn--inline {
+  width: auto;
+}
+
+html[data-skin='pixel'] .btn:hover {
+  background: #ffd98f;
+}
+
+html[data-skin='pixel'] .btn:active:not([disabled]) {
+  transform: translateY(4px);
+  box-shadow:
+    0 -4px 0 0 var(--night),
+    0 4px 0 0 var(--night),
+    -4px 0 0 0 var(--night),
+    4px 0 0 0 var(--night),
+    inset 4px 4px 0 0 #e0a24a,
+    0 4px 0 0 #0a0b14;
+}
+
+/* The pointer. */
+html[data-skin='pixel'] .btn::before {
+  content: '▶';
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  opacity: 0;
+}
+
+html[data-skin='pixel'] .btn:hover::before,
+html[data-skin='pixel'] .btn:focus-visible::before {
+  opacity: 1;
+  animation: px-blink 0.8s steps(1, end) infinite;
+}
+
+@keyframes px-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+html[data-skin='pixel'] .btn--ghost {
+  background: var(--window);
+  color: var(--frame);
+  box-shadow:
+    var(--frame-shadow),
+    inset -4px -4px 0 0 var(--window-deep),
+    inset 4px 4px 0 0 #3b4d93,
+    0 8px 0 0 #0a0b14;
+}
+
+html[data-skin='pixel'] .btn--ghost:hover {
+  background: #31418a;
+}
+
+html[data-skin='pixel'] .btn--ghost:active:not([disabled]) {
+  box-shadow: var(--frame-shadow), inset 4px 4px 0 0 var(--window-deep), 0 4px 0 0 #0a0b14;
+}
+
+html[data-skin='pixel'] .btn--quiet {
+  background: transparent;
+  color: var(--mist);
+  font-family: var(--mono);
+  font-size: 20px;
+  box-shadow: 0 -4px 0 0 var(--slate), 0 4px 0 0 var(--slate), -4px 0 0 0 var(--slate),
+    4px 0 0 0 var(--slate);
+}
+
+html[data-skin='pixel'] .btn--quiet:hover {
+  background: var(--slate);
+  color: var(--frame);
+}
+
+html[data-skin='pixel'] .btn--quiet:active:not([disabled]) {
+  box-shadow: 0 -4px 0 0 var(--slate), 0 4px 0 0 var(--slate), -4px 0 0 0 var(--slate),
+    4px 0 0 0 var(--slate);
+}
+
+/* Boxes: the dialog window ----------------------------------------- */
+
+html[data-skin='pixel'] .box,
+html[data-skin='pixel'] .box--quiet {
+  border: 0;
+  margin: 4px 4px 24px;
+  padding: 16px 18px;
+  color: var(--frame);
+  background: linear-gradient(180deg, #34479a 0%, var(--window) 40%, var(--window-deep) 100%);
+  box-shadow:
+    var(--frame-shadow),
+    inset 0 0 0 4px var(--night),
+    0 8px 0 0 #0a0b14;
+}
+
+html[data-skin='pixel'] .box--quiet {
+  background: var(--slate);
+}
+
+html[data-skin='pixel'] .box--dark {
+  background: #0f1020;
+}
+
+html[data-skin='pixel'] .box--dark .eyebrow {
+  color: var(--lime);
+}
+
+/* The stamp becomes a level-up banner. */
+html[data-skin='pixel'] .stamp {
+  border: 0;
+  transform: none;
+  margin: 4px 4px 28px;
+  padding: 12px 18px;
+  background: var(--berry);
+  color: var(--gold);
+  font-weight: 400;
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  text-shadow: 3px 3px 0 #5d275d;
+  box-shadow: var(--frame-shadow), inset 0 -6px 0 0 #8a2d42, 0 8px 0 0 #0a0b14;
+  animation: px-pop 360ms steps(4, end) both;
+}
+
+html[data-skin='pixel'] .stamp--grey {
+  background: var(--steel);
+  color: var(--frame);
+  text-shadow: 3px 3px 0 var(--slate);
+  box-shadow: var(--frame-shadow), inset 0 -6px 0 0 #45576e, 0 8px 0 0 #0a0b14;
+}
+
+@keyframes px-pop {
+  0% {
+    transform: scale(0.4);
+  }
+  60% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+html[data-skin='pixel'] .notice {
+  border-left: 0;
+  margin: 4px 4px 22px;
+  background: var(--slate);
+  font-size: 17px;
+  box-shadow: inset 8px 0 0 0 var(--lime);
+  padding-left: 22px;
+}
+
+html[data-skin='pixel'] .error {
+  color: #ff8a8a;
+  font-size: 17px;
+}
+
+/* Potluck meter as a HP bar ---------------------------------------- */
+
+html[data-skin='pixel'] .meter {
+  width: 64px;
+  height: 12px;
+  background: var(--night);
+  box-shadow: 0 0 0 2px var(--frame);
+}
+
+html[data-skin='pixel'] .meter > span {
+  height: 12px;
+  background: var(--leaf);
+  box-shadow: inset 0 3px 0 0 var(--lime);
+}
+
+html[data-skin='pixel'] .meter > span.short {
+  background: var(--berry);
+  box-shadow: inset 0 3px 0 0 var(--ember);
+}
+
+html[data-skin='pixel'] .meter-row .name,
+html[data-skin='pixel'] .roster__name,
+html[data-skin='pixel'] .roster__item {
+  font-size: 16px;
+}
+
+html[data-skin='pixel'] .meter-row .count,
+html[data-skin='pixel'] .roster__category,
+html[data-skin='pixel'] .roster--head {
+  font-size: 18px;
+}
+
+/* Camera ----------------------------------------------------------- */
+
+html[data-skin='pixel'] .camera {
+  border: 0;
+  margin: 4px 4px 20px;
+  width: calc(100% - 8px);
+  box-shadow: var(--frame-shadow);
+  background: var(--slate);
+}
+
+html[data-skin='pixel'] .camera .plate {
+  background: var(--night);
+  color: var(--gold);
+  font-size: 18px;
+}
+
+html[data-skin='pixel'] .camera .hint {
+  font-size: 18px;
+}
+
+html[data-skin='pixel'] .hint__badge {
+  background: var(--berry);
+  color: var(--gold);
+}
+
+html[data-skin='pixel'] .shutter {
+  border-radius: 0;
+  border: 0;
+  background: var(--berry);
+  box-shadow: var(--frame-shadow), inset -6px -6px 0 0 #8a2d42, inset 6px 6px 0 0 var(--ember);
+}
+
+html[data-skin='pixel'] .shutter:hover {
+  background: #c24a60;
+}
+
+/* Who's going: a tile-map dungeon ---------------------------------- */
+
+html[data-skin='pixel'] .cellblock {
+  border: 0;
+  background: var(--night);
+  margin: 4px;
+  box-shadow: var(--frame-shadow);
+}
+
+html[data-skin='pixel'] .tier__label {
+  background: var(--slate);
+  color: var(--gold);
+  font-size: 18px;
+  font-weight: 400;
+}
+
+html[data-skin='pixel'] .tier__floor {
+  height: 12px;
+  background:
+    linear-gradient(90deg, var(--night) 4px, transparent 4px) 0 0 / 16px 12px,
+    linear-gradient(180deg, var(--steel) 4px, var(--slate) 4px);
+}
+
+html[data-skin='pixel'] .cell {
+  background: var(--window);
+  box-shadow: inset -4px 0 0 var(--night);
+}
+
+html[data-skin='pixel'] .cell__tag {
+  background: var(--window-deep);
+  color: var(--frame);
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+html[data-skin='pixel'] .cell--empty .cell__tag {
+  background: var(--slate);
+  color: var(--mist);
+}
+
+html[data-skin='pixel'] .cell__frame {
+  background: var(--steel);
+}
+
+html[data-skin='pixel'] .cell--empty .cell__frame {
+  background: var(--slate);
+}
+
+html[data-skin='pixel'] .cell__frame .initials {
+  color: var(--frame);
+  font-size: 14px;
+}
+
+html[data-skin='pixel'] .cell__bars::before,
+html[data-skin='pixel'] .cell__bars span {
+  background: #0f1020;
+  box-shadow: 2px 0 0 0 var(--mist);
+}
+
+html[data-skin='pixel'] .cell__number {
+  background: var(--night);
+  color: var(--gold);
+  font-size: 15px;
+}
+
+/* Check-in, draw, cards, host -------------------------------------- */
+
+html[data-skin='pixel'] .face-grid,
+html[data-skin='pixel'] .draw-grid,
+html[data-skin='pixel'] .print-sheet,
+html[data-skin='pixel'] .stat-row {
+  gap: 20px;
+  padding: 4px;
+}
+
+html[data-skin='pixel'] .face {
+  border: 0;
+  background: var(--window);
+  color: var(--frame);
+  box-shadow: var(--frame-shadow), 0 8px 0 0 #0a0b14;
+}
+
+html[data-skin='pixel'] .face:hover {
+  background: #31418a;
+}
+
+html[data-skin='pixel'] .face--in {
+  background: var(--slate);
+  color: var(--mist);
+  box-shadow: 0 -4px 0 0 var(--steel), 0 4px 0 0 var(--steel), -4px 0 0 0 var(--steel),
+    4px 0 0 0 var(--steel);
+}
+
+html[data-skin='pixel'] .face__avatar,
+html[data-skin='pixel'] .face--in .face__avatar {
+  border-radius: 0;
+  background: var(--night);
+  color: var(--gold);
+  font-size: 12px;
+}
+
+html[data-skin='pixel'] .face__name {
+  font-size: 16px;
+}
+
+html[data-skin='pixel'] .face__num,
+html[data-skin='pixel'] .face--in .face__num {
+  font-size: 18px;
+  color: var(--gold);
+}
+
+html[data-skin='pixel'] .block-card,
+html[data-skin='pixel'] .stat {
+  border: 0;
+  background: var(--window);
+  box-shadow: var(--frame-shadow);
+}
+
+html[data-skin='pixel'] .block-card__head .nm,
+html[data-skin='pixel'] .card__head .nm {
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+html[data-skin='pixel'] .block-card__head .tot,
+html[data-skin='pixel'] .card__head .sub,
+html[data-skin='pixel'] .member .cap,
+html[data-skin='pixel'] .block-card__empty {
+  font-size: 18px;
+}
+
+html[data-skin='pixel'] .member {
+  border-bottom-color: var(--slate);
+}
+
+html[data-skin='pixel'] .member .nm {
+  font-size: 16px;
+}
+
+html[data-skin='pixel'] .member select {
+  border: 0;
+  background: var(--night);
+  color: var(--frame);
+  font-size: 16px;
+  box-shadow: 0 0 0 2px var(--steel);
+}
+
+html[data-skin='pixel'] .drag-ghost {
+  background: var(--gold);
+  color: var(--night);
+  font-size: 18px;
+  box-shadow: 4px 4px 0 #0a0b14;
+}
+
+html[data-skin='pixel'] .block-card[data-drag-over='true'] {
+  outline-color: var(--gold);
+}
+
+html[data-skin='pixel'] .stat .label,
+html[data-skin='pixel'] table.list th,
+html[data-skin='pixel'] .copy-link {
+  font-size: 18px;
+}
+
+html[data-skin='pixel'] .stat .value {
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1.3;
+  color: var(--gold);
+}
+
+html[data-skin='pixel'] table.list td {
+  border-bottom-color: var(--slate);
+}
+
+html[data-skin='pixel'] .pill {
+  font-size: 17px;
+  border: 0;
+  background: var(--slate);
+  color: var(--mist);
+}
+
+html[data-skin='pixel'] .pill--yes {
+  background: var(--leaf);
+  color: var(--night);
+}
+
+html[data-skin='pixel'] .pill--no {
+  background: var(--berry);
+  color: var(--frame);
+}
+
+html[data-skin='pixel'] .pill--done {
+  background: var(--gold);
+  color: var(--night);
+}
+
+/* Printable team cards stay light so they print and scan cleanly. */
+html[data-skin='pixel'] .card {
+  border: 0;
+  background: #fff;
+  color: #1a1c2c;
+  box-shadow: 0 0 0 4px #1a1c2c;
+}
+
+html[data-skin='pixel'] .card .where,
+html[data-skin='pixel'] .card .small {
+  color: #333c57;
+}
+
+html[data-skin='pixel'] .card__code .url {
+  color: #29366f;
+  font-size: 18px;
+}
+
+html[data-skin='pixel'] .card__code .code {
+  font-size: 36px;
+}
+
+html[data-skin='pixel'] .card__qr {
+  border-color: #1a1c2c;
+}
+
+@media print {
+  html[data-skin='pixel'] body,
+  html[data-skin='pixel'] .shell {
+    background: #fff;
+    color: #1a1c2c;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-skin='pixel'] .stamp,
+  html[data-skin='pixel'] .btn::before {
+    animation: none;
+  }
+}
+
+@media (max-width: 560px) {
+  html[data-skin='pixel'] h1.huge {
+    font-size: 22px;
+  }
+  html[data-skin='pixel'] h1 {
+    font-size: 18px;
+  }
+}
+
+html[data-skin='pixel'] .topbar span,
+html[data-skin='pixel'] .topbar a {
+  white-space: nowrap;
+}

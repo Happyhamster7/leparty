@@ -1246,3 +1246,36 @@ table.list td.tight {
     font-size: 42px;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Skin switcher — only shown after a ?skin= link (src/lib/skin.ts)    */
+/* ------------------------------------------------------------------ */
+
+.skin-switcher {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 100;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: #17171a;
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.skin-switcher button {
+  border: 0;
+  border-radius: 4px;
+  padding: 6px 10px;
+  background: transparent;
+  color: #c9c3b5;
+  font: 500 12px/1 system-ui, -apple-system, sans-serif;
+  cursor: pointer;
+}
+
+.skin-switcher button[aria-pressed='true'] {
+  background: #ede9e0;
+  color: #17171a;
+}

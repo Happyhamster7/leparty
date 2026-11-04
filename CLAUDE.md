@@ -128,6 +128,13 @@ too.
 - Design tokens are CSS custom properties in `globals.css`. Paper
   `--paper`, ink `--ink`, one rust accent `--rust`. Oswald for display,
   IBM Plex Mono for anything that reads as data, IBM Plex Sans for body.
+- Skins (on trial) are visual only and separate from the party theme
+  in `src/lib/theme.ts`. `src/app/skins/rpg.css` and `pixel.css`
+  override the tokens and components under `html[data-skin=…]`; the
+  skin is the `leparty_skin` cookie, set by visiting any page with
+  `?skin=rpg|pixel|default` (`src/middleware.ts`). The pixel skin flips
+  `--ink` to a light colour, so new styles that paint an `--ink`
+  background need a pixel override.
 
 ## State of play
 

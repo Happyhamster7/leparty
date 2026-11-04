@@ -1,0 +1,466 @@
+/* ------------------------------------------------------------------ */
+/* Skin: fantasy RPG — "dungeon ledger"                                */
+/*                                                                    */
+/* Parchment, oak-gall ink, iron and a crimson wax seal. The jail     */
+/* theme reads as a dungeon here, so the content needs no changes.    */
+/* Active when <html data-skin="rpg">. Fonts load from layout.tsx     */
+/* only while this skin is on.                                        */
+/* ------------------------------------------------------------------ */
+
+html[data-skin='rpg'] {
+  --paper: #ecdcb6;
+  --card: #f6ebcf;
+  --ink: #2b1b0f;
+  --ink-soft: #3d2a1a;
+  --muted: #5a4630;
+  --muted-2: #6b553b;
+  --line: #b99d6c;
+  --line-soft: #d6c196;
+  --fill: #e2cc9c;
+  --rust: #8c1c1c;
+  --rust-dark: #6a1212;
+  --gilt: #b8862b;
+  --gilt-light: #e3c06a;
+  --iron: #3b342c;
+
+  --sans: 'Alegreya', Georgia, serif;
+  --mono: 'Alegreya Sans SC', 'Alegreya', Georgia, serif;
+  --display: 'Cinzel', 'Alegreya', Georgia, serif;
+}
+
+html[data-skin='rpg'] body {
+  line-height: 1.62;
+  background-color: #2a1d12;
+  /* Faint fibre in the parchment so it isn't a flat fill. */
+  background-image: radial-gradient(ellipse at 50% 0%, #3a2918 0%, #1d140c 70%);
+  background-attachment: fixed;
+}
+
+html[data-skin='rpg'] .shell {
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(255, 248, 225, 0.55), transparent 55%),
+    radial-gradient(ellipse at 90% 95%, rgba(140, 100, 50, 0.22), transparent 60%),
+    var(--paper);
+  box-shadow:
+    0 0 0 1px #7a5a30,
+    0 0 0 5px #2b1b0f,
+    0 0 0 6px var(--gilt),
+    0 18px 50px rgba(0, 0, 0, 0.55);
+}
+
+@media (min-width: 520px) {
+  html[data-skin='rpg'] .shell {
+    margin-top: 24px;
+    margin-bottom: 24px;
+    min-height: calc(100vh - 48px);
+  }
+}
+
+/* Leather strap across the top, stitched in gilt. */
+html[data-skin='rpg'] .topbar {
+  background: linear-gradient(180deg, #4a2c17, #2f1c0e);
+  color: var(--gilt-light);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  border-bottom: 2px solid var(--gilt);
+  box-shadow: inset 0 -5px 0 -3px rgba(227, 192, 106, 0.35);
+}
+
+html[data-skin='rpg'] .topbar a {
+  color: var(--gilt-light);
+}
+
+/* Type ------------------------------------------------------------- */
+
+html[data-skin='rpg'] h1 {
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+
+html[data-skin='rpg'] h1.huge {
+  font-size: 44px;
+  line-height: 1.02;
+  text-shadow: 0 1px 0 rgba(255, 248, 225, 0.7);
+}
+
+html[data-skin='rpg'] h2 {
+  font-weight: 700;
+  font-size: 21px;
+  letter-spacing: 0.02em;
+}
+
+html[data-skin='rpg'] .eyebrow,
+html[data-skin='rpg'] label.field {
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+html[data-skin='rpg'] .mono {
+  font-size: 14px;
+  letter-spacing: 0.03em;
+}
+
+/* An illuminated rule: gilt line with a diamond at its centre. */
+html[data-skin='rpg'] .rule {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gilt) 12%, var(--gilt) 88%, transparent);
+  position: relative;
+  overflow: visible;
+}
+
+html[data-skin='rpg'] .rule::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  background: var(--rust);
+  border: 1px solid var(--gilt);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+/* Forms ------------------------------------------------------------ */
+
+html[data-skin='rpg'] input[type='text'],
+html[data-skin='rpg'] input[type='date'],
+html[data-skin='rpg'] input[type='number'],
+html[data-skin='rpg'] input[type='password'],
+html[data-skin='rpg'] select,
+html[data-skin='rpg'] textarea {
+  border: 1px solid var(--muted);
+  border-radius: 3px;
+  background: #fbf3dc;
+  box-shadow: inset 0 2px 3px rgba(60, 35, 10, 0.15);
+  font-size: 17px;
+}
+
+html[data-skin='rpg'] input:focus-visible,
+html[data-skin='rpg'] select:focus-visible,
+html[data-skin='rpg'] textarea:focus-visible,
+html[data-skin='rpg'] button:focus-visible,
+html[data-skin='rpg'] a:focus-visible {
+  outline: 2px solid var(--gilt);
+  outline-offset: 2px;
+}
+
+html[data-skin='rpg'] .radio {
+  border-radius: 3px;
+  font-size: 17px;
+}
+
+html[data-skin='rpg'] .radio:has(input:checked) {
+  border: 2px solid var(--gilt);
+  background: var(--fill);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+/* Buttons: crimson plaques in a gilt frame ------------------------- */
+
+html[data-skin='rpg'] .btn {
+  position: relative;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #a52626 0%, var(--rust) 55%, #6e1414 100%);
+  color: #fbe9c0;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+  border: 2px solid var(--gilt);
+  box-shadow:
+    inset 0 0 0 2px #4a0d0d,
+    inset 0 1px 0 3px rgba(255, 210, 150, 0.25),
+    0 3px 0 #3a230f,
+    0 5px 10px rgba(40, 20, 5, 0.35);
+}
+
+html[data-skin='rpg'] .btn:hover {
+  background: linear-gradient(180deg, #b52c2c 0%, #9a2020 55%, #7a1616 100%);
+}
+
+html[data-skin='rpg'] .btn:active:not([disabled]) {
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 0 0 2px #4a0d0d,
+    inset 0 2px 6px rgba(0, 0, 0, 0.4),
+    0 0 0 #3a230f;
+}
+
+html[data-skin='rpg'] .btn--ghost {
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  background: linear-gradient(180deg, #f8eed4, #e6d3a6);
+  color: var(--ink);
+  text-shadow: none;
+  border: 2px solid var(--muted);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 250, 230, 0.8),
+    0 3px 0 var(--muted),
+    0 5px 8px rgba(40, 20, 5, 0.2);
+}
+
+html[data-skin='rpg'] .btn--ghost:hover {
+  background: linear-gradient(180deg, #fff6dc, #ecdab0);
+}
+
+html[data-skin='rpg'] .btn--quiet {
+  background: transparent;
+  color: var(--muted);
+  text-shadow: none;
+  border: 1px solid var(--line);
+  box-shadow: none;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+}
+
+html[data-skin='rpg'] .btn--quiet:hover {
+  background: rgba(255, 248, 225, 0.5);
+  color: var(--ink);
+}
+
+/* Boxes: framed vellum --------------------------------------------- */
+
+html[data-skin='rpg'] .box {
+  border: 1px solid var(--muted);
+  border-radius: 3px;
+  background: rgba(255, 248, 225, 0.45);
+  box-shadow:
+    inset 0 0 0 3px var(--paper),
+    inset 0 0 0 4px var(--line);
+  padding: 17px 18px;
+}
+
+html[data-skin='rpg'] .box--quiet {
+  border-color: var(--line);
+  background: var(--card);
+}
+
+html[data-skin='rpg'] .box--dark {
+  background: linear-gradient(180deg, #3a2716, #24170c);
+  color: #f3e3bd;
+  border-color: var(--gilt);
+  box-shadow: inset 0 0 0 3px #24170c, inset 0 0 0 4px rgba(227, 192, 106, 0.5);
+}
+
+html[data-skin='rpg'] .box--dark .eyebrow {
+  color: var(--gilt-light);
+}
+
+/* The stamp becomes a wax seal. */
+html[data-skin='rpg'] .stamp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 128px;
+  height: 128px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 50%;
+  transform: rotate(-8deg);
+  background: radial-gradient(circle at 38% 32%, #c13838, #8c1c1c 55%, #5c0f0f 100%);
+  color: #f4d9a0;
+  font-size: 17px;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 180, 160, 0.25);
+  box-shadow:
+    inset 0 0 0 7px #7a1616,
+    inset 0 0 0 9px rgba(244, 217, 160, 0.45),
+    3px 4px 0 rgba(60, 10, 10, 0.35),
+    0 0 0 4px rgba(140, 28, 28, 0.25);
+}
+
+html[data-skin='rpg'] .stamp--grey {
+  background: radial-gradient(circle at 38% 32%, #8a8172, #5a5246 55%, #3b352c 100%);
+  box-shadow:
+    inset 0 0 0 7px #4a443a,
+    inset 0 0 0 9px rgba(244, 217, 160, 0.35),
+    3px 4px 0 rgba(30, 25, 20, 0.35);
+}
+
+html[data-skin='rpg'] .notice {
+  border-left: 3px solid var(--gilt);
+  background: var(--card);
+  font-size: 16px;
+  border-radius: 0 3px 3px 0;
+}
+
+html[data-skin='rpg'] .error {
+  color: #8c1c1c;
+  font-size: 16px;
+}
+
+/* Potluck meter ---------------------------------------------------- */
+
+html[data-skin='rpg'] .meter {
+  height: 9px;
+  border: 1px solid var(--muted);
+  border-radius: 5px;
+  background: #d9c494;
+  overflow: hidden;
+}
+
+html[data-skin='rpg'] .meter > span {
+  height: 7px;
+  background: linear-gradient(180deg, #d6ad4f, #9a6f1e);
+}
+
+html[data-skin='rpg'] .meter > span.short {
+  background: linear-gradient(180deg, #c13838, #7a1616);
+}
+
+/* Camera ----------------------------------------------------------- */
+
+html[data-skin='rpg'] .camera {
+  border: 3px solid var(--iron);
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px var(--gilt);
+}
+
+html[data-skin='rpg'] .shutter {
+  border-color: var(--gilt);
+  background: radial-gradient(circle at 38% 32%, #c13838, #8c1c1c 60%, #5c0f0f);
+  box-shadow: inset 0 0 0 4px #5c0f0f;
+}
+
+/* Who's going: dungeon cells in stone ------------------------------ */
+
+html[data-skin='rpg'] .cellblock {
+  border: 4px solid #3b342c;
+  background: #3b342c;
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px var(--gilt);
+}
+
+html[data-skin='rpg'] .tier__label {
+  background: linear-gradient(180deg, #4a4136, #3b342c);
+  color: var(--gilt-light);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+
+html[data-skin='rpg'] .tier__floor {
+  height: 10px;
+  background:
+    linear-gradient(90deg, #2a241d 2px, transparent 2px) 0 0 / 22px 10px,
+    linear-gradient(180deg, #6b6052, #4a4136);
+}
+
+html[data-skin='rpg'] .cell {
+  background: var(--card);
+  box-shadow: inset -2px 0 0 #3b342c;
+}
+
+html[data-skin='rpg'] .cell__tag {
+  background: #4a2c17;
+  color: #f3e3bd;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+html[data-skin='rpg'] .cell--empty .cell__tag {
+  background: #5a4a38;
+}
+
+html[data-skin='rpg'] .cell__frame {
+  background: #cdb88a;
+}
+
+html[data-skin='rpg'] .cell--empty .cell__frame {
+  background: #8f8371;
+}
+
+html[data-skin='rpg'] .cell__bars::before,
+html[data-skin='rpg'] .cell__bars span {
+  background: linear-gradient(90deg, #1c1813, #6e655a 45%, #1c1813);
+}
+
+html[data-skin='rpg'] .cell__number {
+  background: #3b342c;
+  color: var(--gilt-light);
+  font-size: 12px;
+}
+
+/* Check-in, draw, cards, host -------------------------------------- */
+
+html[data-skin='rpg'] .face {
+  border: 1px solid var(--muted);
+  border-radius: 4px;
+  background: var(--card);
+  box-shadow: 0 3px 0 var(--line);
+}
+
+html[data-skin='rpg'] .face:hover {
+  background: #fff7e0;
+}
+
+html[data-skin='rpg'] .face__avatar {
+  background: var(--iron);
+  color: var(--gilt-light);
+  box-shadow: 0 0 0 2px var(--gilt);
+}
+
+html[data-skin='rpg'] .face__name {
+  font-size: 15px;
+}
+
+html[data-skin='rpg'] .face__num,
+html[data-skin='rpg'] .member .cap,
+html[data-skin='rpg'] .roster__category {
+  font-size: 13px;
+}
+
+html[data-skin='rpg'] .block-card,
+html[data-skin='rpg'] .card,
+html[data-skin='rpg'] .stat {
+  border: 1px solid var(--muted);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 3px 0 var(--line);
+}
+
+html[data-skin='rpg'] .stat {
+  background: var(--card);
+}
+
+html[data-skin='rpg'] .stat .label,
+html[data-skin='rpg'] table.list th,
+html[data-skin='rpg'] .pill {
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+html[data-skin='rpg'] .pill {
+  border-radius: 999px;
+  padding: 1px 10px;
+}
+
+html[data-skin='rpg'] .member select {
+  border-radius: 3px;
+  box-shadow: 0 2px 0 var(--muted);
+  font-size: 13px;
+}
+
+html[data-skin='rpg'] .drag-ghost {
+  background: var(--iron);
+  color: var(--gilt-light);
+  border: 1px solid var(--gilt);
+}
+
+@media print {
+  html[data-skin='rpg'] body,
+  html[data-skin='rpg'] .shell {
+    background: #fff;
+    box-shadow: none;
+  }
+}
+
+@media (max-width: 560px) {
+  html[data-skin='rpg'] h1.huge {
+    font-size: 36px;
+  }
+}
