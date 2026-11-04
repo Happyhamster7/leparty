@@ -119,6 +119,12 @@ FRAMES = {
     'tab-idle': ([('K', 'K'), ('Y', 'W'), ('y', 'W')], 'y', 1, True),
     'bar': ([('K', 'K'), ('w', 'w')], 'i', 1, False),
     'plank': ([('K', 'K'), ('Y', 'W'), ('y', 'w')], 'W', 0, False),
+    # Shop cards: wood frame, and a gold ring when highlighted.
+    'card': ([('K', 'K'), ('h', 'W'), ('w', 'w')], 'J', 1, False),
+    'card-active': ([('K', 'K'), ('j', 'g'), ('G', 'G'), ('g', 'g')], 'J', 1, False),
+    # Price tag on a card.
+    'tag': ([('K', 'K'), ('h', 'W')], 'Y', 1, False),
+    'tag-short': ([('K', 'K'), ('L', 'I')], 'l', 1, False),
 }
 
 # ------------------------------------------------------------------ icons
@@ -454,6 +460,26 @@ ICONS = {
         '...LZLZLZLZ...',
         '....LLLLLL....',
     ],
+    'eye': [
+        '....iiiiii....',
+        '..iiZZZZZZii..',
+        '.iZZZbBBbZZZi.',
+        'iZZZbBccBbZZZi',
+        'iZZZbBKKBbZZZi',
+        '.iZZZbBBbZZZi.',
+        '..iiZZZZZZii..',
+        '....iiiiii....',
+    ],
+    'back': [
+        '....Yy......',
+        '...YhY......',
+        '..YhYYYYYYYy',
+        '.YhYYYYYYYYy',
+        'YhYYYYYYYYYy',
+        '.yYYyyyyyyyy',
+        '..yYy.......',
+        '...yy.......',
+    ],
     'warden': [
         '....bbbbbb....',
         '..bbBBBBBBbb..',
@@ -490,6 +516,14 @@ SMALL_ICONS = {
         'RtTttR',
         '.RttR.',
         '..RR..',
+    ],
+    'hourglass-s': [
+        'wwwwww',
+        '.lCCl.',
+        '..lj..',
+        '..jl..',
+        '.ljjl.',
+        'wwwwww',
     ],
     'star-s': [
         '..jj..',

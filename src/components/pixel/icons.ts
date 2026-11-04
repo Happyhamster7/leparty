@@ -24,9 +24,12 @@ export const ICON_NAMES = [
   'chest',
   'potion',
   'skull',
+  'eye',
+  'back',
   'warden',
   'coin-s',
   'heart-s',
+  'hourglass-s',
   'star-s',
 ] as const;
 

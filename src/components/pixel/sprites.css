@@ -100,6 +100,26 @@
   border-width: 12px 12px 12px;
   border-image: url('/pixel/frame-plank.png') 12 12 12 fill / 12px 12px 12px stretch;
 }
+.pxf-card {
+  border-style: solid;
+  border-width: 12px 12px 12px;
+  border-image: url('/pixel/frame-card.png') 12 12 12 fill / 12px 12px 12px stretch;
+}
+.pxf-card-active {
+  border-style: solid;
+  border-width: 15px 15px 15px;
+  border-image: url('/pixel/frame-card-active.png') 15 15 15 fill / 15px 15px 15px stretch;
+}
+.pxf-tag {
+  border-style: solid;
+  border-width: 9px 9px 9px;
+  border-image: url('/pixel/frame-tag.png') 9 9 9 fill / 9px 9px 9px stretch;
+}
+.pxf-tag-short {
+  border-style: solid;
+  border-width: 9px 9px 9px;
+  border-image: url('/pixel/frame-tag-short.png') 9 9 9 fill / 9px 9px 9px stretch;
+}
 
 /* Icons: one 1x sheet, scaled by --icon-scale. Use 3 (one art pixel
    = 3px, the same as every frame) or 6 for a feature icon. Other
@@ -112,7 +132,7 @@
   height: calc(16px * var(--icon-scale));
   background-image: url('/pixel/icons.png');
   background-repeat: no-repeat;
-  background-size: calc(448px * var(--icon-scale)) calc(16px * var(--icon-scale));
+  background-size: calc(496px * var(--icon-scale)) calc(16px * var(--icon-scale));
   image-rendering: pixelated;
   vertical-align: middle;
 }
@@ -140,13 +160,16 @@
 .px-icon--chest { background-position: calc(-336px * var(--icon-scale)) 0; }
 .px-icon--potion { background-position: calc(-352px * var(--icon-scale)) 0; }
 .px-icon--skull { background-position: calc(-368px * var(--icon-scale)) 0; }
-.px-icon--warden { background-position: calc(-384px * var(--icon-scale)) 0; }
-.px-icon--coin-s { background-position: calc(-400px * var(--icon-scale)) 0; width: calc(8px * var(--icon-scale)); height: calc(8px * var(--icon-scale)); }
-.px-icon--heart-s { background-position: calc(-416px * var(--icon-scale)) 0; width: calc(8px * var(--icon-scale)); height: calc(8px * var(--icon-scale)); }
-.px-icon--star-s { background-position: calc(-432px * var(--icon-scale)) 0; width: calc(8px * var(--icon-scale)); height: calc(8px * var(--icon-scale)); }
+.px-icon--eye { background-position: calc(-384px * var(--icon-scale)) 0; }
+.px-icon--back { background-position: calc(-400px * var(--icon-scale)) 0; }
+.px-icon--warden { background-position: calc(-416px * var(--icon-scale)) 0; }
+.px-icon--coin-s { background-position: calc(-432px * var(--icon-scale)) 0; width: calc(8px * var(--icon-scale)); height: calc(8px * var(--icon-scale)); }
+.px-icon--heart-s { background-position: calc(-448px * var(--icon-scale)) 0; width: calc(8px * var(--icon-scale)); height: calc(8px * var(--icon-scale)); }
+.px-icon--hourglass-s { background-position: calc(-464px * var(--icon-scale)) 0; width: calc(8px * var(--icon-scale)); height: calc(8px * var(--icon-scale)); }
+.px-icon--star-s { background-position: calc(-480px * var(--icon-scale)) 0; width: calc(8px * var(--icon-scale)); height: calc(8px * var(--icon-scale)); }
 
 :root {
-  --px-sheet: 1344px 48px;
+  --px-sheet: 1488px 48px;
   --px-at-coin: 0px 0;
   --px-at-star: -48px 0;
   --px-at-heart: -96px 0;
@@ -171,8 +194,11 @@
   --px-at-chest: -1008px 0;
   --px-at-potion: -1056px 0;
   --px-at-skull: -1104px 0;
-  --px-at-warden: -1152px 0;
-  --px-at-coin-s: -1200px 0;
-  --px-at-heart-s: -1248px 0;
-  --px-at-star-s: -1296px 0;
+  --px-at-eye: -1152px 0;
+  --px-at-back: -1200px 0;
+  --px-at-warden: -1248px 0;
+  --px-at-coin-s: -1296px 0;
+  --px-at-heart-s: -1344px 0;
+  --px-at-hourglass-s: -1392px 0;
+  --px-at-star-s: -1440px 0;
 }

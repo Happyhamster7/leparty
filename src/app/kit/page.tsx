@@ -35,6 +35,8 @@ import {
   Window,
 } from '@/components/pixel/kit';
 import { Cycler, Stepper, Tabs } from '@/components/pixel/controls';
+import { ItemDetails, ShopCard, ShopScreen, ShopTopBar } from '@/components/pixel/shop';
+import { SHOP_DEMO, SHOP_TARGETS } from './shop-demo';
 import { ICON_NAMES } from '@/components/pixel/icons';
 
 export const metadata: Metadata = {
@@ -387,6 +389,39 @@ export default function KitPage() {
         </div>
       </Section>
 
+      {/* -------------------------------------------------------- shop */}
+      <Section
+        id="s-shop"
+        title="Shop"
+        source="The team phone shop. Top bar with money, points and time; category tabs; a grid of item cards that highlight gold when tapped; a details dialog with the Buy button. Buying places the order straight away, with no extra confirm step."
+      >
+        <Spec name="ShopTopBar" wide>
+          <div style={{ maxWidth: 420 }}>
+            <ShopTopBar title="Shop" money={185} points={41} round="Round 3 · spending" timeLeft="0:42" backHref="#" />
+          </div>
+        </Spec>
+        <Spec name="ShopCard: normal, highlighted, can't afford, sold out" wide>
+          <div className="kit-cards">
+            <ShopCard item={SHOP_DEMO[0].items[0]} />
+            <ShopCard item={SHOP_DEMO[1].items[0]} selected />
+            <ShopCard item={SHOP_DEMO[0].items[2]} short />
+            <ShopCard item={SHOP_DEMO[1].items[2]} />
+          </div>
+        </Spec>
+        <div className="kit-split">
+          <Spec name="ItemDetails (a drink: pick a team)">
+            <div className="px-dialog-still pxf-wood">
+              <ItemDetails item={SHOP_DEMO[0].items[1]} money={185} targets={SHOP_TARGETS} />
+            </div>
+          </Spec>
+          <Spec name="ItemDetails (an item: limit 1)">
+            <div className="px-dialog-still pxf-wood">
+              <ItemDetails item={SHOP_DEMO[1].items[0]} money={30} />
+            </div>
+          </Spec>
+        </div>
+      </Section>
+
       {/* ------------------------------------------------------- lists */}
       <Section id="s-lists" title="Lists" source="Shop rows, the social tab, the shipping summary, bundles, the quest log and scoreboards.">
         <div className="kit-split">
@@ -622,49 +657,10 @@ export default function KitPage() {
 
         <h3 className="kit-group">Phase 2 · team phone</h3>
         <div className="kit-phones">
-          <Phone label="Spending · shop" top={['Block B', 'Team phone']}>
-            <div className="kit-hud">
-              <Clock round="Round 3" time="0:42" phase="Spending" />
-              <Wallet amount={185} digits={4} />
+          <Phone label="Spending · shop (tap a card)" top={['Block B', 'Team phone']}>
+            <div data-shop-demo>
+              <ShopScreen money={185} points={41} round="Round 3 · spending" timeLeft="0:42" categories={SHOP_DEMO} targets={SHOP_TARGETS} />
             </div>
-            <Dialogue name="The Warden">
-              <p>Shop closes when the clock runs out.</p>
-            </Dialogue>
-            <div style={{ height: 'var(--s-4)' }} />
-            <Tabs
-              items={[
-                {
-                  key: 'ex-drinks',
-                  icon: 'mug',
-                  label: 'Send drinks',
-                  content: (
-                    <div>
-                      <OptionRow label="Send to">
-                        <Cycler label="team" options={['Block C', 'Block D', 'Block A']} />
-                      </OptionRow>
-                      <ShopRow icon="mug" name="Beer" detail="2 points" price={10} action={<Stepper label="beers" initial={2} />} />
-                      <ShopRow icon="shot" name="Shot" detail="3 points" price={15} action={<Stepper label="shots" />} />
-                      <ShopRow icon="cocktail" name="Cocktail" detail="5 points" price={25} action={<Stepper label="cocktails" />} />
-                    </div>
-                  ),
-                },
-                {
-                  key: 'ex-items',
-                  icon: 'chest',
-                  label: 'Items',
-                  content: (
-                    <div>
-                      <ShopRow icon="shield" name="Reflect" detail="1 per night" price={40} action={<Stepper label="Reflect" max={1} />} />
-                      <ShopRow icon="scroll" name="Eye Spy" detail="1 per round" price={25} action={<Stepper label="Eye Spy" max={1} />} />
-                    </div>
-                  ),
-                },
-              ]}
-            />
-            <div style={{ height: 'var(--s-4)' }} />
-            <Button variant="confirm" icon="ok" block>
-              Place order · 20
-            </Button>
           </Phone>
 
           <Phone label="Game pick · level up" top={['Block B', 'Team phone']}>

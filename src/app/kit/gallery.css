@@ -331,3 +331,9 @@
     grid-column: 2;
   }
 }
+
+.kit-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 180px));
+  gap: var(--s-3);
+}

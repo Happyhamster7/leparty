@@ -9,6 +9,7 @@ import '@fontsource/jersey-10/400.css';
 import './skins/pixel.css';
 import '@/components/pixel/sprites.css';
 import '@/components/pixel/kit.css';
+import '@/components/pixel/shop.css';
 import { SKIN_COOKIE, SKIN_FONTS, parseSkin } from '@/lib/skin';
 import SkinSwitcher from '@/components/SkinSwitcher';
 

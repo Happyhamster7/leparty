@@ -1,0 +1,537 @@
+/* ------------------------------------------------------------------ */
+/* Team phone shop (./shop.tsx). Spacing uses --s-* only.             */
+/* ------------------------------------------------------------------ */
+
+.px-shop {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+/* 1. Top bar ------------------------------------------------------- */
+
+.px-shop__top {
+  display: grid;
+  gap: var(--s-2);
+}
+
+.px-shop__titlebar {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.px-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  padding: 0;
+  filter: drop-shadow(0 3px 0 var(--c-outline));
+  transition: transform 80ms steps(2, end), filter 80ms steps(2, end);
+}
+
+.px-iconbtn .px-icon {
+  margin: -6px;
+}
+
+.px-iconbtn:active {
+  transform: translateY(3px);
+  filter: none;
+}
+
+.px-shop__title {
+  justify-self: center;
+  min-width: 0;
+  margin: 0;
+  padding: 0 var(--s-2);
+  color: var(--c-cream);
+  font-family: var(--display);
+  font-size: 36px;
+  font-weight: 400;
+  line-height: 1.1;
+  text-shadow: 0 3px 0 var(--c-outline);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.px-shop__round {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--muted);
+  text-align: right;
+  max-width: 84px;
+}
+
+/* One HUD strip, the CASH box of the game: three stats, evenly spaced. */
+.px-shop__status {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: center;
+  padding: 0 var(--s-1);
+}
+
+.px-shop__stat {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-1);
+  min-height: 42px;
+}
+
+.px-shop__stat + .px-shop__stat {
+  border-left: 3px solid var(--c-paper-2);
+}
+
+.px-shop__num {
+  font-family: var(--display);
+  font-size: 33px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--c-red-dark);
+}
+
+.px-shop__num--time {
+  color: var(--c-text);
+}
+
+/* 2. Category tabs ------------------------------------------------- */
+
+.px-shop__tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 0;
+  padding: 0 var(--s-3);
+  margin-bottom: calc(-18px - var(--s-3));
+}
+
+.px-shop__tabs .px-tab {
+  font-size: 16px;
+}
+
+/* 3. Card grid ----------------------------------------------------- */
+
+.px-shop__panel {
+  position: relative;
+  z-index: 1;
+  padding: var(--s-2) var(--s-1);
+}
+
+.px-shop__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 105px), 1fr));
+  gap: var(--s-1);
+}
+
+.px-card {
+  container-type: inline-size;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--s-1);
+  padding: var(--s-1) 3px 3px;
+  color: var(--c-text);
+  font-family: var(--sans);
+  text-align: left;
+  filter: drop-shadow(0 3px 0 rgba(20, 10, 5, 0.45));
+  transition: transform 80ms steps(2, end);
+}
+
+.px-card:hover:not([disabled]) {
+  transform: translateY(-3px);
+}
+
+.px-card:active:not([disabled]) {
+  transform: translateY(3px);
+  filter: none;
+}
+
+.px-card.pxf-card-active {
+  transform: translateY(-3px);
+}
+
+.px-card__tag {
+  align-self: flex-start;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 3px;
+  color: var(--c-cream);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-shadow: 0 3px 0 var(--c-outline);
+  white-space: nowrap;
+}
+
+.px-card__sprite {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  width: var(--slot);
+  height: var(--slot);
+}
+
+.px-card__sold {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-6deg);
+  padding: 0 var(--s-1);
+  color: var(--c-cream);
+  font-family: var(--display);
+  font-size: 21px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.px-card__name {
+  font-family: var(--display);
+  font-size: 27px;
+  line-height: 1;
+  text-align: center;
+}
+
+.px-card__stats {
+  display: grid;
+  gap: 0;
+  padding: 3px 3px;
+  border-top: 3px solid var(--c-paper-2);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.px-card__stat {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-1);
+}
+
+.px-card__value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.px-card__value--good {
+  color: #2f6b2c;
+}
+
+.px-card__value--bad {
+  color: var(--c-red-dark);
+}
+
+.px-card__price {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  margin-top: auto;
+  min-height: 39px;
+  font-family: var(--display);
+  font-size: 27px;
+  line-height: 1;
+  color: var(--c-text);
+}
+
+.px-card__price.pxf-tag-short {
+  color: #4a474f;
+}
+
+.px-card--sold .px-card__name,
+.px-card--sold .px-card__stats {
+  opacity: 0.5;
+}
+
+/* Toast slot, so the grid doesn't jump when one appears. */
+.px-shop__toast {
+  min-height: 60px;
+  margin: calc(var(--s-3) * -1) 0;
+  display: flex;
+  align-items: center;
+}
+
+/* 4. Item details -------------------------------------------------- */
+
+.px-dialog {
+  width: min(420px, calc(100vw - var(--s-4)));
+  max-height: calc(100vh - var(--s-4));
+  padding: var(--s-3) var(--s-2) var(--s-2);
+  overflow: visible;
+  color: var(--c-text);
+  font-family: var(--sans);
+  filter: drop-shadow(0 9px 0 rgba(10, 5, 2, 0.6));
+}
+
+.px-dialog[open] {
+  animation: px-dialog-in 180ms steps(3, end) both;
+}
+
+.px-dialog::backdrop {
+  background: rgba(18, 10, 6, 0.72);
+}
+
+@keyframes px-dialog-in {
+  from {
+    transform: scale(0.85);
+  }
+}
+
+.px-details {
+  position: relative;
+  display: grid;
+  gap: var(--s-2);
+}
+
+.px-details__close {
+  position: absolute;
+  top: -45px;
+  right: -33px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  padding: 0;
+  filter: drop-shadow(0 3px 0 var(--c-outline));
+}
+
+.px-details__close .px-icon {
+  margin: -6px;
+}
+
+.px-details__close:active {
+  border-image-source: url('/pixel/frame-btn-red-down.png');
+  transform: translateY(3px);
+  filter: none;
+}
+
+.px-details__name {
+  justify-self: center;
+  margin: -48px 0 0;
+  padding: 0 var(--s-3);
+  color: var(--c-cream);
+  font-family: var(--display);
+  font-size: 36px;
+  font-weight: 400;
+  line-height: 1.1;
+  text-shadow: 0 3px 0 var(--c-outline);
+  white-space: nowrap;
+}
+
+.px-details__hero {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--s-3);
+  align-items: center;
+  padding-top: var(--s-1);
+}
+
+.px-details__sprite {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 114px;
+  height: 114px;
+}
+
+.px-details__stats {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  font-size: 16px;
+}
+
+.px-details__stats div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-2);
+  padding-bottom: 3px;
+  border-bottom: 3px solid var(--c-paper-2);
+}
+
+.px-details__stats dt {
+  color: var(--c-text-soft);
+}
+
+.px-details__stats dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.px-details__desc {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.px-details__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-1) var(--s-2);
+  padding: var(--s-1) 0;
+  border-top: 3px solid var(--c-paper-2);
+}
+
+.px-details__label {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.px-details__total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--s-1);
+  border-top: 3px solid var(--c-wood);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.px-details__note {
+  margin: calc(var(--s-1) * -1) 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.px-details__ctas {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: var(--s-2);
+  padding-top: var(--s-1);
+}
+
+.px-details__ctas .px-btn {
+  min-height: 72px;
+  padding: 0 var(--s-1);
+}
+
+/* Still view of the dialog, for the gallery. */
+.px-dialog-still {
+  position: relative;
+  max-width: 420px;
+  padding: var(--s-5) var(--s-2) var(--s-2);
+  margin-top: var(--s-4);
+  filter: drop-shadow(0 9px 0 rgba(10, 5, 2, 0.6));
+}
+
+/* 5. Round bar ----------------------------------------------------- */
+
+.px-shop__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 0 0 0 var(--s-1);
+}
+
+.px-shop__summary {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+}
+
+.px-shop__summary-head {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.px-shop__summary-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--s-1);
+}
+
+.px-shop__summary-item {
+  display: inline-flex;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.px-shop__summary-item .px-icon {
+  margin: -6px -6px -6px -9px;
+}
+
+.px-shop__summary-empty {
+  font-size: 14px;
+}
+
+.px-shop__done {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.px-shop__done .px-btn {
+  min-height: 54px;
+  font-size: 27px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .px-dialog[open] {
+    animation: none;
+  }
+  .px-card,
+  .px-iconbtn {
+    transition: none;
+  }
+}
+
+.px-card__line {
+  font-size: 14px;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* Cards wider than about 150px have room for the stat table. */
+.px-card__stats {
+  display: none;
+}
+
+@container (min-width: 150px) {
+  .px-card__stats {
+    display: grid;
+  }
+  .px-card__line {
+    display: none;
+  }
+}
+
+/* A narrow shop shows labels on the active tab only. */
+@container (max-width: 340px) {
+  .px-shop__tabs {
+    padding: 0 var(--s-1);
+  }
+  .px-shop__tabs .px-tab {
+    padding-left: var(--s-1);
+    padding-right: var(--s-1);
+  }
+  .px-shop__tabs .px-tab[aria-selected='false'] span:not(.px-icon) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}
+
+/* The active tab always keeps its label, even when the shop is narrow. */
+.px-shop__tabs .px-tab[aria-selected='true'] span:not(.px-icon) {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip-path: none;
+}
