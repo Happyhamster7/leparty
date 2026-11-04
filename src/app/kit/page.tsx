@@ -35,7 +35,7 @@ import {
   Window,
 } from '@/components/pixel/kit';
 import { Cycler, Stepper, Tabs } from '@/components/pixel/controls';
-import { ItemDetails, ShopCard, ShopScreen, ShopTopBar } from '@/components/pixel/shop';
+import { ItemDetails, ShopCard, ShopScreen, ShopStatus } from '@/components/pixel/shop';
 import { SHOP_DEMO, SHOP_TARGETS } from './shop-demo';
 import { ICON_NAMES } from '@/components/pixel/icons';
 
@@ -393,15 +393,15 @@ export default function KitPage() {
       <Section
         id="s-shop"
         title="Shop"
-        source="The team phone shop. Top bar with money, points and time; category tabs; a grid of item cards that highlight gold when tapped; a details dialog with the Buy button. Buying places the order straight away, with no extra confirm step."
+        source="The team phone shop. One window with a small title plate; money, points and time in one row; category tabs; landscape item cards, wider than tall, that ring gold when tapped; a details dialog with the Buy button. Buying places the order straight away, with no extra confirm step."
       >
-        <Spec name="ShopTopBar" wide>
-          <div style={{ maxWidth: 420 }}>
-            <ShopTopBar title="Shop" money={185} points={41} round="Round 3 · spending" timeLeft="0:42" backHref="#" />
+        <Spec name="ShopStatus" wide>
+          <div style={{ maxWidth: 360 }}>
+            <ShopStatus money={185} points={41} timeLeft="0:42" />
           </div>
         </Spec>
         <Spec name="ShopCard: normal, highlighted, can't afford, sold out" wide>
-          <div className="kit-cards">
+          <div className="px-shop__grid" style={{ maxWidth: 696 }}>
             <ShopCard item={SHOP_DEMO[0].items[0]} />
             <ShopCard item={SHOP_DEMO[1].items[0]} selected />
             <ShopCard item={SHOP_DEMO[0].items[2]} short />
@@ -657,11 +657,14 @@ export default function KitPage() {
 
         <h3 className="kit-group">Phase 2 · team phone</h3>
         <div className="kit-phones">
-          <Phone label="Spending · shop (tap a card)" top={['Block B', 'Team phone']}>
-            <div data-shop-demo>
-              <ShopScreen money={185} points={41} round="Round 3 · spending" timeLeft="0:42" categories={SHOP_DEMO} targets={SHOP_TARGETS} />
+          <figure className="kit-phone">
+            <figcaption>Spending · shop (tap a card)</figcaption>
+            <div className="kit-screen">
+              <div data-shop-demo>
+                <ShopScreen money={185} points={41} timeLeft="0:42" categories={SHOP_DEMO} targets={SHOP_TARGETS} />
+              </div>
             </div>
-          </Phone>
+          </figure>
 
           <Phone label="Game pick · level up" top={['Block B', 'Team phone']}>
             <div className="kit-hud">

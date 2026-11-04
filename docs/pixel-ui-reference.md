@@ -110,17 +110,20 @@ Touch targets: buttons are at least 20 art px (60 CSS px) tall. Slots
   dialogue at the top, a list of items in the middle and your money in
   its own small box. LeParty's team phone shop is built in five bands,
   top to bottom:
-  1. **Top bar.** A back button, the title banner and the round on one
-     row. Under that, one HUD strip with money, points and time left,
-     evenly spaced and separated by grooves, like a cash box.
-  2. **Category tabs.** Drinks and Items. The active tab is raised and
-     joins the panel. On a narrow phone, only the active tab shows its
-     label.
-  3. **Card grid.** Two columns on a phone, more on wider screens. Each
-     card has a chip at the top left (points, or the limit), the sprite
-     in a slot, the name, one line about it, and a price tag. Tapping
-     raises the card and rings it gold. A card you can't afford gets a
-     grey tag. A sold-out card is a silhouette with a "Not yet" plate.
+  The shop is the screen's one window, running nearly edge to edge on
+  a phone, with a small wooden sign ("Shop") on its top edge, like a
+  menu board. There's no back button: Done at the bottom leaves.
+  1. **Status.** One compact row: money and points in a recessed box at
+     the left, time left at the right.
+  2. **Category tabs.** Drinks and Items as two wide wooden buttons. The
+     active one is orange and pressed in, the other one is parchment.
+  3. **Card grid.** Two columns of landscape cards, wider than tall
+     (about 144 × 118 on a phone), after the reference. A chip hangs on
+     the card's top edge with the points or the limit. The sprite sits
+     at the left on a pixel shadow. The name and one line sit at the
+     right, with the price tag in the bottom right corner. Tapping lifts
+     the card and rings it gold. A card you can't afford gets a grey
+     tag. A sold-out card is a silhouette with its price greyed.
   4. **Details dialog.** Opens over a dimmed screen. It has the name
      banner, a big sprite, stats, a short description, "Send to" (for
      drinks), the quantity, the total, then Cancel and a green Buy or
@@ -128,7 +131,8 @@ Touch targets: buttons are at least 20 art px (60 CSS px) tall. Slots
      top right corner. Esc or tapping the backdrop closes it.
   5. **Round bar.** What the team has bought this round and the total
      spent, with Done at the right.
-- **Spacing:** The cards are 6px apart inside an 18px wood frame. The
+- **Spacing:** The cards are 6px apart side by side and 18px apart
+  top to bottom (room for the hanging chips), inside an 18px wood frame. The
   grid is the only place in the kit where frames sit this close,
   because it's a grid of things to pick, not a page of sections. The
   dialog uses `--s-2` between its rows, and every row has a groove
@@ -138,7 +142,7 @@ Touch targets: buttons are at least 20 art px (60 CSS px) tall. Slots
   (and CLAUDE.md rules out confirmation prompts for drinks). Buttons
   press down one art pixel.
 - **LeParty:** Phase 2 spending, on the team phone. → `ShopScreen`, which
-  is built from `ShopTopBar`, `ShopCard` and `ItemDetails` (in
+  is built from `ShopStatus`, `ShopCard` and `ItemDetails` (in
   `src/components/pixel/shop.tsx`). `ShopRow` and `Stepper` are still
   used for simple lists such as the potluck.
 

@@ -1,16 +1,19 @@
 'use client';
 
 /**
- * Team phone shop (phase 2 Spending). Layout, top to bottom:
+ * Team phone shop (phase 2 Spending). The shop is the screen's one
+ * window, edge to edge on a phone, with a small title plate on its top
+ * edge. Inside, top to bottom:
  *
- *   1. Top bar     back button · title banner · round
- *                  one HUD strip: money · points · time left
- *   2. Tabs        one per category (Drinks, Items), active one raised
- *   3. Card grid   two columns on a phone, more on wider screens; a card
- *                  highlights gold when tapped and opens …
- *   4. Details     a dialog: sprite, stats, description, who to send it
- *                  to (drinks), quantity, total, and the Buy/Send button
- *   5. Round bar   what this team has bought this round, and Done
+ *   1. Status     money and points at the left, time left at the right
+ *   2. Tabs       one per category (Drinks, Items), active one raised
+ *   3. Card grid  two columns of landscape cards, wider than tall: a
+ *                 chip on the top edge, the sprite at the left, name and
+ *                 one line at the right, price tag bottom right. A
+ *                 tapped card rings gold and opens …
+ *   4. Details    a dialog: sprite, stats, description, who to send it
+ *                 to (drinks), quantity, total, and the Buy/Send button
+ *   5. Round bar  what this team has bought this round, and Done
  *
  * Buying writes an intent (a drink order or an item use) through onBuy;
  * the server checks balances and limits. Per CLAUDE.md there is no
@@ -31,9 +34,9 @@ export type ShopItem = {
   plural?: string;
   icon: IconName;
   price: number;
-  /** Chip in the card's top-left corner, e.g. "+2 pts" or "1 a night". */
+  /** Chip on the card's top edge, e.g. "+2 pts" or "1 a night". */
   tag?: string;
-  /** One line under the name on narrow cards. Defaults to the first stat's value. */
+  /** Second line on the card. Defaults to the first stat's value. */
   line?: string;
   stats: ShopStat[];
   description: string;
@@ -52,12 +55,11 @@ type Props = {
   title?: string;
   money: number;
   points: number;
-  round: string;
   timeLeft: string;
   categories: ShopCategory[];
   /** Other teams, for sending drinks. */
   targets?: string[];
-  backHref?: string;
+  doneHref?: string;
   onBuy?: (order: ShopOrder) => void | Promise<void>;
 };
 
@@ -69,11 +71,10 @@ export function ShopScreen({
   title = 'Shop',
   money: startMoney,
   points,
-  round,
   timeLeft,
   categories,
   targets = [],
-  backHref = '#',
+  doneHref = '#',
   onBuy,
 }: Props) {
   const [tab, setTab] = useState(0);
@@ -108,8 +109,10 @@ export function ShopScreen({
   }, [toast]);
 
   return (
-    <div className="px-shop">
-      <ShopTopBar title={title} money={money} points={points} round={round} timeLeft={timeLeft} backHref={backHref} />
+    <section className="px-shop pxf-wood" aria-label={title}>
+      <h1 className="px-shop__title px-plate">{title}</h1>
+
+      <ShopStatus money={money} points={points} timeLeft={timeLeft} />
 
       <div className="px-shop__tabs" role="tablist" aria-label="Categories">
         {categories.map((c, i) => (
@@ -120,38 +123,35 @@ export function ShopScreen({
             id={`shop-tab-${c.key}`}
             aria-selected={i === tab}
             aria-controls="shop-grid"
-            className={cx('px-tab', i === tab ? 'pxf-tab' : 'pxf-tab-idle')}
+            className={cx('px-shop__tab', i === tab ? 'pxf-btn' : 'pxf-btn-paper')}
             onClick={() => {
               setTab(i);
               setSelected(null);
             }}
           >
-            <Icon name={c.icon} />
-            <span>{c.label}</span>
+            {c.label}
           </button>
         ))}
       </div>
 
       <div
-        className="px-shop__panel pxf-wood"
+        className="px-shop__grid"
         role="tabpanel"
         id="shop-grid"
         aria-labelledby={`shop-tab-${categories[tab]?.key}`}
       >
-        <div className="px-shop__grid">
-          {items.map((item) => (
-            <ShopCard
-              key={item.key}
-              item={item}
-              selected={selected === item.key}
-              short={item.price > money}
-              onPick={() => {
-                setSelected(item.key);
-                setOpen(item);
-              }}
-            />
-          ))}
-        </div>
+        {items.map((item) => (
+          <ShopCard
+            key={item.key}
+            item={item}
+            selected={selected === item.key}
+            short={item.price > money}
+            onPick={() => {
+              setSelected(item.key);
+              setOpen(item);
+            }}
+          />
+        ))}
       </div>
 
       <div className="px-shop__toast" aria-live="polite">
@@ -163,40 +163,20 @@ export function ShopScreen({
         ) : null}
       </div>
 
-      <RoundBar orders={orders} byKey={byKey} backHref={backHref} />
+      <RoundBar orders={orders} byKey={byKey} doneHref={doneHref} />
 
       <ItemDialog item={open} money={money} targets={targets} onClose={() => setOpen(null)} onBuy={buy} />
-    </div>
+    </section>
   );
 }
 
 /* ------------------------------------------------------------------ */
 
-export function ShopTopBar({
-  title,
-  money,
-  points,
-  round,
-  timeLeft,
-  backHref,
-}: {
-  title: string;
-  money: number;
-  points: number;
-  round: string;
-  timeLeft: string;
-  backHref: string;
-}) {
+/** Money and points at the left, time left at the right: one compact row. */
+export function ShopStatus({ money, points, timeLeft }: { money: number; points: number; timeLeft: string }) {
   return (
-    <header className="px-shop__top">
-      <div className="px-shop__titlebar">
-        <a className="px-iconbtn pxf-btn-paper" href={backHref} aria-label="Back">
-          <Icon name="back" />
-        </a>
-        <h1 className="px-shop__title pxf-plank">{title}</h1>
-        <span className="px-shop__round">{round}</span>
-      </div>
-      <div className="px-shop__status pxf-hud">
+    <div className="px-shop__status">
+      <span className="px-shop__purse pxf-slot">
         <span className="px-shop__stat" aria-label={`Money: ${money}`}>
           <Icon name="coin-s" />
           <span className="px-shop__num">{money}</span>
@@ -205,15 +185,16 @@ export function ShopTopBar({
           <Icon name="star-s" />
           <span className="px-shop__num">{points}</span>
         </span>
-        <span className="px-shop__stat" aria-label={`${timeLeft} left`}>
-          <Icon name="hourglass-s" />
-          <span className="px-shop__num px-shop__num--time">{timeLeft}</span>
-        </span>
-      </div>
-    </header>
+      </span>
+      <span className="px-shop__stat px-shop__time" aria-label={`${timeLeft} left`}>
+        <Icon name="hourglass-s" />
+        <span className="px-shop__num px-shop__num--time">{timeLeft}</span>
+      </span>
+    </div>
   );
 }
 
+/** Landscape card, after the reference: wider than tall. */
 export function ShopCard({
   item,
   selected,
@@ -226,36 +207,24 @@ export function ShopCard({
   onPick?: () => void;
 }) {
   const sold = Boolean(item.soldOut);
+  const line = item.line ?? item.stats[0]?.value;
   return (
     <button
       type="button"
-      className={cx(
-        'px-card',
-        selected ? 'pxf-card-active' : 'pxf-card',
-        sold && 'px-card--sold',
-      )}
+      className={cx('px-card', selected ? 'pxf-card-active' : 'pxf-card', sold && 'px-card--sold')}
       aria-pressed={selected}
       aria-haspopup="dialog"
       disabled={sold}
       onClick={onPick}
     >
-      {item.tag ? <span className="px-card__tag pxf-plank">{item.tag}</span> : null}
-      <span className={cx('px-card__sprite', sold ? 'pxf-slot-locked' : 'pxf-slot')}>
+      {item.tag ? <span className="px-card__chip px-plate">{item.tag}</span> : null}
+      <span className="px-card__sprite">
         <Icon name={item.icon} dim={sold} />
-        {sold ? <span className="px-card__sold pxf-plank">{item.soldOut}</span> : null}
+        <span className="px-card__shadow" aria-hidden="true" />
       </span>
-      <span className="px-card__name">{item.name}</span>
-      {/* Narrow cards show one line; wide ones show the first two stats. */}
-      {item.line ?? item.stats[0]?.value ? (
-        <span className="px-card__line">{item.line ?? item.stats[0]?.value}</span>
-      ) : null}
-      <span className="px-card__stats">
-        {item.stats.slice(0, 2).map((s) => (
-          <span key={s.label} className="px-card__stat">
-            <span>{s.label}</span>
-            <span className={cx('px-card__value', s.tone && `px-card__value--${s.tone}`)}>{s.value}</span>
-          </span>
-        ))}
+      <span className="px-card__info">
+        <span className="px-card__name">{item.name}</span>
+        <span className="px-card__line">{sold ? item.soldOut : line}</span>
       </span>
       <span className={cx('px-card__price', short || sold ? 'pxf-tag-short' : 'pxf-tag')}>
         <Icon name="coin-s" />
@@ -451,15 +420,15 @@ function ItemDialog({
 function RoundBar({
   orders,
   byKey,
-  backHref,
+  doneHref,
 }: {
   orders: ShopOrder[];
   byKey: Map<string, ShopItem>;
-  backHref: string;
+  doneHref: string;
 }) {
   const spent = orders.reduce((s, o) => s + o.total, 0);
   return (
-    <footer className="px-shop__bar pxf-hud">
+    <footer className="px-shop__bar">
       <div className="px-shop__summary">
         <span className="px-shop__summary-head">This round</span>
         {orders.length ? (
@@ -468,25 +437,20 @@ function RoundBar({
               const item = byKey.get(o.item);
               return (
                 <span key={i} className="px-shop__summary-item">
-                  {item ? <Icon name={item.icon} /> : null}
-                  <span>
-                    {o.qty}
-                    {o.target ? ` → ${o.target.replace('Block ', '')}` : ''}
-                  </span>
+                  {item ? `${o.qty} ${o.qty > 1 ? item.plural ?? item.name : item.name}` : o.item}
+                  {o.target ? ` to ${o.target}` : ''}
                 </span>
               );
             })}
+            <Price amount={spent} />
           </span>
         ) : (
-          <span className="px-shop__summary-empty">Nothing yet. Tap something to see it.</span>
+          <span className="px-shop__summary-empty">Nothing yet</span>
         )}
       </div>
-      <div className="px-shop__done">
-        {spent ? <Price amount={spent} /> : null}
-        <a className="px-btn px-btn--primary" href={backHref}>
-          <span>Done</span>
-        </a>
-      </div>
+      <a className="px-btn px-btn--primary px-shop__done" href={doneHref}>
+        <span>Done</span>
+      </a>
     </footer>
   );
 }

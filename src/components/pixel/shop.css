@@ -1,96 +1,75 @@
 /* ------------------------------------------------------------------ */
 /* Team phone shop (./shop.tsx). Spacing uses --s-* only.             */
+/*                                                                    */
+/* The shop is one window. On a phone it runs nearly edge to edge so  */
+/* two landscape cards fit side by side, as in the reference: each    */
+/* card about 160 x 114, wider than it is tall.                       */
 /* ------------------------------------------------------------------ */
 
 .px-shop {
   container-type: inline-size;
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--s-3);
-}
-
-/* 1. Top bar ------------------------------------------------------- */
-
-.px-shop__top {
-  display: grid;
   gap: var(--s-2);
+  margin-top: var(--s-3);
+  padding: var(--s-4) var(--s-1) var(--s-1);
+  color: var(--c-text);
+  filter: drop-shadow(0 6px 0 rgba(20, 10, 5, 0.55));
 }
 
-.px-shop__titlebar {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: var(--s-2);
+/* A light wooden plate: one 3px outline and a bevel, no 9-slice, so it
+   stays small. Used for the shop sign and the card chips. */
+.px-plate {
+  background: var(--c-wood);
+  border: 3px solid var(--c-outline);
+  box-shadow: inset 0 3px 0 var(--c-wood-light), inset 0 -3px 0 var(--c-wood-dark);
 }
 
-.px-iconbtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 60px;
-  height: 60px;
-  padding: 0;
-  filter: drop-shadow(0 3px 0 var(--c-outline));
-  transition: transform 80ms steps(2, end), filter 80ms steps(2, end);
-}
-
-.px-iconbtn .px-icon {
-  margin: -6px;
-}
-
-.px-iconbtn:active {
-  transform: translateY(3px);
-  filter: none;
-}
-
-.px-shop__title {
-  justify-self: center;
-  min-width: 0;
+/* Small sign on the top edge, like the MENU plate in the reference.
+   Two classes, so it beats the skin's own h1 size. */
+.px-shop .px-shop__title {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
   margin: 0;
-  padding: 0 var(--s-2);
+  padding: 3px var(--s-3);
   color: var(--c-cream);
   font-family: var(--display);
-  font-size: 36px;
+  font-size: 24px;
   font-weight: 400;
   line-height: 1.1;
   text-shadow: 0 3px 0 var(--c-outline);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.px-shop__round {
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.2;
-  color: var(--muted);
-  text-align: right;
-  max-width: 84px;
-}
+/* 1. Status -------------------------------------------------------- */
 
-/* One HUD strip, the CASH box of the game: three stats, evenly spaced. */
 .px-shop__status {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+}
+
+.px-shop__purse {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
   padding: 0 var(--s-1);
 }
 
 .px-shop__stat {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: var(--s-1);
-  min-height: 42px;
-}
-
-.px-shop__stat + .px-shop__stat {
-  border-left: 3px solid var(--c-paper-2);
+  min-height: 30px;
 }
 
 .px-shop__num {
   font-family: var(--display);
-  font-size: 33px;
+  font-size: 30px;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   color: var(--c-red-dark);
@@ -100,42 +79,58 @@
   color: var(--c-text);
 }
 
-/* 2. Category tabs ------------------------------------------------- */
+/* 2. Tabs ---------------------------------------------------------- */
 
 .px-shop__tabs {
   display: flex;
-  align-items: flex-end;
-  gap: 0;
-  padding: 0 var(--s-3);
-  margin-bottom: calc(-18px - var(--s-3));
+  gap: var(--s-1);
 }
 
-.px-shop__tabs .px-tab {
-  font-size: 16px;
+.px-shop__tab {
+  flex: 1;
+  min-height: 45px;
+  padding: 0 var(--s-1);
+  border-width: 12px;
+  color: var(--c-text);
+  font-family: var(--display);
+  font-size: 24px;
+  line-height: 1;
+  filter: drop-shadow(0 3px 0 var(--c-outline));
+}
+
+.px-shop__tab[aria-selected='true'] {
+  transform: translateY(3px);
+  filter: none;
+}
+
+.px-shop__tab[aria-selected='false'] {
+  color: var(--c-text-soft);
 }
 
 /* 3. Card grid ----------------------------------------------------- */
 
-.px-shop__panel {
-  position: relative;
-  z-index: 1;
-  padding: var(--s-2) var(--s-1);
-}
-
 .px-shop__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 105px), 1fr));
-  gap: var(--s-1);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 138px), 1fr));
+  gap: var(--s-3) var(--s-1);
 }
 
+/*      [chip]                  <- hangs on the top edge
+    [ sprite ] [ name        ]
+    [        ] [ line        ]
+    [        ] [      price  ]   */
 .px-card {
-  container-type: inline-size;
   position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: var(--s-1);
-  padding: var(--s-1) 3px 3px;
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  grid-template-rows: 1fr auto;
+  grid-template-areas:
+    'sprite info'
+    'sprite price';
+  column-gap: 3px;
+  row-gap: 3px;
+  margin-top: var(--s-1);
+  padding: var(--s-2) 0 0;
   color: var(--c-text);
   font-family: var(--sans);
   text-align: left;
@@ -143,7 +138,8 @@
   transition: transform 80ms steps(2, end);
 }
 
-.px-card:hover:not([disabled]) {
+.px-card:hover:not([disabled]),
+.px-card.pxf-card-active {
   transform: translateY(-3px);
 }
 
@@ -152,91 +148,77 @@
   filter: none;
 }
 
-.px-card.pxf-card-active {
-  transform: translateY(-3px);
-}
-
-.px-card__tag {
-  align-self: flex-start;
-  max-width: 100%;
+.px-card__chip {
+  position: absolute;
+  top: -15px;
+  left: 0;
+  max-width: calc(100% - 6px);
+  padding: 0 var(--s-1);
   overflow: hidden;
   text-overflow: ellipsis;
-  padding: 0 3px;
+  white-space: nowrap;
   color: var(--c-cream);
   font-size: 12px;
   font-weight: 600;
-  line-height: 1.4;
-  text-shadow: 0 3px 0 var(--c-outline);
-  white-space: nowrap;
+  line-height: 1.6;
+  text-shadow: 0 2px 0 var(--c-outline);
 }
 
 .px-card__sprite {
-  position: relative;
+  grid-area: sprite;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  align-self: center;
-  width: var(--slot);
-  height: var(--slot);
 }
 
-.px-card__sold {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(-6deg);
-  padding: 0 var(--s-1);
-  color: var(--c-cream);
-  font-family: var(--display);
-  font-size: 21px;
-  line-height: 1.2;
-  white-space: nowrap;
+/* A pixel shadow under the sprite, so it sits on the card. */
+.px-card__shadow {
+  width: 36px;
+  height: 6px;
+  margin-top: -3px;
+  background: rgba(59, 29, 18, 0.2);
+  box-shadow: -3px 0 0 rgba(59, 29, 18, 0.1), 3px 0 0 rgba(59, 29, 18, 0.1);
+}
+
+.px-card__info {
+  grid-area: info;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
 }
 
 .px-card__name {
   font-family: var(--display);
-  font-size: 27px;
-  line-height: 1;
-  text-align: center;
+  font-size: 24px;
+  line-height: 0.95;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.px-card__stats {
-  display: grid;
-  gap: 0;
-  padding: 3px 3px;
-  border-top: 3px solid var(--c-paper-2);
+.px-card__line {
   font-size: 13px;
-  line-height: 1.35;
-}
-
-.px-card__stat {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--s-1);
-}
-
-.px-card__value {
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.px-card__value--good {
-  color: #2f6b2c;
-}
-
-.px-card__value--bad {
-  color: var(--c-red-dark);
+  line-height: 1.3;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .px-card__price {
+  grid-area: price;
+  justify-self: end;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 3px;
-  margin-top: auto;
-  min-height: 39px;
+  min-width: 63px;
+  min-height: 33px;
+  justify-content: center;
+  margin-right: -3px;
   font-family: var(--display);
-  font-size: 27px;
+  font-size: 24px;
   line-height: 1;
   color: var(--c-text);
 }
@@ -246,16 +228,28 @@
 }
 
 .px-card--sold .px-card__name,
-.px-card--sold .px-card__stats {
-  opacity: 0.5;
+.px-card--sold .px-card__chip {
+  opacity: 0.55;
+}
+
+/* Values used in the details dialog's stat table. */
+.px-card__value--good {
+  color: #2f6b2c;
+}
+
+.px-card__value--bad {
+  color: var(--c-red-dark);
 }
 
 /* Toast slot, so the grid doesn't jump when one appears. */
 .px-shop__toast {
-  min-height: 60px;
-  margin: calc(var(--s-3) * -1) 0;
+  min-height: 0;
   display: flex;
   align-items: center;
+}
+
+.px-shop__toast:empty {
+  display: none;
 }
 
 /* 4. Item details -------------------------------------------------- */
@@ -430,7 +424,8 @@
   display: flex;
   align-items: center;
   gap: var(--s-2);
-  padding: 0 0 0 var(--s-1);
+  padding-top: var(--s-1);
+  border-top: 3px solid var(--c-paper-2);
 }
 
 .px-shop__summary {
@@ -440,7 +435,7 @@
 }
 
 .px-shop__summary-head {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--muted);
 }
@@ -448,33 +443,19 @@
 .px-shop__summary-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 0 var(--s-1);
-}
-
-.px-shop__summary-item {
-  display: inline-flex;
   align-items: center;
-  font-size: 15px;
+  gap: 0 var(--s-2);
+  font-size: 14px;
   font-weight: 600;
-}
-
-.px-shop__summary-item .px-icon {
-  margin: -6px -6px -6px -9px;
 }
 
 .px-shop__summary-empty {
   font-size: 14px;
 }
 
-.px-shop__done {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 3px;
-}
-
-.px-shop__done .px-btn {
-  min-height: 54px;
+.px-shop__done.px-btn {
+  min-height: 51px;
+  padding: 0 var(--s-3);
   font-size: 27px;
 }
 
@@ -482,56 +463,7 @@
   .px-dialog[open] {
     animation: none;
   }
-  .px-card,
-  .px-iconbtn {
+  .px-card {
     transition: none;
   }
-}
-
-.px-card__line {
-  font-size: 14px;
-  color: var(--muted);
-  text-align: center;
-  line-height: 1.2;
-}
-
-/* Cards wider than about 150px have room for the stat table. */
-.px-card__stats {
-  display: none;
-}
-
-@container (min-width: 150px) {
-  .px-card__stats {
-    display: grid;
-  }
-  .px-card__line {
-    display: none;
-  }
-}
-
-/* A narrow shop shows labels on the active tab only. */
-@container (max-width: 340px) {
-  .px-shop__tabs {
-    padding: 0 var(--s-1);
-  }
-  .px-shop__tabs .px-tab {
-    padding-left: var(--s-1);
-    padding-right: var(--s-1);
-  }
-  .px-shop__tabs .px-tab[aria-selected='false'] span:not(.px-icon) {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-  }
-}
-
-/* The active tab always keeps its label, even when the shop is narrow. */
-.px-shop__tabs .px-tab[aria-selected='true'] span:not(.px-icon) {
-  position: static;
-  width: auto;
-  height: auto;
-  overflow: visible;
-  clip-path: none;
 }

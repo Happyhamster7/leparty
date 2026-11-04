@@ -84,6 +84,7 @@ export const SHOP_DEMO: ShopCategory[] = [
         icon: 'shield',
         price: 40,
         tag: '1 a night',
+        line: 'Sends back',
         max: 1,
         stats: [
           { label: 'Effect', value: 'Bounce back' },
