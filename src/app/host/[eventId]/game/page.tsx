@@ -138,7 +138,11 @@ export default async function GameControlPage({ params }: { params: { eventId: s
     <div className="shell shell--wide">
       <div className="topbar">
         <span>GAME CONTROL</span>
-        <Link href={`/host/${params.eventId}`}>BACK TO PARTY</Link>
+        <span>
+          <Link href={`/host/${params.eventId}/game/screen`}>PUBLIC SCREEN</Link>
+          {' · '}
+          <Link href={`/host/${params.eventId}`}>BACK TO PARTY</Link>
+        </span>
       </div>
 
       <div className="body">

@@ -196,6 +196,15 @@ Not built yet: the filming/video upload pipeline, and the Back
 (undo last serve) button on the bar — a wrong Next currently needs a
 manual ledger correction.
 
+The public display (`/host/<eventId>/game/screen`) is built: phase,
+round, leaderboard, cooldown list, picks once revealed, and — during
+drinks — a grid of every team's status (safe, queued, drinking now,
+done). It polls itself every 5 seconds, since it's the one view
+nobody's standing at to reload. No video tiles yet — there's nothing
+to loop until the filming pipeline exists. It shares the host
+passcode, like the bar: the design doc's "one laptop drives all the
+public screens" means only the host's own browser ever opens this URL.
+
 Decided: highest score wins, generated from drinks sent; senders are
 shown to every team by default; item pricing is a flat value per item
 (numbers still TBD).
