@@ -175,9 +175,11 @@ The app works as a state machine. Rounds are grouped into **Acts**, which are gr
 
 Decided. Base rate: **15 money and 3 points per standard drink**
 (anchors to the earlier placeholder Shot — see
-`docs/pixel-ui-reference.md`). Points always scale linearly with
-standards sent — bundle discounts apply to cost only, never to points,
-so a team never loses scoring credit for buying in bulk.
+`docs/pixel-ui-reference.md`). Single shots/glasses are priced exactly
+at that linear rate. Bundles and the Soju bottle get both a cost
+discount and a small points bonus above linear — buying in bulk is
+cheaper per unit AND scores slightly better per unit, not just cheaper
+with scoring held flat.
 
 | Drink type | Serve unit | Standards | Cost | Points |
 | --- | --- | --- | --- | --- |
@@ -200,26 +202,28 @@ costs and scores slightly more than a standard shot (18 cost / 4
 points, instead of the 15/3 base rate) to reflect that premium — not
 priced off standards content like everything else in this table.
 
-**Bundles — cost discount only, applied at order time, not separate
-catalogue rows.** Buying 5 or 10 in a single order discounts the
-total cost at the same 20%/30% rate; points stay full linear value.
-Mystery Cocktail's bundle totals are higher than Spirit/Mystery
-Spirit's because its per-unit price is higher, not because the
-discount rate differs:
+**Bundles — cost discount AND a points bonus, applied at order time,
+not separate catalogue rows.** Buying 5 or 10 in a single order
+discounts the total cost (20%/30%) and bumps points above the linear
+total (+10%/+15%, rounded up where it doesn't land clean). Mystery
+Cocktail's totals are higher than Spirit/Mystery Spirit's only because
+its per-unit price and points are higher — the discount and bonus
+rates are identical across both:
 
-| Drink type | Qty | Linear cost | Bundle cost | Discount | Points |
-| --- | --- | --- | --- | --- | --- |
-| Spirit / Mystery Spirit | 5 | 75 | 60 | 20% | 15 |
-| Spirit / Mystery Spirit | 10 | 150 | 105 | 30% | 30 |
-| Mystery Cocktail | 5 | 90 | 72 | 20% | 20 |
-| Mystery Cocktail | 10 | 180 | 126 | 30% | 40 |
+| Drink type | Qty | Linear cost | Bundle cost | Discount | Linear points | Bundle points | Bonus |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Spirit / Mystery Spirit | 5 | 75 | 60 | 20% | 15 | 17 | ~10% |
+| Spirit / Mystery Spirit | 10 | 150 | 105 | 30% | 30 | 35 | ~15% |
+| Mystery Cocktail | 5 | 90 | 72 | 20% | 20 | 22 | 10% |
+| Mystery Cocktail | 10 | 180 | 126 | 30% | 40 | 46 | 15% |
 
-**Soju bottle** — its own named option, not a 5/10 bundle. A bottle is
-8 shots (4 standards):
+**Soju bottle** — its own named option, not a 5/10 bundle, but the
+same cheaper-and-worth-more principle applies. A bottle is 8 shots (4
+standards):
 
-| Drink type | Qty | Linear cost | Bottle cost | Discount |
-| --- | --- | --- | --- | --- |
-| Soju | 8 (bottle) | 56 | 42 | 25% |
+| Drink type | Qty | Linear cost | Bottle cost | Discount | Linear points | Bottle points | Bonus |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Soju | 8 (bottle) | 56 | 42 | 25% | 8 | 9 | ~12% |
 
 Wine has no bundle — glass only.
 
