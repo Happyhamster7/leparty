@@ -84,7 +84,7 @@ create table if not exists game_results (
   id         uuid primary key default gen_random_uuid(),
   round_id   uuid not null references rounds(id) on delete cascade,
   block_id   uuid not null references blocks(id) on delete cascade,
-  placing    int,
+  "placing"  int,
   score      int,
   note       text,
   created_at timestamptz not null default now(),
