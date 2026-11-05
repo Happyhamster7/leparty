@@ -171,6 +171,63 @@ The app works as a state machine. Rounds are grouped into **Acts**, which are gr
 
 ---
 
+## 6a. Drink catalogue
+
+Decided. Base rate: **15 money and 3 points per standard drink**
+(anchors to the earlier placeholder Shot — see
+`docs/pixel-ui-reference.md`). Points always scale linearly with
+standards sent — bundle discounts apply to cost only, never to points,
+so a team never loses scoring credit for buying in bulk.
+
+| Drink type | Serve unit | Standards | Cost | Points |
+| --- | --- | --- | --- | --- |
+| Wine | Glass (~150mL) | 1.5 | 22 | 4 |
+| Spirit | Shot | 1.0 | 15 | 3 |
+| Mystery Spirit | Shot | 1.0 | 15 | 3 |
+| Soju | Shot | 0.5 | 7 | 1 |
+| Mystery Cocktail | Shot | 1.0 | 15 | 3 |
+
+**Mystery Spirit** and **Mystery Cocktail** are blind variants — same
+price as their named counterparts, but what's actually poured is a
+surprise. Mystery Cocktail's specific recipe changes every Act; its
+price and points don't change with it.
+
+**Bundles — cost discount only, applied at order time, not separate
+catalogue rows.** Buying 5 or 10 in a single order of Spirit, Mystery
+Spirit or Mystery Cocktail discounts the total cost; points stay full
+value (5 or 10 × 3):
+
+| Drink type | Qty | Linear cost | Bundle cost | Discount |
+| --- | --- | --- | --- | --- |
+| Spirit / Mystery Spirit / Mystery Cocktail | 5 | 75 | 60 | 20% |
+| Spirit / Mystery Spirit / Mystery Cocktail | 10 | 150 | 105 | 30% |
+
+**Soju bottle** — its own named option, not a 5/10 bundle. A bottle is
+8 shots (4 standards):
+
+| Drink type | Qty | Linear cost | Bottle cost | Discount |
+| --- | --- | --- | --- | --- |
+| Soju | 8 (bottle) | 56 | 42 | 25% |
+
+Wine has no bundle — glass only.
+
+**Implementation note for whoever builds the shop:** the schema has no
+bundle/tier-pricing field. Model this as order-time logic — when a
+`drink_orders` row's `qty` for one of the bundle-eligible types hits
+5, 10, or (for Soju) 8 in a single order, charge the bundle total
+instead of `qty × drink_types.cost`. `qty` and `points` stay the real
+serving count throughout — the cafeteria iPad and `serves.drink_count`
+never need to know a bundle was involved.
+
+**350-standards target, and what it implies for prize money.** The
+target is ~350 standards sent across 12 games and 8 teams, excluding
+special-event drinks — about 3.6 standards per team per round on
+average. At the 15-money/standard base rate, that's roughly **50–55
+average money income per team per round** needed to hit the target
+naturally. Whoever sets prize money per placing (still open) should
+aim for that ballpark, or the economy will land well under or over 350
+regardless of how drinks are priced.
+
 ## 7. Item shop (placeholders)
 
 These items are **placeholders**. Names, effects and limits will be finalised later. **Pricing model decided:** a single flat price per item, no dynamic scaling — exact values are still TBD.
@@ -277,7 +334,6 @@ A transaction log underpins money and points, so any balance can be rebuilt or c
 
 **Scoring and economy**
 
-- [ ] List of drink types, plus the points and cost for each.
 - [ ] Prize money for each placing.
 - [ ] How much money a star is worth.
 - [ ] What earns bonus money (best cosplay, host's pick, other).
@@ -313,6 +369,7 @@ A transaction log underpins money and points, so any balance can be rebuilt or c
 | Overall winner | Most points, calculated by the system |
 | Sender visibility | Shown to every team by default, for now — not hidden |
 | Item pricing model | A single flat price per item; exact values still TBD |
+| Drink types, points and cost | Wine, Spirit, Mystery Spirit, Soju, Mystery Cocktail. See section 6a, "Drink catalogue". |
 | Guests, teams, players, tolerance | All from Phase 1 |
 | Wi-Fi | Works |
 | Hosting | Online web app |

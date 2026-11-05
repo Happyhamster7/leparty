@@ -78,7 +78,28 @@ export const PLACEHOLDER_ITEMS: PlaceholderItem[] = [
   },
 ];
 
-/** Seeds the placeholder games and items for a newly created event. */
+/**
+ * Decided catalogue (docs/halloween-game-design.md section 6a). Base
+ * rate is 15 money / 3 points per standard drink. Bundle and bottle
+ * discounts (5/10 for Spirit, Mystery Spirit, Mystery Cocktail; the
+ * 8-shot Soju bottle) are order-time cost logic, not separate rows —
+ * see that section for the implementation note.
+ */
+type PlaceholderDrinkType = {
+  name: string;
+  points: number;
+  cost: number;
+};
+
+export const PLACEHOLDER_DRINK_TYPES: PlaceholderDrinkType[] = [
+  { name: 'Wine', points: 4, cost: 22 },
+  { name: 'Spirit', points: 3, cost: 15 },
+  { name: 'Mystery Spirit', points: 3, cost: 15 },
+  { name: 'Soju', points: 1, cost: 7 },
+  { name: 'Mystery Cocktail', points: 3, cost: 15 },
+];
+
+/** Seeds the placeholder games, items and drink types for a newly created event. */
 export async function seedCatalogue(supabase: SupabaseClient, eventId: string) {
   await supabase.from('games').insert(
     PLACEHOLDER_GAMES.map((g) => ({ event_id: eventId, ...g }))
@@ -86,5 +107,9 @@ export async function seedCatalogue(supabase: SupabaseClient, eventId: string) {
 
   await supabase.from('items').insert(
     PLACEHOLDER_ITEMS.map((i) => ({ event_id: eventId, ...i }))
+  );
+
+  await supabase.from('drink_types').insert(
+    PLACEHOLDER_DRINK_TYPES.map((d) => ({ event_id: eventId, ...d }))
   );
 }
