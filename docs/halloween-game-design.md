@@ -181,11 +181,17 @@ so a team never loses scoring credit for buying in bulk.
 
 | Drink type | Serve unit | Standards | Cost | Points |
 | --- | --- | --- | --- | --- |
-| Wine | Glass (~150mL) | 1.5 | 22 | 4 |
+| Wine | Glass (~150mL) | 1.5 | 25 | 4 |
 | Spirit | Shot | 1.0 | 15 | 3 |
 | Mystery Spirit | Shot | 1.0 | 15 | 3 |
 | Soju | Shot | 0.5 | 7 | 1 |
 | Mystery Cocktail | Shot | 1.0 | 15 | 3 |
+
+Wine's cost carries a volume premium above its linear standards rate
+(1.5 standards × 15 = 22.5) — pouring and serving a glass takes more
+of the bartender's time than a shot, so 25 rather than 22/23. Points
+stay at the linear value (4); only cost gets the premium, same
+principle as bundle discounts touching cost and not points.
 
 **Mystery Spirit** and **Mystery Cocktail** are blind variants — same
 price as their named counterparts, but what's actually poured is a

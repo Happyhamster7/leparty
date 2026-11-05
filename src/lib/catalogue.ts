@@ -92,7 +92,7 @@ type PlaceholderDrinkType = {
 };
 
 export const PLACEHOLDER_DRINK_TYPES: PlaceholderDrinkType[] = [
-  { name: 'Wine', points: 4, cost: 22 },
+  { name: 'Wine', points: 4, cost: 25 },
   { name: 'Spirit', points: 3, cost: 15 },
   { name: 'Mystery Spirit', points: 3, cost: 15 },
   { name: 'Soju', points: 1, cost: 7 },
