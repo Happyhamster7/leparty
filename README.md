@@ -154,21 +154,26 @@ names, colours, tokens and join codes, all marked `in_play: false`. This is
 what lets you print the cards in advance: the draw only fills rosters, and
 unused blocks stay out of play.
 
-## Phase 2, when you get there
+## Phase 2, now under way
 
-Tables to add: `days`, `games`, `groupings`, `game_results`, `purchases`,
-`drinks`, `clips`, `ledger_entries`, `items`, `substitutes`, `wildcards`,
-`theme_strings`.
+Source of truth: `docs/halloween-game-design.md` (behaviour) and
+`docs/schema.md` (tables). It replaced an earlier jail-themed design
+(Days, sentence and commissary, substitutes, wildcards) — ignore any
+mention of those if you find it anywhere.
 
-Two things worth keeping from the design work:
+Tables are in `supabase/migrations/0006_phase2_game.sql`: `acts`,
+`games`, `rounds`, `round_players`, `game_results`, `drink_types`,
+`drink_orders`, `items`, `item_uses`, `penalties`, `serves`, `clips`,
+`ledger_entries`.
 
-- Phones write **intents** to `purchases`; one server-side resolver turns
-  them into `drinks` and `ledger_entries` in a fixed eleven-step order. That
-  single resolution step is what makes last-write-wins safe and gives Roll
-  Call something to reveal.
-- Balances are never stored. Sentence and commissary are `sum(delta)` over
-  an append-only `ledger_entries`, so a wrong ruling is one compensating row
-  rather than a guess at what the number should have been.
+Built so far: the game phase loop — the host starts a round from
+`/host/<eventId>/game`, team phones get the player-pick prompt (with
+cooldown players greyed out), and picks auto-resolve and reveal once
+the one-minute deadline passes or every team has submitted.
 
-Still undecided: the win condition (race to zero versus lowest after a fixed
-number of days), item pricing, and whether sends are anonymous.
+Not built yet: results entry, the shop and secret drink orders, the
+drinks queue and cafeteria iPad, and the video upload pipeline.
+
+Decided: highest score wins, generated from drinks sent; senders are
+shown to every team by default; item pricing is a flat value per item
+(numbers still TBD).
