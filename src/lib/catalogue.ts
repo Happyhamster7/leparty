@@ -76,6 +76,24 @@ export const PLACEHOLDER_ITEMS: PlaceholderItem[] = [
     limit_per_round: null,
     limit_per_night: 1,
   },
+  {
+    key: 'open_bounty',
+    name: 'Open Bounty',
+    description:
+      'Any team can buy it, but only one bounty (Open or Winner\'s) can be active per team at a time. Hit the target within its round limit (quantity + drink-type combo, rotates every Act — see docs/halloween-game-design.md section 7) for a points bonus. Miss the deadline and the cost is still spent.',
+    buyer_rule: 'any',
+    limit_per_round: 1,
+    limit_per_night: null,
+  },
+  {
+    key: 'winners_bounty',
+    name: 'Winner\'s Bounty',
+    description:
+      'Unlocked by winning that round\'s game — always available again the next time you win, not a one-off. Same one-active-bounty-at-a-time and round-limit rules as Open Bounty, but with a bigger or more varied payout: points, money, or a permanent bonus to every drink you send for the rest of the night.',
+    buyer_rule: 'game_winner',
+    limit_per_round: 1,
+    limit_per_night: null,
+  },
 ];
 
 /**

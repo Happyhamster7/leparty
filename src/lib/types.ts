@@ -86,7 +86,7 @@ export type LedgerReason =
   | 'host_adjust';
 export type DrinkOrderOrigin = 'team' | 'admin' | 'penalty';
 export type DrinkOrderStatus = 'pending' | 'cancelled' | 'reflected' | 'served';
-export type ItemBuyerRule = 'any' | 'bottom_4';
+export type ItemBuyerRule = 'any' | 'bottom_4' | 'game_winner';
 
 export type ActRow = {
   id: string;

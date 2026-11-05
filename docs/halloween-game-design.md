@@ -254,6 +254,69 @@ These items are **placeholders**. Names, effects and limits will be finalised la
 | Reflect | TBD | Any team | All drinks aimed at the buyer this round go back to their senders | 1 per team per night; only 1 Reflect per round across all teams |
 | Bus ticket | TBD | Bottom 4 only | Sends one top-team player "on the bus" | 1 per team per night |
 | Lock-up | TBD | Bottom 4 only | Sends one top-team player to the holding cell | 1 per team per night |
+| Open Bounty | TBD | Any team | Commit to hitting a target this round (quantity + drink-type combo, rotates every Act — see below). Hit it within the round limit for a bonus. Miss it and the cost is still spent. | 1 per team per round; only 1 bounty (Open or Winner's) active per team at a time |
+| Winner's Bounty | TBD | **Only the team that just won that round's game** | Same mechanic as Open Bounty, bigger or more varied payout. Unlocked by winning — re-available every time you win again, not a one-off. | 1 per team per round; only 1 bounty active per team at a time |
+
+**Eligibility for Winner's Bounty is per-round, not the leaderboard.**
+It's whoever placed 1st in *that round's* game — a different team
+each round, potentially, and not necessarily the same team as the
+shop's "top team" (the overall leaderboard leader, used for Bus
+ticket/Lock-up). A team can be 4th overall and still unlock Winner's
+Bounty by winning this round's game, and that unlock doesn't expire —
+it comes back every time they win another game.
+
+**Only one active bounty per team, of either kind, at a time.** A
+team can't stack an Open Bounty and a Winner's Bounty, or two of the
+same kind — buying one locks out buying another (either item greys
+out) until the active one resolves (completed or expired).
+
+**Every bounty has a round limit — a deadline to complete it, not
+indefinite.** Draft: 2 rounds from purchase. Expiring without
+completing counts as a miss (cost spent, no payout), same as failing
+the target outright.
+
+**Bounty targets rotate every Act**, same idea as Mystery Cocktail's
+rotating recipe. Draft targets and Open Bounty's reward, scaling up as
+the night goes on to build tension:
+
+| Act | Target | Open Bounty reward |
+| --- | --- | --- |
+| I | Send 3+ drinks this round, including at least 1 Spirit or Mystery Spirit | +15 points |
+| II | Send 5+ drinks this round, including at least 1 Wine | +20 points |
+| III | Send 4+ drinks this round, including at least 2 Mystery drinks (Mystery Spirit or Mystery Cocktail, any combination) | +25 points |
+
+If the night runs more than 3 Acts, cycle back to Act I's target.
+
+**Winner's Bounty uses the same per-Act targets but a richer reward —
+the buying team picks (or the host assigns) one of three reward
+types**, not always the same one:
+
+| Reward type | Example |
+| --- | --- |
+| Points | A larger flat bonus than Open Bounty's for the same target, e.g. +25/+30/+35 by Act |
+| Money | A money payout instead of points, e.g. 40/50/60 by Act |
+| Permanent bonus | **+1 point per drink sent for the rest of the night**, stacking if won more than once — a passive multiplier, not a one-time payout |
+
+The permanent-bonus reward is the one real open design question here:
+it needs a persistent per-team modifier that every future drink-serve
+point calculation has to check, which nothing in the schema tracks
+yet. Simplest shape when this gets built: a `ledger_entries` row with
+`kind = 'points'`, `reason = 'host_adjust'` won't do it since that's
+one-time — this wants either a new column on `blocks`
+(`points_per_drink_bonus`) or a dedicated small table. Don't guess the
+shape before the resolver exists; flag it for whoever builds Spending.
+
+**Implementation note for whoever builds the shop:** like bundle/
+bottle pricing, the target-check and the one-active-bounty rule are
+order-time/state logic, not schema fields — the `items` table has no
+structured quantity/combo columns or active-bounty tracking, and
+adding them now would be guessing at a shape before the resolver
+exists. `items.buyer_rule` has a third value, `'game_winner'`
+(migration `0007`), to gate who can even see Winner's Bounty in the
+shop; enforcing "only 1 active bounty" and the round deadline needs
+new state (most likely a small table keyed on block + item use,
+tracking purchased-at-round and resolved-at-round) that doesn't exist
+yet either.
 
 - The bottom 4 and the top team are worked out from the live leaderboard when spending opens.
 - Items that are sold out or used up are greyed out on the team phone.
