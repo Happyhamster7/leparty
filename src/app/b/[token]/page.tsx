@@ -8,6 +8,7 @@ import ClaimOnLoad from './ClaimOnLoad';
 import PickForm from './PickForm';
 import OrderForm from './OrderForm';
 import ShopForm from './ShopForm';
+import VideoUpload from './VideoUpload';
 
 export const dynamic = 'force-dynamic';
 
@@ -158,13 +159,16 @@ export default async function BlockPage({ params }: { params: { token: string } 
       );
     } else if (serve.status === 'serving') {
       roundSection = (
-        <div className="box box--dark">
-          <p className="eyebrow">You&rsquo;re up</p>
-          <p style={{ margin: 0, fontSize: 14 }}>
-            {serve.drinkCount} to drink. 30 seconds
-            {serve.timerEndsAt ? `, ends at ${new Date(serve.timerEndsAt).toLocaleTimeString()}` : ''}.
-          </p>
-        </div>
+        <>
+          <div className="box box--dark">
+            <p className="eyebrow">You&rsquo;re up</p>
+            <p style={{ margin: 0, fontSize: 14 }}>
+              {serve.drinkCount} to drink. 30 seconds
+              {serve.timerEndsAt ? `, ends at ${new Date(serve.timerEndsAt).toLocaleTimeString()}` : ''}.
+            </p>
+          </div>
+          <VideoUpload roundId={round.id} blockId={block.id} token={params.token} />
+        </>
       );
     } else {
       roundSection = (

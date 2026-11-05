@@ -192,18 +192,25 @@ done auto-resolves on the next page load — same lazy-check pattern as
 the pick deadline — and writes an extra-shot penalty for next round.
 The round auto-completes once every team's finished.
 
-Not built yet: the filming/video upload pipeline, and the Back
-(undo last serve) button on the bar — a wrong Next currently needs a
-manual ledger correction.
+Not built yet: the Back (undo last serve) button on the bar — a wrong
+Next currently needs a manual ledger correction.
 
 The public display (`/host/<eventId>/game/screen`) is built: phase,
 round, leaderboard, cooldown list, picks once revealed, and — during
 drinks — a grid of every team's status (safe, queued, drinking now,
-done). It polls itself every 5 seconds, since it's the one view
-nobody's standing at to reload. No video tiles yet — there's nothing
-to loop until the filming pipeline exists. It shares the host
-passcode, like the bar: the design doc's "one laptop drives all the
-public screens" means only the host's own browser ever opens this URL.
+done), with the team's clip looping muted in place of the status text
+once one's uploaded. It polls itself every 5 seconds, since it's the
+one view nobody's standing at to reload. It shares the host passcode,
+like the bar: the design doc's "one laptop drives all the public
+screens" means only the host's own browser ever opens this URL.
+
+The filming/video pipeline is built too: once a team's "up" at the
+bar, their phone gets a file input (`accept="video/*" capture`) that
+uploads straight to Supabase Storage with a one-time signed URL — the
+clip never passes through a Vercel function, which can't accept
+bodies that large — with a progress percentage and a Retry button on
+failure. The public screen plays the most recent uploaded clip for
+each team's current or just-finished serve.
 
 Decided: highest score wins, generated from drinks sent; senders are
 shown to every team by default; item pricing is a flat value per item

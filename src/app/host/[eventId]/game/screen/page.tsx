@@ -1,9 +1,9 @@
 import { notFound, redirect } from 'next/navigation';
-import { db } from '@/lib/supabase';
+import { db, CLIPS_BUCKET } from '@/lib/supabase';
 import { isHost } from '@/lib/host';
 import { getTheme } from '@/lib/theme';
 import { currentOpenRound, ensurePicksResolved, cooldownParticipantIds } from '@/lib/rounds';
-import { ensureServesResolved, teamServeStatus } from '@/lib/drinks';
+import { ensureServesResolved, teamServeStatus, latestClipPath } from '@/lib/drinks';
 import { pointsBalances } from '@/lib/ledger';
 import type { EventRow } from '@/lib/types';
 import AutoRefresh from './AutoRefresh';
@@ -98,7 +98,7 @@ export default async function ScreenPage({ params }: { params: { eventId: string
     }));
   }
 
-  let drinksGrid: { blockName: string; status: string }[] = [];
+  let drinksGrid: { blockName: string; status: string; videoUrl: string | null }[] = [];
   if (round && round.phase === 'drinks') {
     drinksGrid = await Promise.all(
       blocks.map(async (b) => {
@@ -111,7 +111,17 @@ export default async function ScreenPage({ params }: { params: { eventId: string
               : serve.status === 'serving'
                 ? 'Drinking now'
                 : 'Done';
-        return { blockName: b.name, status: label };
+
+        let videoUrl: string | null = null;
+        if (serve.serveId && (serve.status === 'serving' || serve.status === 'done')) {
+          const path = await latestClipPath(serve.serveId);
+          if (path) {
+            const { data: signed } = await supabase.storage.from(CLIPS_BUCKET).createSignedUrl(path, 60 * 10);
+            videoUrl = signed?.signedUrl ?? null;
+          }
+        }
+
+        return { blockName: b.name, status: label, videoUrl };
       })
     );
   }
@@ -184,7 +194,18 @@ export default async function ScreenPage({ params }: { params: { eventId: string
                   <p className="eyebrow" style={{ marginBottom: 4 }}>
                     {d.blockName}
                   </p>
-                  <p style={{ margin: 0 }}>{d.status}</p>
+                  {d.videoUrl ? (
+                    <video
+                      src={d.videoUrl}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      style={{ width: '100%', display: 'block' }}
+                    />
+                  ) : (
+                    <p style={{ margin: 0 }}>{d.status}</p>
+                  )}
                 </div>
               ))}
             </div>

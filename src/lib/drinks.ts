@@ -357,23 +357,50 @@ async function maybeCompleteRound(roundId: string) {
   await supabase.from('events').update({ phase: 'done' }).eq('id', round.event_id);
 }
 
-/** A team's own status during drinks, for its phone. */
+/** The most recent successfully-uploaded, still-shown clip for a serve, if any. */
+export async function latestClipPath(serveId: string): Promise<string | null> {
+  const supabase = db();
+  const { data: clip } = await supabase
+    .from('clips')
+    .select('storage_path')
+    .eq('serve_id', serveId)
+    .eq('upload_state', 'uploaded')
+    .eq('status', 'shown')
+    .order('uploaded_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return (clip?.storage_path as string | undefined) ?? null;
+}
+
+/** A team's own status during drinks, for its phone and the public screen. */
 export async function teamServeStatus(
   roundId: string,
   blockId: string
-): Promise<{ status: 'safe' | 'queued' | 'serving' | 'done'; timerEndsAt: string | null; drinkCount: number }> {
+): Promise<{
+  status: 'safe' | 'queued' | 'serving' | 'done';
+  serveId: string | null;
+  timerEndsAt: string | null;
+  drinkCount: number;
+}> {
   const supabase = db();
   const { data: serve } = await supabase
     .from('serves')
-    .select('drink_count, served_at, finished_at, timer_ends_at')
+    .select('id, drink_count, served_at, finished_at, timer_ends_at')
     .eq('round_id', roundId)
     .eq('block_id', blockId)
     .maybeSingle();
 
-  if (!serve) return { status: 'safe', timerEndsAt: null, drinkCount: 0 };
-  if (serve.finished_at) return { status: 'done', timerEndsAt: null, drinkCount: serve.drink_count as number };
+  if (!serve) return { status: 'safe', serveId: null, timerEndsAt: null, drinkCount: 0 };
+  const serveId = serve.id as string;
+  if (serve.finished_at) return { status: 'done', serveId, timerEndsAt: null, drinkCount: serve.drink_count as number };
   if (serve.served_at) {
-    return { status: 'serving', timerEndsAt: serve.timer_ends_at as string | null, drinkCount: serve.drink_count as number };
+    return {
+      status: 'serving',
+      serveId,
+      timerEndsAt: serve.timer_ends_at as string | null,
+      drinkCount: serve.drink_count as number,
+    };
   }
-  return { status: 'queued', timerEndsAt: null, drinkCount: serve.drink_count as number };
+  return { status: 'queued', serveId, timerEndsAt: null, drinkCount: serve.drink_count as number };
 }

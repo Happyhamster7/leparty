@@ -2,7 +2,7 @@
 
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
-import { db } from '@/lib/supabase';
+import { db, CLIPS_BUCKET } from '@/lib/supabase';
 import { deviceCookieName, readDeviceId, freshDeviceId } from '@/lib/teamDevice';
 import { cooldownParticipantIds } from '@/lib/rounds';
 import { moneyBalance, writeLedgerEntries } from '@/lib/ledger';
@@ -296,4 +296,93 @@ export async function buyItem(
 
   revalidatePath(`/b/${token}`);
   return {};
+}
+
+export type ClipUploadStart = { error?: string; uploadUrl?: string; clipId?: string };
+
+/**
+ * Hands the team phone a one-time signed upload URL so the video
+ * never passes through a Vercel function (docs/halloween-game-design.md,
+ * "Direct upload"). The browser PUTs straight to Supabase Storage with
+ * a plain fetch/XHR — no Supabase client in the browser, matching the
+ * app's service-role-only rule — mirroring what the SDK's own
+ * uploadToSignedUrl does under the hood (FormData with a cacheControl
+ * field and the file under an empty-string key).
+ */
+export async function beginClipUpload(
+  roundId: string,
+  blockId: string,
+  token: string,
+  _prev: ClipUploadStart,
+  _formData: FormData
+): Promise<ClipUploadStart> {
+  const device = readDeviceId();
+  const supabase = db();
+
+  const { data: block } = await supabase
+    .from('blocks')
+    .select('team_device_id, event_id')
+    .eq('id', blockId)
+    .maybeSingle();
+  if (!block || block.team_device_id !== device) {
+    return { error: 'This phone isn’t holding the team right now — reload the page.' };
+  }
+
+  const { data: serve } = await supabase
+    .from('serves')
+    .select('id, served_at')
+    .eq('round_id', roundId)
+    .eq('block_id', blockId)
+    .maybeSingle();
+  if (!serve || !serve.served_at) return { error: 'Nothing to film right now.' };
+
+  const suffix = Math.random().toString(36).slice(2, 10);
+  const path = `${block.event_id}/${serve.id}/${suffix}.mov`;
+
+  const { data: signed, error: signError } = await supabase.storage
+    .from(CLIPS_BUCKET)
+    .createSignedUploadUrl(path);
+  if (signError || !signed) return { error: 'Could not start the upload. Try again.' };
+
+  const { data: clip, error } = await supabase
+    .from('clips')
+    .insert({ serve_id: serve.id, storage_path: path, upload_state: 'pending' })
+    .select('id')
+    .single();
+  if (error || !clip) return { error: 'Could not start the upload. Try again.' };
+
+  return { uploadUrl: signed.signedUrl, clipId: clip.id };
+}
+
+async function clipBelongsToDevice(clipId: string, device: string | null): Promise<boolean> {
+  if (!device) return false;
+  const supabase = db();
+
+  const { data: clip } = await supabase.from('clips').select('serve_id').eq('id', clipId).maybeSingle();
+  if (!clip) return false;
+
+  const { data: serve } = await supabase.from('serves').select('block_id').eq('id', clip.serve_id).maybeSingle();
+  if (!serve) return false;
+
+  const { data: block } = await supabase.from('blocks').select('team_device_id').eq('id', serve.block_id).maybeSingle();
+  return !!block && block.team_device_id === device;
+}
+
+export async function confirmClipUploaded(clipId: string, token: string): Promise<void> {
+  if (!(await clipBelongsToDevice(clipId, readDeviceId()))) return;
+
+  await db()
+    .from('clips')
+    .update({ upload_state: 'uploaded', uploaded_at: new Date().toISOString() })
+    .eq('id', clipId);
+
+  revalidatePath(`/b/${token}`);
+}
+
+export async function markClipFailed(clipId: string, token: string): Promise<void> {
+  if (!(await clipBelongsToDevice(clipId, readDeviceId()))) return;
+
+  await db().from('clips').update({ upload_state: 'failed' }).eq('id', clipId);
+
+  revalidatePath(`/b/${token}`);
 }

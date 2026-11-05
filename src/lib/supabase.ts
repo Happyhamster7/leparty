@@ -36,6 +36,7 @@ export function db(): SupabaseClient {
 }
 
 export const MUGSHOT_BUCKET = 'mugshots';
+export const CLIPS_BUCKET = 'clips';
 
 export function siteUrl(): string {
   return (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
