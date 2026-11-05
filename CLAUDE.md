@@ -14,6 +14,10 @@ Tables for both phases: `docs/schema.md`. Keep both updated when the
 schema or behaviour changes — they're the references this file
 summarises.
 
+**Visual direction: pixel art (Stardew Valley-inspired), decided for
+now.** Reference: `docs/pixel-ui-reference.md`. Design only so far —
+no CSS or components from it are wired into the app yet.
+
 ## Stack
 
 Next.js 14 App Router (TypeScript), Supabase (Postgres + Storage),
