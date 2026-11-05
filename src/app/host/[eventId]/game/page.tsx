@@ -4,8 +4,10 @@ import { db } from '@/lib/supabase';
 import { isHost } from '@/lib/host';
 import { getTheme } from '@/lib/theme';
 import { currentOpenRound, ensurePicksResolved } from '@/lib/rounds';
+import { moneyBalances } from '@/lib/ledger';
 import type { EventRow } from '@/lib/types';
 import { startRound, advanceToResults } from './actions';
+import ResultsForm from './ResultsForm';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,17 +39,24 @@ export default async function GameControlPage({ params }: { params: { eventId: s
 
   const canStartNew = !round || round.phase !== 'game';
 
+  const { data: inPlayBlocks } = await supabase
+    .from('blocks')
+    .select('id, name')
+    .eq('event_id', params.eventId)
+    .eq('in_play', true)
+    .order('name', { ascending: true });
+  const blocks = (inPlayBlocks ?? []) as { id: string; name: string }[];
+
+  const balances = round && round.phase !== 'game' ? await moneyBalances(params.eventId) : null;
+
   let revealRows: { blockName: string; names: string[] }[] = [];
   if (round && round.picks_revealed_at) {
-    const [{ data: picks }, { data: blocks }] = await Promise.all([
-      supabase
-        .from('round_players')
-        .select('block_id, picked_by, participants(people(display_name))')
-        .eq('round_id', round.id),
-      supabase.from('blocks').select('id, name').eq('event_id', params.eventId).eq('in_play', true),
-    ]);
+    const { data: picks } = await supabase
+      .from('round_players')
+      .select('block_id, picked_by, participants(people(display_name))')
+      .eq('round_id', round.id);
 
-    const blockNames = new Map((blocks ?? []).map((b) => [b.id as string, b.name as string]));
+    const blockNames = new Map(blocks.map((b) => [b.id, b.name]));
     const byBlock = new Map<string, string[]>();
 
     for (const p of (picks ?? []) as unknown as {
@@ -107,6 +116,23 @@ export default async function GameControlPage({ params }: { params: { eventId: s
           </div>
         ) : null}
 
+        {balances ? (
+          <>
+            <h2>Money standings</h2>
+            <div className="box box--quiet" style={{ marginBottom: 24 }}>
+              {blocks
+                .slice()
+                .sort((a, b) => (balances.get(b.id) ?? 0) - (balances.get(a.id) ?? 0))
+                .map((b) => (
+                  <div className="meter-row" key={b.id}>
+                    <span className="name">{b.name}</span>
+                    <span className="count mono">{balances.get(b.id) ?? 0}</span>
+                  </div>
+                ))}
+            </div>
+          </>
+        ) : null}
+
         {revealRows.length > 0 ? (
           <>
             <h2>Picks</h2>
@@ -126,6 +152,18 @@ export default async function GameControlPage({ params }: { params: { eventId: s
                 </button>
               </form>
             ) : null}
+          </>
+        ) : null}
+
+        {round && round.phase === 'results' ? (
+          <>
+            <h2>Enter results</h2>
+            <ResultsForm
+              eventId={params.eventId}
+              roundId={round.id}
+              blocks={blocks}
+              showScore={round.games?.result_type === 'score'}
+            />
           </>
         ) : null}
 

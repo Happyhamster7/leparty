@@ -169,10 +169,13 @@ Tables are in `supabase/migrations/0006_phase2_game.sql`: `acts`,
 Built so far: the game phase loop — the host starts a round from
 `/host/<eventId>/game`, team phones get the player-pick prompt (with
 cooldown players greyed out), and picks auto-resolve and reveal once
-the one-minute deadline passes or every team has submitted.
+the one-minute deadline passes or every team has submitted. Results
+entry is built too: the host enters each block's placing (and score,
+for score-type games) plus any bonus money, which pays prize money
+and bonuses into the ledger and moves the round to spending.
 
-Not built yet: results entry, the shop and secret drink orders, the
-drinks queue and cafeteria iPad, and the video upload pipeline.
+Not built yet: the shop and secret drink orders, the drinks queue and
+cafeteria iPad, and the video upload pipeline.
 
 Decided: highest score wins, generated from drinks sent; senders are
 shown to every team by default; item pricing is a flat value per item

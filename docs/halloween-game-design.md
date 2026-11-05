@@ -413,9 +413,15 @@ A transaction log underpins money and points, so any balance can be rebuilt or c
 
 **Scoring and economy**
 
-- [ ] Prize money for each placing.
+- [ ] Prize money for each placing. **Implementation note:** the Results
+      screen pays out a placeholder curve (90, 75, 65, 55, 45, 40, 30, 20
+      across 8 placings, repeating the last tier beyond that) in
+      `src/lib/economy.ts`, scaled to the section 6a income target —
+      swap the array when real numbers are decided.
 - [ ] How much money a star is worth.
-- [ ] What earns bonus money (best cosplay, host's pick, other).
+- [ ] What earns bonus money (best cosplay, host's pick, other). The
+      Results screen takes a free-form bonus amount and note per block
+      in the meantime, so the host can award it ad hoc.
 
 **Penalties**
 

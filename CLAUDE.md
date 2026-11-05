@@ -149,7 +149,7 @@ balancer hits spread 0–1 across realistic headcounts, QR codes scan.
 Not done in phase 1: clone a party, shareable potluck page, CSV export,
 reminders (needs an email/SMS provider).
 
-## Phase 2 — the game, designed not built
+## Phase 2 — the game, designed and partly built
 
 Full spec: `docs/halloween-game-design.md`. Summary:
 
