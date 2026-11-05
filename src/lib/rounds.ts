@@ -18,6 +18,7 @@ export type OpenRound = {
   pick_deadline: string | null;
   picks_revealed_at: string | null;
   shop_closed_at: string | null;
+  drinks_started_at: string | null;
   games: GameJoin | null;
 };
 
@@ -26,7 +27,7 @@ export async function currentOpenRound(eventId: string): Promise<OpenRound | nul
   const { data } = await db()
     .from('rounds')
     .select(
-      'id, event_id, act_id, number, game_id, phase, pick_deadline, picks_revealed_at, shop_closed_at, games(name, format, players_needed, is_group, result_type)'
+      'id, event_id, act_id, number, game_id, phase, pick_deadline, picks_revealed_at, shop_closed_at, drinks_started_at, games(name, format, players_needed, is_group, result_type)'
     )
     .eq('event_id', eventId)
     .order('number', { ascending: false })

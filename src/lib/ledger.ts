@@ -16,19 +16,27 @@ export async function writeLedgerEntries(entries: LedgerInsert[]) {
   await db().from('ledger_entries').insert(entries);
 }
 
-/** Money balance for one block, summed from the ledger. */
-export async function moneyBalance(blockId: string): Promise<number> {
+async function balanceByKind(blockId: string, kind: LedgerKind): Promise<number> {
   const { data: entries } = await db()
     .from('ledger_entries')
     .select('delta')
-    .eq('kind', 'money')
+    .eq('kind', kind)
     .eq('block_id', blockId);
 
   return (entries ?? []).reduce((sum, e) => sum + (e.delta as number), 0);
 }
 
-/** Money balance for every in-play block, summed from the ledger. */
-export async function moneyBalances(eventId: string): Promise<Map<string, number>> {
+/** Money balance for one block, summed from the ledger. */
+export async function moneyBalance(blockId: string): Promise<number> {
+  return balanceByKind(blockId, 'money');
+}
+
+/** Points balance for one block, summed from the ledger. */
+export async function pointsBalance(blockId: string): Promise<number> {
+  return balanceByKind(blockId, 'points');
+}
+
+async function balancesByKind(eventId: string, kind: LedgerKind): Promise<Map<string, number>> {
   const supabase = db();
 
   const { data: blocks } = await supabase
@@ -44,7 +52,7 @@ export async function moneyBalances(eventId: string): Promise<Map<string, number
   const { data: entries } = await supabase
     .from('ledger_entries')
     .select('block_id, delta')
-    .eq('kind', 'money')
+    .eq('kind', kind)
     .in('block_id', blockIds);
 
   for (const e of entries ?? []) {
@@ -52,4 +60,14 @@ export async function moneyBalances(eventId: string): Promise<Map<string, number
     balances.set(id, (balances.get(id) ?? 0) + (e.delta as number));
   }
   return balances;
+}
+
+/** Money balance for every in-play block, summed from the ledger. */
+export async function moneyBalances(eventId: string): Promise<Map<string, number>> {
+  return balancesByKind(eventId, 'money');
+}
+
+/** Points balance for every in-play block, summed from the ledger — the actual win condition. */
+export async function pointsBalances(eventId: string): Promise<Map<string, number>> {
+  return balancesByKind(eventId, 'points');
 }

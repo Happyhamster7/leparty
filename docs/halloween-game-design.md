@@ -143,6 +143,14 @@ The app works as a state machine. Rounds are grouped into **Acts**, which are gr
     - The bartender doesn't wait for videos to upload.
 - Large text and big buttons, so it's usable with wet hands in dim light.
 
+**Implementation note:** Next, the up-next preview and the per-type
+breakdown are built (`/host/<eventId>/game/bar`); **Back is not** — a
+wrong Next needs a manual ledger correction for now (append a
+compensating entry, don't delete the ledger row, per "Balances are
+never stored" below). The senders-shown-by-default behavior and its
+own hide toggle aren't built either; the iPad currently just shows
+drink-type totals, no senders.
+
 ### 30-second drink and video
 
 - When the bartender serves a team, **a 30-second countdown starts**. It shows on the team phone and on the waiting page.
@@ -440,6 +448,14 @@ A transaction log underpins money and points, so any balance can be rebuilt or c
 **Penalties**
 
 - [ ] Besides the extra shot for not finishing in 30 seconds, what other penalties can the admin apply, what do they do, and is there a limit?
+      **Implementation note:** the missed-time extra shot is built —
+      missing the 30 seconds without the host marking a team done
+      auto-writes the penalty on the next page load (same lazy-check
+      pattern as the pick deadline), and the next round's queue build
+      turns it into a drink order. What drink type a penalty shot
+      pours was never decided here either, so it defaults to the
+      event's cheapest drink type (`src/lib/drinks.ts`) rather than
+      guessing a name.
 
 ### Resolved
 

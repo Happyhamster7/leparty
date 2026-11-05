@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation';
 import { db } from '@/lib/supabase';
 import { currentOpenRound, ensurePicksResolved, cooldownParticipantIds } from '@/lib/rounds';
-import { moneyBalance } from '@/lib/ledger';
+import { moneyBalance, pointsBalance } from '@/lib/ledger';
 import { spendingView } from '@/lib/spending';
+import { ensureServesResolved, teamServeStatus } from '@/lib/drinks';
 import ClaimOnLoad from './ClaimOnLoad';
 import PickForm from './PickForm';
 import OrderForm from './OrderForm';
@@ -47,11 +48,12 @@ export default async function BlockPage({ params }: { params: { token: string } 
     .map((m) => m.people?.display_name ?? 'Unknown')
     .sort((a, b) => a.localeCompare(b));
 
-  const balance = await moneyBalance(block.id);
+  const [balance, points] = await Promise.all([moneyBalance(block.id), pointsBalance(block.id)]);
 
   let round = await currentOpenRound(block.event_id);
   if (round) await ensurePicksResolved(round);
-  if (round) round = await currentOpenRound(block.event_id); // pick up any just-written reveal
+  if (round) await ensureServesResolved(round);
+  if (round) round = await currentOpenRound(block.event_id); // pick up any just-written reveal/resolve
 
   let roundSection: React.ReactNode = null;
 
@@ -136,6 +138,42 @@ export default async function BlockPage({ params }: { params: { token: string } 
         </>
       );
     }
+  } else if (round && round.phase === 'drinks') {
+    const serve = await teamServeStatus(round.id, block.id);
+    if (serve.status === 'safe') {
+      roundSection = (
+        <div className="box box--dark">
+          <p className="eyebrow">Drinks</p>
+          <p style={{ margin: 0, fontSize: 14 }}>Safe this round &mdash; nobody owes you anything.</p>
+        </div>
+      );
+    } else if (serve.status === 'queued') {
+      roundSection = (
+        <div className="box box--dark">
+          <p className="eyebrow">Drinks</p>
+          <p style={{ margin: 0, fontSize: 14 }}>
+            You owe {serve.drinkCount} this round. Waiting for the bartender to call you up.
+          </p>
+        </div>
+      );
+    } else if (serve.status === 'serving') {
+      roundSection = (
+        <div className="box box--dark">
+          <p className="eyebrow">You&rsquo;re up</p>
+          <p style={{ margin: 0, fontSize: 14 }}>
+            {serve.drinkCount} to drink. 30 seconds
+            {serve.timerEndsAt ? `, ends at ${new Date(serve.timerEndsAt).toLocaleTimeString()}` : ''}.
+          </p>
+        </div>
+      );
+    } else {
+      roundSection = (
+        <div className="box box--dark">
+          <p className="eyebrow">Drinks</p>
+          <p style={{ margin: 0, fontSize: 14 }}>Done for this round.</p>
+        </div>
+      );
+    }
   }
 
   return (
@@ -155,6 +193,10 @@ export default async function BlockPage({ params }: { params: { token: string } 
           <div className="stat">
             <p className="label">Money</p>
             <p className="value">{balance}</p>
+          </div>
+          <div className="stat">
+            <p className="label">Points</p>
+            <p className="value">{points}</p>
           </div>
         </div>
 

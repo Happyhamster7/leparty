@@ -181,8 +181,20 @@ priced so far, see `src/lib/catalogue.ts` for why Bus ticket, Lock-up
 and both Bounties are still excluded. The host sees every order and
 purchase this round and closes the shop to move on to drinks.
 
-Not built yet: the drinks queue and cafeteria iPad, and the video
-upload pipeline.
+Drinks is built too, minus filming: starting drinks
+(`/host/<eventId>/game`) resolves Reflect and any carried-over
+penalty shots, then builds the queue fewest-drinks-first. The
+cafeteria iPad (`/host/<eventId>/game/bar`) shows the current team's
+order with Next and Mark done; Next starts their 30-second timer and
+pays points to whoever scores for each drink (the sender, or the
+Reflect-player). Missing the 30 seconds without the host marking it
+done auto-resolves on the next page load — same lazy-check pattern as
+the pick deadline — and writes an extra-shot penalty for next round.
+The round auto-completes once every team's finished.
+
+Not built yet: the filming/video upload pipeline, and the Back
+(undo last serve) button on the bar — a wrong Next currently needs a
+manual ledger correction.
 
 Decided: highest score wins, generated from drinks sent; senders are
 shown to every team by default; item pricing is a flat value per item

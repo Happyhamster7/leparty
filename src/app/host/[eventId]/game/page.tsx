@@ -4,10 +4,11 @@ import { db } from '@/lib/supabase';
 import { isHost } from '@/lib/host';
 import { getTheme } from '@/lib/theme';
 import { currentOpenRound, ensurePicksResolved } from '@/lib/rounds';
-import { moneyBalances } from '@/lib/ledger';
+import { moneyBalances, pointsBalances } from '@/lib/ledger';
 import { priceOrder } from '@/lib/drinkPricing';
+import { ensureServesResolved } from '@/lib/drinks';
 import type { EventRow } from '@/lib/types';
-import { startRound, advanceToResults, closeShop } from './actions';
+import { startRound, advanceToResults, closeShop, startDrinks } from './actions';
 import ResultsForm from './ResultsForm';
 
 export const dynamic = 'force-dynamic';
@@ -35,7 +36,8 @@ export default async function GameControlPage({ params }: { params: { eventId: s
 
   let round = await currentOpenRound(params.eventId);
   if (round) await ensurePicksResolved(round);
-  // Re-read: ensurePicksResolved may have just set picks_revealed_at.
+  if (round) await ensureServesResolved(round);
+  // Re-read: either resolver above may have just changed phase/reveal state.
   if (round) round = await currentOpenRound(params.eventId);
 
   const canStartNew = !round || round.phase !== 'game';
@@ -49,6 +51,7 @@ export default async function GameControlPage({ params }: { params: { eventId: s
   const blocks = (inPlayBlocks ?? []) as { id: string; name: string }[];
 
   const balances = round && round.phase !== 'game' ? await moneyBalances(params.eventId) : null;
+  const points = round && round.phase !== 'game' ? await pointsBalances(params.eventId) : null;
 
   const showOrders = !!round && ['spending', 'drinks', 'done'].includes(round.phase);
   let orderRows: { id: string; senderName: string; targetName: string; drinkName: string; qty: number; cost: number }[] = [];
@@ -166,6 +169,23 @@ export default async function GameControlPage({ params }: { params: { eventId: s
           </div>
         ) : null}
 
+        {points ? (
+          <>
+            <h2>Points standings</h2>
+            <div className="box box--quiet" style={{ marginBottom: 24 }}>
+              {blocks
+                .slice()
+                .sort((a, b) => (points.get(b.id) ?? 0) - (points.get(a.id) ?? 0))
+                .map((b) => (
+                  <div className="meter-row" key={b.id}>
+                    <span className="name">{b.name}</span>
+                    <span className="count mono">{points.get(b.id) ?? 0}</span>
+                  </div>
+                ))}
+            </div>
+          </>
+        ) : null}
+
         {balances ? (
           <>
             <h2>Money standings</h2>
@@ -254,6 +274,20 @@ export default async function GameControlPage({ params }: { params: { eventId: s
               Close shop and move to drinks
             </button>
           </form>
+        ) : null}
+
+        {round && round.phase === 'drinks' && !round.drinks_started_at ? (
+          <form action={startDrinks.bind(null, params.eventId, round.id)}>
+            <button className="btn" type="submit">
+              Start drinks
+            </button>
+          </form>
+        ) : null}
+
+        {round && round.phase === 'drinks' && round.drinks_started_at ? (
+          <Link className="btn" href={`/host/${params.eventId}/game/bar`} style={{ marginBottom: 20 }}>
+            Open the bar
+          </Link>
         ) : null}
 
         {canStartNew ? (

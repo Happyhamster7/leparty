@@ -5,6 +5,7 @@ import { db } from '@/lib/supabase';
 import { isHost } from '@/lib/host';
 import { prizeMoneyForPlacing } from '@/lib/economy';
 import { writeLedgerEntries, type LedgerInsert } from '@/lib/ledger';
+import { buildDrinksQueue } from '@/lib/drinks';
 import type { HostState } from '../../actions';
 
 /**
@@ -204,4 +205,18 @@ export async function closeShop(eventId: string, roundId: string) {
   await supabase.from('events').update({ phase: 'drinks' }).eq('id', eventId);
 
   revalidatePath(`/host/${eventId}/game`);
+}
+
+/** Resolves Reflect and penalties, then builds the drinks queue (src/lib/drinks.ts). */
+export async function startDrinks(eventId: string, roundId: string) {
+  if (!isHost()) return;
+
+  const supabase = db();
+  const { data: round } = await supabase.from('rounds').select('id, event_id').eq('id', roundId).maybeSingle();
+  if (!round) return;
+
+  await buildDrinksQueue(round);
+
+  revalidatePath(`/host/${eventId}/game`);
+  revalidatePath(`/host/${eventId}/game/bar`);
 }
