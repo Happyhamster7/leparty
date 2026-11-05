@@ -192,8 +192,10 @@ done auto-resolves on the next page load — same lazy-check pattern as
 the pick deadline — and writes an extra-shot penalty for next round.
 The round auto-completes once every team's finished.
 
-Not built yet: the Back (undo last serve) button on the bar — a wrong
-Next currently needs a manual ledger correction.
+The bar's Back button undoes the most recent Next if that team's
+still mid-drink: flips their drink_orders back from served, and
+reverses the points it just awarded with a compensating ledger entry
+(never deletes the original row).
 
 The public display (`/host/<eventId>/game/screen`) is built: phase,
 round, leaderboard, cooldown list, picks once revealed, and — during

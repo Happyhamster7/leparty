@@ -287,6 +287,72 @@ export async function markServed(roundId: string, serveId: string) {
     .eq('id', serveId);
 }
 
+/**
+ * Undoes the most recent Next, if it's still mid-drink (not yet
+ * finished) — "if Next was pressed by mistake" (section 6, "Queue and
+ * the bar"). Flips its drink_orders back from 'served' to whatever
+ * they were before (pending, or reflected if scores_for_block_id was
+ * set), and reverses the points it just awarded with a compensating
+ * ledger entry rather than deleting the original row — "a wrong
+ * ruling is one compensating row rather than a guess" (docs/schema.md).
+ */
+export async function undoLastServe(roundId: string): Promise<{ error?: string }> {
+  const supabase = db();
+
+  const { data: serve } = await supabase
+    .from('serves')
+    .select('id, block_id')
+    .eq('round_id', roundId)
+    .not('served_at', 'is', null)
+    .is('finished_at', null)
+    .order('served_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!serve) return { error: 'Nothing to undo.' };
+
+  const { data: orders } = await supabase
+    .from('drink_orders')
+    .select('id, scores_for_block_id')
+    .eq('round_id', roundId)
+    .eq('target_block_id', serve.block_id)
+    .eq('status', 'served');
+
+  for (const o of (orders ?? []) as { id: string; scores_for_block_id: string | null }[]) {
+    await supabase
+      .from('drink_orders')
+      .update({ status: o.scores_for_block_id ? 'reflected' : 'pending' })
+      .eq('id', o.id);
+  }
+
+  const { data: awarded } = await supabase
+    .from('ledger_entries')
+    .select('block_id, delta')
+    .eq('round_id', roundId)
+    .eq('kind', 'points')
+    .eq('reason', 'drink_served')
+    .eq('ref_id', serve.id);
+
+  const totals = new Map<string, number>();
+  for (const e of (awarded ?? []) as { block_id: string; delta: number }[]) {
+    totals.set(e.block_id, (totals.get(e.block_id) ?? 0) + e.delta);
+  }
+
+  const reversal: LedgerInsert[] = Array.from(totals.entries()).map(([blockId, delta]) => ({
+    block_id: blockId,
+    round_id: roundId,
+    kind: 'points',
+    delta: -delta,
+    reason: 'host_adjust',
+    ref_id: serve.id,
+  }));
+  await writeLedgerEntries(reversal);
+
+  await supabase.from('serves').update({ served_at: null, timer_ends_at: null }).eq('id', serve.id);
+
+  return {};
+}
+
 /** Host/bartender confirms a team finished within time — distinct from the timer lapsing. */
 export async function markDone(roundId: string, serveId: string) {
   const supabase = db();

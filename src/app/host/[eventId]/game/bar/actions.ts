@@ -2,11 +2,18 @@
 
 import { revalidatePath } from 'next/cache';
 import { isHost } from '@/lib/host';
-import { markServed, markDone } from '@/lib/drinks';
+import { markServed, markDone, undoLastServe } from '@/lib/drinks';
 
 export async function serveNext(eventId: string, roundId: string, serveId: string) {
   if (!isHost()) return;
   await markServed(roundId, serveId);
+  revalidatePath(`/host/${eventId}/game/bar`);
+  revalidatePath(`/host/${eventId}/game`);
+}
+
+export async function serveBack(eventId: string, roundId: string) {
+  if (!isHost()) return;
+  await undoLastServe(roundId);
   revalidatePath(`/host/${eventId}/game/bar`);
   revalidatePath(`/host/${eventId}/game`);
 }

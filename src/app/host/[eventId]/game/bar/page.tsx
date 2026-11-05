@@ -4,7 +4,7 @@ import { db } from '@/lib/supabase';
 import { isHost } from '@/lib/host';
 import { currentOpenRound } from '@/lib/rounds';
 import { ensureServesResolved, nextServes, servingNow, drinkBreakdown } from '@/lib/drinks';
-import { serveNext, serveDone } from './actions';
+import { serveNext, serveDone, serveBack } from './actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,6 +82,15 @@ export default async function BarPage({ params }: { params: { eventId: string } 
                 <p style={{ margin: 0 }}>Nobody&rsquo;s owed a drink this round.</p>
               </div>
             )}
+
+            <form action={serveBack.bind(null, params.eventId, round.id)}>
+              <button className="btn btn--ghost" type="submit" style={{ marginTop: 10 }}>
+                Back
+              </button>
+            </form>
+            <p className="small" style={{ marginTop: 6 }}>
+              Undoes the last Next, if that team&rsquo;s still mid-drink.
+            </p>
 
             {preview ? (
               <p className="small" style={{ marginTop: 14 }}>

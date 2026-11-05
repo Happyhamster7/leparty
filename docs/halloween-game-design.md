@@ -143,13 +143,14 @@ The app works as a state machine. Rounds are grouped into **Acts**, which are gr
     - The bartender doesn't wait for videos to upload.
 - Large text and big buttons, so it's usable with wet hands in dim light.
 
-**Implementation note:** Next, the up-next preview and the per-type
-breakdown are built (`/host/<eventId>/game/bar`); **Back is not** — a
-wrong Next needs a manual ledger correction for now (append a
-compensating entry, don't delete the ledger row, per "Balances are
-never stored" below). The senders-shown-by-default behavior and its
-own hide toggle aren't built either; the iPad currently just shows
-drink-type totals, no senders.
+**Implementation note:** Next, Back, the up-next preview and the
+per-type breakdown are built (`/host/<eventId>/game/bar`). Back
+undoes whichever team was most recently served and is still mid-drink
+(not yet finished) — it flips their orders back from `served` and
+reverses the points with a compensating ledger entry rather than
+deleting the original row, per "Balances are never stored" below. The
+senders-shown-by-default behavior and its own hide toggle aren't built
+either; the iPad currently just shows drink-type totals, no senders.
 
 ### 30-second drink and video
 
