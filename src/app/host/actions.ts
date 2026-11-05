@@ -12,6 +12,7 @@ import {
   BLOCK_COLOURS,
   BLOCK_NAMES,
 } from '@/lib/host';
+import { seedCatalogue } from '@/lib/catalogue';
 import type { PotluckCategory } from '@/lib/types';
 
 export type HostState = {
@@ -89,6 +90,7 @@ export async function createEvent(_prev: HostState, formData: FormData): Promise
   if (error || !event) return { error: 'Could not create the event. Check your Supabase keys.' };
 
   await supabase.from('blocks').insert(makeBlocks(event.id, 0, blockCount));
+  await seedCatalogue(supabase, event.id);
 
   revalidatePath('/host');
   redirect(`/host/${event.id}`);

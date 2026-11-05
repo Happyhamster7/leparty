@@ -69,6 +69,160 @@ export type InviteContext = {
   event: EventRow;
 };
 
+// ---------------------------------------------------------------------
+// Phase 2 — the game. See docs/halloween-game-design.md (source of
+// truth) and docs/schema.md (tables).
+// ---------------------------------------------------------------------
+
+export type RoundPhase = 'game' | 'results' | 'spending' | 'drinks' | 'done';
+export type GameFormat = 'per_team' | 'team_relay' | 'all_teams' | 'head_to_head';
+export type ResultType = 'placings' | 'score' | 'winner' | 'per_player';
+export type LedgerKind = 'money' | 'points' | 'stars';
+export type LedgerReason =
+  | 'placing'
+  | 'bonus'
+  | 'star'
+  | 'item'
+  | 'drink_cost'
+  | 'drink_served'
+  | 'host_adjust';
+export type DrinkOrderOrigin = 'team' | 'admin' | 'penalty';
+export type DrinkOrderStatus = 'pending' | 'cancelled' | 'reflected' | 'served';
+export type ItemBuyerRule = 'any' | 'bottom_4';
+
+export type ActRow = {
+  id: string;
+  event_id: string;
+  number: number;
+  name: string | null;
+};
+
+export type GameRow = {
+  id: string;
+  event_id: string;
+  name: string;
+  rules: string | null;
+  format: GameFormat;
+  players_needed: number | null;
+  is_group: boolean;
+  result_type: ResultType;
+};
+
+export type RoundRow = {
+  id: string;
+  event_id: string;
+  act_id: string;
+  number: number;
+  game_id: string;
+  phase: RoundPhase;
+  pick_deadline: string | null;
+  picks_revealed_at: string | null;
+  shop_closed_at: string | null;
+  drinks_started_at: string | null;
+  completed_at: string | null;
+};
+
+export type RoundPlayerRow = {
+  round_id: string;
+  block_id: string;
+  participant_id: string;
+  picked_by: 'team' | 'auto';
+};
+
+export type GameResultRow = {
+  id: string;
+  round_id: string;
+  block_id: string;
+  placing: number | null;
+  score: number | null;
+  note: string | null;
+};
+
+export type DrinkTypeRow = {
+  id: string;
+  event_id: string;
+  name: string;
+  points: number;
+  cost: number;
+};
+
+export type ItemRow = {
+  id: string;
+  event_id: string;
+  key: string;
+  name: string;
+  description: string | null;
+  /** Null means "not priced yet", distinct from a free item costing 0. */
+  price: number | null;
+  buyer_rule: ItemBuyerRule;
+  limit_per_round: number | null;
+  limit_per_night: number | null;
+};
+
+export type ItemUseRow = {
+  id: string;
+  round_id: string;
+  block_id: string;
+  item_id: string;
+  target_block_id: string | null;
+  target_participant_id: string | null;
+  result: unknown;
+};
+
+export type PenaltyRow = {
+  id: string;
+  block_id: string;
+  from_round_id: string;
+  applies_round_id: string | null;
+  kind: 'extra_shot';
+  reason: 'missed_time' | 'host';
+};
+
+export type DrinkOrderRow = {
+  id: string;
+  round_id: string;
+  sender_block_id: string | null;
+  origin: DrinkOrderOrigin;
+  target_block_id: string;
+  drink_type_id: string;
+  qty: number;
+  status: DrinkOrderStatus;
+  scores_for_block_id: string | null;
+  penalty_id: string | null;
+};
+
+export type ServeRow = {
+  id: string;
+  round_id: string;
+  block_id: string;
+  drink_count: number;
+  queue_position: number;
+  served_at: string | null;
+  timer_ends_at: string | null;
+  finished_at: string | null;
+  finished_by: 'timer' | 'host' | null;
+  missed_time: boolean;
+};
+
+export type ClipRow = {
+  id: string;
+  serve_id: string;
+  storage_path: string;
+  upload_state: 'pending' | 'uploaded' | 'failed';
+  status: 'shown' | 'removed';
+  uploaded_at: string | null;
+};
+
+export type LedgerEntryRow = {
+  id: string;
+  block_id: string;
+  round_id: string | null;
+  kind: LedgerKind;
+  delta: number;
+  reason: LedgerReason;
+  ref_id: string | null;
+};
+
 export function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return '??';
