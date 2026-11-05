@@ -16,6 +16,17 @@ export async function writeLedgerEntries(entries: LedgerInsert[]) {
   await db().from('ledger_entries').insert(entries);
 }
 
+/** Money balance for one block, summed from the ledger. */
+export async function moneyBalance(blockId: string): Promise<number> {
+  const { data: entries } = await db()
+    .from('ledger_entries')
+    .select('delta')
+    .eq('kind', 'money')
+    .eq('block_id', blockId);
+
+  return (entries ?? []).reduce((sum, e) => sum + (e.delta as number), 0);
+}
+
 /** Money balance for every in-play block, summed from the ledger. */
 export async function moneyBalances(eventId: string): Promise<Map<string, number>> {
   const supabase = db();

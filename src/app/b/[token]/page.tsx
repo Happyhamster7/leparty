@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { db } from '@/lib/supabase';
 import { currentOpenRound, ensurePicksResolved, cooldownParticipantIds } from '@/lib/rounds';
+import { moneyBalance } from '@/lib/ledger';
 import ClaimOnLoad from './ClaimOnLoad';
 import PickForm from './PickForm';
 
@@ -42,6 +43,8 @@ export default async function BlockPage({ params }: { params: { token: string } 
   const names = roster
     .map((m) => m.people?.display_name ?? 'Unknown')
     .sort((a, b) => a.localeCompare(b));
+
+  const balance = await moneyBalance(block.id);
 
   let round = await currentOpenRound(block.event_id);
   if (round) await ensurePicksResolved(round);
@@ -116,6 +119,13 @@ export default async function BlockPage({ params }: { params: { token: string } 
       <div className="body">
         <h1 className="huge">{block.name}</h1>
         <hr className="rule" />
+
+        <div className="stat-row">
+          <div className="stat">
+            <p className="label">Money</p>
+            <p className="value">{balance}</p>
+          </div>
+        </div>
 
         {block.charge ? (
           <>
