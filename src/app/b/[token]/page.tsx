@@ -1,12 +1,15 @@
 import { notFound } from 'next/navigation';
 import { db } from '@/lib/supabase';
+import { currentOpenRound, ensurePicksResolved, cooldownParticipantIds } from '@/lib/rounds';
+import ClaimOnLoad from './ClaimOnLoad';
+import PickForm from './PickForm';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * The block console. Phase 1 confirms the scan worked and shows the
- * block its identity; the game itself (yard time, lights out, roll
- * call, serving) lands here in phase 2.
+ * The block console. Confirms the scan worked, claims this device as
+ * the team phone, and runs the round state machine once the game
+ * starts (docs/halloween-game-design.md, section 4).
  */
 export default async function BlockPage({ params }: { params: { token: string } }) {
   const supabase = db();
@@ -27,15 +30,83 @@ export default async function BlockPage({ params }: { params: { token: string } 
       .maybeSingle(),
     supabase
       .from('participants')
-      .select('people(display_name)')
+      .select('id, people(display_name)')
       .eq('block_id', block.id),
   ]);
 
-  const names = ((members ?? []) as unknown as { people: { display_name: string } | null }[])
+  const roster = (members ?? []) as unknown as {
+    id: string;
+    people: { display_name: string } | null;
+  }[];
+
+  const names = roster
     .map((m) => m.people?.display_name ?? 'Unknown')
     .sort((a, b) => a.localeCompare(b));
 
+  let round = await currentOpenRound(block.event_id);
+  if (round) await ensurePicksResolved(round);
+  if (round) round = await currentOpenRound(block.event_id); // pick up any just-written reveal
+
+  let roundSection: React.ReactNode = null;
+
+  if (round && round.phase === 'game' && round.games) {
+    const { data: ownPicks } = await supabase
+      .from('round_players')
+      .select('picked_by, participants(people(display_name))')
+      .eq('round_id', round.id)
+      .eq('block_id', block.id);
+
+    const picked = (ownPicks ?? []) as unknown as {
+      picked_by: string;
+      participants: { people: { display_name: string } | null } | null;
+    }[];
+
+    if (round.games.is_group) {
+      roundSection = (
+        <div className="box box--dark">
+          <p className="eyebrow">This round</p>
+          <p style={{ margin: 0, fontSize: 14 }}>
+            Whole team plays &mdash; <strong>{round.games.name}</strong>.
+          </p>
+        </div>
+      );
+    } else if (picked.length > 0) {
+      const names2 = picked.map(
+        (p) =>
+          `${p.participants?.people?.display_name ?? 'Unknown'}${p.picked_by === 'auto' ? ' (auto)' : ''}`
+      );
+      roundSection = (
+        <div className="box box--dark">
+          <p className="eyebrow">Your pick{names2.length > 1 ? 's' : ''}</p>
+          <p style={{ margin: 0, fontSize: 14 }}>{names2.join(', ')}</p>
+        </div>
+      );
+    } else if (!round.picks_revealed_at) {
+      const cooldown = await cooldownParticipantIds(block.event_id);
+      const players = roster.map((m) => ({
+        id: m.id,
+        name: m.people?.display_name ?? 'Unknown',
+        onCooldown: cooldown.has(m.id),
+      }));
+
+      roundSection = (
+        <>
+          <p className="eyebrow">{round.games.name}</p>
+          <PickForm
+            roundId={round.id}
+            blockId={block.id}
+            token={params.token}
+            needed={round.games.players_needed ?? 1}
+            players={players}
+          />
+        </>
+      );
+    }
+  }
+
   return (
+    <>
+      <ClaimOnLoad blockId={block.id} token={params.token} />
     <div className="shell">
       <div className="topbar" style={{ background: block.colour }}>
         <span>{(event?.theme_title || event?.name || 'LEPARTY').toUpperCase()}</span>
@@ -72,13 +143,15 @@ export default async function BlockPage({ params }: { params: { token: string } 
           </div>
         )}
 
-        <div className="box box--dark">
-          <p className="eyebrow">Hold tight</p>
-          <p style={{ margin: 0, fontSize: 14 }}>
-            You&rsquo;re in. The games, the shop and the drinks arrive here when the Warden starts
-            the night.
-          </p>
-        </div>
+        {roundSection ?? (
+          <div className="box box--dark">
+            <p className="eyebrow">Hold tight</p>
+            <p style={{ margin: 0, fontSize: 14 }}>
+              You&rsquo;re in. The games, the shop and the drinks arrive here when the Warden
+              starts the night.
+            </p>
+          </div>
+        )}
 
         <p className="small">
           Keep this page open &mdash; it remembers you. Anyone else in {block.name} can scan the
@@ -86,5 +159,6 @@ export default async function BlockPage({ params }: { params: { token: string } 
         </p>
       </div>
     </div>
+    </>
   );
 }

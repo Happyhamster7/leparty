@@ -125,6 +125,9 @@ export default async function EventPage({ params }: { params: { eventId: string 
           <Link className="btn btn--quiet btn--inline" href={`/host/${params.eventId}/cards`}>
             BLOCK CARDS
           </Link>
+          <Link className="btn btn--quiet btn--inline" href={`/host/${params.eventId}/game`}>
+            GAME CONTROL
+          </Link>
           <Link className="btn btn--quiet btn--inline" href={`/host/${params.eventId}/edit`}>
             EDIT PARTY
           </Link>
