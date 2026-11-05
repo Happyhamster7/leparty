@@ -117,7 +117,7 @@ The app works as a state machine. Rounds are grouped into **Acts**, which are gr
 - **Points** are earned for every drink a team sends. They are recorded **when the drink is served**, meaning when the bartender presses Next, not when the order is placed. Points are weighted by drink type.
 - **Stars:** the team with the most drinks served at others in a round gets a star. A star is worth an amount of money.
 - **Reflected drinks** score for **the team that played Reflect**.
-- **Overall winner:** either calculated by the system or entered by the admin.
+- **Overall winner:** decided — the team with the most points wins, calculated by the system. Points are generated from drinks sent (see above), so sending drinks is the winning move.
 - The host can adjust any balance manually, and the reason is logged.
 
 ---
@@ -137,7 +137,7 @@ The app works as a state machine. Rounds are grouped into **Acts**, which are gr
 - The queue always runs **from the fewest drinks owed to the most**. Ties are ordered **randomly**.
 - Teams come up one at a time and **drink at the bar** with the bartender.
 - The cafeteria iPad shows one team at a time, with totals per drink type.
-    - **Who sent each drink is hidden by default.** A "Show senders" toggle reveals it on the iPad only, and **resets to hidden for each new order**.
+    - **Decided for now: every team can see who sent each drink.** Senders are shown by default, not hidden — this makes Eye Spy's real-time reveal redundant for now; its remaining value is the round-by-round history view (may revisit). The bartender's iPad still has its own separate "Show senders" toggle for serving purposes, and **resets to hidden for each new order**.
     - **Next** marks the team as served, records the points and calls the next team on the public screens. **Back** reopens the previous team if Next was pressed by mistake.
     - An "up next" preview lets the bartender start pouring ahead.
     - The bartender doesn't wait for videos to upload.
@@ -173,14 +173,14 @@ The app works as a state machine. Rounds are grouped into **Acts**, which are gr
 
 ## 7. Item shop (placeholders)
 
-These items are **placeholders**. Names, effects, limits and prices will be finalised later.
+These items are **placeholders**. Names, effects and limits will be finalised later. **Pricing model decided:** a single flat price per item, no dynamic scaling — exact values are still TBD.
 
-| Item | Who can buy | Effect | Limit (draft) |
-| --- | --- | --- | --- |
-| Eye Spy | Any team | Privately shows a table, round by round since the start of the game, of which team sent drinks to whom and how many | 1 per team per round |
-| Reflect | Any team | All drinks aimed at the buyer this round go back to their senders | 1 per team per night; only 1 Reflect per round across all teams |
-| Bus ticket | Bottom 4 only | Sends one top-team player "on the bus" | 1 per team per night |
-| Lock-up | Bottom 4 only | Sends one top-team player to the holding cell | 1 per team per night |
+| Item | Price | Who can buy | Effect | Limit (draft) |
+| --- | --- | --- | --- | --- |
+| Eye Spy | TBD | Any team | Privately shows a table, round by round since the start of the game, of which team sent drinks to whom and how many | 1 per team per round |
+| Reflect | TBD | Any team | All drinks aimed at the buyer this round go back to their senders | 1 per team per night; only 1 Reflect per round across all teams |
+| Bus ticket | TBD | Bottom 4 only | Sends one top-team player "on the bus" | 1 per team per night |
+| Lock-up | TBD | Bottom 4 only | Sends one top-team player to the holding cell | 1 per team per night |
 
 - The bottom 4 and the top team are worked out from the live leaderboard when spending opens.
 - Items that are sold out or used up are greyed out on the team phone.
@@ -310,7 +310,9 @@ A transaction log underpins money and points, so any balance can be rebuilt or c
 | Points awarded | On serve |
 | Reflected drinks score for | The team that played Reflect |
 | Queue tiebreak | Random |
-| Overall winner | Calculated by the system or entered by the admin |
+| Overall winner | Most points, calculated by the system |
+| Sender visibility | Shown to every team by default, for now — not hidden |
+| Item pricing model | A single flat price per item; exact values still TBD |
 | Guests, teams, players, tolerance | All from Phase 1 |
 | Wi-Fi | Works |
 | Hosting | Online web app |
