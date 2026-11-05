@@ -96,7 +96,7 @@ export const PLACEHOLDER_DRINK_TYPES: PlaceholderDrinkType[] = [
   { name: 'Spirit', points: 3, cost: 15 },
   { name: 'Mystery Spirit', points: 3, cost: 15 },
   { name: 'Soju', points: 1, cost: 7 },
-  { name: 'Mystery Cocktail', points: 3, cost: 15 },
+  { name: 'Mystery Cocktail', points: 4, cost: 18 },
 ];
 
 /** Seeds the placeholder games, items and drink types for a newly created event. */
