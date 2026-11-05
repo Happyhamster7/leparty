@@ -174,8 +174,15 @@ entry is built too: the host enters each block's placing (and score,
 for score-type games) plus any bonus money, which pays prize money
 and bonuses into the ledger and moves the round to spending.
 
-Not built yet: the shop and secret drink orders, the drinks queue and
-cafeteria iPad, and the video upload pipeline.
+Spending is partly built: team phones place secret drink orders
+(bundle/bottle pricing applied automatically, money charged on order)
+and can buy Eye Spy or Reflect from the shop — the only two items
+priced so far, see `src/lib/catalogue.ts` for why Bus ticket, Lock-up
+and both Bounties are still excluded. The host sees every order and
+purchase this round and closes the shop to move on to drinks.
+
+Not built yet: the drinks queue and cafeteria iPad, and the video
+upload pipeline.
 
 Decided: highest score wins, generated from drinks sent; senders are
 shown to every team by default; item pricing is a flat value per item

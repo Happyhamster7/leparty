@@ -257,6 +257,20 @@ These items are **placeholders**. Names, effects and limits will be finalised la
 | Open Bounty | TBD | Any team | Commit to hitting a target this round (quantity + drink-type combo, rotates every Act — see below). Hit it within the round limit for a bonus. Miss it and the cost is still spent. | 1 per team per round; only 1 bounty (Open or Winner's) active per team at a time |
 | Winner's Bounty | TBD | **Only the team that just won that round's game** | Same mechanic as Open Bounty, bigger or more varied payout. Unlocked by winning — re-available every time you win again, not a one-off. | 1 per team per round; only 1 bounty active per team at a time |
 
+**Implementation note:** the Spending screen can only sell Eye Spy
+(placeholder price 40) and Reflect (placeholder price 60) so far — see
+`src/lib/catalogue.ts`. Bus ticket, Lock-up and both Bounties stay
+unpriced (`price: null`) and out of the shop UI: their effects need a
+player status field and a bounty-tracking table that don't exist yet.
+Reflect's "only one per round across all teams" rule and its own
+"one per night" limit are both enforced in `buyItem`
+(`src/app/b/[token]/actions.ts`), not just the `items` table's
+per-item limit columns, since neither alone can express the
+cross-team constraint. Reflect's actual redirect effect — sending
+drinks back to their senders — isn't wired in yet; buying it right
+now only charges for and records the purchase, to be read by whoever
+builds the Drinks-phase queue.
+
 **Eligibility for Winner's Bounty is per-round, not the leaderboard.**
 It's whoever placed 1st in *that round's* game — a different team
 each round, potentially, and not necessarily the same team as the

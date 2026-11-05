@@ -39,6 +39,16 @@ type PlaceholderItem = {
   buyer_rule: ItemBuyerRule;
   limit_per_round: number | null;
   limit_per_night: number | null;
+  /**
+   * Null means "not priced yet". Eye Spy and Reflect are the only two
+   * the Spending screen can actually sell right now — their effects
+   * are buildable with what's in the schema today. Bus ticket, Lock-up
+   * and both Bounties stay unpriced: their effects need player status
+   * fields and a bounty-tracking table that don't exist yet (see
+   * docs/halloween-game-design.md section 11 and the schema's "Open
+   * decisions"), so selling them now would take money for nothing.
+   */
+  price: number | null;
 };
 
 export const PLACEHOLDER_ITEMS: PlaceholderItem[] = [
@@ -50,6 +60,7 @@ export const PLACEHOLDER_ITEMS: PlaceholderItem[] = [
     buyer_rule: 'any',
     limit_per_round: 1,
     limit_per_night: null,
+    price: 40,
   },
   {
     key: 'reflect',
@@ -59,6 +70,7 @@ export const PLACEHOLDER_ITEMS: PlaceholderItem[] = [
     buyer_rule: 'any',
     limit_per_round: null,
     limit_per_night: 1,
+    price: 60,
   },
   {
     key: 'bus_ticket',
@@ -67,6 +79,7 @@ export const PLACEHOLDER_ITEMS: PlaceholderItem[] = [
     buyer_rule: 'bottom_4',
     limit_per_round: null,
     limit_per_night: 1,
+    price: null,
   },
   {
     key: 'lock_up',
@@ -75,6 +88,7 @@ export const PLACEHOLDER_ITEMS: PlaceholderItem[] = [
     buyer_rule: 'bottom_4',
     limit_per_round: null,
     limit_per_night: 1,
+    price: null,
   },
   {
     key: 'open_bounty',
@@ -84,6 +98,7 @@ export const PLACEHOLDER_ITEMS: PlaceholderItem[] = [
     buyer_rule: 'any',
     limit_per_round: 1,
     limit_per_night: null,
+    price: null,
   },
   {
     key: 'winners_bounty',
@@ -93,6 +108,7 @@ export const PLACEHOLDER_ITEMS: PlaceholderItem[] = [
     buyer_rule: 'game_winner',
     limit_per_round: 1,
     limit_per_night: null,
+    price: null,
   },
 ];
 

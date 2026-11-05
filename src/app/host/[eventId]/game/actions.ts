@@ -191,3 +191,17 @@ export async function submitResults(
   revalidatePath(`/host/${eventId}/game`);
   return { notice: 'Results saved and prize money paid out.' };
 }
+
+/** Locks out new orders/purchases and moves the round on to drinks. */
+export async function closeShop(eventId: string, roundId: string) {
+  if (!isHost()) return;
+
+  const supabase = db();
+  await supabase
+    .from('rounds')
+    .update({ phase: 'drinks', shop_closed_at: new Date().toISOString() })
+    .eq('id', roundId);
+  await supabase.from('events').update({ phase: 'drinks' }).eq('id', eventId);
+
+  revalidatePath(`/host/${eventId}/game`);
+}

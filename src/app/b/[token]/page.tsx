@@ -2,8 +2,11 @@ import { notFound } from 'next/navigation';
 import { db } from '@/lib/supabase';
 import { currentOpenRound, ensurePicksResolved, cooldownParticipantIds } from '@/lib/rounds';
 import { moneyBalance } from '@/lib/ledger';
+import { spendingView } from '@/lib/spending';
 import ClaimOnLoad from './ClaimOnLoad';
 import PickForm from './PickForm';
+import OrderForm from './OrderForm';
+import ShopForm from './ShopForm';
 
 export const dynamic = 'force-dynamic';
 
@@ -102,6 +105,34 @@ export default async function BlockPage({ params }: { params: { token: string } 
             needed={round.games.players_needed ?? 1}
             players={players}
           />
+        </>
+      );
+    }
+  } else if (round && round.phase === 'spending') {
+    if (round.shop_closed_at) {
+      roundSection = (
+        <div className="box box--dark">
+          <p className="eyebrow">Shop&rsquo;s closed</p>
+          <p style={{ margin: 0, fontSize: 14 }}>The Warden&rsquo;s moved on to drinks.</p>
+        </div>
+      );
+    } else {
+      const view = await spendingView(round, block.id);
+      roundSection = (
+        <>
+          <p className="eyebrow">Spending</p>
+          <OrderForm
+            roundId={round.id}
+            blockId={block.id}
+            token={params.token}
+            drinkTypes={view.drinkTypes}
+            blocks={view.blocks}
+            ownOrders={view.ownOrders}
+          />
+          <p className="eyebrow" style={{ marginTop: 20 }}>
+            Shop
+          </p>
+          <ShopForm roundId={round.id} blockId={block.id} token={params.token} shop={view.shop} />
         </>
       );
     }
