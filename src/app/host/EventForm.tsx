@@ -153,43 +153,16 @@ export default function EventForm({ event }: { event?: EventRow }) {
           : ''}
       </p>
 
-      <div className="grid-2">
-        <div>
-          <label className="field" htmlFor="block_count">
-            Cell blocks
-          </label>
-          <input
-            id="block_count"
-            name="block_count"
-            type="number"
-            min={2}
-            max={12}
-            defaultValue={cfg?.block_count ?? 8}
-          />
-        </div>
-        <div>
-          <label className="field" htmlFor="starting_sentence">
-            Starting sentence (years)
-          </label>
-          <input
-            id="starting_sentence"
-            name="starting_sentence"
-            type="number"
-            min={1}
-            defaultValue={cfg?.starting_sentence ?? 25}
-          />
-        </div>
-      </div>
-
-      <label className="field" htmlFor="starting_commissary">
-        Starting commissary
+      <label className="field" htmlFor="block_count">
+        Cell blocks
       </label>
       <input
-        id="starting_commissary"
-        name="starting_commissary"
+        id="block_count"
+        name="block_count"
         type="number"
-        min={0}
-        defaultValue={cfg?.starting_commissary ?? 200}
+        min={2}
+        max={12}
+        defaultValue={cfg?.block_count ?? 8}
       />
 
       {state.error ? <p className="error" role="alert">{state.error}</p> : null}

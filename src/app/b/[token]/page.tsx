@@ -55,17 +55,6 @@ export default async function BlockPage({ params }: { params: { token: string } 
           </>
         ) : null}
 
-        <div className="stat-row">
-          <div className="stat">
-            <p className="label">Sentence</p>
-            <p className="value">{event?.config?.starting_sentence ?? 25}</p>
-          </div>
-          <div className="stat">
-            <p className="label">Commissary</p>
-            <p className="value">{event?.config?.starting_commissary ?? 200}</p>
-          </div>
-        </div>
-
         {names.length > 0 ? (
           <>
             <p className="eyebrow">Your block</p>
@@ -86,8 +75,8 @@ export default async function BlockPage({ params }: { params: { token: string } 
         <div className="box box--dark">
           <p className="eyebrow">Hold tight</p>
           <p style={{ margin: 0, fontSize: 14 }}>
-            You&rsquo;re in. The games, the commissary and lights out arrive here when the Warden
-            starts the first Day.
+            You&rsquo;re in. The games, the shop and the drinks arrive here when the Warden starts
+            the night.
           </p>
         </div>
 

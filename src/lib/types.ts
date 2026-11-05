@@ -19,8 +19,6 @@ export const CAPACITY_BANDS: { value: number; label: string }[] = [
 
 export type EventConfig = {
   block_count: number;
-  starting_sentence: number;
-  starting_commissary: number;
 };
 
 export type EventRow = {

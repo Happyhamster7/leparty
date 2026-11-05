@@ -61,17 +61,13 @@ function readEventFields(formData: FormData) {
       held_on: heldOn || null,
       starts_at_label: String(formData.get('starts_at_label') || '').trim() || null,
     },
-    config: {
-      starting_sentence: Math.max(1, Number(formData.get('starting_sentence') || 25)),
-      starting_commissary: Math.max(0, Number(formData.get('starting_commissary') || 200)),
-    },
   };
 }
 
 export async function createEvent(_prev: HostState, formData: FormData): Promise<HostState> {
   if (!isHost()) return { error: 'Sign in first.' };
 
-  const { name, blockCount, fields, config } = readEventFields(formData);
+  const { name, blockCount, fields } = readEventFields(formData);
   if (!name) return { error: 'Give the party a name.' };
 
   const supabase = db();
@@ -82,7 +78,7 @@ export async function createEvent(_prev: HostState, formData: FormData): Promise
       name,
       ...fields,
       status: 'open',
-      config: { block_count: blockCount, ...config },
+      config: { block_count: blockCount },
     })
     .select('id')
     .single();
@@ -115,7 +111,7 @@ export async function updateEvent(
 ): Promise<HostState> {
   if (!isHost()) return { error: 'Sign in first.' };
 
-  const { name, blockCount, fields, config } = readEventFields(formData);
+  const { name, blockCount, fields } = readEventFields(formData);
   if (!name) return { error: 'Give the party a name.' };
 
   const supabase = db();
@@ -131,7 +127,7 @@ export async function updateEvent(
     .update({
       name,
       ...fields,
-      config: { ...(existing?.config ?? {}), block_count: blockCount, ...config },
+      config: { ...(existing?.config ?? {}), block_count: blockCount },
     })
     .eq('id', eventId);
 

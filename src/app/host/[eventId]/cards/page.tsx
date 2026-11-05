@@ -201,14 +201,6 @@ export default async function CardsPage({
                     </div>
                   ) : null}
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
-                    <span className="mono" style={{ fontSize: 10 }}>
-                      SENTENCE: {ev.config?.starting_sentence ?? 25} YRS
-                    </span>
-                    <span className="mono" style={{ fontSize: 10 }}>
-                      COMMISSARY: {ev.config?.starting_commissary ?? 200}
-                    </span>
-                  </div>
                 </div>
               </div>
             );
