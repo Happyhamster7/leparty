@@ -13,6 +13,31 @@ The kit's own intro says the art is drawn by `scripts/pixel-sprites.py`.
 reference; generating the actual sprite assets is separate, unstarted
 work.
 
+## Implementation decisions
+
+Settled before any `src/` work starts:
+
+- **Sprite format: raster PNG sprite sheets**, not CSS-drawn pixel
+  art. Implies `image-rendering: pixelated` on every sprite element,
+  and `scripts/pixel-sprites.py`'s job is to generate/export actual
+  sprite-sheet images, not CSS.
+- **Permanent, not toggleable.** The skin-trial artifact's live
+  switcher (tabs + localStorage) was a comparison tool for deciding
+  between options — it does not carry into production. There is no
+  runtime skin picker; the pixel look is simply how the app renders.
+- **Bound to the jail theme, not a separate axis.** Pixel isn't an
+  independent "skin" layered over any `theme_key` — it's specifically
+  the jail theme's visual treatment. `theme.ts`'s `THEMES_WITH_COPY`
+  already only has `'jail'` written; heist/cult alias to it and stay
+  unwritten. No new skin-selection field needed on `events`.
+- **Deferred until Phase 2 is functionally complete.** Results entry,
+  the shop, the drinks queue/cafeteria iPad, and the video pipeline
+  aren't built yet (`docs/halloween-game-design.md`). Reskinning now
+  risks styling screens that get restructured before those land.
+  **Nothing in this section authorizes starting implementation** —
+  it records the decisions so they're not re-litigated when the time
+  comes.
+
 ## Foundations
 
 One art pixel is 3 CSS px. Every size is a multiple of it.

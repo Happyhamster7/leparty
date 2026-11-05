@@ -14,9 +14,11 @@ Tables for both phases: `docs/schema.md`. Keep both updated when the
 schema or behaviour changes — they're the references this file
 summarises.
 
-**Visual direction: pixel art (Stardew Valley-inspired), decided for
-now.** Reference: `docs/pixel-ui-reference.md`. Design only so far —
-no CSS or components from it are wired into the app yet.
+**Visual direction: pixel art (Stardew Valley-inspired), permanent,**
+bound to the jail theme. Reference: `docs/pixel-ui-reference.md`
+(palette, type, sprite-sheet format, contrast rules). Implementation
+is deferred until Phase 2 is functionally complete — don't start
+wiring CSS or components from it before then.
 
 ## Stack
 
