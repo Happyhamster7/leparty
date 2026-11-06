@@ -174,12 +174,24 @@ entry is built too: the host enters each block's placing (and score,
 for score-type games) plus any bonus money, which pays prize money
 and bonuses into the ledger and moves the round to spending.
 
-Spending is partly built: team phones place secret drink orders
-(bundle/bottle pricing applied automatically, money charged on order)
-and can buy Eye Spy or Reflect from the shop — the only two items
-priced so far, see `src/lib/catalogue.ts` for why Bus ticket, Lock-up
-and both Bounties are still excluded. The host sees every order and
+Spending is built, minus two items: team phones place secret drink
+orders (bundle/bottle pricing applied automatically, money charged on
+order) and can buy Eye Spy, Reflect, Open Bounty or Winner's Bounty
+from the shop — Bus ticket and Lock-up stay excluded, see
+`src/lib/catalogue.ts` for why. The host sees every order and
 purchase this round and closes the shop to move on to drinks.
+
+**Bounties** (`supabase/migrations/0008_bounty_tracking.sql` — run
+this before using them) simplify the design doc's undecided per-Act
+rotation and permanent-bonus reward into one fixed rule: send 5
+drinks of any type within 3 rounds of buying one for a flat money
+reward (100 for Open Bounty, 150 for Winner's, which only the round's
+1st-place team can buy). Miss the window and you owe 3 shots of
+Spirit next round — the generic missed-timer penalty mechanism now
+carries its own qty/drink type instead of always defaulting to 1
+shot of the cheapest drink. Only one bounty (either kind) can be
+active per team at a time, tracked in the new `bounties` table and
+resolved when the deadline round's shop closes.
 
 Drinks is built too, minus filming: starting drinks
 (`/host/<eventId>/game`) resolves Reflect and any carried-over

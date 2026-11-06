@@ -27,7 +27,14 @@ function ShopItem({
     name: string;
     description: string;
     price: number | null;
-    status: 'available' | 'bought_this_round' | 'bought_tonight' | 'taken_this_round' | 'not_priced';
+    status:
+      | 'available'
+      | 'bought_this_round'
+      | 'bought_tonight'
+      | 'taken_this_round'
+      | 'not_priced'
+      | 'bounty_active'
+      | 'not_round_winner';
     eyeSpyResult?: EyeSpyRow[];
   };
 }) {
@@ -78,6 +85,8 @@ function ShopItem({
           {item.status === 'bought_tonight' && 'Already used for the night.'}
           {item.status === 'taken_this_round' && 'Already played by another team this round.'}
           {item.status === 'not_priced' && 'Not for sale yet.'}
+          {item.status === 'bounty_active' && 'You already have a bounty running — only one at a time.'}
+          {item.status === 'not_round_winner' && 'Only the team that just won this round’s game can buy this.'}
         </p>
       )}
     </div>
@@ -98,7 +107,14 @@ export default function ShopForm({
     name: string;
     description: string;
     price: number | null;
-    status: 'available' | 'bought_this_round' | 'bought_tonight' | 'taken_this_round' | 'not_priced';
+    status:
+      | 'available'
+      | 'bought_this_round'
+      | 'bought_tonight'
+      | 'taken_this_round'
+      | 'not_priced'
+      | 'bounty_active'
+      | 'not_round_winner';
     eyeSpyResult?: EyeSpyRow[];
   }[];
 }) {

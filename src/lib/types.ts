@@ -83,7 +83,8 @@ export type LedgerReason =
   | 'item'
   | 'drink_cost'
   | 'drink_served'
-  | 'host_adjust';
+  | 'host_adjust'
+  | 'bounty';
 export type DrinkOrderOrigin = 'team' | 'admin' | 'penalty';
 export type DrinkOrderStatus = 'pending' | 'cancelled' | 'reflected' | 'served';
 export type ItemBuyerRule = 'any' | 'bottom_4' | 'game_winner';
@@ -173,7 +174,24 @@ export type PenaltyRow = {
   from_round_id: string;
   applies_round_id: string | null;
   kind: 'extra_shot';
-  reason: 'missed_time' | 'host';
+  reason: 'missed_time' | 'host' | 'failed_bounty';
+  /** Null means the default (1, cheapest drink type) — see src/lib/drinks.ts. */
+  qty: number | null;
+  drink_type_id: string | null;
+};
+
+export type BountyRow = {
+  id: string;
+  item_use_id: string;
+  block_id: string;
+  event_id: string;
+  start_round_number: number;
+  deadline_round_number: number;
+  target_qty: number;
+  target_drink_type_id: string | null;
+  reward_money: number;
+  resolved_at: string | null;
+  hit: boolean | null;
 };
 
 export type DrinkOrderRow = {

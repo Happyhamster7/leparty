@@ -9,6 +9,7 @@ import { moneyBalance, writeLedgerEntries } from '@/lib/ledger';
 import { priceOrder } from '@/lib/drinkPricing';
 import { computeItemStatus, type ItemRow } from '@/lib/spending';
 import { eyeSpyReport } from '@/lib/items';
+import { activeBounty, isRoundWinner, createBounty } from '@/lib/bounty';
 
 /**
  * Claims this block for whichever device loads the page. There's no
@@ -224,12 +225,16 @@ function statusMessage(status: ReturnType<typeof computeItemStatus>): string {
       return 'Reflect’s already been played by someone this round.';
     case 'not_priced':
       return 'Not priced yet — ask the host.';
+    case 'bounty_active':
+      return 'You already have a bounty running — only one at a time.';
+    case 'not_round_winner':
+      return 'Only the team that just won this round’s game can buy this.';
     default:
       return 'Not available.';
   }
 }
 
-/** Buys Eye Spy or Reflect — the only two items priced so far, see src/lib/catalogue.ts. */
+/** Buys Eye Spy, Reflect, or either Bounty — the items priced so far, see src/lib/catalogue.ts. */
 export async function buyItem(
   roundId: string,
   blockId: string,
@@ -252,7 +257,7 @@ export async function buyItem(
 
   const { data: round } = await supabase
     .from('rounds')
-    .select('id, phase, shop_closed_at')
+    .select('id, number, phase, shop_closed_at')
     .eq('id', roundId)
     .maybeSingle();
   if (!round || round.phase !== 'spending' || round.shop_closed_at) {
@@ -271,7 +276,17 @@ export async function buyItem(
     .from('item_uses')
     .select('round_id, block_id')
     .eq('item_id', item.id);
-  const status = computeItemStatus(item as ItemRow, usesRows ?? [], roundId, blockId);
+  let status = computeItemStatus(item as ItemRow, usesRows ?? [], roundId, blockId);
+
+  const isBounty = item.key === 'open_bounty' || item.key === 'winners_bounty';
+  if (status === 'available' && isBounty) {
+    if (await activeBounty(blockId)) {
+      status = 'bounty_active';
+    } else if (item.key === 'winners_bounty' && !(await isRoundWinner(roundId, blockId))) {
+      status = 'not_round_winner';
+    }
+  }
+
   if (status !== 'available') {
     return { error: statusMessage(status) };
   }
@@ -293,6 +308,16 @@ export async function buyItem(
   await writeLedgerEntries([
     { block_id: blockId, round_id: roundId, kind: 'money', delta: -item.price, reason: 'item', ref_id: use.id },
   ]);
+
+  if (isBounty) {
+    await createBounty({
+      itemUseId: use.id,
+      blockId,
+      eventId: block.event_id,
+      startRoundNumber: round.number,
+      itemKey: item.key,
+    });
+  }
 
   revalidatePath(`/b/${token}`);
   return {};

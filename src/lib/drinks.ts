@@ -75,19 +75,19 @@ export async function buildDrinksQueue(round: { id: string; event_id: string }) 
   if (cheapest && blockIds.length > 0) {
     const { data: unapplied } = await supabase
       .from('penalties')
-      .select('id, block_id')
+      .select('id, block_id, qty, drink_type_id')
       .in('block_id', blockIds)
       .eq('kind', 'extra_shot')
       .is('applies_round_id', null);
 
-    for (const p of (unapplied ?? []) as { id: string; block_id: string }[]) {
+    for (const p of (unapplied ?? []) as { id: string; block_id: string; qty: number | null; drink_type_id: string | null }[]) {
       await supabase.from('drink_orders').insert({
         round_id: round.id,
         sender_block_id: null,
         origin: 'penalty',
         target_block_id: p.block_id,
-        drink_type_id: cheapest.id,
-        qty: 1,
+        drink_type_id: p.drink_type_id ?? cheapest.id,
+        qty: p.qty ?? 1,
         status: 'pending',
         penalty_id: p.id,
       });

@@ -266,22 +266,22 @@ These items are **placeholders**. Names, effects and limits will be finalised la
 | Reflect | TBD | Any team | All drinks aimed at the buyer this round go back to their senders | 1 per team per night; only 1 Reflect per round across all teams |
 | Bus ticket | TBD | Bottom 4 only | Sends one top-team player "on the bus" | 1 per team per night |
 | Lock-up | TBD | Bottom 4 only | Sends one top-team player to the holding cell | 1 per team per night |
-| Open Bounty | TBD | Any team | Commit to hitting a target this round (quantity + drink-type combo, rotates every Act — see below). Hit it within the round limit for a bonus. Miss it and the cost is still spent. | 1 per team per round; only 1 bounty (Open or Winner's) active per team at a time |
-| Winner's Bounty | TBD | **Only the team that just won that round's game** | Same mechanic as Open Bounty, bigger or more varied payout. Unlocked by winning — re-available every time you win again, not a one-off. | 1 per team per round; only 1 bounty active per team at a time |
+| Open Bounty | **50** | Any team | Commit to hitting a target this round (quantity + drink-type combo, rotates every Act — see below). Hit it within the round limit for a bonus. Miss it and the cost is still spent. | 1 per team per round; only 1 bounty (Open or Winner's) active per team at a time |
+| Winner's Bounty | **50** | **Only the team that just won that round's game** | Same mechanic as Open Bounty, bigger or more varied payout. Unlocked by winning — re-available every time you win again, not a one-off. | 1 per team per round; only 1 bounty active per team at a time |
 
-**Implementation note:** the Spending screen can only sell Eye Spy
-(placeholder price 40) and Reflect (placeholder price 60) so far — see
-`src/lib/catalogue.ts`. Bus ticket, Lock-up and both Bounties stay
-unpriced (`price: null`) and out of the shop UI: their effects need a
-player status field and a bounty-tracking table that don't exist yet.
+**Implementation note:** the Spending screen can sell Eye Spy
+(placeholder price 40), Reflect (placeholder price 60) and both
+Bounties (50 each, see below) — see `src/lib/catalogue.ts`. Bus
+ticket and Lock-up stay unpriced (`price: null`) and out of the shop
+UI: their effects need a player status field that doesn't exist yet.
 Reflect's "only one per round across all teams" rule and its own
 "one per night" limit are both enforced in `buyItem`
 (`src/app/b/[token]/actions.ts`), not just the `items` table's
 per-item limit columns, since neither alone can express the
-cross-team constraint. Reflect's actual redirect effect — sending
-drinks back to their senders — isn't wired in yet; buying it right
-now only charges for and records the purchase, to be read by whoever
-builds the Drinks-phase queue.
+cross-team constraint. Reflect's redirect effect is wired in at
+queue-build time (`buildDrinksQueue`, `src/lib/drinks.ts`): a drink
+aimed at whoever played it bounces back to its sender and scores for
+the reflector instead.
 
 **Eligibility for Winner's Bounty is per-round, not the leaderboard.**
 It's whoever placed 1st in *that round's* game — a different team
@@ -297,13 +297,27 @@ same kind — buying one locks out buying another (either item greys
 out) until the active one resolves (completed or expired).
 
 **Every bounty has a round limit — a deadline to complete it, not
-indefinite.** Draft: 2 rounds from purchase. Expiring without
-completing counts as a miss (cost spent, no payout), same as failing
-the target outright.
+indefinite.** Expiring without completing counts as a miss (cost
+spent, no payout), same as failing the target outright.
 
-**Bounty targets rotate every Act**, same idea as Mystery Cocktail's
-rotating recipe. Draft targets and Open Bounty's reward, scaling up as
-the night goes on to build tension:
+**Decided (supersedes the Act-rotation draft below): one fixed target
+for every bounty, for now.** Acts aren't really built yet — every
+round lands in a single Act 1 (see `startRound`,
+`src/app/host/[eventId]/game/actions.ts`) — so there's nothing real
+for a target to rotate against. Send 5 drinks of any type within
+**3 rounds** of buying one (counted when sent, not served — resolves
+the moment the deadline round's shop closes, without waiting on
+Reflect/penalties to finish resolving in Drinks). Hit it: 100 money
+for Open Bounty, 150 for Winner's. Miss it: owe 3 shots of Spirit next
+round, via the same penalty-carryover mechanism a missed drinks timer
+uses (`penalties.qty`/`drink_type_id`, added in migration `0008`,
+override the usual "1 shot of the cheapest drink" default). No reward
+choice, no permanent bonus — both pay flat money. Revisit the
+Act-based version below once Acts are real.
+
+**Bounty targets rotate every Act** (draft, not built), same idea as
+Mystery Cocktail's rotating recipe. Draft targets and Open Bounty's
+reward, scaling up as the night goes on to build tension:
 
 | Act | Target | Open Bounty reward |
 | --- | --- | --- |
@@ -332,17 +346,17 @@ one-time — this wants either a new column on `blocks`
 (`points_per_drink_bonus`) or a dedicated small table. Don't guess the
 shape before the resolver exists; flag it for whoever builds Spending.
 
-**Implementation note for whoever builds the shop:** like bundle/
-bottle pricing, the target-check and the one-active-bounty rule are
-order-time/state logic, not schema fields — the `items` table has no
-structured quantity/combo columns or active-bounty tracking, and
-adding them now would be guessing at a shape before the resolver
-exists. `items.buyer_rule` has a third value, `'game_winner'`
-(migration `0007`), to gate who can even see Winner's Bounty in the
-shop; enforcing "only 1 active bounty" and the round deadline needs
-new state (most likely a small table keyed on block + item use,
-tracking purchased-at-round and resolved-at-round) that doesn't exist
-yet either.
+**Implementation note:** built. `items.buyer_rule`'s `'game_winner'`
+value (migration `0007`) gates Winner's Bounty to whoever placed 1st
+in `game_results` for the round just played
+(`isRoundWinner`, `src/lib/bounty.ts`). The one-active-bounty rule and
+the round deadline are tracked in a new `bounties` table (migration
+`0008`), keyed on the purchase's `item_use_id` and block, storing
+`start_round_number`/`deadline_round_number` rather than round ids
+(future rounds don't exist yet at purchase time).
+`resolveBountiesForRound` runs from `closeShop`
+(`src/app/host/[eventId]/game/actions.ts`) and sums `drink_orders.qty`
+for the block across that window to decide hit or miss.
 
 - The bottom 4 and the top team are worked out from the live leaderboard when spending opens.
 - Items that are sold out or used up are greyed out on the team phone.

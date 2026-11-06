@@ -360,10 +360,41 @@ advance fires when every row in the round has `finished_at`.
 | from_round_id | uuid | Where it was earned |
 | applies_round_id | uuid | Null until the next round's queue is built |
 | kind | text | extra_shot (others to be decided) |
-| reason | text | missed_time, host |
+| reason | text | missed_time, host, failed_bounty |
+| qty | int | Null means the default (1). Added migration `0008` for failed bounties, which owe 3 |
+| drink_type_id | uuid | FK drink_types. Null means the default (cheapest). Added migration `0008` for failed bounties, which owe Spirit specifically |
 
-Missing the 30 seconds writes one `extra_shot` row; the next queue
-build turns it into a `drink_orders` row with `origin = 'penalty'`.
+Missing the 30 seconds, or missing a bounty's target, writes one
+`extra_shot` row; the next queue build turns it into a `drink_orders`
+row with `origin = 'penalty'`, using `qty`/`drink_type_id` if set, or
+the 1-shot-of-the-cheapest-drink default otherwise.
+
+### bounties
+
+Added migration `0008`. One row per Open/Winner's Bounty purchase,
+tracking its multi-round window — see
+`docs/halloween-game-design.md` section 7 for the simplified rule
+actually built (one fixed target, flat money reward) in place of the
+design's undecided per-Act rotation and permanent-bonus reward.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | uuid | PK |
+| item_use_id | uuid | FK item_uses — the purchase this tracks |
+| block_id | uuid | FK blocks — the buyer |
+| event_id | uuid | FK events |
+| start_round_number | int | The round it was bought in |
+| deadline_round_number | int | start + 2 (a 3-round window). Stored as numbers, not round ids — future rounds don't exist yet at purchase time |
+| target_qty | int | 5 |
+| target_drink_type_id | uuid | FK drink_types. Null means any type — the only target built |
+| reward_money | int | 100 (Open Bounty) or 150 (Winner's) |
+| resolved_at | timestamptz | Null until the deadline round's shop closes |
+| hit | boolean | Null until resolved |
+
+Resolved from `closeShop` once the deadline round is reached: sums
+`drink_orders.qty` sent by the block across the whole window. Hit
+pays `reward_money` as a `bounty`-reason ledger entry; miss writes a
+`penalties` row for 3 shots of Spirit.
 
 ### clips
 
@@ -389,7 +420,7 @@ Append-only. Every change to a team's money, points or stars is a row.
 | round_id | uuid | Nullable |
 | kind | text | money, points, stars |
 | delta | int | Signed |
-| reason | text | placing, bonus, star, item, drink_cost, drink_served, host_adjust |
+| reason | text | placing, bonus, star, item, drink_cost, drink_served, host_adjust, bounty |
 | ref_id | uuid | The order, result or item use that caused it |
 
 Balances are `sum(delta)` grouped by block and kind. A wrong ruling is

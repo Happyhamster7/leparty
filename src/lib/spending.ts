@@ -1,6 +1,7 @@
 import { db } from '@/lib/supabase';
 import { priceOrder } from '@/lib/drinkPricing';
 import { eyeSpyReport, type EyeSpyRow } from '@/lib/items';
+import { activeBounty, isRoundWinner } from '@/lib/bounty';
 
 export type SpendingView = {
   drinkTypes: { id: string; name: string; cost: number; points: number }[];
@@ -14,12 +15,20 @@ export type ShopEntry = {
   name: string;
   description: string;
   price: number | null;
-  status: 'available' | 'bought_this_round' | 'bought_tonight' | 'taken_this_round' | 'not_priced';
+  status:
+    | 'available'
+    | 'bought_this_round'
+    | 'bought_tonight'
+    | 'taken_this_round'
+    | 'not_priced'
+    | 'bounty_active'
+    | 'not_round_winner';
   eyeSpyResult?: EyeSpyRow[];
 };
 
-/** The two items the Spending screen can actually sell — see src/lib/catalogue.ts. */
-const BUYABLE_ITEM_KEYS = ['eye_spy', 'reflect'] as const;
+/** The items the Spending screen can actually sell — see src/lib/catalogue.ts. */
+const BUYABLE_ITEM_KEYS = ['eye_spy', 'reflect', 'open_bounty', 'winners_bounty'] as const;
+const BOUNTY_ITEM_KEYS = ['open_bounty', 'winners_bounty'] as const;
 
 export type ItemRow = {
   id: string;
@@ -119,7 +128,15 @@ export async function spendingView(
   const shop: ShopEntry[] = [];
   for (const item of items) {
     const ownUses = uses.filter((u) => u.item_id === item.id);
-    const status = computeItemStatus(item, ownUses, round.id, blockId);
+    let status = computeItemStatus(item, ownUses, round.id, blockId);
+
+    if (status === 'available' && (BOUNTY_ITEM_KEYS as readonly string[]).includes(item.key)) {
+      if (await activeBounty(blockId)) {
+        status = 'bounty_active';
+      } else if (item.key === 'winners_bounty' && !(await isRoundWinner(round.id, blockId))) {
+        status = 'not_round_winner';
+      }
+    }
 
     shop.push({
       key: item.key,

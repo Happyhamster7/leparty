@@ -40,13 +40,14 @@ type PlaceholderItem = {
   limit_per_round: number | null;
   limit_per_night: number | null;
   /**
-   * Null means "not priced yet". Eye Spy and Reflect are the only two
-   * the Spending screen can actually sell right now — their effects
-   * are buildable with what's in the schema today. Bus ticket, Lock-up
-   * and both Bounties stay unpriced: their effects need player status
-   * fields and a bounty-tracking table that don't exist yet (see
-   * docs/halloween-game-design.md section 11 and the schema's "Open
-   * decisions"), so selling them now would take money for nothing.
+   * Null means "not priced yet". Eye Spy, Reflect and both Bounties
+   * are buildable with what's in the schema today (see
+   * supabase/migrations/0008_bounty_tracking.sql for the bounty
+   * table). Bus ticket and Lock-up stay unpriced: their effects need a
+   * player-status field — "on the bus" and the holding cell — that
+   * doesn't exist yet (docs/halloween-game-design.md section 11 and
+   * the schema's "Open decisions"), so selling them now would take
+   * money for nothing.
    */
   price: number | null;
 };
@@ -94,21 +95,21 @@ export const PLACEHOLDER_ITEMS: PlaceholderItem[] = [
     key: 'open_bounty',
     name: 'Open Bounty',
     description:
-      'Any team can buy it, but only one bounty (Open or Winner\'s) can be active per team at a time. Hit the target within its round limit (quantity + drink-type combo, rotates every Act — see docs/halloween-game-design.md section 7) for a points bonus. Miss the deadline and the cost is still spent.',
+      'Send 5 drinks of any type within 3 rounds for a 100 money reward. Only one bounty (Open or Winner\'s) can be active per team at a time. Miss the deadline and you owe 3 shots of Spirit next round — the cost is still spent either way.',
     buyer_rule: 'any',
     limit_per_round: 1,
     limit_per_night: null,
-    price: null,
+    price: 50,
   },
   {
     key: 'winners_bounty',
     name: 'Winner\'s Bounty',
     description:
-      'Unlocked by winning that round\'s game — always available again the next time you win, not a one-off. Same one-active-bounty-at-a-time and round-limit rules as Open Bounty, but with a bigger or more varied payout: points, money, or a permanent bonus to every drink you send for the rest of the night.',
+      'Only the team that just won this round\'s game can buy it. Same target as Open Bounty — 5 drinks of any type within 3 rounds — but a bigger reward: 150 money. Miss it and you owe 3 shots of Spirit next round.',
     buyer_rule: 'game_winner',
     limit_per_round: 1,
     limit_per_night: null,
-    price: null,
+    price: 50,
   },
 ];
 

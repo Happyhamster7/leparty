@@ -6,6 +6,7 @@ import { isHost } from '@/lib/host';
 import { prizeMoneyForPlacing } from '@/lib/economy';
 import { writeLedgerEntries, type LedgerInsert } from '@/lib/ledger';
 import { buildDrinksQueue } from '@/lib/drinks';
+import { resolveBountiesForRound } from '@/lib/bounty';
 import type { HostState } from '../../actions';
 
 /**
@@ -198,11 +199,15 @@ export async function closeShop(eventId: string, roundId: string) {
   if (!isHost()) return;
 
   const supabase = db();
+  const { data: round } = await supabase.from('rounds').select('number').eq('id', roundId).maybeSingle();
+
   await supabase
     .from('rounds')
     .update({ phase: 'drinks', shop_closed_at: new Date().toISOString() })
     .eq('id', roundId);
   await supabase.from('events').update({ phase: 'drinks' }).eq('id', eventId);
+
+  if (round) await resolveBountiesForRound(eventId, round.number);
 
   revalidatePath(`/host/${eventId}/game`);
 }
