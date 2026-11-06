@@ -177,3 +177,25 @@ test('Shot Cam direct uploads: pre-check, Blob-only URLs, and a clear message wh
   const t = (await off.action({ kind: 'join', name: 'Z' }, {})).result.token;
   assert.equal((await off.getState({ player: t })).view.uploads, 'off');
 });
+
+test('rounds over the API: players pick, the tick settles a passed deadline, and only hosts run the round', async () => {
+  const api = createApi({ store: new FileStore({ file: null }), pins });
+  const login = await api.action({ kind: 'login', pin: '1111' });
+  const host = { host: login.result.adminToken };
+  const admin = (type, args = {}) => api.action({ kind: 'admin', type, args }, host);
+  const tokens = [];
+  for (const n of ['Ann', 'Ben', 'Cat', 'Dan']) tokens.push((await api.action({ kind: 'join', name: n })).result.token);
+  await admin('updateSettings', { maxBlockSize: 2 });
+  await admin('buildBlocks');
+  const game = (await admin('addGame', { name: 'Flip cup', playersNeeded: 1 })).view.games.find((x) => x.name === 'Flip cup');
+  assert.equal((await api.action({ kind: 'act', type: 'startRound', args: { gameId: game.id } }, { player: tokens[0] })).ok, false);
+  const started = await admin('startRound', { gameId: game.id });
+  assert.equal(started.ok, true);
+  assert.equal(started.view.round.phase, 'game');
+  const me = await api.getState({ player: tokens[0] });
+  const pick = await api.action({ kind: 'act', type: 'pick', args: { playerIds: [me.view.me.id] } }, { player: tokens[0] });
+  assert.equal(pick.ok, true, pick.error);
+  // Nothing due yet: the tick is a no-op.
+  assert.deepEqual(await api.action({ kind: 'tick' }, {}), { ok: true, same: true });
+  assert.equal((await api.getState({ tv: true })).view.round.revealedAt, null);
+});
