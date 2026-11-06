@@ -5,7 +5,10 @@ code, which the code itself doesn't explain.
 
 An app for running themed parties with games, teams, and a drinks
 economy. Phase 1 (signup and intake) is built. Phase 2 (the game) is
-designed but not built.
+built end to end — Game, Results, Spending, Drinks, night-end — with
+a handful of items deliberately cut, not deferred. See "Phase 2 — the
+game" below for exactly what, and "Phase 2 decisions" for everything
+decided along the way that the design doc doesn't say.
 
 **Phase 2 source of truth: `docs/halloween-game-design.md`.** It
 replaced an earlier design (Days, sentence and commissary, substitutes,
@@ -16,9 +19,10 @@ summarises.
 
 **Visual direction: pixel art (Stardew Valley-inspired), permanent,**
 bound to the jail theme. Reference: `docs/pixel-ui-reference.md`
-(palette, type, sprite-sheet format, contrast rules). Implementation
-is deferred until Phase 2 is functionally complete — don't start
-wiring CSS or components from it before then.
+(palette, type, sprite-sheet format, contrast rules). Was deferred
+until Phase 2 was functionally complete — it now is, so this is
+unblocked whenever someone wants to pick it up. Nothing's been wired
+from it yet.
 
 ## Stack
 
@@ -26,8 +30,13 @@ Next.js 14 App Router (TypeScript), Supabase (Postgres + Storage),
 plain CSS in `src/app/globals.css`. No Tailwind, no component library,
 no test framework yet.
 
-`npm run dev` · `npm run build` · migration in
-`supabase/migrations/0001_phase1.sql`.
+`npm run dev` · `npm run build` · migrations in `supabase/migrations/`,
+numbered `0001`–`0009`, run in order against the Supabase SQL editor.
+Each new one must actually be run before its feature works — nothing
+auto-applies them. If `npm run build` hangs right after the
+`Next.js 14.2.35` banner with no further output, it's not your code:
+kill stray `node.exe` processes (Windows doesn't always clean these up
+from a killed `next dev`/`next build`) and retry.
 
 Env: `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
 `HOST_PASSCODE`, `NEXT_PUBLIC_SITE_URL`.
@@ -149,50 +158,111 @@ balancer hits spread 0–1 across realistic headcounts, QR codes scan.
 Not done in phase 1: clone a party, shareable potluck page, CSV export,
 reminders (needs an email/SMS provider).
 
-## Phase 2 — the game, designed and partly built
+## Phase 2 — the game, built end to end
 
-Full spec: `docs/halloween-game-design.md`. Summary:
+Full spec: `docs/halloween-game-design.md`. The round flow as it
+actually runs: **Game** (teams pick players on the team phone within a
+minute; picks revealed at once) → **Results** (host enters placings;
+prize money paid) → **Spending** (teams secretly buy items and send
+drinks to other teams, which costs money) → **Drinks** (queue built
+fewest drinks first, ties random; each team drinks at the bar with 30
+seconds on the clock, filmed on the team phone; missing the 30 seconds
+is an extra shot next round; auto-advances when every team is done) →
+auto-complete, then either the next round or the host ends the night.
 
-The night runs as rounds grouped into Acts. Each round: **Game** (teams
-pick players on the team phone within a minute; picks revealed at once)
-→ **Results** (host enters placings; prize money paid) → **Spending**
-(teams secretly buy items and send drinks to other teams, which costs
-money) → **Drinks** (queue built fewest drinks first, ties random; each
-team drinks at the bar with 30 seconds on the clock, filmed on the
-team phone; the clip loops muted on the public screen; missing the 30
-seconds is an extra shot next round; auto-advances when every team is
-done). Points go to the sender **when a drink is served**. Most points
-wins. The holding cell, "on the bus", final items and game rules are
-deferred.
+Routes, all under `/host/<eventId>/game/` unless noted:
 
-Tables to add: `acts`, `games`, `rounds`, `round_players`,
-`game_results`, `drink_types`, `drink_orders`, `items`, `item_uses`,
-`serves`, `penalties`, `clips`, `ledger_entries`.
+| Route | What it's for |
+| --- | --- |
+| (index) | Round control: start a round, advance to results, close the shop, start drinks, link to end the night |
+| `bar` | The cafeteria iPad: Next, Back (undo the last Next), Mark done, the "Show senders" toggle |
+| `screen` | The public display — polls itself every 5s, nobody's standing at it to reload |
+| `admin` | Manual balance adjustment, assign a drink straight into the current round's queue, reissue a leaked QR code |
+| `finish` | Final standings, confirm the winner |
+| `/b/<token>` | The team phone: picks, spending (orders + shop), drinks status, film/upload |
+
+Cut, not deferred: Bus ticket, Lock-up, the holding cell, "on the bus".
+Not built: stars (nothing awards that ledger kind), the public
+sender-shown-by-default policy for teams generally (the bar's own
+toggle is separate and is built), patching an already-built drinks
+queue (admin assignment only works before `drinks_started_at` is set).
+
+## Phase 2 decisions
+
+The design doc leaves plenty open on purpose — these are the calls
+actually made building it, which the doc and the code don't say on
+their own.
 
 **Phones write intents, not state.** Team phones write `drink_orders`
-and `item_uses`. One server-side function, idempotent on `round_id`,
-builds the drinks queue when the host starts drinks: take orders →
-apply Reflect → add penalty shots → count per team → build `serves`.
+and `item_uses`. One server-side function, idempotent on `round_id`
+(`buildDrinksQueue`, `src/lib/drinks.ts`), builds the drinks queue when
+the host starts drinks: resolve Reflect → fold in carried-over
+penalties → count per team → build `serves`.
 
 **One team phone, latest scan wins.** Scanning a block's QR makes that
-device the team phone and signs the previous one out. The host can
-rotate `join_token` if a card leaks. `blocks.captain_participant_id`
-is unused — there are no captains.
+device the team phone and signs the previous one out. The host
+reissues `join_token`/`join_code` from `/host/<eventId>/game/admin` if
+a card leaks — that also clears the block's claimed device.
+`blocks.captain_participant_id` is unused — there are no captains.
 
-**Live updates are polling, not a browser database client.** Views poll
-the server about once a second; the rule above about no browser-side
-Supabase client still holds. Timers store a start or end time on the
-server and count down locally. If polling feels slow, add a data-free
-"something changed" ping over Supabase Realtime Broadcast.
+**Live updates are polling, not a browser database client.** The
+public screen polls itself every 5s (`AutoRefresh.tsx`) — a deliberate
+reduction from the doc's "about once a second," since nobody's
+operating that view and 5s is plenty for a TV. Every other view is
+driven by someone acting on it (a host pressing a button, a team
+submitting a form), which naturally refetches, so nothing else polls.
+Timers store a start/end time on the server; no live countdown is
+rendered client-side anywhere yet.
 
-**Videos are not converted.** Phones upload straight to Supabase
-Storage with a signed upload URL (never through a Vercel function).
-Clips play as recorded, so the display laptop must be a Mac. Clips are
-kept after the party.
+**Videos are not converted, and never touch a Vercel function.** The
+team phone requests a signed upload URL from the server, then PUTs the
+file straight to Supabase Storage itself with a raw `fetch`/XHR — no
+Supabase client in the browser, matching the service-role-only rule.
+Clips play as recorded (HEVC), so the display laptop must be a Mac.
+
+**Bundle pricing and points are recomputed at serve time, never
+stored.** `drink_orders` has no cost/points column. `priceOrder()`
+(`src/lib/drinkPricing.ts`) runs both when an order is charged and
+again in `markServed` when points are paid out, from the same `qty`
+each time — so `qty` is the only thing that has to stay true.
+
+**Reflect resolves at queue-build, not at purchase.** Buying it just
+records the purchase and charges for it. `buildDrinksQueue` is what
+actually flips a targeted order's `target_block_id` back to the
+sender and sets `scores_for_block_id` to the reflector.
+
+**Bounties simplify the design doc's draft, on purpose.** One fixed
+target — 5 of any drink type, counted when sent (not served), within
+3 rounds of purchase — instead of a per-Act rotation that has nothing
+real to rotate against yet (every round is still Act 1). Winner's
+Bounty's reward *is* the permanent +1-point-per-drink bonus
+(`blocks.bonus_points_per_drink`), not a choice among three options.
+See `src/lib/bounty.ts`.
+
+**Penalties carry their own qty/drink type now.** Originally always
+"1 shot of the cheapest drink" for a missed timer. Generalized
+(migration `0009`) so a failed bounty can owe something different (3
+shots of Spirit) through the exact same next-round-carryover
+mechanism, instead of a second code path.
+
+**A wrong ruling is a compensating ledger entry, never a delete.** The
+bar's Back button and the admin's manual adjustment both follow
+"Balances are never stored" above — they insert the opposite entry,
+they don't touch the original row.
+
+**The bar, the public screen, the admin page and the finish page all
+share the host passcode.** No new auth surface for any of them —
+"bartender" and "admin" just mean the host, on a different screen.
 
 ## Open decisions
 
-Tracked in `docs/halloween-game-design.md`, section 11. The big ones:
-drink types, points and costs; prize money and star value; how many
-Acts; other penalty kinds; whether the host can press Next as well as
-the bartender.
+Tracked in `docs/halloween-game-design.md`, section 11. Still
+genuinely open: how much a star is worth (nothing awards the `stars`
+ledger kind at all yet); how many Acts a night runs, and whether it
+ends on a set round or a set time (every round still lands in a single
+Act 1); other penalty kinds beyond missed-time and failed-bounty.
+Resolved by what got built, not by a doc edit: drink types/points/
+costs, prize money and item pricing (placeholder curves — see
+`src/lib/economy.ts`, `src/lib/catalogue.ts`), the bounty target and
+reward, and whether the host presses Next or only the bartender
+(same role in this build, no separate check exists).
