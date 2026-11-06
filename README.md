@@ -133,7 +133,7 @@ The drinks go to the block as one order in the hosts' 🧾 Orders tab ("5× Spir
 
 ### Rounds (LeParty's game loop)
 
-The night runs in rounds, from the host console's **🎲 Round** tab. Each round has four phases, shown as a strip on phones, the TV and the host console:
+The night runs in **4 acts of 3 rounds** (12 games), from the host console's **🎲 Round** tab. Rounds are labelled by act: Act 1 · Round 1, Act 1 · Round 2, Act 1 · Final round, Act 2 · Round 1, and so on to Act 4 · Final round, after which the console asks you to crown the winner. Games play in the order of the 🏁 Games tab (game 1 is Act 1 · Round 1), and the Round tab shows the whole plan. Acts, rounds per act, the pick and bar timers, the cooldown and the streak rate are in ⚙️ Settings → Acts and rounds. Acts only group the rounds; the look stays the same all night. Each round has four phases, shown as a strip on phones, the TV and the host console:
 
 1. **Game.** A host picks a game from the schedule and taps **Start round**. Each game says how many players a block sends (0 = group game, everyone plays). Every phone shows its block's roster and gets **60 seconds** to lock in its players. Anyone who played either of the last **2** non-group games sits out, greyed out with "Played recently". When every block has picked, or the minute runs out, the picks show on every screen at once; blocks that didn't pick get an automatic pick, favouring whoever has played least. The shop is closed.
 2. **Results.** The host enters each block's placing, plus an optional bonus. Prize money is paid by place: **90 / 75 / 65 / 55 / 45 / 40 / 30 / 20** credits. First place unlocks the Winner's Bounty.

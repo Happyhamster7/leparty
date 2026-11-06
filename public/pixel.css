@@ -269,3 +269,7 @@ body[data-era='slammer'] .reward { background: none; border-style: solid; border
 body[data-era='slammer'] .reward:hover { border-width: 15px; border-image: url('/pixel/frame-card-active.png') 15 fill / 15px stretch; margin: -3px; }
 body[data-era='slammer'] .reward b { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 24px; }
 body[data-era='slammer'] .reward-pick { animation: px-blink 1.6s steps(1) infinite; }
+body[data-era='slammer'] .act-plan h4 { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 26px; color: var(--orange2); }
+body[data-era='slammer'] .slot { background: none; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-paper.png') 9 fill / 9px stretch; padding: 0 3px; }
+body[data-era='slammer'] .slot.live { outline: none; border-image: url('/pixel/frame-slot-active.png') 9 fill / 9px stretch; }
+body[data-era='slammer'] .slot.done { border-image: url('/pixel/frame-slot-locked.png') 9 fill / 9px stretch; opacity: 0.85; }

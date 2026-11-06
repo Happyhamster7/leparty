@@ -978,7 +978,7 @@
     const pr = prev.round;
     if (r && next.me.teamId) {
       if (r.phase === 'game' && (!pr || pr.number !== r.number) && !r.isGroup && next.me.status === 'block') {
-        toast(`🎲 Round ${r.number}: ${r.gameName}. Pick your players!`, 'warn');
+        toast(`🎲 ${r.label}: ${r.gameName}. Pick your players!`, 'warn');
         buzz([150, 80, 150]);
       }
       if (r.phase === 'spending' && pr?.phase !== 'spending') toast('🛒 The shop is open. Send some drinks.', 'ok');
@@ -1872,7 +1872,7 @@
     if (!r) return '';
     const me = S.me;
     const myTeam = team(me.teamId);
-    const head = `<div class="eyebrow">Round ${r.number}${r.phase === 'done' ? ' · over' : ''}</div><h2>${h(r.gameName)}</h2>${r.phase === 'done' ? '' : phaseStrip(r)}`;
+    const head = `<div class="eyebrow">${h(r.label)}${r.phase === 'done' ? ' · over' : ''}</div><h2>${h(r.gameName)}</h2>${r.phase === 'done' ? '' : phaseStrip(r)}`;
     let body = '';
     if (r.phase === 'game') {
       if (r.isGroup) body = '<p>Group game: everyone on every block plays.</p>';
@@ -1968,7 +1968,7 @@
   function tvRound() {
     const r = S.round;
     if (!r) return '';
-    const head = `<div class="eyebrow">Round ${r.number}</div><h2 class="tv-live">${h(r.gameName)}</h2>${r.phase === 'done' ? '' : phaseStrip(r)}`;
+    const head = `<div class="eyebrow">${h(r.label)}${r.final ? ' 🔥' : ''}</div><h2 class="tv-live">${h(r.gameName)}</h2>${r.phase === 'done' ? '' : phaseStrip(r)}`;
     if (r.phase === 'game') {
       if (!r.revealedAt) return `${head}<p class="tv-big">Blocks are picking their players: ${until(r.pickDeadline)}</p>
         <ul class="picks">${roundTeams().map((t) => `<li style="--c:${h(t.color)}">${chip(t)} <span>${r.picked.includes(t.id) ? '✅ locked in' : '…'}</span></li>`).join('')}</ul>${cooldownLine(r)}`;
@@ -1977,7 +1977,7 @@
     if (r.phase === 'results') return `${head}<p class="tv-big">Results coming up…</p>${r.isGroup ? '' : pickedList(r)}`;
     if (r.phase === 'spending') return `${head}${placingsList(r)}<p class="tv-big">🛒 The shop is open. Send your drinks.</p>`;
     if (r.phase === 'drinks') return `${head}${tvBarGrid(r)}`;
-    return `${head}${placingsList(r)}<p class="fine">Round over. Next round soon.</p>`;
+    return `${head}${placingsList(r)}<p class="fine">${r.number >= (S.plan?.total || 12) ? 'That’s the night. The winner is about to be crowned.' : r.final ? `That’s the end of Act ${r.act}. Act ${r.act + 1} is next.` : 'Round over. Next round soon.'}</p>`;
   }
 
   function cooldownLine(r) {
@@ -2023,12 +2023,14 @@
     const teams = roundTeams();
     let main = '';
     if (!running) {
-      const games = [...S.games].sort((a, b) => (a.status === 'upcoming' ? 0 : 1) - (b.status === 'upcoming' ? 0 : 1));
-      main = `<section class="card">
-        <h3>${r ? `Round ${r.number} is done.` : 'No rounds yet.'} Start round ${(r?.number || 0) + 1}</h3>
+      const games = [...S.games].sort((a, b) => (a.status === 'done' ? 1 : 0) - (b.status === 'done' ? 1 : 0));
+      const n = (r?.number || 0) + 1;
+      const over = n > (S.plan?.total || 12);
+      main = over ? `<section class="card"><h3>That was the final round of Act ${S.plan.acts}.</h3><p>Time to crown the winner below.</p></section>` : `<section class="card">
+        <h3>${r ? `${h(r.label)} is done.` : 'No rounds yet.'} Next up: ${h(slotLabel(n))}</h3>
         ${games.length ? `<form data-admin="startRound" class="row wrap">
-          <label class="grow">Game<select id="rd_game" name="gameId">${games.map((g) => `<option value="${g.id}">${h(g.name)} · ${g.playersNeeded ? `${plural(g.playersNeeded, 'player')} per block` : 'group game'}${g.status === 'done' ? ' (played)' : ''}</option>`).join('')}</select></label>
-          <button class="btn big">▶ Start round</button>
+          <label class="grow">Game (next in the schedule is picked)<select id="rd_game" name="gameId">${games.map((g) => `<option value="${g.id}">${h(g.name)} · ${g.playersNeeded ? `${plural(g.playersNeeded, 'player')} per block` : 'group game'}${g.status === 'done' ? ' (played)' : ''}</option>`).join('')}</select></label>
+          <button class="btn big">▶ Start ${h(slotLabel(n))}</button>
         </form>
         <p class="fine">Blocks get ${S.settings.pickSeconds} seconds to pick players on their phones. The shop closes until results are in.</p>` : '<p>Add games in the 🏁 Games tab first, with how many players each block sends.</p>'}
       </section>`;
@@ -2063,12 +2065,12 @@
     }
     return `
       ${S.winner ? `<section class="card"><h3>👑 ${h(teamName(S.winner.teamId))} has been crowned</h3><p class="fine">The TV is showing the winner.</p>${btn('Hide the winner screen', 'clearWinner', {}, 'ghost sm')}</section>` : ''}
-      ${r ? `<section class="card round-head"><div class="eyebrow">Round ${r.number}</div><h2>${h(r.gameName)}</h2>${r.phase === 'done' ? '<p class="fine">Done.</p>' : phaseStrip(r)}</section>` : ''}
+      ${r ? `<section class="card round-head"><div class="eyebrow">${h(r.label)}</div><h2>${h(r.gameName)}</h2>${r.phase === 'done' ? '<p class="fine">Done.</p>' : phaseStrip(r)}</section>` : ''}
       ${main}
       ${!r || r.phase !== 'drinks' ? assignDrinksCard() : ''}
       ${S.penaltiesOwed?.length ? `<section class="card"><h3>⏰ Owed next round</h3><ul class="roster">${S.penaltiesOwed.map((x) => `<li>${h(teamName(x.teamId))}: ${x.qty}× ${h(x.drinkName)} <span class="fine">${h(x.reason)}</span></li>`).join('')}</ul></section>` : ''}
       ${(S.bounties || []).some((b) => b.status === 'active') ? `<section class="card"><h3>🎯 Bounties running</h3><ul class="roster">${S.bounties.filter((b) => b.status === 'active').map((b) => `<li>${h(teamName(b.teamId))}: ${b.kind === 'winner' ? 'Winner’s' : 'Open'} · ${b.sent}/5 sent · last round ${b.deadlineRound}</li>`).join('')}</ul></section>` : ''}
-      ${S.rounds?.length ? `<section class="card"><h3>Rounds so far</h3><ol class="schedule">${S.rounds.map((x) => `<li><span>${x.number}. ${h(x.gameName)}</span><span class="fine">${x.winnerTeamId ? `🏆 ${h(teamName(x.winnerTeamId))}` : x.phase}</span></li>`).join('')}</ol></section>` : ''}
+      ${nightPlan()}
       <section class="card">
         <h3>👑 End of the night</h3>
         <form data-admin="crownWinner" class="row wrap">
@@ -2076,6 +2078,32 @@
           <button class="btn" data-confirm="Crown this block? Every screen shows the winner.">Crown the winner</button>
         </form>
       </section>`;
+  }
+
+  // Round n's place in the night, worked out the same way as the server.
+  function slotLabel(n) {
+    const per = Math.max(1, S.plan?.perAct || 3);
+    const inAct = ((n - 1) % per) + 1;
+    return `Act ${Math.floor((n - 1) / per) + 1} · ${inAct === per ? 'Final round' : `Round ${inAct}`}`;
+  }
+
+  // The whole night: every act's rounds, the games lined up for them, and how each went.
+  function nightPlan() {
+    const plan = S.plan || { acts: 4, perAct: 3, total: 12 };
+    const played = S.rounds || [];
+    const upcoming = S.games.filter((g) => g.status !== 'done' && !played.some((x) => x.gameName === g.name && x.phase !== 'done'));
+    let u = 0;
+    const acts = Array.from({ length: plan.acts }, (_, a) => {
+      const rows = Array.from({ length: plan.perAct }, (_, i) => {
+        const n = a * plan.perAct + i + 1;
+        const done = played.find((x) => x.number === n);
+        const game = done ? done.gameName : upcoming[u++]?.name;
+        const state = done ? (done.phase === 'done' ? 'done' : 'live') : '';
+        return `<li class="slot ${state}"><span class="slot-l">${i + 1 === plan.perAct ? 'Final round' : `Round ${i + 1}`}</span><span class="slot-g">${game ? h(game) : '<i class="fine">no game yet</i>'}</span><span class="fine">${done?.winnerTeamId ? `🏆 ${h(teamName(done.winnerTeamId))}` : state === 'live' ? h(done.phase) : ''}</span></li>`;
+      });
+      return `<div class="act-plan"><h4>Act ${a + 1}</h4><ol class="slots">${rows.join('')}</ol></div>`;
+    });
+    return `<section class="card"><h3>🎬 The night: ${plan.acts} acts × ${plan.perAct} rounds</h3><p class="fine">Games play in the order of the 🏁 Games tab. Change acts and rounds per act in ⚙️ Settings.</p><div class="night-plan">${acts.join('')}</div></section>`;
   }
 
   function assignDrinksCard() {
@@ -2630,8 +2658,8 @@
         <h3>Schedule</h3>
         <p class="fine">Finishing a game pays out credits and counts as a round: Holding Cell and Solitary owe their penalty drinks, and solitary sentences tick down.</p>
         ${S.games.length ? `<ul class="glist">${S.games
-          .map((g) => `<li class="g-${g.status}">
-            <div class="g-h"><b>${h(g.name)}</b> <span class="tag">${g.status.toUpperCase()}</span> <span class="fine">${g.playersNeeded ? `${plural(g.playersNeeded, 'player')} per block` : 'group game'}</span></div>
+          .map((g, i) => `<li class="g-${g.status}">
+            <div class="g-h"><span class="chip">${i < (S.plan?.total || 12) ? h(slotLabel(i + 1)) : 'Spare'}</span> <b>${h(g.name)}</b> <span class="tag">${g.status.toUpperCase()}</span> <span class="fine">${g.playersNeeded ? `${plural(g.playersNeeded, 'player')} per block` : 'group game'}</span></div>
             ${g.desc ? `<div class="fine">${h(g.desc)}</div>` : ''}
             ${g.rules ? `<div class="rules small">${h(g.rules)}</div>` : '<div class="fine">⚠️ No how-to-play rules yet.</div>'}
             ${g.holdingRule ? `<div class="fine">🕳️ ${h(g.holdingRule)}</div>` : ''}${g.solitaryRule ? `<div class="fine">🔒 ${h(g.solitaryRule)}</div>` : ''}${g.sabotage ? `<div class="fine">🐀 ${h(g.sabotage)}</div>` : ''}
@@ -3015,6 +3043,18 @@
   function aSettings() {
     const st = S.settings;
     return `
+      <section class="card">
+        <h3>🎬 Acts and rounds</h3>
+        <form data-admin="updateSettings" class="grid2">
+          <label>Acts<input id="s_acts" name="actsCount" type="number" min="1" max="10" value="${st.actsCount}" /></label>
+          <label>Rounds per act (the last is the final round)<input id="s_rpa" name="roundsPerAct" type="number" min="1" max="10" value="${st.roundsPerAct}" /></label>
+          <label>Seconds to pick players<input id="s_pick" name="pickSeconds" type="number" min="15" max="300" value="${st.pickSeconds}" /></label>
+          <label>Seconds at the bar<input id="s_serve" name="serveSeconds" type="number" min="10" max="120" value="${st.serveSeconds}" /></label>
+          <label>Games a player sits out after playing<input id="s_cd" name="cooldownGames" type="number" min="0" max="5" value="${st.cooldownGames}" /></label>
+          <label>Streak credits (× drinks finished in a row)<input id="s_streak" name="streakCredits" type="number" min="0" max="100" value="${st.streakCredits}" /></label>
+          <button class="btn span2">Save</button>
+        </form>
+      </section>
       <section class="card">
         <h3>📣 PA announcement</h3>
         <form data-admin="announce" class="row wrap"><input id="ann" name="text" maxlength="200" placeholder="Everyone to the yard for Flip Cup!" required /><button class="btn sm">Broadcast</button></form>

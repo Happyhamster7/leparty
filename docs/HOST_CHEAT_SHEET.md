@@ -70,6 +70,8 @@ The default lineup is **The Long Night**: I · Booking Day (Cell Tosses, soups a
 
 ## Every round (🎲 Round tab)
 
+The night is **4 acts × 3 rounds**: Act 1 · Round 1, Act 1 · Round 2, Act 1 · Final round, then Act 2, and so on. Put the 12 games in the 🏁 Games tab in the order you want to play them: the first three are Act 1. The Round tab shows the whole plan and pre-selects the next game.
+
 1. **Start round:** pick the game. Players per block is set on each game in the Games tab (0 = group game). Phones get 60 seconds to lock in their players; the briefing pops up too.
 2. **Explain it out loud** while blocks pick. **Reveal now** auto-picks for any block that's dawdling.
 3. **Play the game,** then tap **Game's over: enter results.**

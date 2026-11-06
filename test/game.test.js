@@ -1341,3 +1341,25 @@ test('other blocks can’t see your picks until they’re revealed, or who playe
   assert.equal(g.tvView().round.reflectTeamId, null);
   assert.equal(g.adminView().round.reflectTeamId, b.id);
 });
+
+test('the night runs 4 acts of 3 rounds, games in schedule order, and stops after Act 4’s final round', () => {
+  const { g, a, b, players } = setup();
+  const games = Array.from({ length: 13 }, (_, i) => g.addGame({ name: `G${i + 1}`, playersNeeded: 0 }));
+  const labels = [];
+  for (let i = 0; i < 12; i++) {
+    const r = g.startRound(); // no game given: the next one in the schedule
+    assert.equal(r.gameId, games[i].id);
+    labels.push(r.label);
+    g.toResults();
+    g.enterResults({ placings: { [a.id]: 1, [b.id]: 2 } });
+    g.startDrinks();
+  }
+  assert.deepEqual(labels.slice(0, 4), ['Act 1 · Round 1', 'Act 1 · Round 2', 'Act 1 · Final round', 'Act 2 · Round 1']);
+  assert.equal(labels[11], 'Act 4 · Final round');
+  assert.throws(() => g.startRound(), /final round of Act 4/);
+  assert.equal(g.tvView().round.label, 'Act 4 · Final round');
+  assert.ok(g.s.feed.some((f) => /ACT 3 begins/.test(f.text)));
+  // Hosts can change the shape of the night.
+  g.updateSettings({ actsCount: 5 });
+  assert.equal(g.startRound().label, 'Act 5 · Round 1');
+});

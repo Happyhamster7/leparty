@@ -1547,3 +1547,11 @@ table.spy th, table.spy td { text-align: left; padding: 5px 6px; border-bottom: 
 .rewards { display: grid; gap: 8px; }
 .reward { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 12px; text-align: left; align-items: center; padding: 12px; background: var(--card2); border: 1.5px solid var(--line); border-radius: 10px; color: var(--text); font: inherit; cursor: pointer; }
 .reward .mega { grid-row: span 2; }
+.night-plan { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+.act-plan h4 { margin: 0 0 6px; font-family: var(--stencil); font-size: 18px; }
+.slots { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }
+.slot { display: grid; grid-template-columns: 92px 1fr; gap: 2px 8px; padding: 6px 8px; background: var(--card2); border-radius: 6px; font-size: 14px; }
+.slot .fine { grid-column: 2; }
+.slot-l { color: var(--muted); font-weight: 700; font-size: 12px; }
+.slot.done { opacity: 0.6; }
+.slot.live { outline: 2px solid var(--orange); }
