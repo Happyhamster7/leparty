@@ -1661,7 +1661,11 @@
   const myIncoming = () => (S.orders || []).filter(isIncomingFor(S));
 
   function phaseBanner() {
-    const m = S.mafia;
+    const shut = S.settings.shopOpen === false ? '<div class="phase shop-shut">🔒 COMMISSARY CLOSED</div>' : '';
+    return mafiaBanner(S.mafia) + shut;
+  }
+
+  function mafiaBanner(m) {
     if (m.phase === 'night') return `<div class="phase night">🌙 LIGHTS OUT — Night ${m.round}${kind === 'player' ? ' · everyone pick a name on your Rap Sheet' : ''}</div>`;
     if (m.phase === 'vote') return `<div class="phase vote">${eng() === 'amongus' ? `🚨 ${W('meeting', 'Emergency Meeting').toUpperCase()}` : '🗳️ BLOCK VOTES OPEN'} · ${plural(m.votesCast, 'vote')} cast</div>`;
     if (m.phase === 'over') return `<div class="phase over">${m.winner === 'snitches' ? '🐀 Snitches got away with it!' : '🎉 Every snitch was caught!'}</div>`;
@@ -1835,7 +1839,9 @@
     const me = S.me;
     const myTeam = team(me.teamId);
     const blocked =
-      me.status === 'solitary'
+      S.settings.shopOpen === false
+        ? 'The commissary is closed. The hosts will open it again soon.'
+        : me.status === 'solitary'
         ? 'No commissary privileges in solitary. Window shop and weep.'
         : !myTeam
           ? 'Holding Cell inmates don’t get a commissary account. Get a block to bail you out 🔑'
@@ -1936,7 +1942,7 @@
         <h2>${h(myTeam.name)}${nick(myTeam)}</h2>
         ${myTeam.motto ? `<p class="motto">${h(myTeam.motto)}</p>` : ''}
         ${eng() === 'tft' && myTeam.augment ? `<p class="aug-chip">${S.augments[myTeam.augment].emoji} <b>${h(S.augments[myTeam.augment].name)}</b> · ${h(S.augments[myTeam.augment].desc)}</p>` : ''}
-        <div class="stats"><div><b>${h(money(myTeam.budget))}</b><span>${h(curAct().currency.name)}</span></div><div><b>${myTeam.earned}</b><span>earned tonight</span></div><div><b>${members.length}/${S.settings.maxBlockSize}</b><span>inmates</span></div></div>
+        <div class="stats"><div><b>${h(money(myTeam.budget))}</b><span>${h(curAct().currency.name)}</span></div><div><b>${myTeam.points || 0}</b><span>points</span></div><div><b>${members.length}/${S.settings.maxBlockSize}</b><span>inmates</span></div></div>
         ${renameControls(myTeam, members)}
       </section>
       ${matchCard()}
@@ -2129,7 +2135,7 @@
   }
 
   function standings() {
-    return [...S.teams].sort((a, b) => b.earned - a.earned || b.budget - a.budget);
+    return [...S.teams].sort((a, b) => (b.points || 0) - (a.points || 0) || b.earned - a.earned || b.budget - a.budget);
   }
 
   function drinkTab(limit = 50) {
@@ -2150,7 +2156,7 @@
       <section class="card">
         <h3>🏆 Block Standings</h3>
         ${rows.length ? `<ol class="board">${rows
-          .map((t, i) => `<li style="--c:${h(t.color)}" class="${t.id === S.me?.teamId ? 'mine' : ''}"><span class="rank">${i + 1}</span><span class="b-n">${h(t.name)}${nick(t)}<small>${t.motto ? `${h(t.motto)} · ` : ''}${plural(blockmates(t.id).length, 'inmate')}</small></span><span class="b-s"><b>${t.earned}</b><small>earned · ${h(money(t.budget))} left${streakTag(t)}</small></span></li>`)
+          .map((t, i) => `<li style="--c:${h(t.color)}" class="${t.id === S.me?.teamId ? 'mine' : ''}"><span class="rank">${i + 1}</span><span class="b-n">${h(t.name)}${nick(t)}<small>${t.motto ? `${h(t.motto)} · ` : ''}${plural(blockmates(t.id).length, 'inmate')}</small></span><span class="b-s"><b>${plural(t.points || 0, 'pt')}</b><small>${t.earned} earned · ${h(money(t.budget))} left${streakTag(t)}</small></span></li>`)
           .join('')}</ol>` : '<p class="empty">No blocks yet.</p>'}
       </section>
       <section class="card">
@@ -2203,6 +2209,7 @@
       <div class="act-now"><span class="mega">${a.emoji}</span><div><div class="eyebrow">Act ${a.numeral} of ${S.acts.length} · ${h(a.game)}</div><b>${h(a.name)}</b></div></div>
       <div class="row">
         ${i > 0 ? btn('◀', 'setAct', { index: i - 1 }, 'ghost sm', `Go back to Act ${S.acts[i - 1].numeral}: ${S.acts[i - 1].name}?`) : ''}
+        ${btn(S.settings.shopOpen ? '🔒 Close shop' : '🛒 Open shop', 'updateSettings', { shopOpen: !S.settings.shopOpen }, S.settings.shopOpen ? 'ghost sm' : 'sm')}
         ${btn('📺 Play intro on TV', 'playIntro', {}, 'ghost sm')}
         ${nextA ? btn(`Next: ${nextA.emoji} ${h(nextA.name)} ▶`, 'setAct', { index: i + 1 }, 'sm', `Start Act ${nextA.numeral}: ${nextA.name} (${nextA.game})? Every phone and the TV switch over now.`) : '<span class="fine">Final act</span>'}
       </div>
@@ -2246,8 +2253,9 @@
         <h3>Quick payouts</h3>
         <div class="money">${standings()
           .map((t) => `<div class="money-t" style="--c:${h(t.color)}">
-            <div class="money-h"><b>${h(t.name)}</b><span><b>${t.budget}</b> cr · ${t.earned} earned</span></div>
-            <div class="row wrap">${[1, 5, 10, 25].map((n) => btn(`+${n}`, 'adjustBudget', { teamId: t.id, amount: n }, 'sm')).join('')}${[-5, -10].map((n) => btn(`${n}`, 'adjustBudget', { teamId: t.id, amount: n }, 'ghost sm')).join('')}</div>
+            <div class="money-h"><b>${h(t.name)}</b><span><b>${t.budget}</b> cr · ${t.earned} earned · <b>${plural(t.points || 0, 'pt')}</b></span></div>
+            <div class="row wrap">${[1, 5, 10, 25].map((n) => btn(`+${n}`, 'adjustBudget', { teamId: t.id, amount: n }, 'sm')).join('')}${[-5, -10].map((n) => btn(`${n}`, 'adjustBudget', { teamId: t.id, amount: n }, 'ghost sm')).join('')}
+              <span class="fine">Points</span>${btn('+1 pt', 'adjustPoints', { teamId: t.id, amount: 1 }, 'ghost sm')}${btn('−1 pt', 'adjustPoints', { teamId: t.id, amount: -1 }, 'ghost sm', `Take a point off ${t.name}?`)}</div>
           </div>`)
           .join('')}</div>
       </section>
@@ -2258,6 +2266,16 @@
           <label>Amount (negative = fine)<input id="pay_amt" name="amount" type="number" required placeholder="15" /></label>
           <label class="span2">Reason (shows in the feed)<input id="pay_reason" name="reason" maxlength="80" placeholder="winning flip cup" /></label>
           <button class="btn span2">Send it</button>
+        </form>
+      </section>
+      <section class="card">
+        <h3>Correct points</h3>
+        <p class="fine">Points go up by 1 automatically whenever a block sends a drink (a gift, or a punishment with penalty drinks). Cancelling that order takes the point back. Use this only to fix a mistake.</p>
+        <form data-admin="adjustPoints" class="grid2">
+          <label>Block<select id="pts_team" name="teamId">${S.teams.map((t) => `<option value="${t.id}">${h(t.name)}</option>`).join('')}</select></label>
+          <label>Points (negative = take away)<input id="pts_amt" name="amount" type="number" required placeholder="1" /></label>
+          <label class="span2">Reason (shows in the feed)<input id="pts_reason" name="reason" maxlength="80" placeholder="drink sent at the bar by hand" /></label>
+          <button class="btn span2">Adjust points</button>
         </form>
       </section>`;
   }
@@ -2714,7 +2732,7 @@
     const next = S.games.find((g) => g.status === 'upcoming');
     const m = S.mafia;
     const rows = standings();
-    const max = Math.max(1, ...rows.map((t) => t.earned));
+    const max = Math.max(1, ...rows.map((t) => t.points || 0));
     const holding = inHolding();
     const solitary = inSolitary();
     return `
@@ -2725,8 +2743,8 @@
         ${S.announcement ? `<div class="announce tv-ann"><span class="mega">📣</span><div class="announce-t">${h(S.announcement.text)}</div></div>` : ''}
         <div class="tv-grid">
           <section class="card">
-            <h2>🏆 Standings</h2>
-            <ol class="tv-board">${rows.map((t, i) => `<li style="--c:${h(t.color)}"><span class="rank">${i + 1}</span><span class="b-n">${h(t.name)}${t.nickname || streakBits(t).length ? `<small>${[t.nickname && h(t.nickname), ...streakBits(t)].filter(Boolean).join(' · ')}</small>` : ''}</span><span class="tv-bar"><i style="width:${(t.earned / max) * 100}%"></i></span><b>${t.earned}</b></li>`).join('') || '<p class="empty">No blocks yet</p>'}</ol>
+            <h2>🏆 Standings</h2><p class="fine">+1 point every time a block sends a drink. Most points wins.</p>
+            <ol class="tv-board">${rows.map((t, i) => `<li style="--c:${h(t.color)}"><span class="rank">${i + 1}</span><span class="b-n">${h(t.name)}${t.nickname || streakBits(t).length ? `<small>${[t.nickname && h(t.nickname), ...streakBits(t)].filter(Boolean).join(' · ')}</small>` : ''}</span><span class="tv-bar"><i style="width:${((t.points || 0) / max) * 100}%"></i></span><b>${t.points || 0}</b></li>`).join('') || '<p class="empty">No blocks yet</p>'}</ol>
             ${m.phase === 'vote' ? `<h3 class="section-h">🗳️ Block votes</h3>${S.teams.map((t) => {
               const tally = m.tallies?.[t.id] || {};
               const top = Object.entries(tally).filter(([id]) => id !== 'skip').sort((a, b) => b[1] - a[1])[0];
@@ -3023,7 +3041,7 @@
       const res = await admin(form.dataset.admin, data);
       if (res.ok) {
         clearDrafts(form);
-        if (['addGame', 'addTeam', 'addItem', 'announce', 'adjustBudget', 'sendToSolitary', 'assignPunishment', 'freshStart'].includes(form.dataset.admin)) form.reset();
+        if (['addGame', 'addTeam', 'addItem', 'announce', 'adjustBudget', 'adjustPoints', 'sendToSolitary', 'assignPunishment', 'freshStart'].includes(form.dataset.admin)) form.reset();
         render();
         toast('Done ✔', 'ok');
       }

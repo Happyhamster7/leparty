@@ -88,6 +88,8 @@ No heats set? Everyone plays at once and you pay out in Finish and pay out, as b
 | A block took a punishment | Orders | Make sure it happens, tap Enforced |
 | A block is stalling on a punishment | Orders | Force it |
 | An order you can't fill | Orders | Refund |
+| Close or open the shop | Act bar | 🔒 Close shop / 🛒 Open shop. Every phone and the TV show COMMISSARY CLOSED; buying and request approvals are refused |
+| A point is wrong | Payouts | +1 pt / −1 pt, or Correct points with a reason. Refunding a sent drink in Orders takes its point back on its own |
 | Bonus or fine | Payouts | +1 / +5 / +10 / +25, or a custom amount with a reason (it shows in the feed) |
 | Someone deserves a shot or a dare | Punish / Lockup | Hand out a punishment: one inmate, a block, Holding, Solitary or everyone; drinks, a written punishment, or both |
 | Someone breaks a rule | Punish / Lockup | Send to solitary: person, rounds, reason |
@@ -143,7 +145,7 @@ If every snitch gets caught early, the snitch game ends itself and the blocks wi
 
 ## Still to decide
 
-- [ ] **How the winning block is chosen.** Standings rank by credits earned, so sabotage skims, Shakedowns and wrong-kick fines lower a block's spending money but not its rank.
+- [x] **How the winning block is chosen.** Most points wins. A block gets +1 point every time it sends a drink (gifts, and punishments with penalty drinks), whatever it cost. Ties fall back to credits earned.
 - [ ] **The top block's prize.** Surviving snitches have one; the winning block doesn't yet.
 - [ ] **The survivor prize wording.** Default: "A drink on the birthday inmate + eternal bragging rights."
 - [ ] **A Holding Cell way out besides bail.** For example, a parole mini-challenge where the winner gets placed on a block by a host.

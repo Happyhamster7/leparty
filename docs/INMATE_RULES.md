@@ -31,7 +31,8 @@ You play in a block of 4 or 5 (Block A, Block B and so on). Each block starts wi
 - **Earning credits:** win games. The two hosts, the Warden and the Commissary Officer, pay out after every heat and can hand out bonuses or fines. Nobody else can create credits.
 - **Spending is a block decision:** pick something in the Commissary and it goes to your block as a request. It goes through when your Shot Caller approves it or 2 blockmates second it. You can withdraw your own request, and the Shot Caller can veto one.
 - **Name your block:** your Shot Caller (or anyone, if your block has none) sets a nickname and motto on the My Block tab. It shows on everyone's phones and the TV.
-- **Standings:** blocks are ranked by credits earned tonight, so spending doesn't cost you rank.
+- **Points win the night:** your block scores **+1 point every time it sends a drink** to another block or the Holding Cell (a Send a Round, a Buy Them a Shot, or a punishment with penalty drinks like Shot Penalty). Every send costs credits, and the point is the same whatever you spend. A deflected drink still scores for whoever paid for it. Most points at the end wins.
+- **The shop opens and closes:** the hosts close the commissary at times during the night. While it's closed, nobody can buy or approve requests.
 
 ## The four acts
 

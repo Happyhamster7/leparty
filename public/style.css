@@ -182,6 +182,7 @@ label.check { display: flex; align-items: center; gap: 10px; font-size: 14px; co
 .phase.night { background: var(--night); color: #b8c6ff; }
 .phase.vote { background: var(--sunset); color: var(--on-accent); }
 .phase.over { background: var(--teal); color: #04201d; }
+.phase.shop-shut { background: #3a3a3a; color: #fff; }
 .announce { display: flex; gap: 12px; align-items: center; max-width: 760px; margin: 12px auto 0; padding: 12px 14px; background: var(--yellow); color: var(--on-accent); border-radius: var(--radius); width: calc(100% - 32px); }
 .announce .fine { color: #4a3d00; }
 .announce-t { font-weight: 800; font-size: 16px; }

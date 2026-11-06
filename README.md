@@ -108,6 +108,10 @@ A **🍺 drinks owed** card appears on every tab whenever you owe penalty drinks
 
 Hosts can add, edit, hide, price and stock-limit any item, and can refund any order.
 
+**Points decide the winner.** A block scores **+1 point every time it sends a drink**: any Send a drink item, or a punishment that carries penalty drinks (Shot Penalty). The send still costs credits, and it's +1 whatever the price. Points go to the buyer when the purchase goes through (a block request scores once it's approved), stay with the buyer if the target deflects, and come back off if a host refunds the order. Standings on phones, the Board and the TV rank by points, then credits earned. Hosts can correct points in the 💰 Payouts tab.
+
+**Opening and closing the shop.** The act bar in the host console has 🔒 Close shop / 🛒 Open shop. While it's closed every phone and the TV show COMMISSARY CLOSED, and purchases and request approvals are refused. Requests already waiting stay put and can go through once it reopens.
+
 ### Built for blocks (about 40 guests)
 
 - **Matchups and heats.** For each game, hosts can split the blocks into heats (pairs, threes, fours, or everyone at once) or build a custom heat, such as a final between the winners. A block left over joins the previous heat, so nobody plays alone. Hosts start each heat and score it, and credits are paid per heat. Phones say *You're up*, *Up next (1 heat before yours)*, *Your heat is done* or *Sitting this one out*. The TV shows the heat being played and what's next.
