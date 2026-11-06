@@ -1885,7 +1885,7 @@
       const place = r.placings[me.teamId];
       body = `${place ? `<p>Your block came <b>${placeName(place)}</b> and won <b>${h(money(r.prizes[me.teamId] || 0))}</b>.</p>` : ''}
         ${r.winnerTeamId && r.winnerTeamId === me.teamId ? '<p class="win-note">🏅 You won this game: the Winner’s Bounty is unlocked in the shop.</p>' : ''}
-        <p><b>The shop is open.</b> Send drinks to other blocks to score points.</p>
+        <p><b>The shop is open.</b> Send drinks to other blocks to score points. Power-ups you buy now start next round.</p>
         <button class="btn big" data-act="tab" data-tab="shop">🛒 Go to the Commissary</button>`;
     } else if (r.phase === 'drinks') {
       const st = myTeam ? serveOf(r, myTeam.id) : { state: 'safe' };
@@ -1928,28 +1928,40 @@
   function rewardPicker() {
     const b = (S.bounties || []).find((x) => x.kind === 'winner' && x.status === 'hit' && !x.reward);
     if (!b || S.me?.status !== 'block') return '';
-    return `<section class="card reward-pick"><div class="eyebrow">🏅 Winner’s Bounty hit</div><h3>Pick your reward</h3><p class="fine">It lasts the rest of the night. Anyone on your block can choose.</p>
+    return `<section class="card reward-pick"><div class="eyebrow">🏅 Winner’s Bounty hit</div><h3>Pick your reward</h3><p class="fine">It starts next round and lasts the rest of the night. Anyone on your block can choose.</p>
       <div class="rewards">${Object.entries(S.winnerRewards || {})
         .map(([k, r]) => `<button class="reward" data-act="bounty-reward" data-bounty-id="${b.id}" data-reward="${k}" data-confirm="Take ${h(r.name)} for the rest of the night?"><span class="mega">${r.emoji}</span><b>${h(r.name)}</b><span class="fine">${h(r.desc)}</span></button>`)
         .join('')}</div></section>`;
+  }
+
+  // Power-ups bought or picked this round start the round after.
+  const PENDING = { reflect: '🪞 Reflect', eyespy: '👁️ Eye Spy', bounty: '🎯 Bounty starts counting', bonus: '🎁 Bonus drinks', fewer: '🛡️ Fewer drinks', points: '⭐ +1 point per drink' };
+  function pendingCard() {
+    const list = S.pending || [];
+    const live = S.activeReflect ? '<p>🪞 <b>Your Reflect is on this round.</b> Drinks aimed at you bounce back to their senders.</p>' : '';
+    if (!list.length && !live) return '';
+    return `<section class="card pending"><h3>⏳ Power-ups</h3>${live}${list.length ? `<ul class="roster">${list.map((x) => `<li>${PENDING[x.kind] || h(x.kind)} <span class="fine">starts ${h(x.label)}</span></li>`).join('')}</ul><p class="fine">Everything you buy or pick starts the round after.</p>` : ''}</section>`;
   }
 
   const streakNote = (t) => (t?.drinkStreak ? `🔥 Streak: ${plural(t.drinkStreak, 'drink')} finished in time` : 'No streak yet');
 
   // ---------- phone: Eye Spy, bounties and penalties on My Block ----------
   function blockExtras(myTeam) {
-    const parts = [rewardPicker()];
+    const parts = [rewardPicker(), pendingCard()];
+    const now = S.round && S.round.phase !== 'done' ? S.round.number : (S.rounds || []).length;
+    const perk = (k, base) => base + (S.bounties || []).filter((b) => b.reward === k && b.rewardFrom <= now).length;
+    const [bonus, fewer, pts] = [perk('bonus', myTeam.bonusDrinks || 0), perk('fewer', myTeam.fewerDrinks || 0), perk('points', myTeam.bonusPerDrink || 0)];
     const perks = [
-      myTeam.bonusDrinks && `🎁 Every order you send lands with <b>+${myTeam.bonusDrinks}</b> free drink${myTeam.bonusDrinks === 1 ? '' : 's'}.`,
-      myTeam.fewerDrinks && `🛡️ Every order sent to you lands with <b>${myTeam.fewerDrinks}</b> fewer drink${myTeam.fewerDrinks === 1 ? '' : 's'}.`,
-      myTeam.bonusPerDrink && `⭐ Every drink you send scores <b>+${myTeam.bonusPerDrink}</b> extra point${myTeam.bonusPerDrink === 1 ? '' : 's'}.`,
+      bonus && `🎁 Every order you send lands with <b>+${bonus}</b> free drink${bonus === 1 ? '' : 's'}.`,
+      fewer && `🛡️ Every order sent to you lands with <b>${fewer}</b> fewer drink${fewer === 1 ? '' : 's'}.`,
+      pts && `⭐ Every drink you send scores <b>+${pts}</b> extra point${pts === 1 ? '' : 's'}.`,
     ].filter(Boolean);
     parts.push(`<section class="card"><h3>🔥 Drinking streak</h3><p><b>${plural(myTeam.drinkStreak || 0, 'drink')}</b> finished in time in a row.</p><p class="fine">Finish at the bar inside the time to grow it: you get ${h(money(S.settings.streakCredits || 5))} × your streak each time. Run out of time and it goes back to 0.</p>${perks.map((x) => `<p>${x}</p>`).join('')}</section>`);
     const active = (S.bounties || []).find((b) => b.status === 'active');
     const done = (S.bounties || []).filter((b) => b.status !== 'active').slice(-2);
     if (active || done.length) {
       parts.push(`<section class="card"><h3>🎯 Bounties</h3>
-        ${active ? `<p><b>${active.kind === 'winner' ? 'Winner’s' : 'Open'} Bounty</b>: ${active.sent}/5 drinks sent. Last round: ${active.deadlineRound}.</p><div class="meter"><i style="width:${Math.min(100, active.sent * 20)}%"></i></div>` : ''}
+        ${active ? `<p><b>${active.kind === 'winner' ? 'Winner’s' : 'Open'} Bounty</b>: ${active.sent}/5 drinks sent${active.startRound > now ? `, counting from ${h(slotLabel(active.startRound))}` : ''}. Last round: ${h(slotLabel(active.deadlineRound))}.</p><div class="meter"><i style="width:${Math.min(100, active.sent * 20)}%"></i></div>` : ''}
         ${done.map((b) => `<p class="fine">${b.kind === 'winner' ? 'Winner’s' : 'Open'} Bounty: ${b.status === 'hit' ? `✅ hit${b.kind === 'winner' ? (b.reward ? `: ${h(S.winnerRewards?.[b.reward]?.name || b.reward)}` : ': pick your reward') : ': +25 points'}` : '💀 missed'}</p>`).join('')}
       </section>`);
     }
@@ -2057,7 +2069,8 @@
       for (const o of pending) by[o.targetTeamId] = (by[o.targetTeamId] || 0) + (o.qty || 1);
       main = `<section class="card"><h3>🛒 Shop’s open</h3>
         ${placingsList(r)}
-        <p>Drinks ordered so far: ${Object.entries(by).map(([id, n]) => `${h(teamName(id))} ${n}`).join(' · ') || 'none yet'}${r.reflectTeamId ? ` · 🪞 ${h(teamName(r.reflectTeamId))} played Reflect` : ''}</p>
+        <p>Drinks ordered so far: ${Object.entries(by).map(([id, n]) => `${h(teamName(id))} ${n}`).join(' · ') || 'none yet'}</p>
+        ${(S.reflects || []).filter((x) => x.round >= r.number).map((x) => `<p>🪞 ${h(teamName(x.teamId))} has Reflect for ${h(slotLabel(x.round))}${x.round === r.number ? ' (this round)' : ''}.</p>`).join('')}
         ${btn('🔒 Close shop and start drinks ▶', 'startDrinks', {}, 'big', 'Close the shop and line everyone up at the bar?')}
       </section>`;
     } else if (r.phase === 'drinks') {
@@ -2154,6 +2167,7 @@
       ${S.winner ? winnerCard() : ''}
       ${rewardPicker()}
       ${roundCard()}
+      ${pendingCard()}
       ${augmentCard()}
       ${todoCard()}
       ${lockupRules(S.me.status, live)}
@@ -2214,6 +2228,7 @@
                 <span class="item-n">${h(it.name)}</span>
                 <span class="item-d">${h(it.desc)}</span>
                 <span class="item-p">${soldOut ? 'SOLD OUT' : h(money(priceOf(it)))}${it.type === 'drink' ? ` · ★${it.points || 0}` : ''}${it.stock !== null && !soldOut ? ` · ${it.stock} left` : ''}${it.drinks ? ` · 🍺×${it.drinks}` : ''}</span>
+                ${['reflect', 'eyespy', 'bounty'].includes(it.type) ? '<span class="item-deal">⏳ Starts next round</span>' : ''}
                 ${it.type === 'drink' && it.bundles?.length ? `<span class="item-deal">${it.bundles.map((b) => `${b.label || b.qty}: ${h(money(priceOf({ price: b.cost })))} · ★${b.points}`).join('<br/>')}</span>` : ''}
               </button>`;
             })
@@ -3236,6 +3251,7 @@
       if (r.status === 'requested') toast('🛒 Sent to your block. Get them to second it (or ask the Shot Caller).', 'ok');
       else if (r.status === 'intel') toast(r.hasSnitch ? '📡 Wiretap says: there IS a snitch on your block. 🐀' : '📡 Wiretap says: your block is clean. For now.', r.hasSnitch ? 'warn' : 'ok');
       else if (r.warp) { /* the pull splash says it all */ }
+      else if (r.status === 'stashed' && ['reflect', 'eyespy', 'bounty'].includes(it?.type)) toast(`${it.emoji} Bought. It starts next round.`, 'ok');
       else if (r.status === 'stashed') toast(`${it?.emoji || ''} Stashed on your block. Shhh.`, 'ok');
       else if (it?.type === 'bail') toast('🔑 Bail posted. Welcome your new blockmate.', 'ok');
       else if (it?.type === 'drink') toast(`${it.emoji} Sent to ${teamName(targetTeamId)}. ★ +${drinkQuote(it, qty || 1).points}`, 'ok');
