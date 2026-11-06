@@ -264,16 +264,18 @@ These items are **placeholders**. Names, effects and limits will be finalised la
 | --- | --- | --- | --- | --- |
 | Eye Spy | TBD | Any team | Privately shows a table, round by round since the start of the game, of which team sent drinks to whom and how many | 1 per team per round |
 | Reflect | TBD | Any team | All drinks aimed at the buyer this round go back to their senders | 1 per team per night; only 1 Reflect per round across all teams |
-| Bus ticket | TBD | Bottom 4 only | Sends one top-team player "on the bus" | 1 per team per night |
-| Lock-up | TBD | Bottom 4 only | Sends one top-team player to the holding cell | 1 per team per night |
+| Bus ticket (dropped) | — | Bottom 4 only | Sends one top-team player "on the bus" | 1 per team per night |
+| Lock-up (dropped) | — | Bottom 4 only | Sends one top-team player to the holding cell | 1 per team per night |
 | Open Bounty | **50** | Any team | Commit to hitting a target this round (quantity + drink-type combo, rotates every Act — see below). Hit it within the round limit for a bonus. Miss it and the cost is still spent. | 1 per team per round; only 1 bounty (Open or Winner's) active per team at a time |
 | Winner's Bounty | **50** | **Only the team that just won that round's game** | Same mechanic as Open Bounty, bigger or more varied payout. Unlocked by winning — re-available every time you win again, not a one-off. | 1 per team per round; only 1 bounty active per team at a time |
 
 **Implementation note:** the Spending screen can sell Eye Spy
 (placeholder price 40), Reflect (placeholder price 60) and both
-Bounties (50 each, see below) — see `src/lib/catalogue.ts`. Bus
-ticket and Lock-up stay unpriced (`price: null`) and out of the shop
-UI: their effects need a player status field that doesn't exist yet.
+Bounties (50 each, see below) — see `src/lib/catalogue.ts`. **Bus
+ticket and Lock-up are dropped, not deferred** — decided against
+rather than scheduled for later. They stay seeded (`price: null`,
+permanently out of the shop UI) only so old events don't reference a
+missing row; nothing builds their "on the bus"/holding-cell effects.
 Reflect's "only one per round across all teams" rule and its own
 "one per night" limit are both enforced in `buyItem`
 (`src/app/b/[token]/actions.ts`), not just the `items` table's
@@ -358,7 +360,7 @@ the round deadline are tracked in a new `bounties` table (migration
 (`src/app/host/[eventId]/game/actions.ts`) and sums `drink_orders.qty`
 for the block across that window to decide hit or miss.
 
-- The bottom 4 and the top team are worked out from the live leaderboard when spending opens.
+- ~~The bottom 4 and the top team are worked out from the live leaderboard when spending opens.~~ Moot now that Bus ticket and Lock-up — the only items that needed a bottom-4/top-team split — are dropped.
 - Items that are sold out or used up are greyed out on the team phone.
 
 ---

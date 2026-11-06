@@ -174,12 +174,12 @@ entry is built too: the host enters each block's placing (and score,
 for score-type games) plus any bonus money, which pays prize money
 and bonuses into the ledger and moves the round to spending.
 
-Spending is built, minus two items: team phones place secret drink
-orders (bundle/bottle pricing applied automatically, money charged on
-order) and can buy Eye Spy, Reflect, Open Bounty or Winner's Bounty
-from the shop — Bus ticket and Lock-up stay excluded, see
-`src/lib/catalogue.ts` for why. The host sees every order and
-purchase this round and closes the shop to move on to drinks.
+Spending is built: team phones place secret drink orders
+(bundle/bottle pricing applied automatically, money charged on order)
+and can buy Eye Spy, Reflect, Open Bounty or Winner's Bounty from the
+shop. Bus ticket and Lock-up are dropped, not deferred — see
+`src/lib/catalogue.ts`. The host sees every order and purchase this
+round and closes the shop to move on to drinks.
 
 **Bounties** (`supabase/migrations/0008_bounty_tracking.sql` — run
 this before using them) simplify the design doc's undecided per-Act

@@ -40,14 +40,13 @@ type PlaceholderItem = {
   limit_per_round: number | null;
   limit_per_night: number | null;
   /**
-   * Null means "not priced yet". Eye Spy, Reflect and both Bounties
-   * are buildable with what's in the schema today (see
+   * Null means "not priced". Eye Spy, Reflect and both Bounties are
+   * buildable with what's in the schema today (see
    * supabase/migrations/0008_bounty_tracking.sql for the bounty
-   * table). Bus ticket and Lock-up stay unpriced: their effects need a
-   * player-status field — "on the bus" and the holding cell — that
-   * doesn't exist yet (docs/halloween-game-design.md section 11 and
-   * the schema's "Open decisions"), so selling them now would take
-   * money for nothing.
+   * table). Bus ticket and Lock-up are dropped, not deferred — their
+   * "on the bus"/holding-cell effects were cut rather than built, so
+   * these two rows stay seeded but permanently unpriced and out of
+   * the shop UI.
    */
   price: number | null;
 };
