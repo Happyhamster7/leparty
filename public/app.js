@@ -376,7 +376,7 @@
     el.textContent = msg;
     const box = document.getElementById('toasts');
     box.prepend(el);
-    while (box.children.length > 3) box.lastChild.remove();
+    while (box.children.length > 2) box.lastChild.remove();
     setTimeout(() => el.classList.add('out'), 3400);
     setTimeout(() => el.remove(), 3900);
   }
@@ -1166,36 +1166,32 @@
     const myTeam = team(me.teamId);
     const tabs = [
       ['yard', '📌', 'Now'],
-      ['cell', me.status === 'block' ? '🔐' : me.status === 'holding' ? '🕳️' : '🔒', me.status === 'block' ? 'My Block' : me.status === 'holding' ? 'Holding' : 'Solitary'],
-      ['shop', '🛒', 'Commissary'],
-      ['rap', '🗂️', 'Rap Sheet'],
+      ['shop', '🛒', 'Shop'],
+      ['cell', me.status === 'block' ? '🔐' : me.status === 'holding' ? '🕳️' : '🔒', me.status === 'block' ? 'Block' : me.status === 'holding' ? 'Holding' : 'Solitary'],
       ['board', '🏆', 'Board'],
+      ['rap', '🕵️', 'Secret'],
     ];
     const body = { yard: yardTab, shop: shopTab, cell: cellTab, rap: rapTab, board: boardTab }[ui.tab] || yardTab;
     if (!['yard', 'shop', 'cell', 'rap', 'board'].includes(ui.tab)) ui.tab = 'yard';
     return `
-      <header class="top" ${myTeam && me.status === 'block' ? `style="border-bottom-color:${h(myTeam.color)}"` : ''}>
+      <header class="top slim" ${myTeam && me.status === 'block' ? `style="border-bottom-color:${h(myTeam.color)}"` : ''}>
         <div class="top-row">
           <div class="who">
-            <div class="who-name">${h(me.name)} ${me.isCaptain ? '<span title="Shot Caller">👑</span>' : ''}</div>
-            <div class="who-sub">#${h(me.inmateNo)} · ${statusChip(me)}</div>
+            <span class="who-name">${h(me.name)}${me.isCaptain ? ' <span title="Shot Caller">👑</span>' : ''}</span>
+            ${statusChip(me)}
           </div>
-          <div class="hud">
-            ${hudExtra(me, myTeam)}
-            ${myTeam ? `<div class="credits" title="${h(myTeam.name)} credits"><div class="credits-n">${h(money(myTeam.budget))}</div><div class="credits-l">block ${h(curAct().currency.name)}</div></div>` : ''}
+          <div class="hud pills">
+            ${myTeam ? `<span class="pill pts" title="${h(myTeam.name)} points">★ ${myTeam.points || 0}</span><span class="pill cr" title="${h(myTeam.name)} credits">${h(money(myTeam.budget))}</span>` : ''}
           </div>
         </div>
       </header>
       ${phaseBanner()}
       ${announcement()}
-      ${drinkCard()}
-      ${dealerCard()}
-      ${incomingAlerts()}
       <main class="content">${body()}</main>
       ${ui.sheet ? buySheet() : ''}
       ${actUnseen() ? actModal() : briefingUnseen() ? briefingModal() : ''}
       <nav class="tabs">
-        ${tabs.map(([k, icon, label]) => `<button data-act="tab" data-tab="${k}" class="${ui.tab === k ? 'on' : ''}"><i class="ti">${icon}</i><span>${label}</span>${k === 'rap' && needsMafiaAction() ? '<i class="dot"></i>' : ''}${k === 'yard' && ui.tab !== 'yard' && todoItems().length ? '<i class="dot"></i>' : ''}${k === 'cell' && (myIncoming().length || actionableRequests().length) ? '<i class="dot"></i>' : ''}</button>`).join('')}
+        ${tabs.map(([k, icon, label]) => `<button data-act="tab" data-tab="${k}" class="${ui.tab === k ? 'on' : ''}"><i class="ti">${icon}</i><span>${label}</span>${k === 'rap' && needsMafiaAction() ? '<i class="dot"></i>' : ''}${k === 'yard' && ui.tab !== 'yard' && (todoItems().length || myIncoming().length || needsPick()) ? '<i class="dot"></i>' : ''}${k === 'cell' && actionableRequests().length ? '<i class="dot"></i>' : ''}</button>`).join('')}
       </nav>`;
   }
 
@@ -1627,7 +1623,13 @@
   const seenBriefs = new Set((LS.get('sss_brief') || '').split(',').filter(Boolean));
   const briefingUnseen = () => {
     const g = liveGame();
+    if (needsPick()) return false; // don't eat the pick clock; the rules are in the round card
     return !!g && !seenBriefs.has(briefKey(g));
+  };
+  // This phone's block still has to lock in players for the current round.
+  const needsPick = () => {
+    const r = S?.round;
+    return !!(r && r.phase === 'game' && !r.revealedAt && !r.isGroup && S.me?.status === 'block' && !r.picks?.[S.me.teamId]);
   };
   function markBriefSeen() {
     const g = liveGame();
@@ -1685,7 +1687,7 @@
   const myIncoming = () => (S.orders || []).filter(isIncomingFor(S));
 
   function phaseBanner() {
-    const shut = S.settings.shopOpen === false ? '<div class="phase shop-shut">🔒 COMMISSARY CLOSED</div>' : '';
+    const shut = S.settings.shopOpen === false && !(kind === 'player' && S.round) ? '<div class="phase shop-shut">🔒 COMMISSARY CLOSED</div>' : '';
     return mafiaBanner(S.mafia) + shut;
   }
 
@@ -1805,7 +1807,6 @@
     for (const x of (me.sentences || []).filter((y) => y.status === 'open')) {
       items.push(`<li class="todo sentence"><span class="mega">⚖️</span><div><b>${h(x.text)}</b><div class="fine">from ${h(x.from)}${x.reason ? ` · ${h(x.reason)}` : ''} · ${time(x.ts)}</div></div><button class="btn sm" data-act="sentence-done" data-sentence-id="${x.id}">Done ✅</button></li>`);
     }
-    for (const o of myIncoming()) items.push(goItem('⚠️', `${o.name} incoming from ${teamName(o.fromTeamId)}`, 'Take it or deflect it in the alert at the top.'));
     if (me.dealerDrinks) items.push(goItem('🥃', `Hand out ${plural(me.dealerDrinks, 'drink')}`, 'Pick who drinks at the top of the screen.'));
     if (m.phase === 'night' && me.status !== 'solitary' && !m.myNight) items.push(goItem('🌙', 'Lights Out: pick a name', 'Everyone picks, so nobody can tell who the snitch is.', 'rap'));
     if (m.phase === 'vote' && me.status === 'block' && !m.myVote) items.push(goItem('🗳️', 'Vote in your block vote', 'Majority kicks someone off the block.', 'rap'));
@@ -1898,7 +1899,9 @@
     } else {
       body = '<p class="fine">Waiting for the hosts to start the next round.</p>';
     }
-    return `<section class="card round-card">${head}${body}</section>`;
+    const g = S.games.find((x) => x.id === r.gameId);
+    const rules = g?.rules && ['game', 'results'].includes(r.phase) ? `<details class="howto" ${needsPick() ? '' : 'open'}><summary>📋 How to play</summary><div class="rules">${h(g.rules)}</div>${me.status === 'holding' && g.holdingRule ? `<p class="rule">🕳️ ${h(g.holdingRule)}</p>` : ''}${me.status === 'solitary' && g.solitaryRule ? `<p class="rule">🔒 ${h(g.solitaryRule)}</p>` : ''}</details>` : '';
+    return `<section class="card round-card">${head}${body}${rules}</section>`;
   }
 
   function pickedList(r) {
@@ -1956,7 +1959,7 @@
       fewer && `🛡️ Every order sent to you lands with <b>${fewer}</b> fewer drink${fewer === 1 ? '' : 's'}.`,
       pts && `⭐ Every drink you send scores <b>+${pts}</b> extra point${pts === 1 ? '' : 's'}.`,
     ].filter(Boolean);
-    parts.push(`<section class="card"><h3>🔥 Drinking streak</h3><p><b>${plural(myTeam.drinkStreak || 0, 'drink')}</b> finished in time in a row.</p><p class="fine">Finish at the bar inside the time to grow it: you get ${h(money(S.settings.streakCredits || 5))} × your streak each time. Run out of time and it goes back to 0.</p>${perks.map((x) => `<p>${x}</p>`).join('')}</section>`);
+    if (perks.length) parts.push(`<section class="card"><h3>🏅 Your rewards</h3>${perks.map((x) => `<p>${x}</p>`).join('')}</section>`);
     const active = (S.bounties || []).find((b) => b.status === 'active');
     const done = (S.bounties || []).filter((b) => b.status !== 'active').slice(-2);
     if (active || done.length) {
@@ -2163,26 +2166,24 @@
 
   function yardTab() {
     const live = S.games.find((g) => g.status === 'live');
+    const todos = todoItems().length || eng() === 'amongus';
+    const feedN = ui.feedAll ? 40 : 5;
     return `
       ${S.winner ? winnerCard() : ''}
       ${rewardPicker()}
+      ${incomingAlerts()}
+      ${dealerCard()}
       ${roundCard()}
       ${pendingCard()}
       ${augmentCard()}
-      ${todoCard()}
+      ${todos ? todoCard() : ''}
       ${lockupRules(S.me.status, live)}
       ${matchCard()}
-      ${live ? liveGameCard(live) : ''}
-      ${S.games.length ? `
-        <section class="card">
-          <h3>Tonight's Schedule</h3>
-          <ol class="schedule">
-            ${S.games.map((g) => `<li class="g-${g.status}"><span>${h(g.name)}</span><span class="tag">${g.status === 'live' ? 'LIVE' : g.status === 'done' ? 'DONE' : 'UP NEXT'}</span>${g.results ? `<div class="fine">${Object.entries(g.results).sort((a, b) => b[1] - a[1]).map(([id, n]) => `${h(teamName(id))} ${n > 0 ? '+' : ''}${n}`).join(' · ')}</div>` : ''}</li>`).join('')}
-          </ol>
-        </section>` : ''}
+      ${live && !S.round ? liveGameCard(live) : ''}
       <section class="card">
         <h3>Yard Gossip</h3>
-        ${feedList()}
+        ${feedList(feedN)}
+        ${S.feed.length > 5 ? `<button class="btn ghost sm" data-act="feed-more">${ui.feedAll ? 'Show less' : `Show more (${Math.min(S.feed.length, 40) - 5})`}</button>` : ''}
       </section>`;
   }
 
@@ -2199,43 +2200,44 @@
           : S.settings.spendMode === 'captain' && !me.isCaptain
             ? 'Only your Shot Caller 👑 can spend tonight. Lobby them.'
             : '';
-    // This act's specials go first, then the regular shelf by type.
-    const a = curAct();
-    const groups = [
-      ['act', { label: `${a.emoji} ${a.name} specials` }, S.items.filter((i) => i.act === a.id)],
-      ...Object.entries(S.itemTypes).map(([type, info]) => [type, info, S.items.filter((i) => i.type === type && !i.act)]),
-    ].filter(([, , list]) => list.length);
+    // One category at a time, as compact rows; tap a row for the details and the Buy button.
+    const CATS = [
+      ['drinks', '🍺 Drinks', ['drink', 'gift']],
+      ['power', '⚡ Power-ups', ['reflect', 'eyespy', 'bounty']],
+      ['punish', '😈 Punish', ['punishment']],
+      ['stash', '🔄 Stash', ['deflect', 'immunity', 'intel', 'bail', 'warp']],
+      ['supplies', '🧃 Supplies', ['supply']],
+    ];
+    const cats = CATS.map(([k, label, types]) => [k, label, S.items.filter((i) => types.includes(i.type))]).filter(([, , list]) => list.length);
+    const cur = cats.find(([k]) => k === ui.shopCat) || cats[0];
+    const short = (t) => {
+      const first = String(t || '').split(/(?<=[.!?])\s/)[0];
+      return first.length > 70 ? `${first.slice(0, 68)}…` : first;
+    };
+    const hint = (it) => {
+      if (it.type === 'drink') return it.bundles?.length ? `Deals: ${it.bundles.map((b) => (b.label ? `${h(b.label.toLowerCase())} of ${b.qty} for ${b.cost}` : `${b.qty} for ${b.cost}`)).join(' · ')}` : h(short(it.desc));
+      if (['reflect', 'eyespy', 'bounty'].includes(it.type)) return `⏳ Starts next round · ${h(short(it.desc).replace(/^(Next round|At the start of next round|Starting next round), /i, ''))}`;
+      return `${h(short(it.desc))}${it.drinks ? ` · 🍺×${it.drinks} each` : ''}`;
+    };
+    const pity = myTeam && eng() === 'genshin' ? `<p class="pity">✦ Pity ${myTeam.pity}/${S.settings.warpPity}</p>` : myTeam && eng() === 'tft' && myTeam.augment === 'hustler' ? '<p class="pity">🏷️ Hustler: 25% off everything.</p>' : '';
     return `
-      <section class="card shop-head">
-        <div><div class="eyebrow">Commissary · ${h(curAct().name)}</div><h2>${myTeam ? h(money(myTeam.budget)) : 'No account'}</h2>${myTeam && eng() === 'genshin' ? `<p class="pity">✦ Pity ${myTeam.pity}/${S.settings.warpPity}: a 5★ is guaranteed within ${S.settings.warpPity - myTeam.pity} wish${S.settings.warpPity - myTeam.pity === 1 ? '' : 'es'}.</p>` : ''}${myTeam && eng() === 'tft' && myTeam.augment === 'hustler' ? '<p class="pity">🏷️ Hustler: 25% off everything.</p>' : ''}<p class="fine">${myTeam && willRequest() ? `Spending is a block decision: your picks go to your block, and need the Shot Caller 👑 or ${plural(S.settings.requestSeconds, 'blockmate')} to second them.` : 'Spending comes out of your whole block’s budget.'}</p></div>
-        ${myTeam ? `<div class="inv-mini"><span title="Deflect cards">🔄 ${myTeam.inventory?.deflect || 0}</span><span title="Bribes">💵 ${myTeam.inventory?.immunity || 0}</span></div>` : ''}
-      </section>
       ${blocked ? `<p class="warnbox">${h(blocked)}</p>` : ''}
-      ${groups
-        .map(
-          ([, info, list]) => `
-        <h3 class="section-h">${h(info.label)}</h3>
-        <div class="items">
-          ${list
-            .map((it) => {
-              const soldOut = it.stock !== null && it.stock <= 0;
-              const broke = myTeam && myTeam.budget < priceOf(it);
-              const disabled = blocked || soldOut || broke;
-              const tier = it.type === 'warp' ? 5 : tierOf(it.price);
-              return `<button class="item t-${h(it.type)} tier-${tier}" data-act="buy-open" data-item-id="${it.id}" ${disabled ? 'disabled' : ''}>
-                <span class="item-e">${h(it.emoji)}</span>
-                <span class="item-r" aria-label="${tier} star">${'★'.repeat(tier)}</span>
-                <span class="item-n">${h(it.name)}</span>
-                <span class="item-d">${h(it.desc)}</span>
-                <span class="item-p">${soldOut ? 'SOLD OUT' : h(money(priceOf(it)))}${it.type === 'drink' ? ` · ★${it.points || 0}` : ''}${it.stock !== null && !soldOut ? ` · ${it.stock} left` : ''}${it.drinks ? ` · 🍺×${it.drinks}` : ''}</span>
-                ${['reflect', 'eyespy', 'bounty'].includes(it.type) ? '<span class="item-deal">⏳ Starts next round</span>' : ''}
-                ${it.type === 'drink' && it.bundles?.length ? `<span class="item-deal">${it.bundles.map((b) => `${b.label || b.qty}: ${h(money(priceOf({ price: b.cost })))} · ★${b.points}`).join('<br/>')}</span>` : ''}
-              </button>`;
-            })
-            .join('')}
-        </div>`,
-        )
-        .join('')}`;
+      ${pity}
+      <nav class="shop-cats" role="tablist">${cats.map(([k, label]) => `<button role="tab" aria-selected="${k === cur[0]}" class="${k === cur[0] ? 'on' : ''}" data-act="shop-cat" data-cat="${k}">${label}</button>`).join('')}</nav>
+      <section class="card shop-list">
+        ${(cur ? cur[2] : [])
+          .map((it) => {
+            const soldOut = it.stock !== null && it.stock <= 0;
+            const broke = myTeam && myTeam.budget < priceOf(it);
+            return `<button class="item shop-row t-${h(it.type)}" data-act="buy-open" data-item-id="${it.id}" ${blocked || soldOut || broke ? 'disabled' : ''}>
+              <span class="item-e">${h(it.emoji)}</span>
+              <span class="row-main"><span class="item-n">${h(it.name)}</span><span class="item-d">${hint(it)}</span></span>
+              <span class="row-price"><b>${soldOut ? 'Sold out' : h(money(priceOf(it)))}</b>${it.type === 'drink' ? `<small>★${it.points || 0} each</small>` : it.stock !== null && !soldOut ? `<small>${it.stock} left</small>` : ''}</span>
+            </button>`;
+          })
+          .join('')}
+      </section>
+      ${myTeam && willRequest() ? `<p class="fine center">Spending is a block decision: picks need the Shot Caller 👑 or ${plural(S.settings.requestSeconds, 'blockmate')} to second them.</p>` : ''}`;
   }
 
   function buySheet() {
@@ -2264,13 +2266,13 @@
       const q = ui.sheet.qty || 1;
       const quote = drinkQuote(it, q);
       cost = quote.cost;
-      const quick = [1, ...(it.bundles || []).map((b) => b.qty)];
+      const deals = it.bundles || [];
       qtyPicker = `<label>How many</label>
         <div class="qty-row">
           <button class="btn ghost sm" data-act="qty" data-qty="${q - 1}" ${q <= 1 ? 'disabled' : ''} aria-label="One fewer">−</button>
           <b class="qty-n" aria-live="polite">${q}</b>
           <button class="btn sm" data-act="qty" data-qty="${q + 1}" ${q >= 10 ? 'disabled' : ''} aria-label="One more">+</button>
-          ${quick.length > 1 ? quick.map((n) => { const b = (it.bundles || []).find((x) => x.qty === n); return `<button class="target ${q === n ? 'on' : ''}" data-act="qty" data-qty="${n}">${b ? `${h(b.label || `${n}×`)} deal` : '1'}</button>`; }).join('') : ''}
+          ${deals.map((b) => `<button class="target deal ${q === b.qty ? 'on' : ''}" data-act="qty" data-qty="${b.qty}">${h(b.label || `${b.qty}×`)} deal</button>`).join('')}
         </div>
         <div class="qty-total"><span>${q}× ${h(it.name)}${quote.bundle ? ` <span class="chip yellow">${h(quote.bundle.label || 'bundle')} deal</span>` : ''}</span><span><b>${h(money(cost))}</b> · <b>★ ${plural(quote.points, 'point')}</b></span></div>
         <p class="fine">The block you send them to decides who drinks.${myTeam && myTeam.budget < cost ? ` <b class="red-t">${h(myTeam.name)} only has ${h(money(myTeam.budget))}.</b>` : ''}</p>`;
@@ -2283,11 +2285,11 @@
         ${picker}
         ${qtyPicker}
         ${['supply', 'gift', 'punishment', 'drink'].includes(it.type) ? `
-          <label for="buy_note">${it.type === 'punishment' ? 'Trash talk (optional)' : 'Note for the bartender (optional)'}</label>
-          <input id="buy_note" maxlength="120" placeholder="${it.type === 'punishment' ? 'Enjoy, losers' : 'e.g. vodka soda, extra lime'}" />` : ''}
+          <details class="note-fold"><summary>${it.type === 'punishment' ? '💬 Add some trash talk' : '💬 Add a note for the bartender'}</summary>
+          <input id="buy_note" maxlength="120" aria-label="Note" placeholder="${it.type === 'punishment' ? 'Enjoy, losers' : 'e.g. vodka soda, extra lime'}" /></details>` : ''}
         <div class="row sheet-actions">
           <button class="btn ghost" data-act="sheet-close">Cancel</button>
-          <button class="btn" data-act="buy-confirm" ${ready ? '' : 'disabled'}>${willRequest() ? 'Ask the block' : it.type === 'warp' ? 'Warp' : it.type === 'drink' ? 'Send' : 'Buy'} for ${h(money(cost))}</button>
+          <button class="btn" data-act="buy-confirm" ${ready ? '' : 'disabled'}>${!ready ? (target === 'team' && !ui.sheet.targetTeamId ? 'Pick a block first' : target === 'holdingPlayer' && !ui.sheet.targetPlayerId ? 'Pick someone first' : 'Not enough credits') : `${willRequest() ? 'Ask the block' : it.type === 'warp' ? 'Warp' : it.type === 'drink' ? 'Send' : 'Buy'} for ${h(money(cost))}`}</button>
         </div>
         ${willRequest() ? `<p class="fine center">Goes to your block. It goes through when the Shot Caller approves it or ${plural(secondsNeeded(myTeam, S.me.id), 'blockmate')} second it.</p>` : ''}
         <p class="fine center">${myTeam ? `${h(myTeam.name)} has ${h(money(myTeam.budget))}.` : ''}</p>
@@ -2305,47 +2307,48 @@
     const inv = myTeam.inventory || {};
     const voteOpen = S.mafia.phase === 'vote';
     const immune = new Set(S.mafia.immune);
+    const stash = inv.deflect || inv.immunity;
+    const ledger = myTeam.ledger || [];
+    const orders = S.orders || [];
     return `
       ${me.status === 'solitary' ? lockupRules('solitary') : ''}
       ${eng() === 'genshin' ? partyLineup(myTeam) : ''}
       ${augmentCard()}
       <section class="card cell-head block-banner" style="--c:${h(myTeam.color)}">
-        <div class="eyebrow">Your block · #${rankOf(myTeam.id)} of ${S.teams.length}</div>
+        <div class="eyebrow">Your block · ${ordinal(rankOf(myTeam.id))} of ${S.teams.length}</div>
         <h2>${h(myTeam.name)}${nick(myTeam)}</h2>
         ${myTeam.motto ? `<p class="motto">${h(myTeam.motto)}</p>` : ''}
         ${eng() === 'tft' && myTeam.augment ? `<p class="aug-chip">${S.augments[myTeam.augment].emoji} <b>${h(S.augments[myTeam.augment].name)}</b> · ${h(S.augments[myTeam.augment].desc)}</p>` : ''}
-        <div class="stats"><div><b>${h(money(myTeam.budget))}</b><span>${h(curAct().currency.name)}</span></div><div><b>${myTeam.points || 0}</b><span>points</span></div><div><b>${members.length}/${S.settings.maxBlockSize}</b><span>inmates</span></div></div>
+        <div class="stats"><div><b>${h(money(myTeam.budget))}</b><span>credits</span></div><div><b>★${myTeam.points || 0}</b><span>points</span></div><div><b>🔥${myTeam.drinkStreak || 0}</b><span>streak</span></div></div>
+        <p class="fine">Streak = drinks finished in time in a row. Each time you finish at the bar you get ${h(money(S.settings.streakCredits || 5))} × your streak; run out of time and it resets.</p>
         ${renameControls(myTeam, members)}
       </section>
       ${matchCard()}
       ${requestsCard(myTeam)}
+      ${blockExtras(myTeam)}
       <section class="card">
+        <h3>Blockmates · ${members.length}/${S.settings.maxBlockSize}</h3>
+        <ul class="roster">${members.map((p) => `<li>${p.isCaptain ? '👑' : '🧡'} ${h(p.name)}${p.id === me.id ? ' <span class="fine">(you)</span>' : ''}${p.status === 'solitary' ? ' <span class="chip red">solitary</span>' : ''}${immune.has(p.id) ? ' 🛡️' : ''}${p.drinksOwed ? ` <span class="fine">🍺×${p.drinksOwed}</span>` : ''}</li>`).join('')}</ul>
+      </section>
+      ${stash || (voteOpen && inv.immunity) ? `<section class="card">
         <h3>Contraband stash</h3>
         <div class="stash">
           <div class="stash-i"><span class="mega">🔄</span><b>${inv.deflect || 0}</b><span>Snitch Slips<br/><small>bounce a punishment back</small></span></div>
           <div class="stash-i"><span class="mega">💵</span><b>${inv.immunity || 0}</b><span>Bribes<br/><small>block-vote immunity</small></span></div>
         </div>
         ${voteOpen && inv.immunity && me.status === 'block' ? `
-          <p class="fine">Block vote is open — bribe a guard to protect someone on your block:</p>
+          <p class="fine">Block vote is open: bribe a guard to protect someone on your block.</p>
           <div class="targets">${members.filter((p) => p.status === 'block').map((p) => `<button class="target" style="--c:${h(myTeam.color)}" data-act="immunity" data-target-id="${p.id}" ${immune.has(p.id) ? 'disabled' : ''}>${immune.has(p.id) ? '🛡️ ' : ''}${h(p.name)}</button>`).join('')}</div>` : ''}
-        ${(myTeam.ledger || []).length ? `<h3 class="section-h">🧾 Account activity</h3><ul class="roster ledger">${myTeam.ledger.map((l) => `<li><span class="${l.amount < 0 ? 'red-t' : 'green-t'}">${l.amount > 0 ? '+' : ''}${l.amount}</span> ${h(l.text)} <span class="fine">${time(l.ts)}</span></li>`).join('')}</ul><p class="fine">Unexplained withdrawals happen when a snitch pulls off a sabotage. Who finished a “task” right before it?</p>` : ''}
-        ${(myTeam.intel || []).length ? `<h3 class="section-h">📡 Wiretap results</h3><ul class="roster">${myTeam.intel.map((i) => `<li>${time(i.ts)} — ${i.hasSnitch ? '<b class="red-t">🐀 There IS a snitch on this block.</b>' : '✅ No snitch on this block (at the time).'} <span class="fine">bought by ${h(i.by)}</span></li>`).join('')}</ul>` : ''}
-      </section>
-      <section class="card">
-        <h3>Blockmates</h3>
-        <ul class="roster">${members.map((p) => `<li>${p.isCaptain ? '👑' : '🧡'} ${h(p.name)} <span class="fine">#${h(p.inmateNo)}</span>${p.status === 'solitary' ? ' <span class="chip red">solitary</span>' : ''}${immune.has(p.id) ? ' 🛡️' : ''}${p.drinksOwed ? ` <span class="fine">🍺×${p.drinksOwed}</span>` : ''}</li>`).join('')}</ul>
-      </section>
-      ${blockExtras(myTeam)}
+      </section>` : ''}
+      ${(myTeam.intel || []).length ? `<section class="card"><h3>📡 Wiretap results</h3><ul class="roster">${myTeam.intel.map((i) => `<li>${time(i.ts)}: ${i.hasSnitch ? '<b class="red-t">🐀 There IS a snitch on this block.</b>' : '✅ No snitch on this block (at the time).'} <span class="fine">bought by ${h(i.by)}</span></li>`).join('')}</ul></section>` : ''}
       ${holdingRoster(true)}
-      <section class="card">
-        <h3>Block orders</h3>
-        ${S.orders.length ? `<ul class="orders">${S.orders
-          .map((o) => {
-            const dir = o.type === 'bail' ? `bailed ${h(o.targetPlayerName)}` : o.type === 'supply' ? 'for us' : o.targetTeamId === me.teamId ? `from ${h(teamName(o.fromTeamId))}` : `→ ${h(teamName(o.targetTeamId))}`;
-            return `<li class="s-${o.status}"><span>${h(o.emoji)} <b>${h(o.name)}</b> <span class="fine">${dir}${o.originalFromTeamId === me.teamId ? ` · by ${h(o.buyerName)}` : ''}</span></span><span class="tag">${ORDER_STATUS[o.status] || o.status}</span></li>`;
-          })
-          .join('')}</ul>` : '<p class="empty">Nothing ordered yet. Hit the commissary.</p>'}
-      </section>`;
+      ${ledger.length ? `<details class="card fold"><summary>🧾 Account activity</summary><ul class="roster ledger">${ledger.map((l) => `<li><span class="${l.amount < 0 ? 'red-t' : 'green-t'}">${l.amount > 0 ? '+' : ''}${l.amount}</span> ${h(l.text)} <span class="fine">${time(l.ts)}</span></li>`).join('')}</ul><p class="fine">Unexplained withdrawals happen when a snitch pulls off a sabotage.</p></details>` : ''}
+      ${orders.length ? `<details class="card fold"><summary>📦 Block orders · ${orders.length}</summary><ul class="orders">${orders
+        .map((o) => {
+          const dir = o.type === 'bail' ? `bailed ${h(o.targetPlayerName)}` : o.type === 'supply' ? 'for us' : o.targetTeamId === me.teamId ? `from ${h(teamName(o.fromTeamId))}` : `→ ${h(teamName(o.targetTeamId))}`;
+          return `<li class="s-${o.status}"><span>${h(o.emoji)} <b>${h(o.name)}</b> <span class="fine">${dir}${o.originalFromTeamId === me.teamId ? ` · by ${h(o.buyerName)}` : ''}</span></span><span class="tag">${ORDER_STATUS[o.status] || o.status}</span></li>`;
+        })
+        .join('')}</ul></details>` : ''}`;
   }
 
   function renameControls(t, members) {
@@ -3171,6 +3174,8 @@
     tab: (d) => { ui.tab = d.tab; ui.reveal = false; ui.revealTask = false; LS.set('sss_tab', d.tab); window.scrollTo(0, 0); render(); },
     atab: (d) => { ui.atab = d.tab; LS.set('sss_atab', d.tab); render(); },
     senders: () => { ui.senders = !ui.senders; render(); },
+    'feed-more': () => { ui.feedAll = !ui.feedAll; render(); },
+    'shop-cat': (d) => { ui.shopCat = d.cat; render(); },
     'bounty-reward': async (d) => {
       if (d.confirm && !confirm(d.confirm)) return;
       const res = await act('bountyReward', { bountyId: d.bountyId, reward: d.reward });
