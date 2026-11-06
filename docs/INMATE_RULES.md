@@ -74,17 +74,12 @@ Each act also turns your phone into that game's screen: a GTA smartphone, the Ge
 
 When a punishment hits your block, every phone gets an alert: **Take it** or **Deflect**. A deflected punishment can be deflected again. The Holding Cell can't deflect anything. Other blocks only see that you bought "something suspicious" when you buy a Snitch Slip or a Bribe.
 
-## Each game
+## Each round
 
-When a game starts, a **briefing** pops up on every phone. Read it, then tap **Got it**.
-
-1. The briefing explains how to play, plus any extra rules for people in the Holding Cell or Solitary.
-2. Every briefing has a **Classified** box. Open it privately. If it says "No orders for you this round," play to win.
-3. Most games run in **heats**, a few blocks at a time. My Block tells you "You're up," "Up next," or "Sitting this one out," and the TV shows who's playing.
-4. The hosts pay out credits after each heat.
-5. Each finished game counts as a round: Holding Cell and Solitary inmates owe their penalty drinks, and solitary sentences go down by one.
-
-If the hosts change the rules mid-game, the briefing pops up again.
+1. **Game:** your phone shows who's on your block. Pick the players the game needs within **60 seconds** (anyone on your phone can lock it in). Anyone who played either of the last 2 games sits this one out. Miss the minute and the app picks for you. A **briefing** also pops up with how to play; open its **Classified** box privately.
+2. **Results:** the hosts enter placings. Prize money: 1st 90, 2nd 75, 3rd 65, 4th 55, then 45, 40, 30, 20.
+3. **Spending:** the shop opens. Send drinks (they score when they're served), and maybe buy **Reflect** (bounce this round's drinks back, and take their points), **Eye Spy** (see who's been sending what to whom) or a **Bounty** (send 5 drinks within 3 rounds for a reward; miss and it's 3 Spirit shots).
+4. **Drinks:** blocks go to the bar one at a time, fewest drinks first. Your phone tells you your place in line. When you're up, you have **30 seconds** to finish your drinks. Film it for the TV. Run out of time and it's an extra shot next round.
 
 ## Holding Cell and Solitary
 

@@ -238,3 +238,30 @@ body[data-era='slammer'] .item-deal { color: var(--muted); font-size: 12px; }
 
 /* The act shells scroll inside their own frame and lock the page; this layout scrolls the page itself. */
 body[data-era='slammer'][data-kind='player'] { overflow: visible; overflow-x: hidden; }
+
+/* ---------- rounds, in kit components ---------- */
+body[data-era='slammer'] .phases li { background: none; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-slot.png') 9 fill / 9px stretch; padding: 0 2px; color: var(--muted); font-family: 'Pixelify Sans', monospace; }
+body[data-era='slammer'] .phases li.on { border-image-source: url('/pixel/frame-slot-active.png'); color: var(--text); }
+body[data-era='slammer'] .big-cd, body[data-era='slammer'] .cd.big-cd { font-family: 'Jersey 10', monospace; font-size: 54px; color: var(--orange2); }
+body[data-era='slammer'] .cd.low { color: var(--red); }
+body[data-era='slammer'] .tv-big { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: clamp(26px, 2.6vw, 42px); color: var(--text); }
+body[data-era='slammer'] .pick { background: none; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-btn-paper.png') 12 fill / 9px stretch; padding: 2px 4px; }
+body[data-era='slammer'] .pick.on { border-image: url('/pixel/frame-slot-active.png') 9 fill / 9px stretch; }
+body[data-era='slammer'] .pick.off { border-image: url('/pixel/frame-slot-locked.png') 9 fill / 9px stretch; opacity: 0.75; }
+body[data-era='slammer'] .pick input { accent-color: var(--green); }
+body[data-era='slammer'] .placings li, body[data-era='slammer'] .bar-now { background: none; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-paper.png') 9 fill / 9px stretch; border-left: 9px solid var(--c); }
+body[data-era='slammer'] .placings .rank { font-family: 'Jersey 10', monospace; font-size: 24px; }
+body[data-era='slammer'] .placings b { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 22px; color: var(--green); }
+body[data-era='slammer'] .bar-tile { border-style: solid; border-width: 12px; border-image: url('/pixel/frame-card.png') 12 fill / 12px stretch; background: color-mix(in srgb, var(--c) 30%, var(--card2)); }
+body[data-era='slammer'] .bar-tile.s-serving { outline: none; border-width: 15px; border-image: url('/pixel/frame-card-active.png') 15 fill / 15px stretch; }
+body[data-era='slammer'] .bar-tile-t { background: rgba(59, 29, 18, 0.82); color: var(--card); font-family: 'Pixelify Sans', monospace; }
+body[data-era='slammer'] .bar-tile-t b { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 22px; color: var(--gold-light); }
+body[data-era='slammer'] .winner { background: #4a2e1c url('/pixel/floor.png') repeat; }
+body[data-era='slammer'] .winner-in { border-style: solid; border-width: 18px; border-image: url('/pixel/frame-wood.png') 18 fill / 18px stretch; padding: 24px 48px; }
+body[data-era='slammer'] .winner-in .logo { color: var(--gold-light); }
+body[data-era='slammer'] .meter { background: none; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-bar.png') 9 fill / 9px stretch; height: 30px; }
+body[data-era='slammer'] .meter i { background: var(--green); }
+body[data-era='slammer'] table.spy th { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 20px; color: var(--orange2); }
+body[data-era='slammer'] .pour li b { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 26px; }
+body[data-era='slammer'] .bar-now-h b { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 30px; }
+body[data-era='slammer'] .win-note { color: var(--orange2); }

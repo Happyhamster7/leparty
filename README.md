@@ -131,14 +131,18 @@ The drinks go to the block as one order in the hosts' 🧾 Orders tab ("5× Spir
 - **Block identity.** The Shot Caller (or anyone, if the block has none) names the block and sets a motto. It shows on phones, the Board and the TV, and the block's color tints its members' screens.
 - **Less clutter.** Bookings roll up into one feed line. Lights Out names are grouped by block, with your own block first. Host inmate lists are sorted block by block.
 
-### Rounds
+### Rounds (LeParty's game loop)
 
-**Finishing a game** in a host console pays out credits and counts as a round:
+The night runs in rounds, from the host console's **🎲 Round** tab. Each round has four phases, shown as a strip on phones, the TV and the host console:
 
-- everyone in the Holding Cell owes `+1` drink, and everyone in Solitary owes `+2` (both configurable),
-- solitary sentences tick down by one, and anyone whose time is up walks out.
+1. **Game.** A host picks a game from the schedule and taps **Start round**. Each game says how many players a block sends (0 = group game, everyone plays). Every phone shows its block's roster and gets **60 seconds** to lock in its players. Anyone who played either of the last **2** non-group games sits out, greyed out with "Played recently". When every block has picked, or the minute runs out, the picks show on every screen at once; blocks that didn't pick get an automatic pick, favouring whoever has played least. The shop is closed.
+2. **Results.** The host enters each block's placing, plus an optional bonus. Prize money is paid by place: **90 / 75 / 65 / 55 / 45 / 40 / 30 / 20** credits. First place unlocks the Winner's Bounty.
+3. **Spending.** The shop opens. Blocks send drinks (each scores its menu points when it's served, not when it's bought) and buy items: **🪞 Reflect** (60, one per block per night, one block per round) bounces every drink aimed at you this round back to its sender, with the points going to you; **👁️ Eye Spy** (40, one per round) shows who sent what to whom, round by round; **🎯 Open Bounty** and **🏅 Winner's Bounty** (50 each, one running per block) pay 100 credits, or +1 point per drink for the rest of the night, if the block sends 5 drinks within 3 rounds, and cost 3 Spirit shots the next round if it doesn't.
+4. **Drinks.** The host taps **Close shop and start drinks**. Every block that was sent drinks queues for the bar, fewest drinks first (ties random), with penalties owed from earlier rounds added in. The host console becomes the bar: what to pour for whoever's up and who's next, a Show senders toggle, **Next** (serves the next block, starts its **30-second** clock and pays the senders' points), **Back** (undo a Next pressed by mistake) and **Done in time**. A block whose clock runs out owes an extra shot of the cheapest drink next round. Phones show "Safe this round", your place in line, or the countdown with a Film it button; the TV becomes a wall of block tiles, each playing its Shot Cam clip once one is filmed. The round ends by itself when every block is done.
 
-Each game can also carry its own extra rule for Holding and for Solitary (e.g. "flip with your off hand" or "full cup every flip"). There's also an "End round now" button if you want penalties without a game.
+When a round ends, the Holding Cell owes `+1` drink each and Solitary `+2` (configurable), and solitary sentences tick down. Hosts can drop drinks straight into the next queue (**Assign drinks**), and at the end of the night **Crown the winner** puts the winning block on every screen.
+
+The older tools still work outside rounds: heats and **Finish & pay out** in the Games tab, and **End round now** for Holding/Solitary penalties without a game.
 
 ### Game briefings
 

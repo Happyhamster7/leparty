@@ -18,7 +18,7 @@
   let pendingRender = false;
   const ui = {
     tab: LS.get('sss_tab') || 'yard',
-    atab: LS.get('sss_atab') || 'orders',
+    atab: LS.get('sss_atab') || 'round',
     sheet: null, // { itemId, targetTeamId, targetPlayerId }
     reveal: false,
     revealTask: false,
@@ -974,6 +974,21 @@
   const buzz = (p) => navigator.vibrate && navigator.vibrate(p);
   function notifyChanges(prev, next) {
     if (!prev || !next.me) return;
+    const r = next.round;
+    const pr = prev.round;
+    if (r && next.me.teamId) {
+      if (r.phase === 'game' && (!pr || pr.number !== r.number) && !r.isGroup && next.me.status === 'block') {
+        toast(`🎲 Round ${r.number}: ${r.gameName}. Pick your players!`, 'warn');
+        buzz([150, 80, 150]);
+      }
+      if (r.phase === 'spending' && pr?.phase !== 'spending') toast('🛒 The shop is open. Send some drinks.', 'ok');
+      const mine = r.serves?.find((s) => s.teamId === next.me.teamId);
+      const was = pr?.serves?.find((s) => s.teamId === next.me.teamId);
+      if (mine?.servedAt && !was?.servedAt) {
+        toast('🍻 Your block is up at the bar!', 'warn');
+        buzz([300, 100, 300, 100, 300]);
+      }
+    }
     const was = new Set((prev.orders || []).filter(isIncomingFor(prev)).map((o) => o.id + o.bounces));
     for (const o of next.orders.filter(isIncomingFor(next))) {
       if (!was.has(o.id + o.bounces)) {
@@ -1823,9 +1838,275 @@
     </section>`;
   }
 
+  // ---------- rounds (LeParty's game loop) ----------
+  const PHASES = [['game', 'Game'], ['results', 'Results'], ['spending', 'Spending'], ['drinks', 'Drinks']];
+  const fmtLeft = (ts) => {
+    const s = Math.max(0, Math.ceil((ts - Date.now()) / 1000));
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  };
+  const until = (ts, cls = '') => `<b class="cd ${cls}" data-until="${ts}">${fmtLeft(ts)}</b>`;
+  const names = (ids) => (ids || []).map((id) => h(player(id)?.name || '?')).join(', ');
+  const placeName = (n) => ordinal(n);
+  const roundTeams = () => S.teams.filter((t) => S.players.some((p) => p.teamId === t.id));
+
+  // The four phases as a progress strip, current one lit.
+  function phaseStrip(r) {
+    const i = PHASES.findIndex(([k]) => k === r.phase);
+    return `<ol class="phases">${PHASES.map(([k, label], n) => `<li class="${k === r.phase ? 'on' : n < i || r.phase === 'done' ? 'past' : ''}">${label}</li>`).join('')}</ol>`;
+  }
+
+  // Where a block stands at the bar this round.
+  function serveOf(r, teamId) {
+    const s = r?.serves?.find((x) => x.teamId === teamId);
+    if (!s) return { state: 'safe' };
+    if (s.finishedAt) return { state: s.missed ? 'missed' : 'done', s };
+    if (s.servedAt) return { state: 'serving', s };
+    const line = r.serves.filter((x) => !x.servedAt);
+    return { state: 'queued', s, pos: line.indexOf(s) + 1 };
+  }
+  const SERVE_LABEL = { safe: 'Safe this round', queued: 'In line', serving: 'At the bar', done: 'Done', missed: 'Out of time' };
+
+  // ---------- phone: the round card on Now ----------
+  function roundCard() {
+    const r = S.round;
+    if (!r) return '';
+    const me = S.me;
+    const myTeam = team(me.teamId);
+    const head = `<div class="eyebrow">Round ${r.number}${r.phase === 'done' ? ' · over' : ''}</div><h2>${h(r.gameName)}</h2>${r.phase === 'done' ? '' : phaseStrip(r)}`;
+    let body = '';
+    if (r.phase === 'game') {
+      if (r.isGroup) body = '<p>Group game: everyone on every block plays.</p>';
+      else if (r.revealedAt) body = `<p>Playing for ${myTeam ? h(myTeam.name) : 'each block'}: <b>${names(r.picks[me.teamId])}</b></p>${pickedList(r)}`;
+      else if (!myTeam || me.status !== 'block') body = `<p>Blocks are picking ${plural(r.playersNeeded, 'player')} each. ${until(r.pickDeadline)} left.</p>`;
+      else body = pickForm(r, myTeam);
+    } else if (r.phase === 'results') {
+      body = `<p>Playing: <b>${names(r.picks[me.teamId]) || 'nobody from your block'}</b></p><p class="fine">The hosts are entering the results.</p>`;
+    } else if (r.phase === 'spending') {
+      const place = r.placings[me.teamId];
+      body = `${place ? `<p>Your block came <b>${placeName(place)}</b> and won <b>${h(money(r.prizes[me.teamId] || 0))}</b>.</p>` : ''}
+        ${r.winnerTeamId && r.winnerTeamId === me.teamId ? '<p class="win-note">🏅 You won this game: the Winner’s Bounty is unlocked in the shop.</p>' : ''}
+        <p><b>The shop is open.</b> Send drinks to other blocks to score points.</p>
+        <button class="btn big" data-act="tab" data-tab="shop">🛒 Go to the Commissary</button>`;
+    } else if (r.phase === 'drinks') {
+      const st = myTeam ? serveOf(r, myTeam.id) : { state: 'safe' };
+      if (st.state === 'safe') body = '<p class="serve safe">Safe this round. Nobody sent your block anything.</p>';
+      else if (st.state === 'queued') body = `<p class="serve">Your block owes <b>${plural(st.s.drinks, 'drink')}</b>. You’re <b>${placeName(st.pos)}</b> in line for the bar.</p>`;
+      else if (st.state === 'serving') body = `<div class="serve now"><div>🍻 Your block is at the bar: <b>${plural(st.s.drinks, 'drink')}</b></div><div class="big-cd">${until(st.s.timerEndsAt)}</div><p class="fine">Finish inside the time or it’s an extra shot next round. Film it for the TV.</p>${canFilm() ? '<button class="btn big" data-act="shotcam">🎥 Film it</button>' : ''}</div>`;
+      else body = `<p class="serve ${st.state}">${st.state === 'missed' ? '⏰ Out of time: an extra shot next round.' : '✅ Done. Nice drinking.'}</p>`;
+      const line = r.serves.filter((s) => !s.finishedAt).map((s) => `${h(teamName(s.teamId))}${s.servedAt ? ' 🍻' : ''}`);
+      if (line.length) body += `<p class="fine">At the bar: ${line.join(' → ')}</p>`;
+    } else {
+      body = '<p class="fine">Waiting for the hosts to start the next round.</p>';
+    }
+    return `<section class="card round-card">${head}${body}</section>`;
+  }
+
+  function pickedList(r) {
+    return `<ul class="picks">${roundTeams().map((t) => `<li style="--c:${h(t.color)}">${chip(t)} <span>${names(r.picks[t.id]) || '—'}</span>${r.pickedBy[t.id] === 'auto' ? ' <small class="fine">auto</small>' : ''}</li>`).join('')}</ul>`;
+  }
+
+  function pickForm(r, myTeam) {
+    const mates = blockmates(myTeam.id);
+    const chosen = new Set(ui.picks?.round === r.number ? ui.picks.ids : r.picks[myTeam.id] || []);
+    const eligible = new Set(r.eligible);
+    const need = Math.min(r.playersNeeded, eligible.size);
+    return `<p>Pick <b>${plural(need, 'player')}</b> for ${h(myTeam.name)}. ${until(r.pickDeadline)} left, then the app picks for you.</p>
+      <form data-form="pick" class="pick-list">
+        ${mates
+          .map((p) => {
+            const ok = eligible.has(p.id);
+            const why = p.status === 'solitary' ? 'In solitary' : r.cooldown.includes(p.id) ? 'Played recently' : '';
+            return `<label class="pick ${ok ? '' : 'off'} ${chosen.has(p.id) ? 'on' : ''}"><input type="checkbox" name="p:${p.id}" ${chosen.has(p.id) ? 'checked' : ''} ${ok ? '' : 'disabled'} data-pick="${p.id}" /><span class="pick-n">${h(p.name)}${p.id === S.me.id ? ' (you)' : ''}</span><small>${why || `${plural(S.played?.[p.id] || 0, 'game')} played`}</small></label>`;
+          })
+          .join('')}
+        <button class="btn big" ${chosen.size === need ? '' : 'disabled'}>${r.picks[myTeam.id] ? 'Change picks' : 'Lock in'} (${chosen.size}/${need})</button>
+      </form>
+      ${r.picks[myTeam.id] ? `<p class="fine">Locked in: ${names(r.picks[myTeam.id])}. Waiting for ${plural(roundTeams().length - r.picked.length, 'block')}.</p>` : ''}`;
+  }
+
+  // ---------- phone: Eye Spy, bounties and penalties on My Block ----------
+  function blockExtras(myTeam) {
+    const parts = [];
+    const active = (S.bounties || []).find((b) => b.status === 'active');
+    const done = (S.bounties || []).filter((b) => b.status !== 'active').slice(-2);
+    if (active || done.length || myTeam.bonusPerDrink) {
+      parts.push(`<section class="card"><h3>🎯 Bounties</h3>
+        ${active ? `<p><b>${active.kind === 'winner' ? 'Winner’s' : 'Open'} Bounty</b>: ${active.sent}/5 drinks sent. Last round: ${active.deadlineRound}.</p><div class="meter"><i style="width:${Math.min(100, active.sent * 20)}%"></i></div>` : ''}
+        ${done.map((b) => `<p class="fine">${b.kind === 'winner' ? 'Winner’s' : 'Open'} Bounty: ${b.status === 'hit' ? '✅ hit' : '💀 missed'}</p>`).join('')}
+        ${myTeam.bonusPerDrink ? `<p>⭐ Permanent bonus: <b>+${myTeam.bonusPerDrink}</b> point${myTeam.bonusPerDrink === 1 ? '' : 's'} on every drink you send.</p>` : ''}
+      </section>`);
+    }
+    const owed = (S.penaltiesOwed || []).filter((x) => x.teamId === myTeam.id);
+    if (owed.length) parts.push(`<section class="card"><h3>⏰ Owed next round</h3><ul class="roster">${owed.map((x) => `<li>${x.qty}× ${h(x.drinkName)} <span class="fine">${h(x.reason)}</span></li>`).join('')}</ul></section>`);
+    if (S.eyeSpy) {
+      const rows = S.eyeSpy.rows;
+      parts.push(`<section class="card"><h3>👁️ Eye Spy</h3><p class="fine">Every drink sent up to ${time(S.eyeSpy.at)}.</p>
+        ${rows.length ? `<table class="spy"><thead><tr><th>Round</th><th>From</th><th>To</th><th>Drinks</th></tr></thead><tbody>${rows.map((x) => `<tr><td>${x.round || '–'}</td><td>${h(teamName(x.from))}</td><td>${h(teamName(x.to))}</td><td>${x.qty}</td></tr>`).join('')}</tbody></table>` : '<p class="empty">Nobody has sent anything yet.</p>'}
+      </section>`);
+    }
+    return parts.join('');
+  }
+
+  // ---------- TV ----------
+  function tvRound() {
+    const r = S.round;
+    if (!r) return '';
+    const head = `<div class="eyebrow">Round ${r.number}</div><h2 class="tv-live">${h(r.gameName)}</h2>${r.phase === 'done' ? '' : phaseStrip(r)}`;
+    if (r.phase === 'game') {
+      if (!r.revealedAt) return `${head}<p class="tv-big">Blocks are picking their players: ${until(r.pickDeadline)}</p>
+        <ul class="picks">${roundTeams().map((t) => `<li style="--c:${h(t.color)}">${chip(t)} <span>${r.picked.includes(t.id) ? '✅ locked in' : '…'}</span></li>`).join('')}</ul>${cooldownLine(r)}`;
+      return `${head}${r.isGroup ? '<p class="tv-big">Everyone plays!</p>' : pickedList(r)}${cooldownLine(r)}`;
+    }
+    if (r.phase === 'results') return `${head}<p class="tv-big">Results coming up…</p>${r.isGroup ? '' : pickedList(r)}`;
+    if (r.phase === 'spending') return `${head}${placingsList(r)}<p class="tv-big">🛒 The shop is open. Send your drinks.</p>`;
+    if (r.phase === 'drinks') return `${head}${tvBarGrid(r)}`;
+    return `${head}${placingsList(r)}<p class="fine">Round over. Next round soon.</p>`;
+  }
+
+  function cooldownLine(r) {
+    return r.cooldown?.length ? `<p class="fine">Sitting out (played recently): ${names(r.cooldown)}</p>` : '';
+  }
+
+  function placingsList(r) {
+    const rows = Object.entries(r.placings || {}).sort((a, b) => a[1] - b[1]);
+    return rows.length ? `<ol class="placings">${rows.map(([id, n]) => `<li style="--c:${h(team(id)?.color || '#888')}"><span class="rank">${placeName(n)}</span><span class="b-n">${h(teamName(id))}</span><b>+${h(money(r.prizes[id] || 0))}</b></li>`).join('')}</ol>` : '';
+  }
+
+  // During drinks the TV is a grid: one tile per block, its clip looping once it's filmed.
+  function tvBarGrid(r) {
+    const clipFor = (teamId) => (S.clips || []).find((c) => c.teamId === teamId && c.status === 'live' && c.ts >= r.drinksStartedAt);
+    const blocks = [...roundTeams(), ...(r.serves.some((s) => s.teamId === HOLDING) ? [{ id: HOLDING, name: 'Holding Cell', color: '#888888' }] : [])];
+    return `<div class="bar-grid">${blocks
+      .map((t) => {
+        const st = serveOf(r, t.id);
+        const clip = clipFor(t.id);
+        return `<div class="bar-tile s-${st.state}" style="--c:${h(t.color)}">
+          ${clip ? `<video src="${h(clip.url)}" autoplay muted loop playsinline></video>` : ''}
+          <div class="bar-tile-t"><b>${h(t.name)}</b><span>${st.state === 'serving' ? until(st.s.timerEndsAt) : st.state === 'queued' ? `${placeName(st.pos)} in line · ${plural(st.s.drinks, 'drink')}` : SERVE_LABEL[st.state]}</span></div>
+        </div>`;
+      })
+      .join('')}</div>`;
+  }
+
+  function winnerCard() {
+    const w = team(S.winner.teamId);
+    return w ? `<section class="card winner-card" style="--c:${h(w.color)}"><div class="eyebrow">Tonight’s winner</div><h2>👑 ${h(w.name)}</h2><p>${plural(w.points || 0, 'point')}${S.me?.teamId === w.id ? '. That’s your block!' : ''}</p></section>` : '';
+  }
+
+  function winnerScreen() {
+    const w = S.winner && team(S.winner.teamId);
+    if (!w) return '';
+    return `<div class="winner" style="--c:${h(w.color)}"><div class="winner-in"><div class="eyebrow">Tonight’s winner</div><h1 class="logo">👑 ${h(w.name)}</h1><p class="tv-big">${plural(w.points || 0, 'point')}</p>${w.motto ? `<p class="tagline">${h(w.motto)}</p>` : ''}</div></div>`;
+  }
+
+  // ---------- host: the Round tab ----------
+  function aRound() {
+    const r = S.round;
+    const running = r && r.phase !== 'done';
+    const teams = roundTeams();
+    let main = '';
+    if (!running) {
+      const games = [...S.games].sort((a, b) => (a.status === 'upcoming' ? 0 : 1) - (b.status === 'upcoming' ? 0 : 1));
+      main = `<section class="card">
+        <h3>${r ? `Round ${r.number} is done.` : 'No rounds yet.'} Start round ${(r?.number || 0) + 1}</h3>
+        ${games.length ? `<form data-admin="startRound" class="row wrap">
+          <label class="grow">Game<select id="rd_game" name="gameId">${games.map((g) => `<option value="${g.id}">${h(g.name)} · ${g.playersNeeded ? `${plural(g.playersNeeded, 'player')} per block` : 'group game'}${g.status === 'done' ? ' (played)' : ''}</option>`).join('')}</select></label>
+          <button class="btn big">▶ Start round</button>
+        </form>
+        <p class="fine">Blocks get ${S.settings.pickSeconds} seconds to pick players on their phones. The shop closes until results are in.</p>` : '<p>Add games in the 🏁 Games tab first, with how many players each block sends.</p>'}
+      </section>`;
+    } else if (r.phase === 'game') {
+      main = `<section class="card"><h3>Picks${r.revealedAt ? ' are in' : `: ${until(r.pickDeadline)} left`}</h3>
+        <ul class="picks">${teams.map((t) => `<li style="--c:${h(t.color)}">${chip(t)} <span>${r.picks[t.id] ? names(r.picks[t.id]) : 'waiting…'}</span>${r.pickedBy[t.id] === 'auto' ? ' <small class="fine">auto</small>' : ''}</li>`).join('')}</ul>
+        ${cooldownLine(r)}
+        <div class="row wrap">${r.revealedAt ? '' : btn('Reveal now (auto-pick the rest)', 'revealPicks', {}, 'ghost')}${btn('Game’s over: enter results ▶', 'toResults', {}, 'big')}</div>
+      </section>`;
+    } else if (r.phase === 'results') {
+      const prizes = S.settings.prizeMoney;
+      main = `<section class="card"><h3>Results for ${h(r.gameName)}</h3>
+        <form data-form="results" class="results-form">
+          ${teams.map((t, i) => `<div class="res-row" style="--c:${h(t.color)}">${chip(t)}
+            <label>Place<select name="place:${t.id}">${['', ...teams.map((_, n) => n + 1)].map((n) => `<option value="${n}" ${n === i + 1 ? 'selected' : ''}>${n ? `${placeName(n)} · +${prizes[Math.min(n, prizes.length) - 1]}` : 'No placing'}</option>`).join('')}</select></label>
+            <label>Bonus<input name="bonus:${t.id}" type="number" min="0" placeholder="0" /></label></div>`).join('')}
+          <button class="btn big">Pay prizes and open the shop</button>
+        </form>
+        <p class="fine">Prize money by place: ${prizes.map((n, i) => `${placeName(i + 1)} ${n}`).join(' · ')}. The 1st-place block unlocks the Winner’s Bounty.</p>
+      </section>`;
+    } else if (r.phase === 'spending') {
+      const pending = S.orders.filter((o) => o.type === 'drink' && o.status === 'pending' && !o.queuedRound);
+      const by = {};
+      for (const o of pending) by[o.targetTeamId] = (by[o.targetTeamId] || 0) + (o.qty || 1);
+      main = `<section class="card"><h3>🛒 Shop’s open</h3>
+        ${placingsList(r)}
+        <p>Drinks ordered so far: ${Object.entries(by).map(([id, n]) => `${h(teamName(id))} ${n}`).join(' · ') || 'none yet'}${r.reflectTeamId ? ` · 🪞 ${h(teamName(r.reflectTeamId))} played Reflect` : ''}</p>
+        ${btn('🔒 Close shop and start drinks ▶', 'startDrinks', {}, 'big', 'Close the shop and line everyone up at the bar?')}
+      </section>`;
+    } else if (r.phase === 'drinks') {
+      main = barPanel(r);
+    }
+    return `
+      ${S.winner ? `<section class="card"><h3>👑 ${h(teamName(S.winner.teamId))} has been crowned</h3><p class="fine">The TV is showing the winner.</p>${btn('Hide the winner screen', 'clearWinner', {}, 'ghost sm')}</section>` : ''}
+      ${r ? `<section class="card round-head"><div class="eyebrow">Round ${r.number}</div><h2>${h(r.gameName)}</h2>${r.phase === 'done' ? '<p class="fine">Done.</p>' : phaseStrip(r)}</section>` : ''}
+      ${main}
+      ${!r || r.phase !== 'drinks' ? assignDrinksCard() : ''}
+      ${S.penaltiesOwed?.length ? `<section class="card"><h3>⏰ Owed next round</h3><ul class="roster">${S.penaltiesOwed.map((x) => `<li>${h(teamName(x.teamId))}: ${x.qty}× ${h(x.drinkName)} <span class="fine">${h(x.reason)}</span></li>`).join('')}</ul></section>` : ''}
+      ${(S.bounties || []).some((b) => b.status === 'active') ? `<section class="card"><h3>🎯 Bounties running</h3><ul class="roster">${S.bounties.filter((b) => b.status === 'active').map((b) => `<li>${h(teamName(b.teamId))}: ${b.kind === 'winner' ? 'Winner’s' : 'Open'} · ${b.sent}/5 sent · last round ${b.deadlineRound}</li>`).join('')}</ul></section>` : ''}
+      ${S.rounds?.length ? `<section class="card"><h3>Rounds so far</h3><ol class="schedule">${S.rounds.map((x) => `<li><span>${x.number}. ${h(x.gameName)}</span><span class="fine">${x.winnerTeamId ? `🏆 ${h(teamName(x.winnerTeamId))}` : x.phase}</span></li>`).join('')}</ol></section>` : ''}
+      <section class="card">
+        <h3>👑 End of the night</h3>
+        <form data-admin="crownWinner" class="row wrap">
+          <label class="grow">Winner<select id="cw_team" name="teamId">${standings().map((t, i) => `<option value="${t.id}">${i === 0 ? '🏆 ' : ''}${h(t.name)} · ${plural(t.points || 0, 'pt')}</option>`).join('')}</select></label>
+          <button class="btn" data-confirm="Crown this block? Every screen shows the winner.">Crown the winner</button>
+        </form>
+      </section>`;
+  }
+
+  function assignDrinksCard() {
+    const drinks = S.items.filter((i) => i.type === 'drink' && i.active);
+    if (!drinks.length || !S.teams.length) return '';
+    return `<section class="card"><h3>🍺 Assign drinks</h3><p class="fine">Goes into the next drinks queue, like any order. Scores for nobody.</p>
+      <form data-admin="assignDrinks" class="grid2">
+        <label>Block<select id="as_team" name="teamId">${S.teams.map((t) => `<option value="${t.id}">${h(t.name)}</option>`).join('')}</select></label>
+        <label>Drink<select id="as_item" name="itemId">${drinks.map((d) => `<option value="${d.id}">${h(d.emoji)} ${h(d.name)}</option>`).join('')}</select></label>
+        <label>How many<input id="as_qty" name="qty" type="number" min="1" max="10" value="1" /></label>
+        <label>Reason<input id="as_why" name="reason" maxlength="80" placeholder="broke a house rule" /></label>
+        <button class="btn span2">Add to the queue</button>
+      </form></section>`;
+  }
+
+  // The bartender's view: who's drinking, who's next and what to pour.
+  function barPanel(r) {
+    const serving = r.serves.filter((s) => s.servedAt && !s.finishedAt);
+    const next = r.serves.find((s) => !s.servedAt);
+    const pour = (s) => `<ul class="pour">${Object.values(
+      s.breakdown.reduce((acc, b) => {
+        const k = b.name.replace(/^\d+× /, '').replace(/ \(.*\)$/, '');
+        acc[k] = acc[k] || { k, emoji: b.emoji, qty: 0, from: [] };
+        acc[k].qty += b.qty;
+        acc[k].from.push(`${b.from}${b.note ? ` “${b.note}”` : ''}`);
+        return acc;
+      }, {}),
+    )
+      .map((x) => `<li><span class="mega">${h(x.emoji)}</span><b>${x.qty}× ${h(x.k)}</b>${ui.senders ? `<small>${h(x.from.join(', '))}</small>` : ''}</li>`)
+      .join('')}</ul>`;
+    return `<section class="card bar">
+      <div class="row wrap bar-actions">
+        ${next ? btn(`Next: ${h(teamName(next.teamId))} ▶`, 'barNext', {}, 'big') : '<p class="fine">Everyone’s been served.</p>'}
+        ${serving.length ? btn('↶ Back', 'barBack', {}, 'ghost') : ''}
+        <button class="btn ghost sm" data-act="senders">${ui.senders ? 'Hide senders' : 'Show senders'}</button>
+      </div>
+      ${serving.map((s) => `<div class="bar-now" style="--c:${h(team(s.teamId)?.color || '#888')}"><div class="bar-now-h"><b>${h(teamName(s.teamId))}</b>${until(s.timerEndsAt, 'big-cd')}${btn('Done in time ✓', 'barDone', { teamId: s.teamId }, 'sm')}</div>${pour(s)}</div>`).join('')}
+      ${next ? `<h3>Up next: ${h(teamName(next.teamId))} · ${plural(next.drinks, 'drink')}</h3>${pour(next)}` : ''}
+      <h3>The line</h3>
+      <ol class="queue">${r.serves.map((s) => { const st = serveOf(r, s.teamId); return `<li class="s-${st.state}">${h(teamName(s.teamId))} · ${plural(s.drinks, 'drink')} <span class="tag">${SERVE_LABEL[st.state]}</span></li>`; }).join('') || '<li>Nobody owes anything.</li>'}</ol>
+    </section>`;
+  }
+
   function yardTab() {
     const live = S.games.find((g) => g.status === 'live');
     return `
+      ${S.winner ? winnerCard() : ''}
+      ${roundCard()}
       ${augmentCard()}
       ${todoCard()}
       ${lockupRules(S.me.status, live)}
@@ -1992,6 +2273,7 @@
         <h3>Blockmates</h3>
         <ul class="roster">${members.map((p) => `<li>${p.isCaptain ? '👑' : '🧡'} ${h(p.name)} <span class="fine">#${h(p.inmateNo)}</span>${p.status === 'solitary' ? ' <span class="chip red">solitary</span>' : ''}${immune.has(p.id) ? ' 🛡️' : ''}${p.drinksOwed ? ` <span class="fine">🍺×${p.drinksOwed}</span>` : ''}</li>`).join('')}</ul>
       </section>
+      ${blockExtras(myTeam)}
       ${holdingRoster(true)}
       <section class="card">
         <h3>Block orders</h3>
@@ -2204,6 +2486,7 @@
     const lockup = inHolding().length + inSolitary().length;
     const pendingClaims = S.claims.filter((c) => c.status === 'pending').length;
     const tabs = [
+      ['round', `🎲 Round${S.round && S.round.phase !== 'done' ? ` <b class="badge">${h(S.round.phase)}</b>` : ''}`],
       ['orders', `🧾 Orders${pending + incoming ? ` <b class="badge">${pending + incoming}</b>` : ''}`],
       ['money', '💰 Payouts'],
       ['games', '🏁 Games'],
@@ -2215,7 +2498,7 @@
       ['clips', `🎥 Clips${S.clips.filter((c) => c.status === 'pending').length ? ` <b class="badge">${S.clips.filter((c) => c.status === 'pending').length}</b>` : ''}`],
       ['settings', '⚙️ Settings'],
     ];
-    const body = { orders: aOrders, money: aMoney, games: aGames, blocks: aBlocks, lockup: aLockup, tasks: aTasks, shop: aShop, mafia: aMafia, clips: aClips, settings: aSettings }[ui.atab] || aOrders;
+    const body = { round: aRound, orders: aOrders, money: aMoney, games: aGames, blocks: aBlocks, lockup: aLockup, tasks: aTasks, shop: aShop, mafia: aMafia, clips: aClips, settings: aSettings }[ui.atab] || aRound;
     return `
       <header class="top admin-top">
         <div class="top-row">
@@ -2316,6 +2599,7 @@
         <form data-admin="addGame" class="grid2">
           <label>Name<input id="g_name" name="name" maxlength="60" required placeholder="Flip Cup Prison Riot" /></label>
           <label>Description<input id="g_desc" name="desc" maxlength="200" placeholder="Best of 3. Winner +30." /></label>
+          <label>Players per block (0 = group game, everyone plays)<input id="g_pn" name="playersNeeded" type="number" min="0" max="10" value="1" /></label>
           <label class="span2">📋 How to play (shown on every phone when the game goes live)<textarea id="g_rules" name="rules" rows="5" maxlength="1200" placeholder="Each block lines up on one side of the table.&#10;Drink, then flip your cup from the edge.&#10;Next person goes when the cup lands upside down.&#10;First block to finish wins."></textarea></label>
           <label>🕳️ Extra rule for Holding Cell<input id="g_hold" name="holdingRule" maxlength="160" placeholder="Must flip with your off hand" /></label>
           <label>🔒 Extra rule for Solitary<input id="g_sol" name="solitaryRule" maxlength="160" placeholder="Drink a full cup every flip" /></label>
@@ -2328,7 +2612,7 @@
         <p class="fine">Finishing a game pays out credits and counts as a round: Holding Cell and Solitary owe their penalty drinks, and solitary sentences tick down.</p>
         ${S.games.length ? `<ul class="glist">${S.games
           .map((g) => `<li class="g-${g.status}">
-            <div class="g-h"><b>${h(g.name)}</b> <span class="tag">${g.status.toUpperCase()}</span></div>
+            <div class="g-h"><b>${h(g.name)}</b> <span class="tag">${g.status.toUpperCase()}</span> <span class="fine">${g.playersNeeded ? `${plural(g.playersNeeded, 'player')} per block` : 'group game'}</span></div>
             ${g.desc ? `<div class="fine">${h(g.desc)}</div>` : ''}
             ${g.rules ? `<div class="rules small">${h(g.rules)}</div>` : '<div class="fine">⚠️ No how-to-play rules yet.</div>'}
             ${g.holdingRule ? `<div class="fine">🕳️ ${h(g.holdingRule)}</div>` : ''}${g.solitaryRule ? `<div class="fine">🔒 ${h(g.solitaryRule)}</div>` : ''}${g.sabotage ? `<div class="fine">🐀 ${h(g.sabotage)}</div>` : ''}
@@ -2347,6 +2631,7 @@
                 <input type="hidden" name="gameId" value="${g.id}" />
                 <label>Name<input id="ge_${g.id}_name" name="name" value="${h(g.name)}" maxlength="60" /></label>
                 <label>Description<input id="ge_${g.id}_desc" name="desc" value="${h(g.desc)}" maxlength="200" /></label>
+                <label>Players per block (0 = group game)<input id="ge_${g.id}_pn" name="playersNeeded" type="number" min="0" max="10" value="${h(g.playersNeeded ?? 1)}" /></label>
                 <label class="span2">📋 How to play<textarea id="ge_${g.id}_rules" name="rules" rows="5" maxlength="1200">${h(g.rules)}</textarea></label>
                 <label>🕳️ Holding Cell rule<input id="ge_${g.id}_hold" name="holdingRule" value="${h(g.holdingRule)}" maxlength="160" /></label>
                 <label>🔒 Solitary rule<input id="ge_${g.id}_sol" name="solitaryRule" value="${h(g.solitaryRule)}" maxlength="160" /></label>
@@ -2767,11 +3052,12 @@
     const solitary = inSolitary();
     return `
       <div class="tv">
+        ${winnerScreen()}
         ${audio?.state === 'running' ? '' : '<button class="tv-sound" data-act="tv-sound">🔊 Tap once to enable intro sound</button>'}
         <header class="tv-h">${hero(true)}${oneAct() ? '' : `<div class="act-tag">${curAct().emoji} Act ${curAct().numeral} · ${h(curAct().name)}</div>`}<h1 class="logo">${h(S.settings.partyName)}</h1><div class="tagline">${h(curAct().tagline)}</div></header>
         ${phaseBanner()}
         ${S.announcement ? `<div class="announce tv-ann"><span class="mega">📣</span><div class="announce-t">${h(S.announcement.text)}</div></div>` : ''}
-        <div class="tv-grid">
+        <div class="tv-grid ${S.round?.phase === 'drinks' ? 'drinks' : ''}">
           <section class="card">
             <h2>🏆 Standings</h2><p class="fine">Blocks score points for every drink they send. Most points wins.</p>
             <ol class="tv-board">${rows.map((t, i) => `<li style="--c:${h(t.color)}"><span class="rank">${i + 1}</span><span class="b-n">${h(t.name)}${t.nickname || streakBits(t).length ? `<small>${[t.nickname && h(t.nickname), ...streakBits(t)].filter(Boolean).join(' · ')}</small>` : ''}</span><span class="tv-bar"><i style="width:${((t.points || 0) / max) * 100}%"></i></span><b>${t.points || 0}</b></li>`).join('') || '<p class="empty">No blocks yet</p>'}</ol>
@@ -2781,8 +3067,8 @@
               return `<div class="fine">${chip(t)} ${Object.values(tally).reduce((a, b) => a + b, 0)} votes${top ? ` · leading: <b>${h(player(top[0])?.name)}</b> (${top[1]})` : ''}</div>`;
             }).join('')}` : ''}
           </section>
-          <section class="card">
-            ${live ? `<div class="eyebrow">🏁 Now in the yard</div><h2 class="tv-live">${h(live.name)}</h2>${live.desc ? `<p>${h(live.desc)}</p>` : ''}${tvHeat(live)}${live.rules ? `<div class="rules tv-rules">${h(live.rules)}</div>` : ''}${live.holdingRule ? `<p class="rule">🕳️ Holding: ${h(live.holdingRule)}</p>` : ''}${live.solitaryRule ? `<p class="rule">🔒 Solitary: ${h(live.solitaryRule)}</p>` : ''}` : next ? `<div class="eyebrow">Up next</div><h2 class="tv-live">${h(next.name)}</h2>` : `<div class="eyebrow">Yard</div><h2>Free time 🍻</h2>`}
+          <section class="card tv-center">
+            ${S.round ? tvRound() : live ? `<div class="eyebrow">🏁 Now in the yard</div><h2 class="tv-live">${h(live.name)}</h2>${live.desc ? `<p>${h(live.desc)}</p>` : ''}${tvHeat(live)}${live.rules ? `<div class="rules tv-rules">${h(live.rules)}</div>` : ''}${live.holdingRule ? `<p class="rule">🕳️ Holding: ${h(live.holdingRule)}</p>` : ''}${live.solitaryRule ? `<p class="rule">🔒 Solitary: ${h(live.solitaryRule)}</p>` : ''}` : next ? `<div class="eyebrow">Up next</div><h2 class="tv-live">${h(next.name)}</h2>` : `<div class="eyebrow">Yard</div><h2>Free time 🍻</h2>`}
             ${m.phase === 'night' ? '<div class="tv-night">🌙<br/>LIGHTS OUT<br/><small>Everyone pick a name on your phone.</small></div>' : ''}
             ${S.orders.length ? `<h3>⚠️ Incoming punishments</h3><ul class="feed">${S.orders.map((o) => `<li><span class="f-e">${h(o.emoji)}</span><span class="f-t">${h(o.name)}: ${h(teamName(o.fromTeamId))} → <b>${h(teamName(o.targetTeamId))}</b> (deciding…)</span></li>`).join('')}</ul>` : ''}
           </section>
@@ -2810,6 +3096,7 @@
   const ACTIONS = {
     tab: (d) => { ui.tab = d.tab; ui.reveal = false; ui.revealTask = false; LS.set('sss_tab', d.tab); window.scrollTo(0, 0); render(); },
     atab: (d) => { ui.atab = d.tab; LS.set('sss_atab', d.tab); render(); },
+    senders: () => { ui.senders = !ui.senders; render(); },
     reveal: () => { ui.reveal = !ui.reveal; render(); },
     'reveal-task': () => {
       ui.revealTask = !ui.revealTask;
@@ -2964,6 +3251,12 @@
 
   document.addEventListener('change', (e) => {
     const el = e.target;
+    if (el.dataset.pick && S?.round) {
+      const form = el.closest('form');
+      ui.picks = { round: S.round.number, ids: [...form.querySelectorAll('[data-pick]:checked')].map((x) => x.dataset.pick) };
+      render();
+      return;
+    }
     if (el.id && $app.contains(el)) drafts[el.id] = el.type === 'checkbox' ? el.checked : el.value;
     if (el.dataset.change) {
       const { change, ...args } = el.dataset;
@@ -2989,6 +3282,24 @@
   }
 
   const FORMS = {
+    pick: async (data) => {
+      const playerIds = Object.keys(data).filter((k) => k.startsWith('p:') && data[k]).map((k) => k.slice(2));
+      const res = await act('pick', { playerIds });
+      if (res.ok) {
+        ui.picks = null;
+        toast('✅ Locked in.', 'ok');
+      }
+    },
+    results: async (data) => {
+      const placings = {};
+      const bonus = {};
+      for (const [k, v] of Object.entries(data)) {
+        if (k.startsWith('place:') && v) placings[k.slice(6)] = v;
+        if (k.startsWith('bonus:') && v) bonus[k.slice(6)] = v;
+      }
+      const res = await admin('enterResults', { placings, bonus });
+      if (res.ok) toast('Prizes paid. The shop is open.', 'ok');
+    },
     join: async (data, form) => {
       const res = await send({ kind: 'join', name: data.name });
       if (res.ok) {
@@ -3086,4 +3397,19 @@
   document.addEventListener('pointerdown', () => kind === 'tv' && unlockAudio());
   // Keep the phone's clock honest without re-rendering the page.
   setInterval(() => document.querySelectorAll('.ph-clock').forEach((el) => (el.textContent = clock())), 20000);
+  // Round timers count down every second. When one runs out, the TV and hosts nudge the server
+  // straight away (phones wait a few seconds in case one of those already did).
+  let lastTick = 0;
+  setInterval(() => {
+    document.querySelectorAll('[data-until]').forEach((el) => {
+      el.textContent = fmtLeft(Number(el.dataset.until));
+      el.classList.toggle('low', Number(el.dataset.until) - Date.now() < 10000);
+    });
+    const due = S?.nextDeadline;
+    const grace = kind === 'player' ? 4000 + Math.random() * 3000 : 300;
+    if (due && Date.now() > due + grace && Date.now() - lastTick > 3000) {
+      lastTick = Date.now();
+      send({ kind: 'tick' });
+    }
+  }, 1000);
 })();

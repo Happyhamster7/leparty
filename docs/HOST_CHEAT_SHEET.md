@@ -68,17 +68,17 @@ The default lineup is **The Long Night**: I · Booking Day (Cell Tosses, soups a
 - Warp odds and pity live in Settings. Limit any shop item to one act in the Commissary tab.
 - In Act III, remind Shot Callers to pick their augment (it's at the top of their Now tab).
 
-## Every game
+## Every round (🎲 Round tab)
 
-1. **Games tab, set matchups.** Tap **Pairs** (or Threes, Fours, All blocks). A leftover block joins the last heat, so nobody plays alone. Use **Custom heat** for a final between winners.
-2. **Start heat 1.** The game goes live: the briefing pops up on every phone, the TV shows the rules and who's playing, and each hidden snitch gets a sabotage in their Classified box. Phones show "You're up," "Up next" or "Sitting this one out."
-3. **Explain it out loud** while people read. Point out the Holding and Solitary rules for this game.
-4. **During play:** one host referees; the other works the Orders tab (deliver drinks, enforce punishments) and the Sabotage tab (judge claims).
-5. **Score heat** after each heat (for example 30 / 10), then **Start heat** on the next one.
-6. **Finish and pay out** once the last heat is scored. Heat credits are already paid, so add only bonuses. Leave "Apply round penalties" ticked: Holding owes 1 drink, Solitary 2, and sentences drop by one.
+1. **Start round:** pick the game. Players per block is set on each game in the Games tab (0 = group game). Phones get 60 seconds to lock in their players; the briefing pops up too.
+2. **Explain it out loud** while blocks pick. **Reveal now** auto-picks for any block that's dawdling.
+3. **Play the game,** then tap **Game's over: enter results.**
+4. **Results:** set each block's place (and any bonus), then **Pay prizes and open the shop.** Prize money: 90 / 75 / 65 / 55 / 45 / 40 / 30 / 20.
+5. **Spending:** give blocks a minute or two to send drinks and buy items. Then **Close shop and start drinks.**
+6. **The bar:** tap **Next** to call the next block (fewest drinks first). Pour what the panel says. Tap **Done in time ✓** if they finish inside 30 seconds; if the clock runs out they owe an extra shot next round, automatically. **Back** undoes a Next pressed by mistake. The round ends when every block is done.
 7. **Snitch phase** if it's due (see Running the snitch game).
 
-No heats set? Everyone plays at once and you pay out in Finish and pay out, as before.
+At the end of the night: **Crown the winner** (most points is pre-selected).
 
 ## Calls you make
 

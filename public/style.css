@@ -1485,3 +1485,62 @@ body[data-era='heist'] .drinkcard .btn { color: #1d0b0b; }
 .qty-row .target { flex: 0 0 auto; padding: 8px 12px; }
 .qty-total { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; background: var(--card2); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; }
 .item-deal { font-size: 12px; color: var(--muted); line-height: 1.35; }
+
+/* ---------- rounds ---------- */
+.phases { display: flex; gap: 4px; list-style: none; padding: 0; margin: 8px 0 12px; counter-reset: ph; }
+.phases li { flex: 1; text-align: center; font-size: 12px; font-weight: 700; padding: 5px 2px; background: var(--card2); color: var(--muted); border-radius: 6px; counter-increment: ph; }
+.phases li::before { content: counter(ph) '. '; }
+.phases li.on { background: var(--orange); color: var(--on-accent); }
+.phases li.past { color: var(--text); opacity: 0.7; }
+.cd { font-variant-numeric: tabular-nums; }
+.cd.low { color: var(--red); }
+.big-cd, .cd.big-cd { font-family: var(--stencil); font-size: 44px; line-height: 1; }
+.tv-big { font-size: clamp(20px, 2.2vw, 34px); font-weight: 700; margin: 10px 0; }
+.picks { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 6px; }
+.picks li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pick-list { display: grid; gap: 6px; }
+.pick { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--card2); font-weight: 600; }
+.pick input { width: 22px; height: 22px; }
+.pick small { color: var(--muted); font-weight: 400; }
+.pick.on { border-color: var(--orange); }
+.pick.off { opacity: 0.5; }
+.serve { font-size: 16px; }
+.serve.now { text-align: center; padding: 8px 0; }
+.serve.missed { color: var(--red); }
+.win-note { font-weight: 700; color: var(--orange2); }
+.placings { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 6px; }
+.placings li { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 10px; padding: 6px 10px; background: var(--card2); border-left: 6px solid var(--c); border-radius: 8px; }
+.bar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-top: 10px; }
+.bar-tile { position: relative; aspect-ratio: 4 / 3; background: color-mix(in srgb, var(--c) 35%, var(--card2)); border-radius: 10px; overflow: hidden; display: flex; align-items: flex-end; }
+.bar-tile video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.bar-tile-t { position: relative; width: 100%; display: flex; justify-content: space-between; gap: 6px; padding: 6px 10px; background: rgba(0, 0, 0, 0.55); color: #fff; font-size: 15px; }
+.bar-tile.s-serving { outline: 4px solid var(--yellow); }
+.bar-tile.s-safe, .bar-tile.s-done { opacity: 0.75; }
+.bar-tile.s-missed .bar-tile-t span { color: #ff8a80; }
+.winner { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(10, 5, 2, 0.82); text-align: center; }
+.winner-in { padding: 40px; }
+.winner .logo { font-size: clamp(60px, 9vw, 150px); }
+.winner-card h2 { font-size: 34px; }
+.meter { height: 14px; background: var(--card2); border-radius: 7px; overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--green); }
+table.spy { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.spy th, table.spy td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--divider); }
+.results-form { display: grid; gap: 8px; }
+.res-row { display: grid; grid-template-columns: 1fr 1.4fr 0.8fr; align-items: end; gap: 10px; padding-left: 8px; border-left: 6px solid var(--c); }
+.grow { flex: 1; min-width: 200px; }
+.bar-actions .btn.big { flex: 1; width: auto; }
+.bar-now { border-left: 8px solid var(--c); padding: 8px 12px; margin: 10px 0; background: var(--card2); }
+.bar-now-h { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 22px; }
+.pour { list-style: none; padding: 0; margin: 6px 0; display: grid; gap: 6px; }
+.pour li { display: flex; align-items: center; gap: 10px; font-size: 20px; flex-wrap: wrap; }
+.pour small { flex-basis: 100%; color: var(--muted); font-size: 13px; }
+.queue { padding-left: 22px; }
+.queue li { padding: 4px 0; }
+.queue .s-serving { font-weight: 800; }
+.queue .s-done, .queue .s-missed { opacity: 0.6; }
+/* During drinks the TV turns its right side into the bar wall: one tile per block. */
+.tv-grid.drinks .tv-feed, .tv-grid.drinks .tv-qr { display: none; }
+.tv-grid.drinks .tv-center { grid-column: 2 / span 2; grid-row: 1 / span 2; }
+.tv-grid.drinks .bar-grid { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+.tv-grid.drinks .bar-tile { aspect-ratio: 16 / 10; }
+.tv-grid.drinks .bar-tile-t { font-size: clamp(16px, 1.4vw, 24px); }
