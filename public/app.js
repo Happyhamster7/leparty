@@ -62,6 +62,7 @@
   function hudExtra(me, myTeam) {
     const id = eng();
     if (id === 'gta') return wantedStars(me);
+    if (id === 'pixel' && myTeam) return `<div class="hud-x px-pts" title="${h(myTeam.name)} points"><i class="px-ico px-ico--star"></i>${plural(myTeam.points || 0, 'pt')}</div>`;
     if (id === 'genshin' && myTeam) return `<div class="hud-x" title="Pulls since your last 5★">✦ Pity ${myTeam.pity ?? 0}/${S.settings.warpPity}</div>`;
     if (id === 'tft' && myTeam) {
       const st = myTeam.streak || 0;

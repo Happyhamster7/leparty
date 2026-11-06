@@ -1011,7 +1011,8 @@ test('a new night runs one look with no acts to switch to', () => {
   const g = new Game();
   assert.equal(g.s.settings.actSet, 'single');
   assert.equal(g.acts.length, 1);
-  assert.equal(g.act.id, 'booking');
+  assert.equal(g.act.id, 'slammer');
+  assert.equal(g.act.engine, 'pixel');
   assert.throws(() => g.setAct({ index: 1 }), GameError);
   assert.equal(new Game({ ...structuredClone(g.s), settings: { ...g.s.settings, actSet: 'gone' } }).acts.length, 1);
 });
