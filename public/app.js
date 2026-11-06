@@ -346,6 +346,12 @@
     const t = team(S.me?.teamId);
     return eng() === 'tft' && t?.augment === 'hustler' ? Math.ceil(it.price * 0.75) : it.price;
   };
+  // Cost and points of sending qty of a drink: a matching bundle, or straight per-drink rates (same as the server).
+  const drinkQuote = (it, qty) => {
+    const bundle = (it.bundles || []).find((b) => b.qty === qty);
+    const cost = bundle ? bundle.cost : it.price * qty;
+    return { cost: priceOf({ price: cost }), points: bundle ? bundle.points : (it.points || 0) * qty, bundle };
+  };
   const ordinal = (n) => {
     const v = n % 100;
     return `${n}${v >= 11 && v <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th'}`;
@@ -1879,7 +1885,8 @@
                 <span class="item-r" aria-label="${tier} star">${'★'.repeat(tier)}</span>
                 <span class="item-n">${h(it.name)}</span>
                 <span class="item-d">${h(it.desc)}</span>
-                <span class="item-p">${soldOut ? 'SOLD OUT' : h(money(priceOf(it)))}${it.stock !== null && !soldOut ? ` · ${it.stock} left` : ''}${it.drinks ? ` · 🍺×${it.drinks}` : ''}</span>
+                <span class="item-p">${soldOut ? 'SOLD OUT' : h(money(priceOf(it)))}${it.type === 'drink' ? ` · ★${it.points || 0}` : ''}${it.stock !== null && !soldOut ? ` · ${it.stock} left` : ''}${it.drinks ? ` · 🍺×${it.drinks}` : ''}</span>
+                ${it.type === 'drink' && it.bundles?.length ? `<span class="item-deal">${it.bundles.map((b) => `${b.label || b.qty}: ${h(money(priceOf({ price: b.cost })))} · ★${b.points}`).join('<br/>')}</span>` : ''}
               </button>`;
             })
             .join('')}
@@ -1908,17 +1915,36 @@
         <p class="fine">Blocks max out at ${S.settings.maxBlockSize} inmates.</p>`;
       ready = !!ui.sheet.targetPlayerId;
     }
+    let qtyPicker = '';
+    let cost = priceOf(it);
+    if (it.type === 'drink') {
+      const q = ui.sheet.qty || 1;
+      const quote = drinkQuote(it, q);
+      cost = quote.cost;
+      const quick = [1, ...(it.bundles || []).map((b) => b.qty)];
+      qtyPicker = `<label>How many</label>
+        <div class="qty-row">
+          <button class="btn ghost sm" data-act="qty" data-qty="${q - 1}" ${q <= 1 ? 'disabled' : ''} aria-label="One fewer">−</button>
+          <b class="qty-n" aria-live="polite">${q}</b>
+          <button class="btn sm" data-act="qty" data-qty="${q + 1}" ${q >= 10 ? 'disabled' : ''} aria-label="One more">+</button>
+          ${quick.length > 1 ? quick.map((n) => { const b = (it.bundles || []).find((x) => x.qty === n); return `<button class="target ${q === n ? 'on' : ''}" data-act="qty" data-qty="${n}">${b ? `${h(b.label || `${n}×`)} deal` : '1'}</button>`; }).join('') : ''}
+        </div>
+        <div class="qty-total"><span>${q}× ${h(it.name)}${quote.bundle ? ` <span class="chip yellow">${h(quote.bundle.label || 'bundle')} deal</span>` : ''}</span><span><b>${h(money(cost))}</b> · <b>★ ${plural(quote.points, 'point')}</b></span></div>
+        <p class="fine">The block you send them to decides who drinks.${myTeam && myTeam.budget < cost ? ` <b class="red-t">${h(myTeam.name)} only has ${h(money(myTeam.budget))}.</b>` : ''}</p>`;
+      if (myTeam && myTeam.budget < cost) ready = false;
+    }
     return `
       <div class="sheet-bg" data-act="sheet-close"></div>
       <div class="sheet ${enter(`buy:${it.id}`)}" role="dialog" aria-label="Buy ${h(it.name)}">
         <div class="sheet-h"><span class="mega">${h(it.emoji)}</span><div><h2>${h(it.name)}</h2><p class="fine">${h(it.desc)}</p></div></div>
         ${picker}
-        ${['supply', 'gift', 'punishment'].includes(it.type) ? `
+        ${qtyPicker}
+        ${['supply', 'gift', 'punishment', 'drink'].includes(it.type) ? `
           <label for="buy_note">${it.type === 'punishment' ? 'Trash talk (optional)' : 'Note for the bartender (optional)'}</label>
           <input id="buy_note" maxlength="120" placeholder="${it.type === 'punishment' ? 'Enjoy, losers' : 'e.g. vodka soda, extra lime'}" />` : ''}
         <div class="row sheet-actions">
           <button class="btn ghost" data-act="sheet-close">Cancel</button>
-          <button class="btn" data-act="buy-confirm" ${ready ? '' : 'disabled'}>${willRequest() ? 'Ask the block' : it.type === 'warp' ? 'Warp' : 'Buy'} for ${h(money(priceOf(it)))}</button>
+          <button class="btn" data-act="buy-confirm" ${ready ? '' : 'disabled'}>${willRequest() ? 'Ask the block' : it.type === 'warp' ? 'Warp' : it.type === 'drink' ? 'Send' : 'Buy'} for ${h(money(cost))}</button>
         </div>
         ${willRequest() ? `<p class="fine center">Goes to your block. It goes through when the Shot Caller approves it or ${plural(secondsNeeded(myTeam, S.me.id), 'blockmate')} second it.</p>` : ''}
         <p class="fine center">${myTeam ? `${h(myTeam.name)} has ${h(money(myTeam.budget))}.` : ''}</p>
@@ -2273,7 +2299,7 @@
       </section>
       <section class="card">
         <h3>Correct points</h3>
-        <p class="fine">Points go up by 1 automatically whenever a block sends a drink (a gift, or a punishment with penalty drinks). Cancelling that order takes the point back. Use this only to fix a mistake.</p>
+        <p class="fine">Points go up automatically when a block sends drinks, by each drink’s points on the menu (bundles score a bit more). A Shot Penalty scores 1. Refunding the order takes its points back. Use this only to fix a mistake.</p>
         <form data-admin="adjustPoints" class="grid2">
           <label>Block<select id="pts_team" name="teamId">${S.teams.map((t) => `<option value="${t.id}">${h(t.name)}</option>`).join('')}</select></label>
           <label>Points (negative = take away)<input id="pts_amt" name="amount" type="number" required placeholder="1" /></label>
@@ -2517,6 +2543,7 @@
       <label>Price<input id="${prefix}_price" name="price" type="number" min="0" value="${h(it.price ?? 10)}" /></label>
       <label>Type<select id="${prefix}_type" name="type">${types}</select></label>
       <label>Stock (blank = ∞)<input id="${prefix}_stock" name="stock" type="number" min="0" value="${it.stock ?? ''}" /></label>
+      <label>Points per drink (Send drinks)<input id="${prefix}_points" name="points" type="number" min="0" max="50" value="${h(it.points ?? 0)}" /></label>
       <label>Penalty drinks each (punishments)<input id="${prefix}_drinks" name="drinks" type="number" min="0" max="5" value="${h(it.drinks ?? 0)}" /></label>
       <label>Credit drain (punishments)<input id="${prefix}_drain" name="drain" type="number" min="0" value="${h(it.drain ?? 0)}" /></label>
       <label>Drained credits go to the buyer<select id="${prefix}_steal" name="steal"><option value="false">No, they vanish</option><option value="true" ${it.steal ? 'selected' : ''}>Yes, it's a robbery</option></select></label>
@@ -2746,7 +2773,7 @@
         ${S.announcement ? `<div class="announce tv-ann"><span class="mega">📣</span><div class="announce-t">${h(S.announcement.text)}</div></div>` : ''}
         <div class="tv-grid">
           <section class="card">
-            <h2>🏆 Standings</h2><p class="fine">+1 point every time a block sends a drink. Most points wins.</p>
+            <h2>🏆 Standings</h2><p class="fine">Blocks score points for every drink they send. Most points wins.</p>
             <ol class="tv-board">${rows.map((t, i) => `<li style="--c:${h(t.color)}"><span class="rank">${i + 1}</span><span class="b-n">${h(t.name)}${t.nickname || streakBits(t).length ? `<small>${[t.nickname && h(t.nickname), ...streakBits(t)].filter(Boolean).join(' · ')}</small>` : ''}</span><span class="tv-bar"><i style="width:${((t.points || 0) / max) * 100}%"></i></span><b>${t.points || 0}</b></li>`).join('') || '<p class="empty">No blocks yet</p>'}</ol>
             ${m.phase === 'vote' ? `<h3 class="section-h">🗳️ Block votes</h3>${S.teams.map((t) => {
               const tally = m.tallies?.[t.id] || {};
@@ -2846,11 +2873,12 @@
       render();
     },
     'pick-target': (d) => { ui.sheet.targetTeamId = d.teamId; render(); },
+    qty: (d) => { ui.sheet.qty = Math.max(1, Math.min(10, Number(d.qty) || 1)); render(); },
     'pick-player': (d) => { ui.sheet.targetPlayerId = d.playerId; render(); },
     'buy-confirm': async () => {
       const noteEl = document.getElementById('buy_note');
-      const { itemId, targetTeamId, targetPlayerId } = ui.sheet;
-      const res = await act('buy', { itemId, targetTeamId, targetPlayerId, note: noteEl ? noteEl.value : '' });
+      const { itemId, targetTeamId, targetPlayerId, qty } = ui.sheet;
+      const res = await act('buy', { itemId, targetTeamId, targetPlayerId, qty: qty || 1, note: noteEl ? noteEl.value : '' });
       if (!res.ok) return;
       const it = S.items.find((i) => i.id === itemId);
       const r = res.result || {};
@@ -2859,6 +2887,7 @@
       else if (r.warp) { /* the pull splash says it all */ }
       else if (r.status === 'stashed') toast(`${it?.emoji || ''} Stashed on your block. Shhh.`, 'ok');
       else if (it?.type === 'bail') toast('🔑 Bail posted. Welcome your new blockmate.', 'ok');
+      else if (it?.type === 'drink') toast(`${it.emoji} Sent to ${teamName(targetTeamId)}. ★ +${drinkQuote(it, qty || 1).points}`, 'ok');
       else toast(`${it?.emoji || ''} Ordered! The hosts are on it.`, 'ok');
       opened.delete(`buy:${itemId}`);
       ui.sheet = null;

@@ -147,7 +147,7 @@ If every snitch gets caught early, the snitch game ends itself and the blocks wi
 
 ## Still to decide
 
-- [x] **How the winning block is chosen.** Most points wins. A block gets +1 point every time it sends a drink (gifts, and punishments with penalty drinks), whatever it cost. Ties fall back to credits earned.
+- [x] **How the winning block is chosen.** Most points wins. Points come from drinks sent: Spirit 3, Mystery Spirit 3, Soju 1, Wine 4, Mystery Cocktail 4 each, more for 5/10 deals and the Soju bottle. A Shot Penalty scores 1. Ties fall back to credits earned. Drink orders land in the Orders tab as one line per order ("5× Spirit, Block A → Block B"); pour them for that block and tap Delivered.
 - [ ] **The top block's prize.** Surviving snitches have one; the winning block doesn't yet.
 - [ ] **The survivor prize wording.** Default: "A drink on the birthday inmate + eternal bragging rights."
 - [ ] **A Holding Cell way out besides bail.** For example, a parole mini-challenge where the winner gets placed on a block by a host.

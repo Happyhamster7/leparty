@@ -110,7 +110,17 @@ A **🍺 drinks owed** card appears on every tab whenever you owe penalty drinks
 
 Hosts can add, edit, hide, price and stock-limit any item, and can refund any order.
 
-**Points decide the winner.** A block scores **+1 point every time it sends a drink**: any Send a drink item, or a punishment that carries penalty drinks (Shot Penalty). The send still costs credits, and it's +1 whatever the price. Points go to the buyer when the purchase goes through (a block request scores once it's approved), stay with the buyer if the target deflects, and come back off if a host refunds the order. Standings on phones, the Board and the TV rank by points, then credits earned. Hosts can correct points in the 💰 Payouts tab.
+**Points decide the winner.** Blocks send drinks to other blocks (or the Holding Cell) from the Commissary's **Send drinks** shelf: pick a drink and how many (1–10). Each drink costs credits and scores points, and ordering a deal's exact amount is cheaper and scores extra:
+
+| Drink | Each | Points | Deals |
+| --- | --- | --- | --- |
+| 🥃 Spirit | 15 | 3 | 5 for 60 (17 pts), 10 for 105 (35 pts) |
+| ❓ Mystery Spirit (blind pour) | 15 | 3 | 5 for 60 (17 pts), 10 for 105 (35 pts) |
+| 🍶 Soju | 7 | 1 | Bottle of 8 for 42 (9 pts) |
+| 🍷 Wine (glass) | 25 | 4 | None |
+| 🍹 Mystery Cocktail | 18 | 4 | 5 for 72 (22 pts), 10 for 126 (46 pts) |
+
+The drinks go to the block as one order in the hosts' 🧾 Orders tab ("5× Spirit, Block A → Block B"); the receiving block decides who drinks them, and nobody gets a personal tab for them. Points land when the order goes through (a block request scores once it's approved), stay with the buyer, and come back off if a host refunds the order. A Shot Penalty still puts a penalty drink on each person in the target block and scores 1. Standings rank by points, then credits earned. Hosts can change a drink's price and points in the 🛒 Commissary tab (deal prices are fixed) and correct points in 💰 Payouts.
 
 **Opening and closing the shop.** The act bar in the host console has 🔒 Close shop / 🛒 Open shop. While it's closed every phone and the TV show COMMISSARY CLOSED, and purchases and request approvals are refused. Requests already waiting stay put and can go through once it reopens.
 

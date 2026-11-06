@@ -231,3 +231,7 @@ body[data-era='slammer'] .landing .card .fine { color: var(--muted); text-shadow
 body[data-era='slammer'] .landing-inner { padding-top: 48px; }
 body[data-era='slammer'] .content { padding-bottom: 120px; }
 body[data-era='slammer'] .sheet .tagline, body[data-era='slammer'] .card .tagline { color: var(--muted); text-shadow: none; font-size: 17px; }
+body[data-era='slammer'] .qty-n { font-family: 'Jersey 10', monospace; font-size: 34px; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-slot.png') 9 fill / 9px stretch; padding: 0 6px; line-height: 1; }
+body[data-era='slammer'] .qty-total { background: none; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-tooltip.png') 9 fill / 9px stretch; padding: 3px 6px; }
+body[data-era='slammer'] .qty-total b { font-family: 'Jersey 10', monospace; font-size: 22px; font-weight: 400; color: var(--orange2); }
+body[data-era='slammer'] .item-deal { color: var(--muted); font-size: 12px; }
