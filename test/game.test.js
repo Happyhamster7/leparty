@@ -1016,3 +1016,12 @@ test('a new night runs one look with no acts to switch to', () => {
   assert.throws(() => g.setAct({ index: 1 }), GameError);
   assert.equal(new Game({ ...structuredClone(g.s), settings: { ...g.s.settings, actSet: 'gone' } }).acts.length, 1);
 });
+
+test("the party is called Shifty Shen's Slammer, including old saves with the old default", () => {
+  assert.equal(new Game().s.settings.partyName, "Shifty Shen's Slammer");
+  const old = new Game().s;
+  old.settings.partyName = 'Shifty Shen Slammer';
+  assert.equal(new Game(old).s.settings.partyName, "Shifty Shen's Slammer");
+  old.settings.partyName = 'Custom Night';
+  assert.equal(new Game(old).s.settings.partyName, 'Custom Night');
+});

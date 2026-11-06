@@ -25,7 +25,7 @@ const clipDir = createFiles().dir;
 if (clipDir) app.use('/clips', express.static(clipDir, { maxAge: '1h' }));
 
 app.listen(PORT, () => {
-  console.log(`🔒 Shifty Shen Slammer is open on http://localhost:${PORT}`);
+  console.log(`🔒 Shifty Shen's Slammer is open on http://localhost:${PORT}`);
   console.log(`   Warden:             http://localhost:${PORT}/warden   (PIN ${process.env.WARDEN_PIN || process.env.ADMIN_PIN ? 'from WARDEN_PIN' : '1234 — set WARDEN_PIN to change'})`);
   console.log(`   Commissary Officer: http://localhost:${PORT}/officer  (PIN ${process.env.OFFICER_PIN ? 'from OFFICER_PIN' : '5678 — set OFFICER_PIN to change'})`);
   console.log(`   TV / projector:     http://localhost:${PORT}/tv`);

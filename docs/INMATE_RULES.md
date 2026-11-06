@@ -1,4 +1,4 @@
-# Shifty Shen Slammer — Inmate Rules
+# Shifty Shen's Slammer — Inmate Rules
 
 _Exported from the shared doc on 2026-10-26. Edit the shared doc first, then re-export._
 

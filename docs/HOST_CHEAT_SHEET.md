@@ -1,4 +1,4 @@
-# Shifty Shen Slammer — Host Cheat Sheet
+# Shifty Shen's Slammer — Host Cheat Sheet
 
 _Exported from the shared doc on 2026-10-26. Edit the shared doc first, then re-export._
 

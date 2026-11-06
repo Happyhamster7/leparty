@@ -1,4 +1,4 @@
-/* Shifty Shen Slammer — client. One file, no build step. */
+/* Shifty Shen's Slammer — client. One file, no build step. */
 (() => {
   const $app = document.getElementById('app');
   const LS = {
@@ -1107,7 +1107,7 @@
         ${hero()}
         <div class="landing-inner">
           <div class="stamp">BOOKING</div>
-          <h1 class="logo">${h(guest.partyName || 'Shifty Shen Slammer')}</h1>
+          <h1 class="logo">${h(guest.partyName || 'Shifty Shen\'s Slammer')}</h1>
           <p class="tagline">${h(guest.tagline || '')}</p>
           <form data-form="join" class="card booking">
             <label for="join_name">Name for the booking sheet</label>

@@ -1,4 +1,4 @@
-# 🔒 Shifty Shen Slammer
+# 🔒 Shifty Shen's Slammer
 
 A jailhouse-themed party game web app for a birthday night. Everyone plays from their phone. Two hosts, the **Warden** and the **Commissary Officer**, run the night from their consoles, and a **TV** screen shows the standings.
 
