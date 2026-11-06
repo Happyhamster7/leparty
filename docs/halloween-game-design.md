@@ -149,8 +149,11 @@ undoes whichever team was most recently served and is still mid-drink
 (not yet finished) — it flips their orders back from `served` and
 reverses the points with a compensating ledger entry rather than
 deleting the original row, per "Balances are never stored" below. The
-senders-shown-by-default behavior and its own hide toggle aren't built
-either; the iPad currently just shows drink-type totals, no senders.
+iPad's own "Show senders" toggle is built too — hidden by default,
+resets to hidden for each new team called up. The broader
+senders-shown-by-default policy for teams generally isn't built
+anywhere yet; this toggle is the bartender's own tool, independent of
+that.
 
 ### 30-second drink and video
 

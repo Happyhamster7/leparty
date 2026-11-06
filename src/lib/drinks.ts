@@ -210,6 +210,54 @@ export async function drinkBreakdown(roundId: string, blockId: string): Promise<
 }
 
 /**
+ * The same breakdown, but by sender — for the bartender's own "Show
+ * senders" toggle (section 6, "Queue and the bar"), separate from
+ * whether teams generally see senders elsewhere, and from Eye Spy's
+ * served-drinks history.
+ */
+export async function senderBreakdown(
+  roundId: string,
+  blockId: string
+): Promise<{ senderName: string; drinkName: string; qty: number }[]> {
+  const supabase = db();
+
+  const { data: orders } = await supabase
+    .from('drink_orders')
+    .select('sender_block_id, origin, drink_type_id, qty')
+    .eq('round_id', roundId)
+    .eq('target_block_id', blockId)
+    .neq('status', 'cancelled');
+
+  if (!orders || orders.length === 0) return [];
+
+  const typed = orders as { sender_block_id: string | null; origin: string; drink_type_id: string; qty: number }[];
+
+  const typeIds = [...new Set(typed.map((o) => o.drink_type_id))];
+  const senderIds = [...new Set(typed.map((o) => o.sender_block_id).filter((id): id is string => !!id))];
+
+  const [{ data: types }, { data: blocks }] = await Promise.all([
+    supabase.from('drink_types').select('id, name').in('id', typeIds),
+    senderIds.length ? supabase.from('blocks').select('id, name').in('id', senderIds) : Promise.resolve({ data: [] }),
+  ]);
+  const typeNameById = new Map((types ?? []).map((t) => [t.id as string, t.name as string]));
+  const blockNameById = new Map((blocks ?? []).map((b) => [b.id as string, b.name as string]));
+
+  const totals = new Map<string, { senderName: string; drinkName: string; qty: number }>();
+  for (const o of typed) {
+    const senderName = o.sender_block_id
+      ? blockNameById.get(o.sender_block_id) ?? 'Unknown'
+      : o.origin === 'penalty'
+        ? 'Penalty (missed timer)'
+        : 'Admin';
+    const drinkName = typeNameById.get(o.drink_type_id) ?? 'Unknown';
+    const key = `${senderName}:${drinkName}`;
+    const existing = totals.get(key);
+    totals.set(key, { senderName, drinkName, qty: (existing?.qty ?? 0) + o.qty });
+  }
+  return Array.from(totals.values());
+}
+
+/**
  * Serves a team: starts their 30-second timer and awards points for
  * every contributing order — to the sender normally, or to whoever
  * played Reflect when scores_for_block_id was set at queue-build time.

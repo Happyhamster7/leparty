@@ -3,8 +3,9 @@ import { notFound, redirect } from 'next/navigation';
 import { db } from '@/lib/supabase';
 import { isHost } from '@/lib/host';
 import { currentOpenRound } from '@/lib/rounds';
-import { ensureServesResolved, nextServes, servingNow, drinkBreakdown } from '@/lib/drinks';
+import { ensureServesResolved, nextServes, servingNow, drinkBreakdown, senderBreakdown } from '@/lib/drinks';
 import { serveNext, serveDone, serveBack } from './actions';
+import ShowSendersToggle from './ShowSendersToggle';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,13 +30,19 @@ export default async function BarPage({ params }: { params: { eventId: string } 
   let preview: { id: string; blockId: string; blockName: string; drinkCount: number } | undefined;
   let serving: { id: string; blockName: string; timerEndsAt: string | null }[] = [];
   let breakdown: { name: string; qty: number }[] = [];
+  let withSenders: { senderName: string; drinkName: string; qty: number }[] = [];
 
   const active = !!round && round.phase === 'drinks' && !!round.drinks_started_at;
   if (active && round) {
     const [up, servingNowRows] = await Promise.all([nextServes(round.id), servingNow(round.id)]);
     [current, preview] = up;
     serving = servingNowRows;
-    if (current) breakdown = await drinkBreakdown(round.id, current.blockId);
+    if (current) {
+      [breakdown, withSenders] = await Promise.all([
+        drinkBreakdown(round.id, current.blockId),
+        senderBreakdown(round.id, current.blockId),
+      ]);
+    }
   }
 
   return (
@@ -57,20 +64,7 @@ export default async function BarPage({ params }: { params: { eventId: string } 
             {current ? (
               <>
                 <h1 className="huge">{current.blockName}</h1>
-                <div className="box box--quiet" style={{ marginBottom: 20 }}>
-                  {breakdown.length === 0 ? (
-                    <p style={{ margin: 0 }} className="small">
-                      No drinks on record for them this round.
-                    </p>
-                  ) : (
-                    breakdown.map((b) => (
-                      <div className="meter-row" key={b.name}>
-                        <span className="name">{b.name}</span>
-                        <span className="count mono">{b.qty}</span>
-                      </div>
-                    ))
-                  )}
-                </div>
+                <ShowSendersToggle serveId={current.id} plain={breakdown} withSenders={withSenders} />
                 <form action={serveNext.bind(null, params.eventId, round.id, current.id)}>
                   <button className="btn" type="submit">
                     Next

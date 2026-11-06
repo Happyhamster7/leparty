@@ -197,6 +197,11 @@ still mid-drink: flips their drink_orders back from served, and
 reverses the points it just awarded with a compensating ledger entry
 (never deletes the original row).
 
+The bar also has its own "Show senders" toggle on the current team's
+order — hidden by default, resets to hidden every time a new team is
+called up, independent of whether teams generally see senders
+elsewhere (that broader policy isn't built anywhere yet).
+
 The public display (`/host/<eventId>/game/screen`) is built: phase,
 round, leaderboard, cooldown list, picks once revealed, and — during
 drinks — a grid of every team's status (safe, queued, drinking now,
