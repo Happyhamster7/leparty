@@ -8,6 +8,7 @@ export type LedgerInsert = {
   delta: number;
   reason: LedgerReason;
   ref_id?: string | null;
+  note?: string | null;
 };
 
 /** Append-only — never update or delete a row, see docs/schema.md. */

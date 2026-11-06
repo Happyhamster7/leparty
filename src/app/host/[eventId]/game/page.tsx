@@ -141,12 +141,22 @@ export default async function GameControlPage({ params }: { params: { eventId: s
         <span>
           <Link href={`/host/${params.eventId}/game/screen`}>PUBLIC SCREEN</Link>
           {' · '}
+          <Link href={`/host/${params.eventId}/game/admin`}>ADMIN</Link>
+          {' · '}
           <Link href={`/host/${params.eventId}`}>BACK TO PARTY</Link>
         </span>
       </div>
 
       <div className="body">
         <p className="eyebrow">{theme.hostConsoleLabel}</p>
+
+        {ev.ended_at ? (
+          <div className="notice">
+            Night&rsquo;s over — {blocks.find((b) => b.id === ev.winner_block_id)?.name ?? 'Unknown'}{' '}
+            won. <Link href={`/host/${params.eventId}/game/finish`}>See final standings</Link>.
+          </div>
+        ) : null}
+
         <h1>{roundLabel}</h1>
 
         {round ? (
@@ -294,7 +304,7 @@ export default async function GameControlPage({ params }: { params: { eventId: s
           </Link>
         ) : null}
 
-        {canStartNew ? (
+        {canStartNew && !ev.ended_at ? (
           <>
             <h2>Start the next round</h2>
             {games && games.length > 0 ? (
@@ -319,6 +329,10 @@ export default async function GameControlPage({ params }: { params: { eventId: s
                 <p style={{ margin: 0 }}>No games in the catalogue yet.</p>
               </div>
             )}
+
+            <Link className="btn btn--quiet btn--inline" href={`/host/${params.eventId}/game/finish`} style={{ marginTop: 14 }}>
+              End the night
+            </Link>
           </>
         ) : null}
       </div>

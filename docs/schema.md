@@ -90,6 +90,8 @@ what makes the app reusable.
 | config | jsonb | Block count; phase 2 adds starting money |
 | current_day | int | Phase 2: the current round number |
 | phase | text | intake, then the current round's phase: game, results, spending, drinks; paused |
+| ended_at | timestamptz | Added migration `0009`. Null until the host confirms a winner |
+| winner_block_id | uuid | FK blocks. Added migration `0009`. Null until confirmed |
 
 `phase` and `current_day` are what every phone and the big screen
 poll. Changing them is how you advance the night.
@@ -142,6 +144,7 @@ application code would race when two guests finish signup at once.
 | captain_participant_id | uuid | Unused: there are no captains |
 | team_device_id | text | Phase 2: the device that last scanned the QR |
 | team_device_claimed_at | timestamptz | Phase 2: when it took over |
+| bonus_points_per_drink | int | Added migration `0009`. Winner's Bounty's permanent reward, stacking per win — default 0 |
 
 Never `?team=1`. `join_token` is random, scoped to the event, and
 rotatable — someone will try typing another block's id into the URL bar.
@@ -371,11 +374,11 @@ the 1-shot-of-the-cheapest-drink default otherwise.
 
 ### bounties
 
-Added migration `0008`. One row per Open/Winner's Bounty purchase,
-tracking its multi-round window — see
+Added migration `0008`, `kind` added `0009`. One row per Open/Winner's
+Bounty purchase, tracking its multi-round window — see
 `docs/halloween-game-design.md` section 7 for the simplified rule
-actually built (one fixed target, flat money reward) in place of the
-design's undecided per-Act rotation and permanent-bonus reward.
+actually built (one fixed target) in place of the design's undecided
+per-Act rotation.
 
 | Column | Type | Notes |
 | --- | --- | --- |
@@ -383,11 +386,12 @@ design's undecided per-Act rotation and permanent-bonus reward.
 | item_use_id | uuid | FK item_uses — the purchase this tracks |
 | block_id | uuid | FK blocks — the buyer |
 | event_id | uuid | FK events |
+| kind | text | open, winner — which item this was, so resolution knows whether a hit pays money or grants the permanent bonus |
 | start_round_number | int | The round it was bought in |
 | deadline_round_number | int | start + 2 (a 3-round window). Stored as numbers, not round ids — future rounds don't exist yet at purchase time |
 | target_qty | int | 5 |
 | target_drink_type_id | uuid | FK drink_types. Null means any type — the only target built |
-| reward_money | int | 100 (Open Bounty) or 150 (Winner's) |
+| reward_money | int | 100 for an Open Bounty hit; 0 for Winner's, which grants `blocks.bonus_points_per_drink` instead |
 | resolved_at | timestamptz | Null until the deadline round's shop closes |
 | hit | boolean | Null until resolved |
 
@@ -422,6 +426,7 @@ Append-only. Every change to a team's money, points or stars is a row.
 | delta | int | Signed |
 | reason | text | placing, bonus, star, item, drink_cost, drink_served, host_adjust, bounty |
 | ref_id | uuid | The order, result or item use that caused it |
+| note | text | Added migration `0009`. Free text, used by the admin's manual adjustment — the only reason with nothing else to say why |
 
 Balances are `sum(delta)` grouped by block and kind. A wrong ruling is
 one compensating row.

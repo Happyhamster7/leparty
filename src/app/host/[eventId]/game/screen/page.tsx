@@ -139,8 +139,17 @@ export default async function ScreenPage({ params }: { params: { eventId: string
       </div>
 
       <div className="body">
-        <p className="eyebrow mono">{round ? round.phase.toUpperCase() : 'INTAKE'}</p>
-        <h1 className="huge">{roundLabel}</h1>
+        {ev.ended_at ? (
+          <>
+            <p className="eyebrow mono">GAME OVER</p>
+            <h1 className="huge">{blocks.find((b) => b.id === ev.winner_block_id)?.name ?? 'Unknown'} wins</h1>
+          </>
+        ) : (
+          <>
+            <p className="eyebrow mono">{round ? round.phase.toUpperCase() : 'INTAKE'}</p>
+            <h1 className="huge">{roundLabel}</h1>
+          </>
+        )}
 
         {round && round.phase === 'game' && !round.picks_revealed_at && round.pick_deadline ? (
           <p className="small" style={{ marginBottom: 20 }}>

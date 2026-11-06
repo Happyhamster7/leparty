@@ -104,7 +104,7 @@ export const PLACEHOLDER_ITEMS: PlaceholderItem[] = [
     key: 'winners_bounty',
     name: 'Winner\'s Bounty',
     description:
-      'Only the team that just won this round\'s game can buy it. Same target as Open Bounty — 5 drinks of any type within 3 rounds — but a bigger reward: 150 money. Miss it and you owe 3 shots of Spirit next round.',
+      'Only the team that just won this round\'s game can buy it. Same target as Open Bounty — 5 drinks of any type within 3 rounds — but hitting it grants +1 point for every drink you send for the rest of the night, stacking if you win again. Miss it and you owe 3 shots of Spirit next round.',
     buyer_rule: 'game_winner',
     limit_per_round: 1,
     limit_per_night: null,

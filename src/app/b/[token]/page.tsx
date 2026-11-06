@@ -22,7 +22,7 @@ export default async function BlockPage({ params }: { params: { token: string } 
 
   const { data: block } = await supabase
     .from('blocks')
-    .select('id, name, colour, join_code, in_play, charge, event_id')
+    .select('id, name, colour, join_code, in_play, charge, event_id, bonus_points_per_drink')
     .eq('join_token', params.token)
     .maybeSingle();
 
@@ -203,6 +203,13 @@ export default async function BlockPage({ params }: { params: { token: string } 
             <p className="value">{points}</p>
           </div>
         </div>
+
+        {block.bonus_points_per_drink > 0 ? (
+          <p className="small" style={{ marginTop: -8 }}>
+            +{block.bonus_points_per_drink} point{block.bonus_points_per_drink === 1 ? '' : 's'} on every drink you
+            send tonight &mdash; Winner&rsquo;s Bounty.
+          </p>
+        ) : null}
 
         {block.charge ? (
           <>

@@ -315,7 +315,7 @@ export async function buyItem(
       blockId,
       eventId: block.event_id,
       startRoundNumber: round.number,
-      itemKey: item.key,
+      kind: item.key === 'winners_bounty' ? 'winner' : 'open',
     });
   }
 

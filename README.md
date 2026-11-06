@@ -181,16 +181,20 @@ shop. Bus ticket and Lock-up are dropped, not deferred — see
 `src/lib/catalogue.ts`. The host sees every order and purchase this
 round and closes the shop to move on to drinks.
 
-**Bounties** (`supabase/migrations/0008_bounty_tracking.sql` — run
-this before using them) simplify the design doc's undecided per-Act
-rotation and permanent-bonus reward into one fixed rule: send 5
-drinks of any type within 3 rounds of buying one for a flat money
-reward (100 for Open Bounty, 150 for Winner's, which only the round's
-1st-place team can buy). Miss the window and you owe 3 shots of
-Spirit next round — the generic missed-timer penalty mechanism now
-carries its own qty/drink type instead of always defaulting to 1
-shot of the cheapest drink. Only one bounty (either kind) can be
-active per team at a time, tracked in the new `bounties` table and
+**Bounties** (`supabase/migrations/0008_bounty_tracking.sql` and
+`0009_admin_and_finish.sql` — run both before using them) simplify the
+design doc's undecided per-Act rotation into one fixed rule: send 5
+drinks of any type within 3 rounds of buying one. Open Bounty pays
+100 flat money on hit. Winner's Bounty (only the round's 1st-place
+team can buy it) grants the design doc's permanent reward option
+instead: +1 point on every drink sent for the rest of the night,
+stacking per win, tracked on `blocks.bonus_points_per_drink` and
+applied in `markServed` — no reward-choice menu, this is just what
+Winner's Bounty does. Miss the window either way and you owe 3 shots
+of Spirit next round, via the same missed-timer penalty mechanism,
+now carrying its own qty/drink type instead of always defaulting to
+1 shot of the cheapest drink. Only one bounty (either kind) can be
+active per team at a time, tracked in the `bounties` table and
 resolved when the deadline round's shop closes.
 
 Drinks is built too, minus filming: starting drinks
@@ -230,6 +234,24 @@ clip never passes through a Vercel function, which can't accept
 bodies that large — with a progress percentage and a Retry button on
 failure. The public screen plays the most recent uploaded clip for
 each team's current or just-finished serve.
+
+**Admin tools** (`/host/<eventId>/game/admin`, linked from Game
+control) are built: a manual balance adjustment (money or points,
+either direction, with an optional free-text note — `ledger_entries`
+got a `note` column for this) for the "the host can adjust any
+balance manually, and the reason is logged" rule; assigning a drink
+straight into the current round's queue as an `origin = 'admin'`
+order, same as a team's own order, but only before that round's
+queue is actually built; and reissuing a team's QR/join code if it
+leaks, which also signs out whatever phone currently holds that team.
+
+**Night-end and winner confirmation** are built
+(`/host/<eventId>/game/finish`, linked from Game control once no
+round's actively in the game phase): final points standings, the
+host picks (or accepts the top scorer) and confirms a winner, which
+stamps `events.ended_at`/`winner_block_id` and takes over the public
+screen with a "Team X wins" headline. Starting another round is
+blocked once a winner's confirmed.
 
 Decided: highest score wins, generated from drinks sent; senders are
 shown to every team by default; item pricing is a flat value per item

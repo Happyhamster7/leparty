@@ -3,17 +3,20 @@ import { writeLedgerEntries } from '@/lib/ledger';
 
 /**
  * Simplified bounty rules, decided in place of the design doc's
- * undecided per-Act rotation and permanent-bonus reward option (see
- * docs/halloween-game-design.md section 7's implementation note):
- * one fixed target, a money reward on hit, a fixed shot penalty on
- * miss — reusing the same next-round-carryover plumbing a missed
- * drinks timer already uses.
+ * undecided per-Act rotation (see docs/halloween-game-design.md
+ * section 7's implementation note): one fixed target, a fixed shot
+ * penalty on miss — reusing the same next-round-carryover plumbing a
+ * missed drinks timer already uses. Open Bounty pays flat money on
+ * hit; Winner's Bounty instead grants the permanent +1-point-per-drink
+ * bonus (stacking per win), since that's the "bigger... payout" the
+ * doc calls for, without building a reward-choice menu.
  */
 export const BOUNTY_WINDOW_ROUNDS = 3;
 export const BOUNTY_TARGET_QTY = 5;
-export const BOUNTY_REWARD: Record<string, number> = { open_bounty: 100, winners_bounty: 150 };
+export const BOUNTY_OPEN_REWARD_MONEY = 100;
 export const BOUNTY_MISS_PENALTY_QTY = 3;
 export const BOUNTY_MISS_PENALTY_DRINK_NAME = 'Spirit';
+export type BountyKind = 'open' | 'winner';
 
 /** The one bounty a block has pending, if any — enforces "one active at a time" across both items. */
 export async function activeBounty(blockId: string): Promise<{ id: string } | null> {
@@ -43,17 +46,18 @@ export async function createBounty(args: {
   blockId: string;
   eventId: string;
   startRoundNumber: number;
-  itemKey: string;
+  kind: BountyKind;
 }): Promise<void> {
   await db().from('bounties').insert({
     item_use_id: args.itemUseId,
     block_id: args.blockId,
     event_id: args.eventId,
+    kind: args.kind,
     start_round_number: args.startRoundNumber,
     deadline_round_number: args.startRoundNumber + BOUNTY_WINDOW_ROUNDS - 1,
     target_qty: BOUNTY_TARGET_QTY,
     target_drink_type_id: null,
-    reward_money: BOUNTY_REWARD[args.itemKey] ?? 0,
+    reward_money: args.kind === 'open' ? BOUNTY_OPEN_REWARD_MONEY : 0,
   });
 }
 
@@ -70,7 +74,7 @@ export async function resolveBountiesForRound(eventId: string, roundNumber: numb
 
   const { data: due } = await supabase
     .from('bounties')
-    .select('id, block_id, start_round_number, deadline_round_number, target_qty, target_drink_type_id, reward_money')
+    .select('id, block_id, kind, start_round_number, deadline_round_number, target_qty, target_drink_type_id, reward_money')
     .eq('event_id', eventId)
     .eq('deadline_round_number', roundNumber)
     .is('resolved_at', null);
@@ -108,7 +112,17 @@ export async function resolveBountiesForRound(eventId: string, roundNumber: numb
 
     const hit = sentQty >= (bounty.target_qty as number);
 
-    if (hit) {
+    if (hit && bounty.kind === 'winner') {
+      const { data: block } = await supabase
+        .from('blocks')
+        .select('bonus_points_per_drink')
+        .eq('id', bounty.block_id)
+        .maybeSingle();
+      await supabase
+        .from('blocks')
+        .update({ bonus_points_per_drink: ((block?.bonus_points_per_drink as number) ?? 0) + 1 })
+        .eq('id', bounty.block_id);
+    } else if (hit) {
       await writeLedgerEntries([
         {
           block_id: bounty.block_id,

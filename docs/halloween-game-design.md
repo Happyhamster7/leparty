@@ -49,7 +49,7 @@ The admin view is split into tabs. Proposed tabs:
 
 - **No captain.** Each team has one team phone: whichever device most recently scanned the team's QR code. Whoever holds it acts for the team.
 - **Latest scan wins.** When a new device scans the QR code, it becomes the team phone straight away. The previous phone is signed out with a message saying the team has moved to another phone. This covers dead batteries and handovers without the host stepping in.
-- **QR codes are printed cards** and never appear on the public screens. Because any scan takes over, a rival who sees a code could hijack that team's phone. If a code leaks, the host issues a new one, which appears on the host console, and the old one stops working.
+- **QR codes are printed cards** and never appear on the public screens. Because any scan takes over, a rival who sees a code could hijack that team's phone. If a code leaks, the host issues a new one, which appears on the host console, and the old one stops working. **Built:** `/host/<eventId>/game/admin` — reissuing rotates `join_token`/`join_code` and signs out whatever phone currently holds that team.
 
 ### Other requirements
 
@@ -117,8 +117,10 @@ The app works as a state machine. Rounds are grouped into **Acts**, which are gr
 - **Points** are earned for every drink a team sends. They are recorded **when the drink is served**, meaning when the bartender presses Next, not when the order is placed. Points are weighted by drink type.
 - **Stars:** the team with the most drinks served at others in a round gets a star. A star is worth an amount of money.
 - **Reflected drinks** score for **the team that played Reflect**.
-- **Overall winner:** decided — the team with the most points wins, calculated by the system. Points are generated from drinks sent (see above), so sending drinks is the winning move.
-- The host can adjust any balance manually, and the reason is logged.
+- **Overall winner:** decided — the team with the most points wins, calculated by the system. Points are generated from drinks sent (see above), so sending drinks is the winning move. **Built:** the host confirms it from `/host/<eventId>/game/finish` — picks (or accepts the top scorer) from the final standings, which stamps `events.ended_at`/`winner_block_id` and takes over the public screen.
+- The host can adjust any balance manually, and the reason is logged. **Built:** `/host/<eventId>/game/admin`, which writes a `host_adjust` ledger entry with a free-text `note` column (migration `0009`) for the reason, since none of the other ledger reasons carry one.
+
+Stars still aren't built — nothing awards the `stars` ledger kind yet.
 
 ---
 
@@ -128,7 +130,7 @@ The app works as a state machine. Rounds are grouped into **Acts**, which are gr
 
 - During spending, each team places orders from its phone. Each order has a **target team**, a drink type and a quantity.
 - **Drinks are sent to a team, never to a named player.** The receiving team decides among themselves who drinks what.
-- **Drinks assigned by the admin go into the same queue** as the teams' orders.
+- **Drinks assigned by the admin go into the same queue** as the teams' orders. **Built:** `/host/<eventId>/game/admin`, as a plain `origin = 'admin'` order — but only before that round's queue is actually built (`drinks_started_at`); patching an already-built queue wasn't built.
 - Orders are hidden from other teams and kept off the public screens.
 - Per-person drink caps are not enforced by the app and are left to each team's judgement. The house rule still applies: non-drinkers swap to water at the counter, and the drink still scores for the sender.
 
@@ -339,14 +341,16 @@ types**, not always the same one:
 | Money | A money payout instead of points, e.g. 40/50/60 by Act |
 | Permanent bonus | **+1 point per drink sent for the rest of the night**, stacking if won more than once — a passive multiplier, not a one-time payout |
 
-The permanent-bonus reward is the one real open design question here:
-it needs a persistent per-team modifier that every future drink-serve
-point calculation has to check, which nothing in the schema tracks
-yet. Simplest shape when this gets built: a `ledger_entries` row with
-`kind = 'points'`, `reason = 'host_adjust'` won't do it since that's
-one-time — this wants either a new column on `blocks`
-(`points_per_drink_bonus`) or a dedicated small table. Don't guess the
-shape before the resolver exists; flag it for whoever builds Spending.
+**Decided and built:** Winner's Bounty's reward *is* the permanent
+bonus — not a choice among the three options above, just what hitting
+it does. `blocks.bonus_points_per_drink` (migration `0009`) is the
+persistent per-team modifier, incremented by 1 on every hit;
+`markServed` (`src/lib/drinks.ts`) checks it for every contributing
+order's scoring block, multiplied by that order's qty, on top of the
+normal bundle-adjusted points. Open Bounty keeps the flat-money
+reward instead. No points/money/permanent choice menu was built —
+simpler than the three-way draft above, and it's what actually
+shipped.
 
 **Implementation note:** built. `items.buyer_rule`'s `'game_winner'`
 value (migration `0007`) gates Winner's Bounty to whoever placed 1st

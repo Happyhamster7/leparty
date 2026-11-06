@@ -35,6 +35,8 @@ export type EventRow = {
   status: string;
   config: EventConfig;
   created_at: string;
+  ended_at: string | null;
+  winner_block_id: string | null;
 };
 
 export type PersonRow = {
@@ -185,6 +187,7 @@ export type BountyRow = {
   item_use_id: string;
   block_id: string;
   event_id: string;
+  kind: 'open' | 'winner';
   start_round_number: number;
   deadline_round_number: number;
   target_qty: number;

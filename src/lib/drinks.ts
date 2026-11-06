@@ -262,7 +262,9 @@ export async function senderBreakdown(
  * every contributing order — to the sender normally, or to whoever
  * played Reflect when scores_for_block_id was set at queue-build time.
  * Points are recomputed from qty so the bundle bonus (section 6a)
- * still applies even though it's never stored on the order row.
+ * still applies even though it's never stored on the order row, and
+ * so does any permanent per-drink bonus from a hit Winner's Bounty
+ * (src/lib/bounty.ts), stored on blocks.bonus_points_per_drink.
  */
 export async function markServed(roundId: string, serveId: string) {
   const supabase = db();
@@ -298,6 +300,14 @@ export async function markServed(roundId: string, serveId: string) {
     (types ?? []).map((t) => [t.id as string, t as { id: string; name: string; cost: number; points: number }])
   );
 
+  const scoringBlockIds = [
+    ...new Set(typed.map((o) => o.scores_for_block_id ?? o.sender_block_id).filter((id): id is string => !!id)),
+  ];
+  const { data: bonusRows } = scoringBlockIds.length
+    ? await supabase.from('blocks').select('id, bonus_points_per_drink').in('id', scoringBlockIds)
+    : { data: [] };
+  const bonusById = new Map((bonusRows ?? []).map((b) => [b.id as string, b.bonus_points_per_drink as number]));
+
   const pointsByBlock = new Map<string, number>();
   const orderIds: string[] = [];
 
@@ -308,7 +318,8 @@ export async function markServed(roundId: string, serveId: string) {
     const type = typeById.get(o.drink_type_id);
     if (!type) continue;
     const { points } = priceOrder(type.name, type.cost, type.points, o.qty);
-    pointsByBlock.set(scoringBlock, (pointsByBlock.get(scoringBlock) ?? 0) + points);
+    const bonus = (bonusById.get(scoringBlock) ?? 0) * o.qty;
+    pointsByBlock.set(scoringBlock, (pointsByBlock.get(scoringBlock) ?? 0) + points + bonus);
   }
 
   if (orderIds.length > 0) {
