@@ -1544,3 +1544,6 @@ table.spy th, table.spy td { text-align: left; padding: 5px 6px; border-bottom: 
 .tv-grid.drinks .bar-grid { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
 .tv-grid.drinks .bar-tile { aspect-ratio: 16 / 10; }
 .tv-grid.drinks .bar-tile-t { font-size: clamp(16px, 1.4vw, 24px); }
+.rewards { display: grid; gap: 8px; }
+.reward { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 12px; text-align: left; align-items: center; padding: 12px; background: var(--card2); border: 1.5px solid var(--line); border-radius: 10px; color: var(--text); font: inherit; cursor: pointer; }
+.reward .mega { grid-row: span 2; }

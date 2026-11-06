@@ -1890,9 +1890,9 @@
     } else if (r.phase === 'drinks') {
       const st = myTeam ? serveOf(r, myTeam.id) : { state: 'safe' };
       if (st.state === 'safe') body = '<p class="serve safe">Safe this round. Nobody sent your block anything.</p>';
-      else if (st.state === 'queued') body = `<p class="serve">Your block owes <b>${plural(st.s.drinks, 'drink')}</b>. You’re <b>${placeName(st.pos)}</b> in line for the bar.</p>`;
-      else if (st.state === 'serving') body = `<div class="serve now"><div>🍻 Your block is at the bar: <b>${plural(st.s.drinks, 'drink')}</b></div><div class="big-cd">${until(st.s.timerEndsAt)}</div><p class="fine">Finish inside the time or it’s an extra shot next round. Film it for the TV.</p>${canFilm() ? '<button class="btn big" data-act="shotcam">🎥 Film it</button>' : ''}</div>`;
-      else body = `<p class="serve ${st.state}">${st.state === 'missed' ? '⏰ Out of time: an extra shot next round.' : '✅ Done. Nice drinking.'}</p>`;
+      else if (st.state === 'queued') body = `<p class="serve">Your block owes <b>${plural(st.s.drinks, 'drink')}</b>. You’re <b>${placeName(st.pos)}</b> in line for the bar.</p><p class="fine">${streakNote(myTeam)}.</p>`;
+      else if (st.state === 'serving') body = `<div class="serve now"><div>🍻 Your block is at the bar: <b>${plural(st.s.drinks, 'drink')}</b></div><div class="big-cd">${until(st.s.timerEndsAt)}</div><p class="fine">Finish in time for <b>${h(money((S.settings.streakCredits || 5) * ((myTeam.drinkStreak || 0) + st.s.drinks)))}</b> (streak ${(myTeam.drinkStreak || 0) + st.s.drinks}). Run out and it’s an extra shot next round, and your streak resets. Film it for the TV.</p>${canFilm() ? '<button class="btn big" data-act="shotcam">🎥 Film it</button>' : ''}</div>`;
+      else body = `<p class="serve ${st.state}">${st.state === 'missed' ? `⏰ Out of time: an extra shot next round${st.s.streakLost ? `, and your ${plural(st.s.streakLost, 'drink')} streak is gone` : ''}.` : `✅ Done in time: <b>+${h(money(st.s.reward))}</b>. Streak: ${plural(st.s.streak, 'drink')}.`}</p>`;
       const line = r.serves.filter((s) => !s.finishedAt).map((s) => `${h(teamName(s.teamId))}${s.servedAt ? ' 🍻' : ''}`);
       if (line.length) body += `<p class="fine">At the bar: ${line.join(' → ')}</p>`;
     } else {
@@ -1924,16 +1924,33 @@
       ${r.picks[myTeam.id] ? `<p class="fine">Locked in: ${names(r.picks[myTeam.id])}. Waiting for ${plural(roundTeams().length - r.picked.length, 'block')}.</p>` : ''}`;
   }
 
+  // A Winner's Bounty that's been hit waits for the block to choose its reward.
+  function rewardPicker() {
+    const b = (S.bounties || []).find((x) => x.kind === 'winner' && x.status === 'hit' && !x.reward);
+    if (!b || S.me?.status !== 'block') return '';
+    return `<section class="card reward-pick"><div class="eyebrow">🏅 Winner’s Bounty hit</div><h3>Pick your reward</h3><p class="fine">It lasts the rest of the night. Anyone on your block can choose.</p>
+      <div class="rewards">${Object.entries(S.winnerRewards || {})
+        .map(([k, r]) => `<button class="reward" data-act="bounty-reward" data-bounty-id="${b.id}" data-reward="${k}" data-confirm="Take ${h(r.name)} for the rest of the night?"><span class="mega">${r.emoji}</span><b>${h(r.name)}</b><span class="fine">${h(r.desc)}</span></button>`)
+        .join('')}</div></section>`;
+  }
+
+  const streakNote = (t) => (t?.drinkStreak ? `🔥 Streak: ${plural(t.drinkStreak, 'drink')} finished in time` : 'No streak yet');
+
   // ---------- phone: Eye Spy, bounties and penalties on My Block ----------
   function blockExtras(myTeam) {
-    const parts = [];
+    const parts = [rewardPicker()];
+    const perks = [
+      myTeam.bonusDrinks && `🎁 Every order you send lands with <b>+${myTeam.bonusDrinks}</b> free drink${myTeam.bonusDrinks === 1 ? '' : 's'}.`,
+      myTeam.fewerDrinks && `🛡️ Every order sent to you lands with <b>${myTeam.fewerDrinks}</b> fewer drink${myTeam.fewerDrinks === 1 ? '' : 's'}.`,
+      myTeam.bonusPerDrink && `⭐ Every drink you send scores <b>+${myTeam.bonusPerDrink}</b> extra point${myTeam.bonusPerDrink === 1 ? '' : 's'}.`,
+    ].filter(Boolean);
+    parts.push(`<section class="card"><h3>🔥 Drinking streak</h3><p><b>${plural(myTeam.drinkStreak || 0, 'drink')}</b> finished in time in a row.</p><p class="fine">Finish at the bar inside the time to grow it: you get ${h(money(S.settings.streakCredits || 5))} × your streak each time. Run out of time and it goes back to 0.</p>${perks.map((x) => `<p>${x}</p>`).join('')}</section>`);
     const active = (S.bounties || []).find((b) => b.status === 'active');
     const done = (S.bounties || []).filter((b) => b.status !== 'active').slice(-2);
-    if (active || done.length || myTeam.bonusPerDrink) {
+    if (active || done.length) {
       parts.push(`<section class="card"><h3>🎯 Bounties</h3>
         ${active ? `<p><b>${active.kind === 'winner' ? 'Winner’s' : 'Open'} Bounty</b>: ${active.sent}/5 drinks sent. Last round: ${active.deadlineRound}.</p><div class="meter"><i style="width:${Math.min(100, active.sent * 20)}%"></i></div>` : ''}
-        ${done.map((b) => `<p class="fine">${b.kind === 'winner' ? 'Winner’s' : 'Open'} Bounty: ${b.status === 'hit' ? '✅ hit' : '💀 missed'}</p>`).join('')}
-        ${myTeam.bonusPerDrink ? `<p>⭐ Permanent bonus: <b>+${myTeam.bonusPerDrink}</b> point${myTeam.bonusPerDrink === 1 ? '' : 's'} on every drink you send.</p>` : ''}
+        ${done.map((b) => `<p class="fine">${b.kind === 'winner' ? 'Winner’s' : 'Open'} Bounty: ${b.status === 'hit' ? `✅ hit${b.kind === 'winner' ? (b.reward ? `: ${h(S.winnerRewards?.[b.reward]?.name || b.reward)}` : ': pick your reward') : ': +25 points'}` : '💀 missed'}</p>`).join('')}
       </section>`);
     }
     const owed = (S.penaltiesOwed || []).filter((x) => x.teamId === myTeam.id);
@@ -1982,7 +1999,7 @@
         const clip = clipFor(t.id);
         return `<div class="bar-tile s-${st.state}" style="--c:${h(t.color)}">
           ${clip ? `<video src="${h(clip.url)}" autoplay muted loop playsinline></video>` : ''}
-          <div class="bar-tile-t"><b>${h(t.name)}</b><span>${st.state === 'serving' ? until(st.s.timerEndsAt) : st.state === 'queued' ? `${placeName(st.pos)} in line · ${plural(st.s.drinks, 'drink')}` : SERVE_LABEL[st.state]}</span></div>
+          <div class="bar-tile-t"><b>${h(t.name)}</b><span>${st.state === 'serving' ? until(st.s.timerEndsAt) : st.state === 'queued' ? `${placeName(st.pos)} in line · ${plural(st.s.drinks, 'drink')}` : st.state === 'done' ? `Done · +${h(money(st.s.reward))} · 🔥${st.s.streak}` : st.state === 'missed' && st.s.streakLost ? 'Out of time · streak lost' : SERVE_LABEL[st.state]}</span></div>
         </div>`;
       })
       .join('')}</div>`;
@@ -2081,13 +2098,14 @@
     const pour = (s) => `<ul class="pour">${Object.values(
       s.breakdown.reduce((acc, b) => {
         const k = b.name.replace(/^\d+× /, '').replace(/ \(.*\)$/, '');
-        acc[k] = acc[k] || { k, emoji: b.emoji, qty: 0, from: [] };
+        acc[k] = acc[k] || { k, emoji: b.emoji, qty: 0, from: [], adjust: [] };
         acc[k].qty += b.qty;
+        if (b.adjust) acc[k].adjust.push(b.adjust);
         acc[k].from.push(`${b.from}${b.note ? ` “${b.note}”` : ''}`);
         return acc;
       }, {}),
     )
-      .map((x) => `<li><span class="mega">${h(x.emoji)}</span><b>${x.qty}× ${h(x.k)}</b>${ui.senders ? `<small>${h(x.from.join(', '))}</small>` : ''}</li>`)
+      .map((x) => `<li><span class="mega">${h(x.emoji)}</span><b>${x.qty}× ${h(x.k)}</b>${x.adjust.length ? ` <span class="chip yellow">${h(x.adjust.join(', '))}</span>` : ''}${ui.senders ? `<small>${h(x.from.join(', '))}</small>` : ''}</li>`)
       .join('')}</ul>`;
     return `<section class="card bar">
       <div class="row wrap bar-actions">
@@ -2095,10 +2113,10 @@
         ${serving.length ? btn('↶ Back', 'barBack', {}, 'ghost') : ''}
         <button class="btn ghost sm" data-act="senders">${ui.senders ? 'Hide senders' : 'Show senders'}</button>
       </div>
-      ${serving.map((s) => `<div class="bar-now" style="--c:${h(team(s.teamId)?.color || '#888')}"><div class="bar-now-h"><b>${h(teamName(s.teamId))}</b>${until(s.timerEndsAt, 'big-cd')}${btn('Done in time ✓', 'barDone', { teamId: s.teamId }, 'sm')}</div>${pour(s)}</div>`).join('')}
+      ${serving.map((s) => `<div class="bar-now" style="--c:${h(team(s.teamId)?.color || '#888')}"><div class="bar-now-h"><b>${h(teamName(s.teamId))}</b>${until(s.timerEndsAt, 'big-cd')}${btn(`Done in time ✓ (+${(S.settings.streakCredits || 5) * ((team(s.teamId)?.drinkStreak || 0) + s.drinks)} cr)`, 'barDone', { teamId: s.teamId }, 'sm')}</div>${pour(s)}</div>`).join('')}
       ${next ? `<h3>Up next: ${h(teamName(next.teamId))} · ${plural(next.drinks, 'drink')}</h3>${pour(next)}` : ''}
       <h3>The line</h3>
-      <ol class="queue">${r.serves.map((s) => { const st = serveOf(r, s.teamId); return `<li class="s-${st.state}">${h(teamName(s.teamId))} · ${plural(s.drinks, 'drink')} <span class="tag">${SERVE_LABEL[st.state]}</span></li>`; }).join('') || '<li>Nobody owes anything.</li>'}</ol>
+      <ol class="queue">${r.serves.map((s) => { const st = serveOf(r, s.teamId); return `<li class="s-${st.state}">${h(teamName(s.teamId))} · ${plural(s.drinks, 'drink')} <span class="tag">${SERVE_LABEL[st.state]}${st.state === 'done' ? ` +${s.reward}` : ''}</span> <small class="fine">🔥${team(s.teamId)?.drinkStreak || 0}</small></li>`; }).join('') || '<li>Nobody owes anything.</li>'}</ol>
     </section>`;
   }
 
@@ -2106,6 +2124,7 @@
     const live = S.games.find((g) => g.status === 'live');
     return `
       ${S.winner ? winnerCard() : ''}
+      ${rewardPicker()}
       ${roundCard()}
       ${augmentCard()}
       ${todoCard()}
@@ -3097,6 +3116,11 @@
     tab: (d) => { ui.tab = d.tab; ui.reveal = false; ui.revealTask = false; LS.set('sss_tab', d.tab); window.scrollTo(0, 0); render(); },
     atab: (d) => { ui.atab = d.tab; LS.set('sss_atab', d.tab); render(); },
     senders: () => { ui.senders = !ui.senders; render(); },
+    'bounty-reward': async (d) => {
+      if (d.confirm && !confirm(d.confirm)) return;
+      const res = await act('bountyReward', { bountyId: d.bountyId, reward: d.reward });
+      if (res.ok) toast('🏅 Reward locked in.', 'ok');
+    },
     reveal: () => { ui.reveal = !ui.reveal; render(); },
     'reveal-task': () => {
       ui.revealTask = !ui.revealTask;

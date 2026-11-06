@@ -265,3 +265,7 @@ body[data-era='slammer'] table.spy th { font-family: 'Jersey 10', monospace; fon
 body[data-era='slammer'] .pour li b { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 26px; }
 body[data-era='slammer'] .bar-now-h b { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 30px; }
 body[data-era='slammer'] .win-note { color: var(--orange2); }
+body[data-era='slammer'] .reward { background: none; border-style: solid; border-width: 12px; border-image: url('/pixel/frame-card.png') 12 fill / 12px stretch; padding: 3px; }
+body[data-era='slammer'] .reward:hover { border-width: 15px; border-image: url('/pixel/frame-card-active.png') 15 fill / 15px stretch; margin: -3px; }
+body[data-era='slammer'] .reward b { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 24px; }
+body[data-era='slammer'] .reward-pick { animation: px-blink 1.6s steps(1) infinite; }
