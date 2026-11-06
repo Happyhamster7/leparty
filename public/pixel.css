@@ -235,3 +235,6 @@ body[data-era='slammer'] .qty-n { font-family: 'Jersey 10', monospace; font-size
 body[data-era='slammer'] .qty-total { background: none; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-tooltip.png') 9 fill / 9px stretch; padding: 3px 6px; }
 body[data-era='slammer'] .qty-total b { font-family: 'Jersey 10', monospace; font-size: 22px; font-weight: 400; color: var(--orange2); }
 body[data-era='slammer'] .item-deal { color: var(--muted); font-size: 12px; }
+
+/* The act shells scroll inside their own frame and lock the page; this layout scrolls the page itself. */
+body[data-era='slammer'][data-kind='player'] { overflow: visible; overflow-x: hidden; }
