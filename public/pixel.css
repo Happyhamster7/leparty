@@ -169,7 +169,7 @@ body[data-era='slammer'] .item-n { font-family: 'Jersey 10', monospace; font-siz
 body[data-era='slammer'] .item-p { font-family: 'Jersey 10', monospace; font-size: 20px; color: var(--orange2); }
 body[data-era='slammer'] .item-r { color: var(--yellow); }
 body[data-era='slammer'] .target { background: none; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-btn-paper.png') 12 fill / 9px stretch; color: var(--text); }
-body[data-era='slammer'] .target.on { border-image-source: url('/pixel/frame-slot-active.png'); }
+body[data-era='slammer'] .target.on { border-image: url('/pixel/frame-slot-active.png') 9 fill / 9px stretch; font-weight: 700; }
 
 /* lists, boards and the rest */
 body[data-era='slammer'] .board li, body[data-era='slammer'] .tv-board li, body[data-era='slammer'] .roster li, body[data-era='slammer'] .stats div, body[data-era='slammer'] .stash-i, body[data-era='slammer'] .vote, body[data-era='slammer'] .money-t {
