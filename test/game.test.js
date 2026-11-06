@@ -807,6 +807,7 @@ test('every inmate has a stable Vision, even from old saves', () => {
 
 test('the TV intro replays on act changes and on demand; intro links must be https', () => {
   const g = new Game();
+  g.s.settings.actSet = 'longnight';
   assert.equal(g.s.introAt, 0);
   g.setAct({ index: 1 });
   const first = g.s.introAt;
@@ -849,8 +850,9 @@ test('Shot Cam: block members send clips; hosts can require approval, hide and r
   assert.ok(a && b);
 });
 
-test('The Long Night is the default lineup; each act renames its engine', () => {
+test('The Long Night: each act renames its engine', () => {
   const g = new Game();
+  g.s.settings.actSet = 'longnight';
   g.seedTeams({ count: 2 });
   const [a, b] = g.s.teams;
   const players = [0, 1, 2, 3].map((i) => {
@@ -1003,4 +1005,13 @@ test('a request made while open cannot go through after the shop closes', () => 
   assert.throws(() => g.secondRequest(players[4].id, { requestId }), /closed/);
   assert.equal(a.points, 0);
   assert.equal(a.budget, 200);
+});
+
+test('a new night runs one look with no acts to switch to', () => {
+  const g = new Game();
+  assert.equal(g.s.settings.actSet, 'single');
+  assert.equal(g.acts.length, 1);
+  assert.equal(g.act.id, 'booking');
+  assert.throws(() => g.setAct({ index: 1 }), GameError);
+  assert.equal(new Game({ ...structuredClone(g.s), settings: { ...g.s.settings, actSet: 'gone' } }).acts.length, 1);
 });

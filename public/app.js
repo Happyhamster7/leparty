@@ -326,6 +326,8 @@
   };
   const actId = () => (S ? S.acts?.[S.act]?.id : guest.act) || 'booking';
   const curAct = () => S?.acts?.[S.act] || null;
+  // One-look lineup: no act changes, so nothing should talk about acts.
+  const oneAct = () => (S?.acts?.length || 0) <= 1;
   // Mechanics follow the act's engine (gta, genshin, tft or amongus); looks follow the act itself.
   const eng = () => curAct()?.engine || actId();
   // The current act's word for something, e.g. W('rank', 'Adventure Rank').
@@ -758,7 +760,7 @@
     const art = (cap) => ({ ms: 3400, cls: 'i-art', cue: 'hit', html: `${hero()}<div class="i-cap">${h(cap)}</div>` });
     const title = (extra) => ({
       ms: 4200, cls: 'i-title', cue: 'title',
-      html: `<span class="i-act">Act ${a.numeral}</span><h1 class="i-logo">${h(a.name)}</h1><p class="i-party">${h(party)}</p><p class="i-cta">${h(extra)}</p>`,
+      html: `${oneAct() ? '' : `<span class="i-act">Act ${a.numeral}</span>`}<h1 class="i-logo">${h(a.name)}</h1><p class="i-party">${h(party)}</p><p class="i-cta">${h(extra)}</p>`,
     });
     const rating = (descriptors) => ({
       ms: 3000, cls: 'i-rating',
@@ -1618,11 +1620,11 @@
     const a = curAct();
     return `<div class="sheet-bg"></div>
       <div class="sheet briefing act-brief ${enter(`act:${a.id}`)}" role="dialog" aria-label="New act">
-        <div class="eyebrow">🎬 Act ${a.numeral} · ${h(a.game)}</div>
+        <div class="eyebrow">${oneAct() ? '🗂️ Tonight’s house rules' : `🎬 Act ${a.numeral} · ${h(a.game)}`}</div>
         <h2>${a.emoji} ${h(a.name)}</h2>
         <p class="tagline">${h(a.tagline)}</p>
         <ul class="act-rules">${a.rules.map((r) => `<li>${h(r)}</li>`).join('')}</ul>
-        <p class="fine">Money is now ${h(a.currency.name)}${a.currency.symbol ? ` (${h(a.currency.symbol)})` : ''}. Same balance, new name.</p>
+        <p class="fine">${oneAct() ? `Your block’s money is ${h(a.currency.name)}${a.currency.symbol ? ` (${h(a.currency.symbol)})` : ''}. Send drinks to other blocks to score points.` : `Money is now ${h(a.currency.name)}${a.currency.symbol ? ` (${h(a.currency.symbol)})` : ''}. Same balance, new name.`}</p>
         <button class="btn big" data-act="act-ok">Let’s go</button>
       </div>`;
   }
@@ -2206,12 +2208,12 @@
     const a = S.acts[i];
     const nextA = S.acts[i + 1];
     return `<div class="act-switch">
-      <div class="act-now"><span class="mega">${a.emoji}</span><div><div class="eyebrow">Act ${a.numeral} of ${S.acts.length} · ${h(a.game)}</div><b>${h(a.name)}</b></div></div>
+      <div class="act-now"><span class="mega">${a.emoji}</span><div><div class="eyebrow">${oneAct() ? 'Tonight' : `Act ${a.numeral} of ${S.acts.length} · ${h(a.game)}`}</div><b>${h(oneAct() ? S.settings.partyName : a.name)}</b></div></div>
       <div class="row">
         ${i > 0 ? btn('◀', 'setAct', { index: i - 1 }, 'ghost sm', `Go back to Act ${S.acts[i - 1].numeral}: ${S.acts[i - 1].name}?`) : ''}
         ${btn(S.settings.shopOpen ? '🔒 Close shop' : '🛒 Open shop', 'updateSettings', { shopOpen: !S.settings.shopOpen }, S.settings.shopOpen ? 'ghost sm' : 'sm')}
         ${btn('📺 Play intro on TV', 'playIntro', {}, 'ghost sm')}
-        ${nextA ? btn(`Next: ${nextA.emoji} ${h(nextA.name)} ▶`, 'setAct', { index: i + 1 }, 'sm', `Start Act ${nextA.numeral}: ${nextA.name} (${nextA.game})? Every phone and the TV switch over now.`) : '<span class="fine">Final act</span>'}
+        ${nextA ? btn(`Next: ${nextA.emoji} ${h(nextA.name)} ▶`, 'setAct', { index: i + 1 }, 'sm', `Start Act ${nextA.numeral}: ${nextA.name} (${nextA.game})? Every phone and the TV switch over now.`) : oneAct() ? '' : '<span class="fine">Final act</span>'}
       </div>
     </div>`;
   }
@@ -2738,7 +2740,7 @@
     return `
       <div class="tv">
         ${audio?.state === 'running' ? '' : '<button class="tv-sound" data-act="tv-sound">🔊 Tap once to enable intro sound</button>'}
-        <header class="tv-h">${hero(true)}<div class="act-tag">${curAct().emoji} Act ${curAct().numeral} · ${h(curAct().name)}</div><h1 class="logo">${h(S.settings.partyName)}</h1><div class="tagline">${h(curAct().tagline)}</div></header>
+        <header class="tv-h">${hero(true)}${oneAct() ? '' : `<div class="act-tag">${curAct().emoji} Act ${curAct().numeral} · ${h(curAct().name)}</div>`}<h1 class="logo">${h(S.settings.partyName)}</h1><div class="tagline">${h(curAct().tagline)}</div></header>
         ${phaseBanner()}
         ${S.announcement ? `<div class="announce tv-ann"><span class="mega">📣</span><div class="announce-t">${h(S.announcement.text)}</div></div>` : ''}
         <div class="tv-grid">

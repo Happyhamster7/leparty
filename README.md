@@ -40,7 +40,9 @@ Players still spend their block's credits at the commissary themselves, and trac
 
 The night runs in four acts. A host moves to the next one with the act bar at the top of the host console. Every phone and the TV switch over at once: a big **ACT II** stamp, a new look, a briefing card explaining what changed, and a new name for the money (same balance). Each act's special items only appear in the shop during that act, at the top of the shelf. Hosts can go back an act if they flip too early.
 
-There are two act lineups, picked under Settings → Act lineup. Each act runs one of four rule sets (GTA, Genshin, TFT or Among Us) and renames its money, items, prizes, roles and riddles.
+**By default there are no acts:** the night runs one look all night (Booking Day's inmate tablet, money in 🍜 soups), with no act bar, no act changes and no "Act I" labels anywhere. The host bar keeps only 🔒 Close shop and 📺 Play intro on TV. To bring the acts back, pick a four-act lineup under Settings → Act lineup.
+
+There are two four-act lineups, picked under Settings → Act lineup. Each act runs one of four rule sets (GTA, Genshin, TFT or Among Us) and renames its money, items, prizes, roles and riddles.
 
 **The Long Night (default).** One night at Slammer Penitentiary in four chapters. Guests keep the same **inmate tablet** all night, held upright; each act re-skins it and swaps in its own apps.
 

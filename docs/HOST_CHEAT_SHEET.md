@@ -46,7 +46,9 @@ About 3 hours for 5 games. Snitch phases go every other game so Solitary doesn't
 
 Flip acts along the way: Act II after game 2, Act III after game 4, Act IV before the last Block Vote.
 
-## The four acts
+## The four acts (off by default)
+
+Tonight runs one look all night with no acts: skip this section unless someone switches Settings → Act lineup back to a four-act lineup. If an older save still shows an act bar with a Next button, set Act lineup to "One look all night (no acts)".
 
 The act bar at the top of your console shows the current act. Tap **Next** to move everyone on; phones and the TV switch over and every phone gets a briefing. Plan on about two games per act.
 
