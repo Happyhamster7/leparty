@@ -67,7 +67,7 @@ export const PLACEHOLDER_ITEMS: PlaceholderItem[] = [
     key: 'reflect',
     name: 'Reflect',
     description:
-      'All drinks aimed at the buyer this round go back to their senders. Only one Reflect may be played per round across all teams — enforce that in the resolver, not here.',
+      'All drinks aimed at the buyer this round go back to their senders. Only one team can play Reflect each round.',
     buyer_rule: 'any',
     limit_per_round: null,
     limit_per_night: 1,
