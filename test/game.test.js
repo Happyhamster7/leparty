@@ -2136,31 +2136,42 @@ test('Fresh start goes back to round 1: rounds, bounties, penalties and the winn
   assert.equal(g.s.teams.length, 0);
 });
 
-test('Costume Parade: open, one vote per phone (changeable), close ranks best and worst and pays out', () => {
-  const { g, a, b, players } = setup(6);
-  const [p0, p1, p2] = players; // p0 and p2 on A, p1 on B
-  assert.throws(() => g.costumeVote({ voterId: 'phone-0001', best: p0.id, worst: p1.id }), /isn’t open/);
+test('Costume Parade: each phone picks 3 best and 3 worst (changeable); close ranks and pays out', () => {
+  const { g, a, b, players } = setup(8); // even players on A, odd on B
+  const id = (i) => players[i].id;
+  assert.throws(() => g.costumeVote({ voterId: 'phone-0001', best: [id(0), id(2), id(4)], worst: [id(1), id(3), id(5)] }), /isn’t open/);
   g.costumeOpen();
   assert.equal(g.tvView().costume.status, 'open');
   assert.equal(g.tvView().flash.kind, 'costume');
-  assert.throws(() => g.costumeVote({ voterId: 'x', best: p0.id, worst: p1.id }), /Refresh/);
-  assert.throws(() => g.costumeVote({ voterId: 'phone-0001', best: p0.id, worst: p0.id }), /different/);
-  g.costumeVote({ voterId: 'phone-0001', best: p1.id, worst: p0.id });
-  g.costumeVote({ voterId: 'phone-0001', best: p0.id, worst: p1.id }); // changed their mind: still one vote
-  g.costumeVote({ voterId: 'phone-0002', best: p0.id, worst: p1.id });
-  g.costumeVote({ voterId: 'phone-0003', best: p2.id, worst: p1.id });
+  assert.throws(() => g.costumeVote({ voterId: 'x', best: [id(0), id(2), id(4)], worst: [id(1), id(3), id(5)] }), /Refresh/);
+  assert.throws(() => g.costumeVote({ voterId: 'phone-0001', best: [id(0), id(2)], worst: [id(1), id(3), id(5)] }), /Pick 3 best and 3 worst/);
+  assert.throws(() => g.costumeVote({ voterId: 'phone-0001', best: [id(0), id(2), id(4)], worst: [id(0), id(3), id(5)] }), /both lists/);
+  g.costumeVote({ voterId: 'phone-0001', best: [id(1), id(3), id(5)], worst: [id(0), id(2), id(4)] });
+  g.costumeVote({ voterId: 'phone-0001', best: [id(0), id(2), id(4)], worst: [id(1), id(3), id(5)] }); // changed their mind: still one vote
+  g.costumeVote({ voterId: 'phone-0002', best: [id(0), id(2), id(6)], worst: [id(1), id(3), id(7)] });
+  g.costumeVote({ voterId: 'phone-0003', best: [id(0), id(4), id(6)], worst: [id(1), id(5), id(7)] });
   assert.equal(g.tvView().costume.votes, 3);
   assert.equal(g.tvView().costume.results, null, 'no results while voting');
   const before = a.points;
   g.costumeClose();
   const res = g.tvView().costume.results;
-  assert.deepEqual(res.best.map((x) => [x.name, x.votes]), [[p0.name, 2], [p2.name, 1]]);
-  assert.deepEqual(res.worst.map((x) => [x.name, x.votes]), [[p1.name, 3]]);
+  assert.deepEqual(res.best[0], { id: id(0), name: players[0].name, teamId: a.id, votes: 3 });
+  assert.equal(res.best.length, 3);
+  assert.equal(res.worst[0].id, id(1));
+  assert.equal(res.worst[0].votes, 3);
   assert.equal(a.points - before, 10, 'the best costume’s block scores');
   assert.ok(g.s.penalties.some((x) => x.teamId === b.id && x.reason === 'Worst costume' && x.qty === 1), 'the worst costume’s block owes a shot');
-  assert.throws(() => g.costumeVote({ voterId: 'phone-0004', best: p0.id, worst: p1.id }), /isn’t open/);
   g.costumeHide();
   assert.equal(g.tvView().costume.status, 'off');
+});
+
+test('Costume Parade: votes cast before 3-and-3 (one best, one worst) still count', () => {
+  const { g, players } = setup(6);
+  g.costumeOpen();
+  g.s.costume.votes['old-phone-1'] = { best: players[2].id, worst: players[3].id, ts: Date.now() };
+  g.costumeClose();
+  assert.equal(g.s.costume.results.best[0].id, players[2].id);
+  assert.equal(g.s.costume.results.worst[0].id, players[3].id);
 });
 
 test('LeParty blocks nobody is checked in on aren’t mirrored, and hosts can remove empty blocks', () => {

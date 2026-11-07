@@ -1255,13 +1255,16 @@
     let mine = null;
     try { mine = JSON.parse(LS.get(`sss_vote_${c.id}`) || 'null'); } catch {}
     const nameOf = (id) => (c.people || []).find((p) => p.id === id)?.name || '?';
+    const need = Math.min(c.picks || 3, Math.floor((c.people || []).length / 2));
+    const arr = (x) => [].concat(x || []);
+    const pickers = (key, emoji, label) => Array.from({ length: need }, (_, i) => `<label>${emoji} ${label} #${i + 1}<select id="cv_${key}${i}" name="${key}${i}" required>${options(arr(mine?.[key])[i])}</select></label>`).join('');
     return `<main class="landing vote">${head}
       <section class="card">
         <h2>Vote: best and worst costume</h2>
-        ${mine ? `<p class="serve">✅ You voted <b>${h(nameOf(mine.best))}</b> best and <b>${h(nameOf(mine.worst))}</b> worst. You can change it until voting closes.</p>` : '<p class="fine">One vote per phone. You can change it until the hosts close voting.</p>'}
+        ${mine ? `<p class="serve">✅ You voted <b>${arr(mine.best).map((x) => h(nameOf(x))).join(', ')}</b> best and <b>${arr(mine.worst).map((x) => h(nameOf(x))).join(', ')}</b> worst. You can change it until voting closes.</p>` : `<p class="fine">Pick your ${need} best and ${need} worst costumes: ${need * 2} different people. One vote per phone; you can change it until the hosts close voting.</p>`}
         <form data-form="costume" class="grid1">
-          <label>👑 Best costume<select id="cv_best" name="best" required>${options(mine?.best)}</select></label>
-          <label>🗑️ Worst costume<select id="cv_worst" name="worst" required>${options(mine?.worst)}</select></label>
+          <h3>👑 Best costumes</h3>${pickers('best', '👑', 'Best')}
+          <h3>🗑️ Worst costumes</h3>${pickers('worst', '🗑️', 'Worst')}
           <button class="btn big">${mine ? 'Change my vote' : 'Vote'}</button>
         </form>
         <p class="fine center">${plural(c.votes || 0, 'vote')} so far</p>
@@ -3547,7 +3550,7 @@
         <button class="tv-camera-btn" data-act="tvcam-open" title="Camera for host-run games">📷 ${tvCam.deviceId ? 'Camera on' : 'Camera'}</button>
         ${tvCamPicker()}
         ${tvCamWanted() && S.costume?.status !== 'open' ? tvCamScreen() : ''}
-        ${S.costume?.status === 'open' ? `<div class="tv-costume"><div><div class="eyebrow">👗 Costume Parade</div><h1>Vote: best &amp; worst costume</h1><p>Scan with your phone’s camera. One vote per phone.</p><p class="tv-big">${plural(S.costume.votes, 'vote')} so far</p></div><img class="qr" src="/qr.svg?url=${encodeURIComponent(`${location.origin}/vote`)}" alt="QR code to vote" /><p class="fine">${h(location.host)}/vote</p></div>` : ''}
+        ${S.costume?.status === 'open' ? `<div class="tv-costume"><div><div class="eyebrow">👗 Costume Parade</div><h1>Vote: best &amp; worst costume</h1><p>Scan with your phone’s camera: pick your 3 best and 3 worst. One vote per phone.</p><p class="tv-big">${plural(S.costume.votes, 'vote')} so far</p></div><img class="qr" src="/qr.svg?url=${encodeURIComponent(`${location.origin}/vote`)}" alt="QR code to vote" /><p class="fine">${h(location.host)}/vote</p></div>` : ''}
         ${S.costume?.status === 'closed' && S.costume.results ? `<div class="tv-costume results"><div class="eyebrow">👗 Costume Parade · ${plural(S.costume.results.voters, 'vote')}</div>${costumeResults(S.costume.results, true)}</div>` : ''}
         <header class="tv-h">${hero(true)}${oneAct() ? '' : `<div class="act-tag">${curAct().emoji} Act ${curAct().numeral} · ${h(curAct().name)}</div>`}<h1 class="logo">${h(S.settings.partyName)}</h1><div class="tagline">${h(curAct().tagline)}</div></header>
         ${phaseBanner()}
@@ -3829,13 +3832,15 @@
 
   const FORMS = {
     costume: async (data) => {
-      if (!data.best || !data.worst) return toast('Pick a best and a worst costume.', 'warn');
-      if (data.best === data.worst) return toast('Best and worst have to be different people.', 'warn');
-      const res = await send({ kind: 'costumeVote', voterId: voterId(), best: data.best, worst: data.worst });
+      const grab = (key) => Object.keys(data).filter((k) => k.startsWith(key) && /\d$/.test(k)).sort().map((k) => data[k]).filter(Boolean);
+      const best = grab('best');
+      const worst = grab('worst');
+      const all = [...best, ...worst];
+      if (new Set(all).size !== all.length) return toast('Pick different people for every spot.', 'warn');
+      const res = await send({ kind: 'costumeVote', voterId: voterId(), best, worst });
       if (!res?.ok) return toast(res?.error || 'That didn’t go through. Try again.', 'error');
-      LS.set(`sss_vote_${guest.costume?.id}`, JSON.stringify({ best: data.best, worst: data.worst }));
-      delete drafts.cv_best;
-      delete drafts.cv_worst;
+      LS.set(`sss_vote_${guest.costume?.id}`, JSON.stringify({ best, worst }));
+      for (const k of Object.keys(drafts)) if (k.startsWith('cv_')) delete drafts[k];
       toast('🗳️ Vote in. Thanks!', 'ok');
       render();
     },
