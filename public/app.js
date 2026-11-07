@@ -671,7 +671,13 @@
     reel.cur = c.id;
     v.loop = (S.clips || []).length === 1;
     v.src = c.url;
-    v.play().catch(() => {});
+    // With sound on (someone tapped 🔊 on the TV), the main reel plays clips with their audio.
+    // The bar wall's tiles stay muted so several clips never talk over each other.
+    v.muted = !soundOn();
+    v.play().catch(() => {
+      v.muted = true;
+      v.play().catch(() => {});
+    });
     const t = team(c.teamId);
     reel.el.querySelector('.reel-cap').innerHTML = `${t ? chip(t) : ''}<b>${h(c.caption || `${t ? t.name : 'Someone'} takes their shots`)}</b><small>filmed by ${h(c.playerName)} · ${time(c.ts)}</small>`;
     reel.el.classList.toggle('is-new', isNew);
@@ -689,6 +695,7 @@
   // ---------- TV act intros: a short trailer between acts ----------
   // Browsers only allow sound after someone has clicked the page, so the TV asks once.
   let audio = null;
+  const soundOn = () => !!audio && audio.state === 'running';
   const unlockAudio = () => {
     try {
       audio ||= new (window.AudioContext || window.webkitAudioContext)();
@@ -3328,6 +3335,11 @@
     },
     'tv-sound': () => {
       unlockAudio();
+      const v = reel.el?.querySelector('video');
+      if (v) {
+        v.muted = false;
+        v.play().catch(() => {});
+      }
       setTimeout(render, 100);
     },
     'act-ok': () => {
