@@ -24,6 +24,7 @@ Either PIN works on either page; the PIN decides your title, which only changes 
 - [ ] Commissary tab: hide anything you can't actually serve, adjust prices, set stock limits
 - [ ] Settings tab: party name, tagline, starting cash, max block size, who can spend (block decides by default)
 - [ ] Lockup tab: check the Holding Cell rules and drinks per round
+- [ ] TV camera: in OBS add DroidCam, start recording and **Start Virtual Camera**; on the TV page tap 📷 Camera → OBS Virtual Camera → Test it now
 - [ ] Stock the real bar: mixers, ice, shot glasses, plenty of water
 - [ ] Test with 3 or 4 phones, then wipe it: Settings tab, Fresh start (type RESET)
 

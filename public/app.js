@@ -721,6 +721,84 @@
     playClip(clips[(i + 1) % clips.length]);
   }
 
+  // ---------- TV camera: a live feed (DroidCam → OBS Virtual Camera) during host-run games ----------
+  // The TV page runs on the same computer as OBS, so it reads the camera straight from the browser:
+  // no streaming server. The chosen camera is remembered on this TV only.
+  const tvCam = { stream: null, el: null, deviceId: LS.get('sss_tvcam') || '', starting: false, error: '', picking: false, devices: [] };
+  const tvCamWanted = () => kind === 'tv' && !!tvCam.deviceId && S?.settings?.tvCamera !== false && S?.round?.phase === 'game' && !S.round.play && !S.winner;
+  async function tvCamStart() {
+    if (tvCam.stream || tvCam.starting) return;
+    tvCam.starting = true;
+    try {
+      tvCam.stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: tvCam.deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+      tvCam.error = '';
+      if (!tvCam.el) {
+        tvCam.el = document.createElement('video');
+        tvCam.el.muted = true;
+        tvCam.el.playsInline = true;
+        tvCam.el.autoplay = true;
+      }
+      tvCam.el.srcObject = tvCam.stream;
+      tvCam.el.play().catch(() => {});
+    } catch (err) {
+      tvCam.error = err?.name === 'NotReadableError' ? 'That camera is busy in another app. In OBS, use Start Virtual Camera and pick “OBS Virtual Camera” here.' : 'Couldn’t open that camera. Pick it again with 📷 Camera.';
+    }
+    tvCam.starting = false;
+    render();
+  }
+  function tvCamStop() {
+    if (tvCam.stream) for (const t of tvCam.stream.getTracks()) t.stop();
+    tvCam.stream = null;
+    if (tvCam.el) tvCam.el.srcObject = null;
+  }
+  // After every redraw: put the live <video> back in its slot (the same element, so it never blinks).
+  function syncTvCam() {
+    if (kind !== 'tv') return;
+    const slot = document.getElementById('tv_cam_slot');
+    if (!slot) {
+      if (tvCam.stream && !tvCamWanted()) tvCamStop();
+      return;
+    }
+    if (!tvCam.stream) return tvCam.error ? undefined : tvCamStart(); // after a failure, wait for a new pick
+    if (tvCam.el && tvCam.el.parentNode !== slot) slot.append(tvCam.el);
+    if (tvCam.el?.paused) tvCam.el.play().catch(() => {});
+  }
+  async function tvCamDevices() {
+    try {
+      // Device names only show once the browser has camera permission.
+      const probe = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }).catch(() => null);
+      tvCam.devices = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'videoinput');
+      if (probe) for (const t of probe.getTracks()) t.stop();
+    } catch {
+      tvCam.devices = [];
+    }
+    render();
+  }
+  function tvCamPicker() {
+    if (!tvCam.picking) return '';
+    return `<div class="sheet-bg" data-act="tvcam-close"></div>
+      <div class="sheet tvcam-sheet" role="dialog" aria-label="TV camera">
+        <h2>📷 Camera for host-run games</h2>
+        <p class="fine">During a host-run game this TV shows the camera full-screen. With DroidCam in OBS: press <b>Start Virtual Camera</b> in OBS (keep recording as usual), then pick <b>OBS Virtual Camera</b> here.</p>
+        <div class="targets">${tvCam.devices.map((d, i) => `<button class="target ${d.deviceId === tvCam.deviceId ? 'on' : ''}" data-act="tvcam-pick" data-device-id="${h(d.deviceId)}">${h(d.label || `Camera ${i + 1}`)}</button>`).join('') || '<p class="fine">No cameras found yet. Allow camera access, or check OBS is running.</p>'}
+          <button class="target ${tvCam.deviceId ? '' : 'on'}" data-act="tvcam-pick" data-device-id="">Off (normal TV screen)</button></div>
+        <div class="row"><button class="btn ghost" data-act="tvcam-refresh">🔄 Look again</button><button class="btn" data-act="tvcam-test">👀 Test it now</button><button class="btn ghost" data-act="tvcam-close">Done</button></div>
+        ${tvCam.test ? '<div class="tvcam-test" id="tv_cam_slot"></div>' : ''}
+        ${tvCam.error ? `<p class="warnbox">${h(tvCam.error)}</p>` : ''}
+      </div>`;
+  }
+  // The full-screen game view: the camera, with the round on top and who's playing along the bottom.
+  function tvCamScreen() {
+    const r = S.round;
+    const teams = roundTeams();
+    return `<div class="tv-cam">
+        <div id="tv_cam_slot" class="tv-cam-video"></div>
+        ${tvCam.error ? `<div class="tv-cam-error">${h(tvCam.error)}</div>` : ''}
+        <div class="tv-cam-top"><span class="eyebrow">${h(r.label)}</span><b>${h(r.gameName)}</b>${r.pickDeadline && !r.revealedAt ? `<span>picking: ${until(r.pickDeadline)}</span>` : ''}</div>
+        ${r.isGroup ? '' : `<div class="tv-cam-bottom">${teams.map((t) => `<span class="tv-cam-team" style="--c:${h(t.color)}"><b>${h(t.name)}</b> ${r.revealedAt ? names(r.picks[t.id]) || '—' : '…'}</span>`).join('')}</div>`}
+      </div>`;
+  }
+
   // ---------- TV act intros: a short trailer between acts ----------
   // Browsers only allow sound after someone has clicked the page, so the TV asks once.
   let audio = null;
@@ -1122,6 +1200,7 @@
     if (kind === 'tv') {
       syncReel();
       syncTileVideos();
+      syncTvCam();
     }
     for (const [id, val] of Object.entries(drafts)) {
       const el = document.getElementById(id);
@@ -3298,6 +3377,7 @@
         <form data-admin="updateSettings" class="grid2">
           <label class="check"><input type="checkbox" id="cl_on" name="clipsEnabled" ${st.clipsEnabled ? 'checked' : ''} /> Shot Cam on</label>
           <label class="check"><input type="checkbox" id="cl_ok" name="clipsNeedApproval" ${st.clipsNeedApproval ? 'checked' : ''} /> A host okays each clip before the TV shows it</label>
+          <label class="check span2"><input type="checkbox" id="cl_cam" name="tvCamera" ${st.tvCamera !== false ? 'checked' : ''} /> TV shows its camera full-screen during host-run games (pick the camera with 📷 on the TV)</label>
           <button class="btn span2">Save</button>
         </form>
       </section>
@@ -3379,6 +3459,9 @@
       <div class="tv">
         ${winnerScreen()}
         ${audio?.state === 'running' ? '' : '<button class="tv-sound" data-act="tv-sound">🔊 Tap once to enable intro sound</button>'}
+        <button class="tv-camera-btn" data-act="tvcam-open" title="Camera for host-run games">📷 ${tvCam.deviceId ? 'Camera on' : 'Camera'}</button>
+        ${tvCamPicker()}
+        ${tvCamWanted() ? tvCamScreen() : ''}
         <header class="tv-h">${hero(true)}${oneAct() ? '' : `<div class="act-tag">${curAct().emoji} Act ${curAct().numeral} · ${h(curAct().name)}</div>`}<h1 class="logo">${h(S.settings.partyName)}</h1><div class="tagline">${h(curAct().tagline)}</div></header>
         ${phaseBanner()}
         ${S.announcement ? `<div class="announce tv-ann"><span class="mega">📣</span><div class="announce-t">${h(S.announcement.text)}</div></div>` : ''}
@@ -3473,6 +3556,17 @@
       if (!canFilm()) return toast('Only inmates on a block can film for the TV.', 'warn');
       openCam();
     },
+    'tvcam-open': () => { tvCam.picking = true; tvCamDevices(); },
+    'tvcam-close': () => { tvCam.picking = false; tvCam.test = false; if (!tvCamWanted()) tvCamStop(); render(); },
+    'tvcam-refresh': () => tvCamDevices(),
+    'tvcam-pick': (d) => {
+      tvCamStop();
+      tvCam.deviceId = d.deviceId || '';
+      tvCam.error = '';
+      LS.set('sss_tvcam', tvCam.deviceId);
+      render();
+    },
+    'tvcam-test': () => { if (!tvCam.deviceId) return; tvCam.test = true; render(); },
     'tv-sound': () => {
       unlockAudio();
       setTimeout(() => { render(); syncTileVideos(); }, 100);

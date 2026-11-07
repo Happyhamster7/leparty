@@ -1678,3 +1678,18 @@ details.secret .mega { font-size: 40px; }
 .pd-pairs li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; padding: 8px 10px; background: var(--card2); border-radius: 8px; }
 .pd-pairs li.mine { outline: 3px solid var(--orange); }
 .pd-pairs .vs { opacity: 0.6; font-weight: 700; }
+
+/* TV camera: full-screen during host-run games */
+.tv-camera-btn { position: fixed; top: 12px; right: 12px; z-index: 30; background: #000a; color: #fff; border: 1px solid #fff4; border-radius: 999px; padding: 6px 14px; font: 600 13px system-ui, sans-serif; cursor: pointer; opacity: 0.55; }
+.tv-camera-btn:hover { opacity: 1; }
+.tv-cam { position: fixed; inset: 0; z-index: 20; background: #000; }
+.tv-cam-video, .tv-cam-video video, .tvcam-test video { width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
+.tv-cam-video { position: absolute; inset: 0; }
+.tv-cam-top { position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: baseline; gap: 18px; padding: 18px 28px 40px; background: linear-gradient(#000c, #0000); color: #fff; font: 600 clamp(18px, 1.6vw, 28px) 'Outfit', system-ui, sans-serif; }
+.tv-cam-top b { font-size: 1.5em; }
+.tv-cam-top .eyebrow { color: #ffd27a; }
+.tv-cam-bottom { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-wrap: wrap; gap: 10px 22px; padding: 40px 28px 18px; background: linear-gradient(#0000, #000c); color: #fff; font: 500 clamp(14px, 1.2vw, 22px) 'Outfit', system-ui, sans-serif; }
+.tv-cam-team { border-left: 6px solid var(--c); padding-left: 8px; }
+.tv-cam-error { position: absolute; top: 45%; left: 10%; right: 10%; text-align: center; color: #fff; font: 600 22px system-ui, sans-serif; }
+.tvcam-sheet { max-width: 640px; }
+.tvcam-test { margin-top: 12px; aspect-ratio: 16 / 9; background: #000; }

@@ -371,3 +371,5 @@ body[data-era='slammer'] .tv-center .placings li { border-width: clamp(4px, 0.8v
 body[data-era='slammer'] .tv-center .placings .rank { font-size: clamp(16px, 1.5vw, 24px); }
 body[data-era='slammer'] .tv-center .placings b { font-size: clamp(16px, 1.5vw, 22px); }
 body[data-era='slammer'] .tv-center .placings .b-n { font-size: clamp(14px, 1.3vw, 20px); }
+body[data-era='slammer'] .tv-cam-top .eyebrow { color: #ffd27a; font-size: 0.9em; }
+body[data-era='slammer'] .tv-camera-btn { border: 1px solid #fff4; border-radius: 999px; }
