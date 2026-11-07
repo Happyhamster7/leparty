@@ -2,16 +2,14 @@
 
 A jailhouse-themed party game web app for a birthday night. Everyone plays from their phone. Two hosts, the **Warden** and the **Commissary Officer**, run the night from their consoles, and a **TV** screen shows the standings.
 
-It mixes three things:
+It mixes two things:
 
 - **Survivor-style blocks.** Guests are split into teams of 4–5 called *Block A, Block B…*. The Warden runs games and pays winning blocks in commissary credits.
 - **Prison commissary.** Each block spends its shared budget on mixers, drinks for other blocks, punishments, bail bonds and contraband.
-- **Snitches (mafia-style).** About half the blocks secretly have a snitch. Blocks vote to kick suspects out. Get it wrong and an innocent cellmate ends up in the Holding Cell.
 
-Plus two places nobody wants to be:
+Plus one place nobody wants to be:
 
 - **🕳️ Holding Cell:** late arrivals and anyone kicked off a block. No commissary account, extra penalty drinks every round, tougher rules each game, and any block can punish them (they can't deflect). **Goal: get onto a block**, either bailed out by a block (🔑 Bail Bond) or paroled by the Warden.
-- **🔒 Solitary:** a timed sentence (in rounds) for rule-breakers, caught snitches and anonymous tip-offs. More penalty drinks, the toughest rules, no shopping, no voting. When the sentence is up they go back to their block, or to the Holding Cell if they were kicked out.
 
 > **House rules:** every drink can be swapped for a water or a sip, no questions asked. This line shows next to every drink owed and can be edited by the Warden.
 
@@ -21,9 +19,9 @@ Printable copies: [Inmate Rules](docs/INMATE_RULES.md) for guests, and the [Host
 
 There are two hosts: the **Warden** and the **Commissary Officer**. They have **identical powers**, and the title is purely for show: it changes the console header and how they're named in the feed ("The Commissary Officer paid Block A 10 credits"). Each logs in with their own PIN.
 
-**Hosts can sentence anyone** from the ⚖️ Punish / Lockup tab: one inmate, a block, the Holding Cell, everyone in Solitary, or everyone. They can hand out drinks, a written punishment (with presets like "10 push-ups" or "Waterfall"), or both, plus a reason that shows in the feed. Drinks go on the drink tab. The punishment sits on the person's Now tab until they tap Done, and hosts can clear it. Dare-style commissary punishments (Yard Drills, Chain Gang, Confession Booth) also land on each victim's Now tab.
+**Hosts can sentence anyone** from the ⚖️ Punish / Lockup tab: one inmate, a block, the Holding Cell, or everyone. They can hand out drinks, a written punishment (with presets like "10 push-ups" or "Waterfall"), or both, plus a reason that shows in the feed. Drinks go on the drink tab. The punishment sits on the person's Now tab until they tap Done, and hosts can clear it. Dare-style commissary punishments (Yard Drills, Chain Gang, Confession Booth) also land on each victim's Now tab.
 
-**Only hosts can give or take credits**, through payouts, fines, game results and refunds. Hosts also **judge every snitch sabotage**: a snitch tapping Done only files a claim, and nothing happens until a host approves it (🕵️ Sabotage tab).
+**Only hosts can give or take credits**, through payouts, fines, game results and refunds.
 
 Players still spend their block's credits at the commissary themselves, and track their own penalty drinks on the honor system. Hosts can correct the drink tab at any time.
 
@@ -34,7 +32,7 @@ Players still spend their block's credits at the commissary themselves, and trac
 | `/`       | Guests      | Book in with a name and play all night (the phone remembers you)                             |
 | `/warden` | Warden      | Host console (Warden PIN)                                                                    |
 | `/officer`| Commissary Officer | Host console (Officer PIN)                                                            |
-| `/tv`     | Projector   | Standings, current game and its lockup rules, Holding/Solitary with drinks owed, block-vote progress, gossip feed, QR code to join |
+| `/tv`     | Projector   | Standings, current game and its lockup rules, the Holding Cell with drinks owed, gossip feed, QR code to join |
 
 ### The four acts
 
@@ -51,16 +49,16 @@ There are two four-act lineups, picked under Settings → Act lineup. Each act r
 | I · Booking Day (*Shawshank*) | Concrete, intake-form paper, jumpsuit orange, stencilled type; money is **🍜 soups** | **Cell Toss**: raid another block and pocket up to 10 soups (deflectable). Your rap sheet stars rise with owed drinks, open punishments, Holding and Solitary. |
 | II · Arkham Asylum (Batman villains) | Night purple and toxic green, patient-file paper, Creepster type; money is **❓ Riddler tokens** | **Joker's Wild**: draw ×1 or ×10 for your gang (royal flush guaranteed every 8th). Four **Riddler's riddles** each in your Patient File. Every inmate has a **patron villain** (Joker, Riddler, Bane, Poison Ivy, Mr. Freeze, Scarecrow or Killer Croc); two of the same on a block is a gang bonus. |
 | III · The Heist (*Money Heist*) | Heist red, Royal Mint cream, gold vault; money is **€** | Each crew picks a **heist role** (Berlin, Nairobi, Tokyo, the Professor…); **the printing press** pays 1 € per 10 saved after every game; heist streaks pay extra. |
-| IV · The Great Escape (*Prison Break*) | Midnight blue, searchlight yellow; money is **favours** | Snitches are **rats** and the stakes double. Every Block Vote is a **Lockdown** ("… was a rat"). |
+| IV · The Great Escape (*Prison Break*) | Midnight blue, searchlight yellow; money is **favours** | The final act: same rules, a new look. |
 
 **Game Night.** The original lineup: Vice City (GTA), Wish Upon Teyvat (Genshin Impact), Convergence (TFT) and Emergency Meeting (Among Us), each with its own game-style interface (detailed below).
 
 | Act | Look | Mechanics | Stamps |
 | --- | --- | --- | --- |
-| I · Vice City (GTA) | Neon sunset and palms; money is **$cash** | **Stick-Up** (12): steal up to 10 from another block; they can deflect it back. A **wanted level** in the top corner: Solitary 5 stars, Holding 3, owed drinks and open punishments 1 each. | MISSION PASSED / FAILED, BUSTED, WASTED |
+| I · Vice City (GTA) | Neon sunset and palms; money is **$cash** | **Stick-Up** (12): steal up to 10 from another block; they can deflect it back. A **wanted level** in the top corner: Holding 3 stars, owed drinks and open punishments 1 each. | MISSION PASSED / FAILED, BUSTED, WASTED |
 | II · Wish Upon Teyvat (Genshin Impact) | Played **in landscape** like the game; money is **✦Primogems** | A **Wish** screen with the event banner: Wish ×1 (10) or Wish ×10 (100) for the party. 3★ (69%) is mostly trash, 4★ (25%) is decent, 5★ (6%) is a jackpot, and every party's 8th wish without one is a guaranteed 5★. Everyone in the party sees the wish animation (a shooting star in the best rarity's colour, then the results). Some wishes give the wisher drinks to hand out. **Daily Commissions**: four small party quests per inmate (toast another block, find your Vision twin, drink a glass of water…), each +2 Primogems for the party and 100 Adventure EXP; all four pay a Guild bonus (+5, 250 EXP). **Visions**: everyone gets an element; two of one element on a block is an Elemental Resonance worth +1 Primogem per commission. **Adventure Rank** rises with EXP from commissions, wishes, finished punishments and served drinks. | CHALLENGE COMPLETED / FAILED, FROZEN, PARTY DEFEATED |
 | III · Convergence (TFT) | Hextech teal and gold; money is **🪙gold** | **Augments**: each block picks one of three (Shot Caller picks if there is one). **Interest**: after every game, +1 gold per 10 unspent, up to 5. **Streaks**: win or lose heats in a row for +1 at 2, +2 at 3, +3 at 4 or more. | 1ST / 2ND / … PLACE, BENCHED, ELIMINATED |
-| IV · Emergency Meeting (Among Us) | Deep space and impostor red; money is **credits** | Snitches are Impostors and the stakes double: sabotage skims twice as much and catching one pays double. Opening Block Votes calls an **EMERGENCY MEETING** on every screen, and closing them shows "*Name* was / was not an Impostor." | VICTORY / DEFEAT, LOCKED IN MEDBAY, EJECTED |
+| IV · Emergency Meeting (Among Us) | Deep space and impostor red; money is **credits** | The final act: same rules, a new look. | VICTORY / DEFEAT, LOCKED IN MEDBAY, EJECTED |
 
 On phones, each act turns the whole app into that game's own interface, with your profile in the corner:
 
@@ -82,7 +80,7 @@ The look of each act, in more detail:
 - **TFT:** the client's featured-set banner on Home (a painted "Convergence" nebula with a gold-ringed portal and a floating hex arena), a hexagonal crest by PLAY, a Riot ID under your summoner icon, gold diamond ornaments on panels, League-client panels with gold borders, hextech buttons, hexagon tab icons, and shop items as champion cards bordered in cost colours (grey, green, blue, purple, gold). Type: Cinzel and Source Sans 3, standing in for the client's Beaufort for LOL (headings and buttons) and Spiegel (body and labels), which are Riot-only.
 - **Among Us:** chunky black-outlined UI, the Now tab becomes a task list with a TOTAL TASKS COMPLETED bar, voting looks like the meeting tablet with a coloured crewmate per player, and a flashing red meeting banner. Type: Fredoka (in place of the game's rounded UI font).
 
-Augments (Act III): Windfall (+20 now), Rich Get Richer (+5 now and an interest cap of 10), Hustler (25% off the shop), Thrill of the Hunt (+4 per heat win), Built Different (a free Deflect and Bribe), Cursed Crown (+30 now, but 2 drinks each).
+Augments (Act III): Windfall (+20 now), Rich Get Richer (+5 now and an interest cap of 10), Hustler (25% off the shop), Thrill of the Hunt (+4 per heat win), Built Different (a free Deflect), Cursed Crown (+30 now, but 2 drinks each).
 
 Warp odds and pity are in Settings. Any shop item can be limited to one act in the Commissary tab ("On the shelf during").
 
@@ -135,19 +133,18 @@ By default each **block plays on one phone**, as in LeParty. Guests don't book i
 3. **Someone on the block scans the card** (or types the code at the site), and that device becomes the block's phone. **The latest scan wins**: the previous phone is signed out and told so. If a card leaks, **New code** issues a fresh one and signs the phone out.
 4. **The block phone does everything for the block**, straight away with no seconding: picks players from the roster, shops and sends drinks, takes or deflects punishments, picks bounty rewards, films at the bar and renames the block. It shows who on the block owes penalty drinks or dares (hosts tick them off in ⚖️ Punish / Lockup).
 
-With one phone per block the **snitch game is off** (a secret role needs a private phone), so the Snitches and Sabotage host tabs are hidden. To go back to every guest on their own phone, with the snitch game, set ⚙️ Settings → **Phones** to "Every guest on their own phone" (or the `PHONE_MODE=guest` environment variable for new nights).
+To put every guest on their own phone instead, set ⚙️ Settings → **Phones** to "Every guest on their own phone" (or the `PHONE_MODE=guest` environment variable for new nights).
 
 ### The phone
 
 With the one-look lineup the phone is **one screen with no tab bar**. It shows only what that guest needs right now, and changes by itself as the round moves on:
 
 - **Always:** a slim header (name, block, ★ points, credits) and a **🏆 button** that opens the leaderboard (standings, roster, drink tab).
-- **When it applies:** incoming punishments, a Winner's Bounty reward to pick, purchase requests to second, penalty drinks and punishments to do, and Lights Out or block-vote picks.
-- **Game:** pick your block's players (with How to play and your Classified box folded in).
+- **When it applies:** incoming punishments, a Winner's Bounty reward to pick, purchase requests to second, and penalty drinks and punishments to do.
+- **Game:** pick your block's players (with How to play folded in).
 - **Spending:** the shop, as category tabs with one-line rows, plus your bounties and power-ups. The shop only shows while it's open: in Spending, or between rounds if a host opens it.
 - **Drinks:** your place in line, or the 30-second clock with Film it when your block is at the bar.
 - **Between rounds:** your block at a glance (credits, points, streak, blockmates, rename) and power-ups coming up.
-- **Secret role:** a one-line fold once snitches are planted.
 
 The gossip feed is on the TV only. The four-act lineups keep their own game-style phone interfaces.
 
@@ -160,8 +157,6 @@ The gossip feed is on the TV only. The four-act lineups keep their own game-styl
 | Punishment      | The target block gets a pulsing alert: **Take it** or **🔄 Deflect**. A deflect bounces it back to the sender, who can deflect again. The **Holding Cell can't deflect**, so it lands immediately. Penalty drinks (e.g. Shot Penalty = 1 each) go straight onto the drink tab, and credit drains (Shakedown −15) are charged automatically. The rest goes to the Warden to enforce. |
 | Bail bond       | 🔑 Pull a specific inmate out of the Holding Cell onto your block (blocks max out at 5, which is configurable)                                                 |
 | Deflect card    | Into your block's stash. Other blocks only see "a suspicious purchase".                                                                                       |
-| Vote immunity   | 💵 Bribe the Guard. During a block vote, use it on a blockmate and votes against them don't count.                                                            |
-| Intel           | 📡 Wiretap. Tells your block whether it has a hidden snitch right now (not who). Careful: the snitch sees the result too.                                     |
 
 Hosts can add, edit, hide, price and stock-limit any item, and can refund any order.
 
@@ -184,7 +179,7 @@ The drinks go to the block as one order in the hosts' 🧾 Orders tab ("5× Spir
 - **Matchups and heats.** For each game, hosts can split the blocks into heats (pairs, threes, fours, or everyone at once) or build a custom heat, such as a final between the winners. A block left over joins the previous heat, so nobody plays alone. Hosts start each heat and score it, and credits are paid per heat. Phones say *You're up*, *Up next (1 heat before yours)*, *Your heat is done* or *Sitting this one out*. The TV shows the heat being played and what's next.
 - **Block decisions.** By default spending is a block decision: a blockmate's purchase becomes a request that goes through when the Shot Caller approves it or 2 blockmates second it. The asker can withdraw it and the Shot Caller can veto it. Blockmates get a phone alert for each new request. Hosts can switch to *Shot Caller only* or *anyone, instantly* in Settings.
 - **Block identity.** The Shot Caller (or anyone, if the block has none) names the block and sets a motto. It shows on phones, the Board and the TV, and the block's color tints its members' screens.
-- **Less clutter.** Bookings roll up into one feed line. Lights Out names are grouped by block, with your own block first. Host inmate lists are sorted block by block.
+- **Less clutter.** Bookings roll up into one feed line. Host inmate lists are sorted block by block.
 
 ### Rounds (LeParty's game loop)
 
@@ -195,33 +190,13 @@ The night runs in **4 acts of 3 rounds** (12 games), from the host console's **�
 3. **Spending.** The shop opens. Blocks send drinks (each scores its menu points when it's served, not when it's bought) and buy power-ups. **Every power-up starts the round after it's bought** (or, for a Winner's Bounty reward, the round after it's picked); each block's My Block tab lists what's coming and when. The power-ups: **🪞 Reflect** (60, one per block per night, one block per round) bounces every drink aimed at you this round back to its sender, with the points going to you; **👁️ Eye Spy** (40, one per round) shows who sent what to whom, round by round; **🎯 Open Bounty** and **🏅 Winner's Bounty** (50 each, one running per block) ask the block to send 5 drinks within 3 rounds, and cost 3 Spirit shots the next round if it doesn't. Bounties pay points, never credits: the Open Bounty pays **+25 points** the moment it's hit; hitting the Winner's Bounty lets the block pick one reward on a phone for the rest of the night (stacks if won again): **🎁 Bonus drinks** (+1 free drink lands on the target of every order it sends; it scores only what was paid for), **🛡️ Fewer drinks** (every order sent to it lands with 1 fewer drink; an order knocked to 0 never reaches the bar, and its sender still scores) or **⭐ +1 point per drink** it sends.
 4. **Drinks.** The host taps **Close shop and start drinks**. Every block that was sent drinks queues for the bar, fewest drinks first (ties random), with penalties owed from earlier rounds added in. The host console becomes the bar: what to pour for whoever's up and who's next, a Show senders toggle, **Next** (serves the next block, starts its **30-second** clock and pays the senders' points), **Back** (undo a Next pressed by mistake) and **Done in time**. A block whose clock runs out owes an extra shot of the cheapest drink next round. **Drinking streak:** each time the bartender taps Done in time, the block's streak grows by the drinks it just finished and it earns **5 credits × its streak** (2 drinks: +10; 3 more next round: streak 5, +25). Running out of time resets the streak to 0. Phones show "Safe this round", your place in line, or the countdown with a Film it button; the TV becomes a wall of block tiles, each playing its Shot Cam clip once one is filmed. The round ends by itself when every block is done.
 
-When a round ends, the Holding Cell owes `+1` drink each and Solitary `+2` (configurable), and solitary sentences tick down. Hosts can drop drinks straight into the next queue (**Assign drinks**), and at the end of the night **Crown the winner** puts the winning block on every screen.
+When a round ends, the Holding Cell owes `+1` drink each (configurable). Hosts can drop drinks straight into the next queue (**Assign drinks**), and at the end of the night **Crown the winner** puts the winning block on every screen.
 
-The older tools still work outside rounds: heats and **Finish & pay out** in the Games tab, and **End round now** for Holding/Solitary penalties without a game.
+The older tools still work outside rounds: heats and **Finish & pay out** in the Games tab, and **End round now** for Holding Cell penalties without a game.
 
 ### Game briefings
 
-When a host hits ▶ Go live on a game, **every phone pops up a briefing**. It shows how to play (the "How to play" text you write for each game), plus the extra Holding Cell and Solitary rules for that game. Tap *Got it* to dismiss it. It stays on the Rap Sheet and shows on the TV too. If a host edits the rules while the game is live, the briefing pops up again on every phone.
-
-### Snitches and sabotage (Among Us style)
-
-1. **🐀 Plant snitches** (host console → Snitches). Each block independently gets one hidden snitch with the chance you set (default 50%), so some blocks have one and some don't. "At least one overall" is on by default.
-2. **🗂️ Sabotage hides inside the briefing.** Every briefing has a *Classified* box that looks the same on every phone.
-   - **Inmates** who open it see "No orders for you this round. Play it straight."
-   - **The snitch** sees their secret sabotage for that game ("volunteer to go first, then choke", "talk your block into the worst strategy"). You can also write a game-specific one, e.g. "miss your first two flips".
-   - Everyone gets the same pop-up and taps the same things, so you can't spot the snitch by who's looking at their phone. Only snitches get tasks.
-3. **The hosts judge it.** When the snitch thinks they pulled it off, they tap Done, and that goes to the 🕵️ Sabotage tab. If a host approves, **5 credits are skimmed from the snitch's block**.
-   - There's no public feed line. Only that block sees an **"Unexplained withdrawal"** in its account activity, plus a "credits just vanished" alert on their phones. That's the clue.
-   - Rejecting hands the orders back to the snitch. An approved sabotage can be voided, which refunds the block.
-   - The snitch gets one reroll per game.
-4. **🌙 Lights Out.** *Everyone* picks a name on their phone. Snitch picks are tip-offs. Everyone else's picks are anonymous suspicions.
-5. **☀️ Lights On.** Each snitch's target goes to solitary for 1 round ("an anonymous tip"). The feed whispers who was most suspected.
-6. **🗳️ Block Votes.** Each block votes only on its own members, and a **majority of the block** is needed to kick someone.
-   - Kicked the snitch: the block gets **+25 plus every credit the snitch skimmed**. The snitch is exposed, serves 1 round in solitary, then goes to the Holding Cell.
-   - Kicked an innocent: the block pays **−10**, and the innocent goes to the Holding Cell, where they have to earn their way back.
-7. **🎭 Reveal** at the end of the night unmasks every snitch who got away with it. **Surviving snitches cash in:** they get **3 drinks + 1 per approved sabotage** to hand out to anyone from their phone, plus a prize you set.
-
-All the numbers, the sabotage list and the prize are editable in the host console (Snitches and Sabotage tabs).
+When a host hits ▶ Go live on a game, **every phone pops up a briefing**. It shows how to play (the "How to play" text you write for each game), plus the extra Holding Cell rule for that game. Tap *Got it* to dismiss it. It stays on the Rap Sheet and shows on the TV too. If a host edits the rules while the game is live, the briefing pops up again on every phone.
 
 ## Running it
 
@@ -236,11 +211,9 @@ The Warden opens `http://localhost:3000/warden` and the Commissary Officer opens
 
 1. Put `/tv` on the TV. Guests scan the QR code and book in. Everyone starts in the Holding Cell.
 2. **🔐 Blocks**: "Build blocks from Holding" splits everyone into Block A, B, C… of up to 5. Late arrivals stay in Holding until a block bails them out or you parole them with the dropdown.
-3. **🐀 Snitches**: plant snitches. Tweak the task lists and survivor prize if you like.
-4. **🏁 Games**: add the schedule with **how-to-play rules** for each game (plus optional Holding/Solitary rules and a custom sabotage). Tap **Pairs** (or Threes, Fours, or a custom heat) to set matchups. **▶ Start heat** makes the game live and pops the briefing up on every phone. **🏁 Score heat** pays out each heat. **🏆 Finish & pay out** closes the game and applies the round penalties.
-5. **🧾 Orders**: your bartender queue. Tap Delivered / Enforced as you go.
-6. **🕵️ Sabotage**: approve or reject snitch sabotage claims as they come in.
-7. **⛓️ Lockup**: throw rule-breakers into solitary, release people, fix the drink tab, and edit the standing rules.
+3. **🏁 Games**: add the schedule with **how-to-play rules** for each game (plus an optional Holding Cell rule). Tap **Pairs** (or Threes, Fours, or a custom heat) to set matchups. **▶ Start heat** makes the game live and pops the briefing up on every phone. **🏁 Score heat** pays out each heat. **🏆 Finish & pay out** closes the game and applies the round penalties.
+4. **🧾 Orders**: your bartender queue. Tap Delivered / Enforced as you go.
+5. **⛓️ Lockup**: hand out punishments, fix the drink tab, and edit the standing rules.
 
 Environment variables:
 
@@ -286,7 +259,7 @@ npm run dev   # restarts on file changes
 npm test      # rules engine + API tests (node:test)
 ```
 
-- `lib/game.js`: all game rules and per-viewer views. Players never receive other players' secret roles, anyone's sabotage, the sabotage list, other blocks' stash/ledger/wiretap results, or login tokens.
+- `lib/game.js`: all game rules and per-viewer views. Players never receive other blocks' stash or ledger, or login tokens.
 - `lib/api.js`: the HTTP API. Phones poll `GET /api/state` (a cheap version check when nothing changed) and send every change to `POST /api/action`. Each change reloads the state, applies it and saves with compare-and-set, retrying if someone else saved first.
 - `lib/store.js`: where state lives: Upstash Redis when its variables are set, otherwise memory mirrored to `DATA_FILE`.
 - `api/`: the Vercel functions. `server.js`: the same handlers behind Express for `npm start`.

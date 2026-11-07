@@ -21,7 +21,6 @@
     atab: LS.get('sss_atab') || '', // empty: Setup while the night is a draft, Round after
     sheet: null, // { itemId, targetTeamId, targetPlayerId }
     reveal: false,
-    revealTask: false,
     finishing: null,
     renaming: false,
   };
@@ -38,21 +37,14 @@
   const teamName = (id) => (id === HOLDING ? 'Holding Cell' : team(id)?.name || '—');
   const chip = (t, extra = '') => (t ? `<span class="chip ${extra}" style="--c:${h(t.color)}">${h(t.name)}</span>` : '<span class="chip muted">🕳️ Holding Cell</span>');
   const targetChip = (id) => (id === HOLDING ? '<span class="chip muted">🕳️ Holding Cell</span>' : chip(team(id)));
-  const roleOf = (key) => S?.roles?.[key];
   const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
   const inHolding = () => S.players.filter((p) => p.status === 'holding');
-  const inSolitary = () => S.players.filter((p) => p.status === 'solitary');
   const blockmates = (teamId) => S.players.filter((p) => p.teamId === teamId);
-  const statusChip = (p) =>
-    p.status === 'solitary'
-      ? `<span class="chip red">🔒 Solitary · ${plural(p.solitary.rounds, 'round')}</span>`
-      : p.status === 'holding'
-        ? chip(null)
-        : chip(team(p.teamId));
+  const statusChip = (p) => (p.status === 'holding' ? chip(null) : chip(team(p.teamId)));
 
-  // Wanted level, GTA style: Solitary is five stars, Holding three, and owed drinks or open sentences add one each.
+  // Wanted level, GTA style: Holding is three stars, and owed drinks or open sentences add one each.
   const wantedLevel = (p) =>
-    p.status === 'solitary' ? 5 : p.status === 'holding' ? 3 : (p.drinksOwed > 0 ? 1 : 0) + ((p.sentences || []).some((x) => x.status === 'open') ? 1 : 0);
+    p.status === 'holding' ? 3 : (p.drinksOwed > 0 ? 1 : 0) + ((p.sentences || []).some((x) => x.status === 'open') ? 1 : 0);
   const wantedStars = (p) => {
     const n = wantedLevel(p);
     return `<div class="wanted${n >= 3 ? ' hot' : ''}" title="${h(W('wanted', 'Wanted level'))} ${n} of 5" aria-label="${h(W('wanted', 'Wanted level'))} ${n} of 5">${[1, 2, 3, 4, 5].map((i) => `<i class="${i <= n ? 'on' : ''}">★</i>`).join('')}</div>`;
@@ -68,7 +60,6 @@
       const st = myTeam.streak || 0;
       return `<div class="hud-x">${myTeam.augment ? `${S.augments[myTeam.augment].emoji} ` : ''}${st > 1 ? `🔥 ${st} win streak` : st < -1 ? `💧 ${-st} loss streak` : 'No streak'}</div>`;
     }
-    if (id === 'amongus') return `<div class="hud-x">${S.mafia.phase === 'vote' ? W('inMeeting', '🚨 Meeting') : W('onTask', '🛰️ On task')}</div>`;
     return '';
   }
 
@@ -86,9 +77,9 @@
   const nick = (t) => (t?.nickname ? ` <span class="nick">“${h(t.nickname)}”</span>` : '');
 
   // ---------- block helpers ----------
-  // Blockmates (other than the asker, and not in solitary) who must second a purchase request.
+  // Blockmates (other than the asker) who must second a purchase request.
   const secondsNeeded = (t, requesterId) =>
-    Math.min(S.settings.requestSeconds, blockmates(t.id).filter((p) => p.id !== requesterId && p.status !== 'solitary').length);
+    Math.min(S.settings.requestSeconds, blockmates(t.id).filter((p) => p.id !== requesterId).length);
   const requestsMine = () => (S.me?.status === 'block' ? team(S.me.teamId)?.requests || [] : []);
   const actionableRequests = () => requestsMine().filter((r) => r.by !== S.me.id && (S.me.isCaptain || !r.seconds.includes(S.me.id)));
   const willRequest = () => {
@@ -908,15 +899,6 @@
       buzz([200, 100, 200, 100, 400]);
       return;
     }
-    if (a.engine !== 'amongus') return;
-    const word = a.words || {};
-    if (prev.mafia.phase !== 'vote' && next.mafia.phase === 'vote') splash('meeting', word.meeting || 'Emergency Meeting', word.meetingSub || 'Block votes are open', 3200);
-    const r = next.mafia.lastResult;
-    if (r?.kind === 'vote' && r.ts && r.ts !== prev.mafia.lastResult?.ts) {
-      const rat = word.snitch || 'Impostor';
-      const lines = (r.ejected || []).map((x) => `${x.name} was ${x.snitch ? '' : 'not '}${/^[aeiou]/i.test(rat) ? 'an' : 'a'} ${rat}.`);
-      splash('ejected', lines.length ? lines.join(' ') : 'No one was ejected.', lines.length ? '' : '(Skipped)', 4200);
-    }
   }
 
   function setOnline(on) {
@@ -1007,14 +989,9 @@
         buzz(100);
       }
     }
-    if (a.task && b.task && a.task.id === b.task.id && a.task.status === 'claimed') {
-      if (b.task.status === 'done') toast('✅ The hosts signed off. Clean getaway.', 'ok');
-      if (b.task.status === 'active') toast('❌ The hosts didn’t buy it. Try again.', 'warn');
-    }
     if (a.status !== b.status) {
       const words = next.acts[next.act].splash;
-      if (b.status === 'solitary') splash('busted', words.solitary, `Solitary · ${plural(b.solitary.rounds, 'round')}`);
-      else if (b.status === 'holding' && a.status === 'block') splash('wasted', words.kicked, 'Kicked to the Holding Cell');
+      if (b.status === 'holding' && a.status === 'block') splash('wasted', words.kicked, 'Kicked to the Holding Cell');
     }
     if (b.teamId) {
       // A heat (or a game played without heats) just got scored with this block in it.
@@ -1050,8 +1027,7 @@
       }
     }
     if (a.status !== b.status || a.teamId !== b.teamId) {
-      if (b.status === 'solitary') toast(`🔒 You’ve been thrown in SOLITARY (${plural(b.solitary.rounds, 'round')}).`, 'warn');
-      else if (b.status === 'holding') toast('🕳️ You’re in the Holding Cell. Earn your way onto a block!', 'warn');
+      if (b.status === 'holding') toast('🕳️ You’re in the Holding Cell. Earn your way onto a block!', 'warn');
       else if (b.teamId) toast(`🔐 You’re on ${teamName(b.teamId)}.`, 'ok');
       buzz(300);
     }
@@ -1072,7 +1048,6 @@
       toast(`🍺 You owe ${plural(b.drinksOwed - a.drinksOwed, 'more penalty drink')}.`, 'warn');
       buzz(200);
     }
-    if (prev.mafia.phase !== next.mafia.phase && ['night', 'vote'].includes(next.mafia.phase)) buzz(300);
   }
   const isIncomingFor = (v) => (o) => o.type === 'punishment' && o.status === 'incoming' && v.me.teamId && o.targetTeamId === v.me.teamId;
 
@@ -1091,7 +1066,6 @@
     document.body.dataset.kind = kind;
     document.body.dataset.era = actId();
     document.body.dataset.engine = eng();
-    document.body.dataset.phase = S?.mafia?.phase || 'off';
     document.body.dataset.status = S?.me?.status || '';
     $app.innerHTML = page();
 
@@ -1197,7 +1171,6 @@
     const me = S.me;
     const myTeam = team(me.teamId);
     const r = S.round;
-    const m = S.mafia;
     const live = S.games.find((g) => g.status === 'live');
     const onBlock = me.status === 'block' && myTeam;
     // Only when it's time to buy: the round's Spending phase, or between rounds if a host opens it.
@@ -1209,10 +1182,8 @@
       ${me.device ? blockOwedCard(myTeam) : ''}
       ${me.status !== 'block' ? lockupRules(me.status, live) : ''}
       ${incomingAlerts()}
-      ${dealerCard()}
       ${rewardPicker()}
       ${myTeam && !me.device ? requestsCard(myTeam) : ''}
-      ${['night', 'vote'].includes(m.phase) && !me.device ? mafiaPanel() : ''}
       ${todos.length ? `<section class="card todo-card"><h3>📌 To do</h3><ul class="todos">${todos.join('')}</ul></section>` : ''}
       ${roundCard()}
       ${matchCard()}
@@ -1220,8 +1191,6 @@
       ${onBlock && (shopTime || between) ? blockExtras(myTeam) : ''}
       ${onBlock && between ? blockSummary(myTeam) : ''}
       ${me.status === 'holding' ? holdingRoster() : ''}
-      ${m.phase === 'over' && !me.device ? mafiaPanel() : ''}
-      ${m.phase !== 'off' && !me.device ? secretFold() : ''}
       ${!r && !shopTime && !todos.length ? '<section class="card center"><div class="mega">⏳</div><h2>Waiting for the first round</h2><p class="fine">Keep this page open. It changes by itself when it’s your turn to do something.</p></section>' : ''}`;
   }
 
@@ -1246,21 +1215,9 @@
       ${myTeam.motto ? `<p class="motto">${h(myTeam.motto)}</p>` : ''}
       <div class="stats"><div><b>${h(money(myTeam.budget))}</b><span>credits</span></div><div><b>★${myTeam.points || 0}</b><span>points</span></div><div><b>🔥${myTeam.drinkStreak || 0}</b><span>streak</span></div></div>
       <p class="fine">Streak = drinks finished in time in a row: each time you finish at the bar you get ${h(money(S.settings.streakCredits || 5))} × your streak.</p>
-      <p class="mates">${members.map((p) => `${p.isCaptain ? '👑' : ''}${h(p.name)}${p.id === S.me.id ? ' (you)' : ''}${p.status === 'solitary' ? ' 🔒' : ''}`).join(' · ')}</p>
+      <p class="mates">${members.map((p) => `${p.isCaptain ? '👑' : ''}${h(p.name)}${p.id === S.me.id ? ' (you)' : ''}`).join(' · ')}</p>
       ${renameControls(myTeam, members)}
     </section>`;
-  }
-
-  // The snitch game's secret role, folded away until you want to look.
-  function secretFold() {
-    const role = roleOf(S.me.role);
-    return `<details class="card fold secret"><summary>🕵️ Your secret role</summary>
-      <p class="fine">Shield your screen.</p>
-      <div class="mega">${role.emoji}</div><h3>${h(role.name)}</h3><p>${h(role.blurb)}</p>
-      ${S.me.role === 'snitch' ? `<p class="fine">Sabotages pulled off: <b>${S.me.dirt}</b> · credits skimmed: <b>${S.me.skimmed}</b>.</p>` : ''}
-      ${S.me.revealed ? '<p class="fine">You’ve been exposed. Your powers are gone.</p>' : ''}
-      ${classifiedBox()}
-    </details>`;
   }
 
   function boardSheet() {
@@ -1275,7 +1232,7 @@
   const PRIMO = '<svg class="gi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1l3 8 8 3-8 3-3 8-3-8-8-3 8-3z" fill="#f4ecd6" stroke="#b5925a" stroke-width="1"/><path d="M12 6l1.6 4.4L18 12l-4.4 1.6L12 18l-1.6-4.4L6 12l4.4-1.6z" fill="#9fd3f5"/></svg>';
   const FATE = '<svg class="gi-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#c98ad8" stroke="#f6e7b4" stroke-width="1.5"/><path d="M12 5l1.8 5.2L19 12l-5.2 1.8L12 19l-1.8-5.2L5 12l5.2-1.8z" fill="#fff6dc"/></svg>';
   const tabDot = (k) =>
-    (k === 'rap' && needsMafiaAction()) || (k === 'yard' && ui.tab !== 'yard' && todoItems().length) || (k === 'cell' && (myIncoming().length || actionableRequests().length)) ? '<i class="dot"></i>' : '';
+    (k === 'rap' && needsBriefing()) || (k === 'yard' && ui.tab !== 'yard' && todoItems().length) || (k === 'cell' && (myIncoming().length || actionableRequests().length)) ? '<i class="dot"></i>' : '';
 
   const VISION_GLYPH = { Pyro: '🔥', Hydro: '💧', Anemo: '🌀', Electro: '⚡', Dendro: '🌿', Cryo: '❄️', Geo: '🪨' };
   const arOf = (p) => Math.min(60, 1 + Math.floor((p.adventureExp || 0) / 200));
@@ -1287,7 +1244,7 @@
   // Elemental Resonance: two or more of one Vision among a block's active members.
   const resonanceOf = (teamId) => {
     const counts = {};
-    for (const m of blockmates(teamId)) if (m.status !== 'solitary') counts[m.vision] = (counts[m.vision] || 0) + 1;
+    for (const m of blockmates(teamId)) counts[m.vision] = (counts[m.vision] || 0) + 1;
     return Object.keys(counts).filter((v) => counts[v] >= 2);
   };
 
@@ -1298,7 +1255,7 @@
       ['yard', '📜', 'Adventurer Handbook', handbookTab],
       ['wish', '✨', 'Wish', wishTab],
       ['shop', '🛍️', 'Paimon’s Bargains', shopTab],
-      ['cell', me.status === 'block' ? '👥' : me.status === 'holding' ? '🕳️' : '🔒', me.status === 'block' ? 'Party Setup' : me.status === 'holding' ? 'Holding Cell' : 'Solitary', cellTab],
+      ['cell', me.status === 'block' ? '👥' : '🕳️', me.status === 'block' ? 'Party Setup' : 'Holding Cell', cellTab],
       ['events', '🎪', 'Events', eventsTab],
       ['rap', '📖', 'Archive', rapTab],
       ['board', '🏆', 'Leaderboard', boardTab],
@@ -1334,9 +1291,9 @@
           <div class="gi-title"><span class="gi-ico">${cur[1]}</span><div><b>${h(cur[2])}</b><small>${h(me.name)} · AR ${ar} · ${statusChip(me)}</small></div></div>
           <div class="row">${giPills(myTeam)}<button class="gi-x" data-act="tab" data-tab="menu" aria-label="Back to the Paimon Menu">✕</button></div>
         </header>
-        <main class="gi-main">${phaseBanner()}${announcement()}${incomingAlerts()}${dealerCard()}${cur[0] === 'yard' ? '' : drinkCard()}${cur[3]()}</main>`);
+        <main class="gi-main">${phaseBanner()}${announcement()}${incomingAlerts()}${cur[0] === 'yard' ? '' : drinkCard()}${cur[3]()}</main>`);
     }
-    const signature = myTeam?.motto || (myTeam ? `Adventurer of ${myTeam.name}${myTeam.nickname ? ` “${myTeam.nickname}”` : ''}` : me.status === 'holding' ? 'Waiting in the Holding Cell…' : 'Doing time in Solitary.');
+    const signature = myTeam?.motto || (myTeam ? `Adventurer of ${myTeam.name}${myTeam.nickname ? ` “${myTeam.nickname}”` : ''}` : 'Waiting in the Holding Cell…');
     return shell(`<section class="gi-profile" style="--vc:${visionColor(me)}">
         <div class="gi-namecard">
           ${avatar(me, 'big')}
@@ -1353,7 +1310,7 @@
       </section>
       <section class="gi-menu">
         <div class="gi-menu-top"><span class="gi-paimon">✦ Paimon Menu</span>${giPills(myTeam)}</div>
-        <div class="gi-notices">${phaseBanner()}${announcement()}${incomingAlerts()}${dealerCard()}</div>
+        <div class="gi-notices">${phaseBanner()}${announcement()}${incomingAlerts()}</div>
         <div class="gi-grid">${screens.map(([k, icon, label]) => `<button class="gi-app" data-act="${k === 'cam' ? 'shotcam' : 'tab'}" data-tab="${k}"><span class="gi-app-i">${icon}${giDot(k)}</span><span>${h(label)}</span></button>`).join('')}</div>
       </section>`);
   }
@@ -1361,10 +1318,10 @@
   // Landscape acts show this to phones held upright.
   const rotatePrompt = () => `<div class="rot" role="alert"><div class="rot-phone"></div><b>Rotate your device</b><small>Act ${curAct().numeral} · ${h(curAct().name)} is played in landscape, like the game.</small></div>`;
   const sheetsAndModals = () => `${ui.sheet ? buySheet() : ''}${actUnseen() ? actModal() : briefingUnseen() ? briefingModal() : ''}`;
-  const alerts = (withDrinks = true) => `${phaseBanner()}${announcement()}${incomingAlerts()}${dealerCard()}${withDrinks ? drinkCard() : ''}`;
+  const alerts = (withDrinks = true) => `${phaseBanner()}${announcement()}${incomingAlerts()}${withDrinks ? drinkCard() : ''}`;
   const dotFor = (k) => {
     const me = S.me;
-    return tabDot(k) || (k === 'yard' && (todoItems().length || (eng() === 'genshin' && (me.commissions || []).some((c) => !c.done)))) || (k === 'events' && !!liveGame() && briefingUnseen()) || (k === 'rap' && S.mafia.phase === 'vote' && me.status === 'block' && !S.mafia.myVote);
+    return tabDot(k) || (k === 'yard' && (todoItems().length || (eng() === 'genshin' && (me.commissions || []).some((c) => !c.done)))) || (k === 'events' && !!liveGame() && briefingUnseen());
   };
   const clock = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -1442,7 +1399,7 @@
         ['events', '🕰️', 'Guard Rota', '#3b4a6b', eventsTab],
         ['shop', '📦', 'Contraband', '#6b4a2b', shopTab],
         ['cell', '⛓️', 'Cellmates', '#4a4f5c', cellTab],
-        ['rap', '🐀', S.mafia.phase === 'vote' ? 'Rat Hunt' : 'Rap Sheet', '#8a1c1c', rapTab],
+        ['rap', '🐀', 'Rap Sheet', '#8a1c1c', rapTab],
         ['board', '🏁', 'Escape Board', '#2d4f3a', boardTab],
         ['mail', '🤫', 'Whispers', '#3a3a5a', mailTab],
         ['cam', '📹', 'Guard Cams', '#1f2f3f', null],
@@ -1483,7 +1440,6 @@
   const RANKS = ['Challenger', 'Grandmaster', 'Master', 'Diamond', 'Emerald', 'Platinum', 'Gold', 'Silver', 'Bronze', 'Iron'];
   const rankName = (t) => (t ? RANKS[Math.min(RANKS.length - 1, Math.round(((rankOf(t.id) - 1) / Math.max(1, S.teams.length - 1)) * 6))] : 'Unranked');
   function socialStatus(p) {
-    if (p.status === 'solitary') return ['busy', 'In Solitary'];
     if (p.status === 'holding') return ['away', 'In Queue (Holding)'];
     const g = liveGame();
     const heat = g?.heats?.find((x) => x.status === 'live');
@@ -1551,7 +1507,7 @@
       ['events', '🛸', 'Schedule'],
       ['shop', '🛒', 'Shop'],
       ['cell', '👥', 'Crew'],
-      ['rap', '🚨', S.mafia.phase === 'vote' ? 'Meeting' : 'Role'],
+      ['rap', '🚨', 'Role'],
       ['board', '🏆', 'Stats'],
       ['mail', '💬', 'Chat'],
       ['cam', '📹', 'Cams'],
@@ -1573,7 +1529,7 @@
         <div class="au-money">${t ? h(money(t.budget)) : ''}</div>
       </header>
       <div class="au-notices">${alerts(false)}</div>
-      <div class="au-floor">${crowd.map((p) => `<div class="au-crew ${p.id === me.id ? 'me' : ''} ${p.status === 'solitary' ? 'out' : ''}"><span class="au-name">${h(p.name)}</span>${crewIcon(p)}</div>`).join('')}</div>
+      <div class="au-floor">${crowd.map((p) => `<div class="au-crew ${p.id === me.id ? 'me' : ''}"><span class="au-name">${h(p.name)}</span>${crewIcon(p)}</div>`).join('')}</div>
       <nav class="au-btns">${screens.map(([k, icon, label]) => `<button data-act="${k === 'cam' ? 'shotcam' : 'tab'}" data-tab="${k}"><span class="au-bi">${icon}${dotFor(k) ? '<i class="dot"></i>' : ''}</span><span>${h(label)}</span></button>`).join('')}</nav>
       ${sheetsAndModals()}</div>`;
   }
@@ -1629,8 +1585,8 @@
     return `<section class="card gi-party">
       <h3>${h(W('party', 'Party Setup'))}</h3>
       <div class="gi-lineup">${mates
-        .map((p, i) => `<div class="gi-char ${p.id === S.me.id ? 'me' : ''} ${p.status === 'solitary' ? 'out' : ''}" style="--vc:${visionColor(p)}">
-          <span class="gi-slot">${i + 1}</span>${avatar(p)}<b>${h(p.name)}${p.isCaptain ? ' 👑' : ''}</b><small>${W('rank') ? 'Lv' : 'AR'} ${arOf(p)} · ${h(visionLabel(p.vision))}${p.status === 'solitary' ? ' · 🔒' : ''}</small></div>`)
+        .map((p, i) => `<div class="gi-char ${p.id === S.me.id ? 'me' : ''}" style="--vc:${visionColor(p)}">
+          <span class="gi-slot">${i + 1}</span>${avatar(p)}<b>${h(p.name)}${p.isCaptain ? ' 👑' : ''}</b><small>${W('rank') ? 'Lv' : 'AR'} ${arOf(p)} · ${h(visionLabel(p.vision))}</small></div>`)
         .join('')}</div>
       <p class="gi-res">${res.length ? `${h(W('resonance', 'Elemental Resonance'))}: ${res.map((v) => `<b>${visionGlyph(v)} ${h(S.visions[v].resonance)}</b>`).join(', ')}. Each commission pays ${PRIMO}+${res.length} extra.` : 'No Elemental Resonance. Two party members with the same Vision unlock one (and extra Primogems per commission).'}</p>
     </section>`;
@@ -1645,7 +1601,7 @@
     if (!fate) return '<section class="card"><h3>Wish</h3><p class="empty">No banner is running right now.</p></section>';
     const left = t ? st.warpPity - (t.pity || 0) : st.warpPity;
     const one = priceOf(fate);
-    const blocked = !t ? 'Only adventurers in a party can wish. Get bailed onto a block first.' : me.status === 'solitary' ? 'No wishing from Solitary.' : '';
+    const blocked = !t ? 'Only adventurers in a party can wish. Get bailed onto a block first.' : '';
     const ask = !blocked && willRequest();
     const wishBtn = (n) => `<button class="gi-wish" data-act="wish" data-count="${n}" ${blocked || t.budget < one * n ? 'disabled' : ''}>
         <small>${ask ? 'Ask the block: ' : ''}${h(W('draw', 'Wish'))} ×${n}</small><span>${drawIcon()} × ${n} <em>(${currencyIcon()}${one * n})</em></span></button>`;
@@ -1751,46 +1707,18 @@
     </section>`;
   }
 
-  function needsMafiaAction() {
-    const m = S.mafia;
-    const me = S.me;
-    if (briefingUnseen() || me.dealerDrinks) return true;
-    if (me.status === 'solitary') return false;
-    if (m.phase === 'vote') return me.status === 'block' && !m.myVote;
-    if (m.phase === 'night') return !m.myNight;
-    return false;
-  }
+  const needsBriefing = () => briefingUnseen();
 
   const myIncoming = () => (S.orders || []).filter(isIncomingFor(S));
 
   function phaseBanner() {
     const shut = S.settings.shopOpen === false && !((kind === 'player' || kind === 'tv') && S.round) ? '<div class="phase shop-shut">🔒 COMMISSARY CLOSED</div>' : '';
-    return mafiaBanner(S.mafia) + shut;
-  }
-
-  function mafiaBanner(m) {
-    if (m.phase === 'night') return `<div class="phase night">🌙 LIGHTS OUT — Night ${m.round}${kind === 'player' ? ` · everyone pick a name ${flat() ? 'below' : 'on your Rap Sheet'}` : ''}</div>`;
-    if (m.phase === 'vote') return `<div class="phase vote">${eng() === 'amongus' ? `🚨 ${W('meeting', 'Emergency Meeting').toUpperCase()}` : '🗳️ BLOCK VOTES OPEN'} · ${plural(m.votesCast, 'vote')} cast</div>`;
-    if (m.phase === 'over') return `<div class="phase over">${m.winner === 'snitches' ? '🐀 Snitches got away with it!' : '🎉 Every snitch was caught!'}</div>`;
-    return '';
+    return shut;
   }
 
   function announcement() {
     if (!S.announcement) return '';
     return `<div class="announce"><span class="mega">📣</span><div><div class="announce-t">${h(S.announcement.text)}</div><div class="fine">from ${h(S.announcement.byName || 'the Warden')} · ${time(S.announcement.ts)}</div></div></div>`;
-  }
-
-  // A surviving snitch's payout: hand out penalty drinks to anyone.
-  function dealerCard() {
-    const me = S.me;
-    if (!me.dealerDrinks) return '';
-    const targets = S.players.filter((p) => p.id !== me.id);
-    return `<div class="dealercard">
-      ${me.role === 'snitch' && me.revealed ? `<div class="drink-n">🐀 You got away with it!</div>
-      <p>Hand out <b>${plural(me.dealerDrinks, 'drink')}</b> to anyone you like.${S.settings.snitchPrize ? ` Plus: <b>${h(S.settings.snitchPrize)}</b>` : ''}</p>` : `<div class="drink-n">🥃 Drinks to hand out</div>
-      <p>You’ve got <b>${plural(me.dealerDrinks, 'drink')}</b> to give to anyone you like.</p>`}
-      <div class="targets">${targets.map((p) => `<button class="target" data-act="dealDrink" data-target-id="${p.id}">🥃 ${h(p.name)}${p.drinksOwed ? ` <small>(${p.drinksOwed})</small>` : ''}</button>`).join('')}</div>
-    </div>`;
   }
 
   function drinkCard() {
@@ -1830,7 +1758,7 @@
       .join('')}</ul>`;
   }
 
-  // Standing + per-game rules for whoever is in holding / solitary.
+  // Standing + per-game rules for whoever is in the Holding Cell.
   function lockupRules(status, live) {
     const st = S.settings;
     if (status === 'holding') {
@@ -1841,16 +1769,6 @@
         <p class="fine">Get out by getting bailed 🔑 by a block (they buy it at the commissary) or by impressing the hosts. ${st.holdingDrinks ? `+${plural(st.holdingDrinks, 'drink')} every round you’re in here.` : ''}</p>
       </section>`;
     }
-    if (status === 'solitary') {
-      const s = S.me.solitary;
-      return `<section class="card lockup solitary">
-        <div class="eyebrow">🔒 Solitary confinement · ${plural(s.rounds, 'round')} left</div>
-        <p class="fine">Sentenced for ${h(s.reason)}.</p>
-        <p><b>${h(st.solitaryRules)}</b></p>
-        ${live?.solitaryRule ? `<p class="rule">This game: ${h(live.solitaryRule)}</p>` : ''}
-        <p class="fine">${st.solitaryDrinks ? `+${plural(st.solitaryDrinks, 'drink')} every round. ` : ''}When you’re out you go back to ${S.me.teamId ? h(teamName(S.me.teamId)) : 'the Holding Cell'}.</p>
-      </section>`;
-    }
     return '';
   }
 
@@ -1858,7 +1776,6 @@
     return `<section class="card live"><div class="eyebrow">🏁 Now in the yard</div><h2>${h(live.name)}</h2>${live.desc ? `<p>${h(live.desc)}</p>` : ''}
       ${live.rules ? `<div class="rules">${h(live.rules)}</div>` : ''}
       ${live.holdingRule ? `<p class="rule">🕳️ Holding Cell: ${h(live.holdingRule)}</p>` : ''}
-      ${live.solitaryRule ? `<p class="rule">🔒 Solitary: ${h(live.solitaryRule)}</p>` : ''}
       ${heatList(live)}</section>`;
   }
 
@@ -1876,7 +1793,6 @@
 
   function todoItems() {
     const me = S.me;
-    const m = S.mafia;
     const items = [];
     if (me.drinksOwed) {
       items.push(`<li class="todo drink"><span class="mega">🍺</span><div><b>${plural(me.drinksOwed, 'penalty drink')}</b><div class="fine">${h(S.settings.houseRules)}</div></div><div class="row"><button class="btn sm" data-act="drank">Drank one ✅</button>${canFilm() ? '<button class="btn ghost sm" data-act="shotcam" aria-label="Film it for the TV">🎥</button>' : ''}</div></li>`);
@@ -1884,10 +1800,7 @@
     for (const x of (me.sentences || []).filter((y) => y.status === 'open')) {
       items.push(`<li class="todo sentence"><span class="mega">⚖️</span><div><b>${h(x.text)}</b><div class="fine">from ${h(x.from)}${x.reason ? ` · ${h(x.reason)}` : ''} · ${time(x.ts)}</div></div><button class="btn sm" data-act="sentence-done" data-sentence-id="${x.id}">Done ✅</button></li>`);
     }
-    if (me.dealerDrinks) items.push(goItem('🥃', `Hand out ${plural(me.dealerDrinks, 'drink')}`, 'Pick who drinks at the top of the screen.'));
-    if (flat()) return items; // night picks, votes and requests show as their own cards
-    if (m.phase === 'night' && me.status !== 'solitary' && !m.myNight) items.push(goItem('🌙', 'Lights Out: pick a name', 'Everyone picks, so nobody can tell who the snitch is.', 'rap'));
-    if (m.phase === 'vote' && me.status === 'block' && !m.myVote) items.push(goItem('🗳️', 'Vote in your block vote', 'Majority kicks someone off the block.', 'rap'));
+    if (flat()) return items; // requests show as their own cards
     const reqs = actionableRequests();
     if (reqs.length) items.push(goItem('🛒', `${plural(reqs.length, 'purchase request')} waiting on you`, reqs.map((r) => `${r.emoji} ${r.name} (${r.byName})`).join(', '), 'cell'));
     return items;
@@ -2105,7 +2018,7 @@
       body = '<p class="fine">Waiting for the hosts to start the next round.</p>';
     }
     const g = S.games.find((x) => x.id === r.gameId);
-    const rules = g?.rules && ['game', 'results'].includes(r.phase) ? `<details class="howto" ${needsPick() ? '' : 'open'}><summary>📋 How to play</summary><div class="rules">${h(g.rules)}</div>${me.status === 'holding' && g.holdingRule ? `<p class="rule">🕳️ ${h(g.holdingRule)}</p>` : ''}${me.status === 'solitary' && g.solitaryRule ? `<p class="rule">🔒 ${h(g.solitaryRule)}</p>` : ''}</details>` : '';
+    const rules = g?.rules && ['game', 'results'].includes(r.phase) ? `<details class="howto" ${needsPick() ? '' : 'open'}><summary>📋 How to play</summary><div class="rules">${h(g.rules)}</div>${me.status === 'holding' && g.holdingRule ? `<p class="rule">🕳️ ${h(g.holdingRule)}</p>` : ''}</details>` : '';
     return `<section class="card round-card">${head}${body}${rules}</section>`;
   }
 
@@ -2123,7 +2036,7 @@
         ${mates
           .map((p) => {
             const ok = eligible.has(p.id);
-            const why = p.status === 'solitary' ? 'In solitary' : r.cooldown.includes(p.id) ? 'Played recently' : '';
+            const why = r.cooldown.includes(p.id) ? 'Played recently' : '';
             return `<label class="pick ${ok ? '' : 'off'} ${chosen.has(p.id) ? 'on' : ''}"><input type="checkbox" name="p:${p.id}" ${chosen.has(p.id) ? 'checked' : ''} ${ok ? '' : 'disabled'} data-pick="${p.id}" /><span class="pick-n">${h(p.name)}${p.id === S.me.id ? ' (you)' : ''}</span><small>${why || `${plural(S.played?.[p.id] || 0, 'game')} played`}</small></label>`;
           })
           .join('')}
@@ -2376,7 +2289,7 @@
           <label>Anime openings: seconds to guess<input id="su_g" name="guessSeconds" type="number" min="10" max="300" value="${st.guessSeconds}" /></label>
           <label>Games a player sits out after playing<input id="su_cd" name="cooldownGames" type="number" min="0" max="5" value="${st.cooldownGames}" /></label>
           <label>Streak credits (× drinks finished in a row)<input id="su_streak" name="streakCredits" type="number" min="0" max="100" value="${st.streakCredits}" /></label>
-          <label>Phones<select id="su_phones" name="phoneMode"><option value="team" ${st.phoneMode === 'team' ? 'selected' : ''}>One phone per block (scan the block card)</option><option value="guest" ${st.phoneMode === 'guest' ? 'selected' : ''}>Every guest on their own phone (snitch game on)</option></select></label>
+          <label>Phones<select id="su_phones" name="phoneMode"><option value="team" ${st.phoneMode === 'team' ? 'selected' : ''}>One phone per block (scan the block card)</option><option value="guest" ${st.phoneMode === 'guest' ? 'selected' : ''}>Every guest on their own phone</option></select></label>
           <label>Spending<select id="su_spend" name="spendMode">${[['anyone', 'Straight away'], ['request', 'A block decision (seconds)'], ['captain', 'Shot Caller only']].map(([k, l]) => `<option value="${k}" ${st.spendMode === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
           <button class="btn span2">Save</button>
         </form>
@@ -2442,7 +2355,7 @@
       ${S.winner ? winnerCard() : ''}
       ${rewardPicker()}
       ${incomingAlerts()}
-      ${dealerCard()}
+      
       ${roundCard()}
       ${pendingCard()}
       ${augmentCard()}
@@ -2463,8 +2376,6 @@
     const blocked =
       S.settings.shopOpen === false
         ? 'The commissary is closed. The hosts will open it again soon.'
-        : me.status === 'solitary'
-        ? 'No commissary privileges in solitary. Window shop and weep.'
         : !myTeam
           ? 'Holding Cell inmates don’t get a commissary account. Get a block to bail you out 🔑'
           : S.settings.spendMode === 'captain' && !me.isCaptain
@@ -2475,7 +2386,7 @@
       ['drinks', '🍺 Drinks', ['drink', 'gift']],
       ['power', '⚡ Power-ups', ['reflect', 'eyespy', 'bounty']],
       ['punish', '😈 Punish', ['punishment']],
-      ['stash', '🔄 Stash', ['deflect', 'immunity', 'intel', 'bail', 'warp']],
+      ['stash', '🔄 Stash', ['deflect', 'bail', 'warp']],
       ['supplies', '🧃 Supplies', ['supply']],
     ];
     const cats = CATS.map(([k, label, types]) => [k, label, S.items.filter((i) => types.includes(i.type))]).filter(([, , list]) => list.length);
@@ -2571,17 +2482,13 @@
   function cellTab() {
     const me = S.me;
     if (me.status === 'holding') return holdingView();
-    if (me.status === 'solitary' && !me.teamId) return `${lockupRules('solitary')}${holdingRoster()}`;
     const myTeam = team(me.teamId);
     const members = blockmates(myTeam.id);
     const inv = myTeam.inventory || {};
-    const voteOpen = S.mafia.phase === 'vote';
-    const immune = new Set(S.mafia.immune);
-    const stash = inv.deflect || inv.immunity;
+    const stash = inv.deflect;
     const ledger = myTeam.ledger || [];
     const orders = S.orders || [];
     return `
-      ${me.status === 'solitary' ? lockupRules('solitary') : ''}
       ${eng() === 'genshin' ? partyLineup(myTeam) : ''}
       ${augmentCard()}
       <section class="card cell-head block-banner" style="--c:${h(myTeam.color)}">
@@ -2598,19 +2505,14 @@
       ${blockExtras(myTeam)}
       <section class="card">
         <h3>Blockmates · ${members.length}/${S.settings.maxBlockSize}</h3>
-        <ul class="roster">${members.map((p) => `<li>${p.isCaptain ? '👑' : '🧡'} ${h(p.name)}${p.id === me.id ? ' <span class="fine">(you)</span>' : ''}${p.status === 'solitary' ? ' <span class="chip red">solitary</span>' : ''}${immune.has(p.id) ? ' 🛡️' : ''}${p.drinksOwed ? ` <span class="fine">🍺×${p.drinksOwed}</span>` : ''}</li>`).join('')}</ul>
+        <ul class="roster">${members.map((p) => `<li>${p.isCaptain ? '👑' : '🧡'} ${h(p.name)}${p.id === me.id ? ' <span class="fine">(you)</span>' : ''}${immune.has(p.id) ? ' 🛡️' : ''}${p.drinksOwed ? ` <span class="fine">🍺×${p.drinksOwed}</span>` : ''}</li>`).join('')}</ul>
       </section>
-      ${stash || (voteOpen && inv.immunity) ? `<section class="card">
+      ${stash ? `<section class="card">
         <h3>Contraband stash</h3>
         <div class="stash">
-          <div class="stash-i"><span class="mega">🔄</span><b>${inv.deflect || 0}</b><span>Snitch Slips<br/><small>bounce a punishment back</small></span></div>
-          <div class="stash-i"><span class="mega">💵</span><b>${inv.immunity || 0}</b><span>Bribes<br/><small>block-vote immunity</small></span></div>
+          <div class="stash-i"><span class="mega">🔄</span><b>${inv.deflect || 0}</b><span>Deflect cards<br/><small>bounce a punishment back</small></span></div>
         </div>
-        ${voteOpen && inv.immunity && me.status === 'block' ? `
-          <p class="fine">Block vote is open: bribe a guard to protect someone on your block.</p>
-          <div class="targets">${members.filter((p) => p.status === 'block').map((p) => `<button class="target" style="--c:${h(myTeam.color)}" data-act="immunity" data-target-id="${p.id}" ${immune.has(p.id) ? 'disabled' : ''}>${immune.has(p.id) ? '🛡️ ' : ''}${h(p.name)}</button>`).join('')}</div>` : ''}
       </section>` : ''}
-      ${(myTeam.intel || []).length ? `<section class="card"><h3>📡 Wiretap results</h3><ul class="roster">${myTeam.intel.map((i) => `<li>${time(i.ts)}: ${i.hasSnitch ? '<b class="red-t">🐀 There IS a snitch on this block.</b>' : '✅ No snitch on this block (at the time).'} <span class="fine">bought by ${h(i.by)}</span></li>`).join('')}</ul></section>` : ''}
       ${holdingRoster(true)}
       ${ledger.length ? `<details class="card fold"><summary>🧾 Account activity</summary><ul class="roster ledger">${ledger.map((l) => `<li><span class="${l.amount < 0 ? 'red-t' : 'green-t'}">${l.amount > 0 ? '+' : ''}${l.amount}</span> ${h(l.text)} <span class="fine">${time(l.ts)}</span></li>`).join('')}</ul><p class="fine">Unexplained withdrawals happen when a snitch pulls off a sabotage.</p></details>` : ''}
       ${orders.length ? `<details class="card fold"><summary>📦 Block orders · ${orders.length}</summary><ul class="orders">${orders
@@ -2638,7 +2540,7 @@
     if (forBlock && !list.length) return '';
     return `<section class="card">
       <h3>🕳️ Holding Cell (${list.length})</h3>
-      ${list.length ? `<ul class="roster">${list.map((p) => `<li>${h(p.name)} <span class="fine">#${h(p.inmateNo)}${p.role ? ` · was ${h(roleOf(p.role)?.name)}` : ''}</span>${p.drinksOwed ? ` <span class="fine">🍺×${p.drinksOwed}</span>` : ''}</li>`).join('')}</ul>` : '<p class="empty">Empty.</p>'}
+      ${list.length ? `<ul class="roster">${list.map((p) => `<li>${h(p.name)} <span class="fine">#${h(p.inmateNo)}</span>${p.drinksOwed ? ` <span class="fine">🍺×${p.drinksOwed}</span>` : ''}</li>`).join('')}</ul>` : '<p class="empty">Empty.</p>'}
       ${forBlock ? '<p class="fine">Room on your block? Buy a 🔑 Bail Bond to recruit one of them. Or punish them. They can’t deflect. 😈</p>' : ''}
     </section>`;
   }
@@ -2656,8 +2558,6 @@
 
   function rapTab() {
     const me = S.me;
-    const role = roleOf(me.role);
-    const m = S.mafia;
     return `
       <section class="mugshot">
         <div class="mug-lines"></div>
@@ -2670,58 +2570,19 @@
           ${me.drinksDone ? `<div class="mug-dept">Penalty drinks served: ${me.drinksDone}</div>` : ''}
         </div>
       </section>
-      ${m.phase !== 'off' ? `
-        <section class="card role-card ${ui.reveal ? 'shown' : ''}" data-act="reveal">
-          ${ui.reveal
-            ? `<div class="mega">${role.emoji}</div><h2>${h(role.name)}</h2><p>${h(role.blurb)}</p>${me.role === 'snitch' ? `<p class="fine">Sabotages pulled off: <b>${me.dirt}</b> · credits skimmed: <b>${me.skimmed}</b>. Survive the reveal to cash in ${plural(S.settings.snitchRewardDrinks + me.dirt * S.settings.drinksPerSabotage, 'drink')}.</p>` : ''}${me.revealed ? '<p class="fine">You’ve been exposed. Your powers are gone.</p>' : ''}<p class="fine">Tap to hide</p>`
-            : `<div class="mega">🗂️</div><h2>Secret role</h2><p class="fine">Tap to reveal. Shield your screen!</p>`}
-        </section>` : ''}
-      ${briefingCard()}
-      ${mafiaPanel()}`;
-  }
-
-  // Every briefing has the same "Classified" box. It's empty for inmates and holds the sabotage
-  // for a snitch, so a glance at someone's phone gives nothing away.
-  function classifiedBox() {
-    const t = S.me.task;
-    if (!ui.revealTask) return `<div class="classified" data-act="reveal-task">🗂️ <b>Classified</b> <span class="fine">Tap to open. Shield your screen!</span></div>`;
-    if (!t) {
-      return `<div class="classified open" data-act="reveal-task">🗂️ <b>Classified</b>
-        <p class="task-text">No orders for you this round. Play it straight — and keep an eye on your blockmates.</p>
-        <p class="fine">Tap to close.</p></div>`;
-    }
-    const active = t.status === 'active';
-    const label = {
-      claimed: '⏳ Claimed — waiting for the Warden or the Commissary Officer to sign off',
-      done: '✅ The hosts signed off',
-      skipped: 'Skipped',
-      expired: 'Expired',
-      revoked: '❌ Voided by the hosts',
-    }[t.status];
-    return `<div class="classified open">
-      <div data-act="reveal-task">🗂️ <b>Classified</b> <span class="fine">· ${h(t.gameName)}</span></div>
-      <p class="task-text" data-act="reveal-task">${h(t.text)}</p>
-      ${active
-        ? `<div class="row"><button class="btn ghost sm" data-act="task" data-result="skip">Skip</button>${t.rerolled ? '' : '<button class="btn ghost sm" data-act="reroll">🎲 Reroll</button>'}<button class="btn sm" data-act="task" data-result="done">Done ✅</button></div>
-           <p class="fine">${t.rejected ? '❌ The hosts didn’t buy it last time. ' : ''}Pull it off without anyone noticing, then tap Done. A host has to sign off before it counts. Tap the orders to close.</p>`
-        : `<p class="fine">${label}. Tap the orders to close.</p>`}
-    </div>`;
+      ${briefingCard()}`;
   }
 
   function briefingBody(g) {
     return `<h2>${h(g.name)}</h2>${g.desc ? `<p>${h(g.desc)}</p>` : ''}
       ${g.rules ? `<div class="rules">${h(g.rules)}</div>` : '<p class="fine">No written rules — the hosts will explain.</p>'}
       ${g.holdingRule ? `<p class="rule">🕳️ Holding Cell: ${h(g.holdingRule)}</p>` : ''}
-      ${g.solitaryRule ? `<p class="rule">🔒 Solitary: ${h(g.solitaryRule)}</p>` : ''}
-      ${S.me.status !== 'block' ? lockupReminder() : ''}
-      ${classifiedBox()}`;
+      ${S.me.status !== 'block' ? lockupReminder() : ''}`;
   }
 
   function lockupReminder() {
     const st = S.settings;
-    return S.me.status === 'holding'
-      ? `<p class="fine">You’re in the Holding Cell: ${h(st.holdingRules)}</p>`
-      : `<p class="fine">You’re in Solitary: ${h(st.solitaryRules)}</p>`;
+    return `<p class="fine">You’re in the Holding Cell: ${h(st.holdingRules)}</p>`;
   }
 
   function briefingModal() {
@@ -2739,45 +2600,7 @@
     const g = liveGame();
     if (g) return `<section class="card brief-card"><div class="eyebrow">📋 Briefing · now in the yard</div>${briefingBody(g)}</section>`;
     const next = S.games.find((x) => x.status === 'upcoming');
-    return `<section class="card brief-card"><div class="eyebrow">📋 Briefing</div><p class="fine">No game running.${next ? ` Up next: <b>${h(next.name)}</b>.` : ''}</p>${classifiedBox()}</section>`;
-  }
-
-  function mafiaPanel() {
-    const m = S.mafia;
-    const me = S.me;
-    if (m.phase === 'off') return '<section class="card"><h3>🐀 The Snitch Game</h3><p class="fine">Snitches haven’t been planted yet. When they are, half the blocks (maybe) get one. Your role shows up here.</p></section>';
-    if (m.phase === 'over') return `<section class="card center"><div class="mega">${m.winner === 'snitches' ? '🐀' : '🎉'}</div><h2>${m.winner === 'snitches' ? 'Snitches got away with it' : 'Every snitch was caught'}</h2>${m.lastResult ? `<p>${h(m.lastResult.text)}</p>` : ''}</section>`;
-    if (me.status === 'solitary') return `<section class="card center"><div class="mega">🔒</div><h2>Lights are always out in solitary</h2><p class="fine">No votes, no night moves. Sit tight.</p></section>`;
-
-    if (m.phase === 'night') {
-      const isSnitch = me.role === 'snitch' && !me.revealed;
-      const targets = S.players.filter((p) => p.id !== me.id && p.status !== 'solitary');
-      return `<section class="card night-card">
-        <h3>${isSnitch ? '🐀 Who are you tipping off to the guards?' : '🗣️ Who do you suspect? (anonymous)'}</h3>
-        ${groupedTargets(targets, (p) => `<button class="target ${m.myNight === p.id ? 'on' : ''}" data-act="night" data-target-id="${p.id}">${h(p.name)}</button>`)}
-        <p class="fine">${isSnitch ? `Your target gets ${plural(S.settings.tipRounds, 'round')} in solitary at Lights On. Nobody will know it was you.` : `Everyone picks a name so the snitches can’t be spotted by who’s on their phone. Top suspects get whispered ${flat() ? 'on the TV' : 'in the feed'}.`} You can change your pick until Lights On.</p>
-      </section>`;
-    }
-
-    if (m.phase === 'vote') {
-      if (me.status !== 'block') return '<section class="card center"><div class="mega">🗳️</div><h2>Block votes are on</h2><p class="fine">Only inmates on a block vote. Enjoy the drama from the Holding Cell.</p></section>';
-      const tally = m.tallies?.[me.teamId] || {};
-      const mates = blockmates(me.teamId).filter((p) => p.status === 'block');
-      const max = Math.max(1, ...Object.values(tally));
-      const immune = new Set(m.immune);
-      return `<section class="card">
-        <h3>🗳️ ${h(teamName(me.teamId))} vote: kick someone out?</h3>
-        <div class="votes">${mates
-          .map((p) => `<button class="vote ${m.myVote === p.id ? 'on' : ''}" data-act="vote" data-target-id="${p.id}" ${p.id === me.id ? 'disabled' : ''}>
-            <span class="bar" style="width:${((tally[p.id] || 0) / max) * 100}%"></span>
-            <span class="v-n">${eng() === 'amongus' ? crewIcon(p) : ''}${h(p.name)}${p.id === me.id ? ' (you)' : ''} ${immune.has(p.id) ? '🛡️' : ''}</span><span class="v-c">${tally[p.id] || 0}</span></button>`)
-          .join('')}
-          <button class="vote skip ${m.myVote === 'skip' ? 'on' : ''}" data-act="vote" data-target-id="skip"><span class="bar" style="width:${((tally.skip || 0) / max) * 100}%"></span><span class="v-n">Keep everyone</span><span class="v-c">${tally.skip || 0}</span></button>
-        </div>
-        <p class="fine">Needs a majority of the block. Catch the ${eng() === 'amongus' ? W('snitch', 'Impostor').toLowerCase() : 'snitch'}: +${h(money(S.settings.snitchBounty * (eng() === 'amongus' ? 2 : 1)))} and they go to solitary. Kick an innocent: −${h(money(S.settings.wrongfulPenalty))} and they go to the Holding Cell. 🛡️ = bribed.</p>
-      </section>`;
-    }
-    return `<section class="card"><h3>☀️ Daytime in the yard</h3>${m.lastResult ? `<p>${h(m.lastResult.text)}</p>` : ''}${m.lastResult?.whispers?.length ? `<p class="fine">Most suspected: ${h(m.lastResult.whispers.join(', '))}</p>` : ''}<p class="fine">Watch your blockmates. Who’s acting shifty? The hosts will call the next Lights Out or Block Vote.</p></section>`;
+    return `<section class="card brief-card"><div class="eyebrow">📋 Briefing</div><p class="fine">No game running.${next ? ` Up next: <b>${h(next.name)}</b>.` : ''}</p></section>`;
   }
 
   function standings() {
@@ -2807,9 +2630,8 @@
       </section>
       <section class="card">
         <h3>Roster</h3>
-        ${S.teams.map((t) => `<div class="roster-team"><div>${chip(t)}</div><div class="fine">${blockmates(t.id).map((p) => `${p.isCaptain ? '👑' : ''}${h(p.name)}${p.status === 'solitary' ? ' 🔒' : ''}`).join(', ') || 'empty'}</div></div>`).join('')}
-        <div class="roster-team"><div>${chip(null)}</div><div class="fine">${inHolding().map((p) => `${h(p.name)}${p.role ? ` (${h(roleOf(p.role)?.name)})` : ''}`).join(', ') || 'empty'}</div></div>
-        ${inSolitary().length ? `<div class="roster-team"><div><span class="chip red">🔒 Solitary</span></div><div class="fine">${inSolitary().map((p) => `${h(p.name)} (${plural(p.solitary.rounds, 'round')})`).join(', ')}</div></div>` : ''}
+        ${S.teams.map((t) => `<div class="roster-team"><div>${chip(t)}</div><div class="fine">${blockmates(t.id).map((p) => `${p.isCaptain ? '👑' : ''}${h(p.name)}`).join(', ') || 'empty'}</div></div>`).join('')}
+        <div class="roster-team"><div>${chip(null)}</div><div class="fine">${inHolding().map((p) => h(p.name)).join(', ') || 'empty'}</div></div>
       </section>
       <section class="card"><h3>🍺 Drink tab</h3>${drinkTab()}</section>`;
   }
@@ -2820,22 +2642,20 @@
     if (S.night?.status === 'draft') return setupPage();
     const pending = S.orders.filter((o) => o.status === 'pending').length;
     const incoming = S.orders.filter((o) => o.status === 'incoming').length;
-    const lockup = inHolding().length + inSolitary().length;
-    const pendingClaims = S.claims.filter((c) => c.status === 'pending').length;
+    const lockup = inHolding().length;
     const tabs = [
       ['round', `🎲 Round${S.round && S.round.phase !== 'done' ? ` <b class="badge">${h(S.round.phase)}</b>` : ''}`],
       ['orders', `🧾 Orders${pending + incoming ? ` <b class="badge">${pending + incoming}</b>` : ''}`],
       ['money', '💰 Payouts'],
       ['lockup', `⚖️ Punish / Lockup${lockup ? ` <b class="badge grey">${lockup}</b>` : ''}`],
       ['shop', '🛒 Commissary'],
-      ...(S.settings.phoneMode === 'team' ? [] : [['tasks', `🕵️ Sabotage${pendingClaims ? ` <b class="badge">${pendingClaims}</b>` : ''}`], ['mafia', '🐀 Snitches']]),
       ['clips', `🎥 Clips${S.clips.filter((c) => c.status === 'pending').length ? ` <b class="badge">${S.clips.filter((c) => c.status === 'pending').length}</b>` : ''}`],
       ['settings', '⚙️ Settings'],
     ];
     // Games live in Setup now and Blocks in Settings; old remembered tabs land there.
     if (ui.atab === 'blocks') ui.atab = 'settings';
     if (!tabs.some(([k]) => k === ui.atab)) ui.atab = 'round';
-    const body = { round: aRound, orders: aOrders, money: aMoney, lockup: aLockup, tasks: aTasks, shop: aShop, mafia: aMafia, clips: aClips, settings: aSettings }[ui.atab] || aRound;
+    const body = { round: aRound, orders: aOrders, money: aMoney, lockup: aLockup, shop: aShop, clips: aClips, settings: aSettings }[ui.atab] || aRound;
     return `
       <header class="top admin-top">
         <div class="top-row">
@@ -2955,8 +2775,6 @@
           <label class="span2">🎵 Anime openings, one per line: Label | the anime | other spellings you’ll accept<textarea id="g_op" name="openings" rows="3" placeholder="Opening 1 | Attack on Titan | Shingeki no Kyojin | AoT"></textarea></label>
           <label class="span2">📋 How to play (shown on every phone when the game goes live)<textarea id="g_rules" name="rules" rows="5" maxlength="1200" placeholder="Each block lines up on one side of the table.&#10;Drink, then flip your cup from the edge.&#10;Next person goes when the cup lands upside down.&#10;First block to finish wins."></textarea></label>
           <label>🕳️ Extra rule for Holding Cell<input id="g_hold" name="holdingRule" maxlength="160" placeholder="Must flip with your off hand" /></label>
-          <label>🔒 Extra rule for Solitary<input id="g_sol" name="solitaryRule" maxlength="160" placeholder="Drink a full cup every flip" /></label>
-          <label class="span2">🐀 Snitch sabotage for this game (optional — blank = random from the list)<input id="g_sab" name="sabotage" maxlength="160" placeholder="Miss your first two flips" /></label>
           <button class="btn span2">Add to schedule</button>
         </form>
       </section>
@@ -2968,7 +2786,7 @@
             <div class="g-h">${usedIn(g.id).map((l) => `<span class="chip">${h(l)}</span>`).join(' ') || '<span class="chip muted">not in the sequence</span>'} <b>${h(g.name)}</b> <span class="tag">${g.status.toUpperCase()}</span> <span class="fine">${APP_RUN[g.runBy] ? `${APP_RUN[g.runBy]} · run by the app${g.runBy === 'trivia' ? ` · ${plural(g.questions?.length || 0, 'question')}` : g.runBy === 'anime' ? ` · ${plural(g.openings?.length || 0, 'opening')}` : ''}` : g.playersNeeded ? `${plural(g.playersNeeded, 'player')} per block` : 'group game'}</span></div>
             ${g.desc ? `<div class="fine">${h(g.desc)}</div>` : ''}
             ${g.rules ? `<div class="rules small">${h(g.rules)}</div>` : '<div class="fine">⚠️ No how-to-play rules yet.</div>'}
-            ${g.holdingRule ? `<div class="fine">🕳️ ${h(g.holdingRule)}</div>` : ''}${g.solitaryRule ? `<div class="fine">🔒 ${h(g.solitaryRule)}</div>` : ''}${g.sabotage ? `<div class="fine">🐀 ${h(g.sabotage)}</div>` : ''}
+            ${g.holdingRule ? `<div class="fine">🕳️ ${h(g.holdingRule)}</div>` : ''}
             ${g.results ? `<div class="fine">Paid: ${Object.entries(g.results).map(([id, n]) => `${h(teamName(id))} ${n > 0 ? '+' : ''}${n}`).join(' · ') || 'nothing'}</div>` : ''}
             <div class="row wrap">${btn('🗑 Delete', 'removeGame', { gameId: g.id }, 'ghost sm', `Delete ${g.name}? Rounds using it go back to empty.`)}</div>
             <details>
@@ -2984,8 +2802,6 @@
                 <label class="span2">🎵 Anime openings: Label | the anime | other spellings<textarea id="ge_${g.id}_op" name="openings" rows="3" placeholder="Opening 1 | Attack on Titan | AoT">${h(g.openingsText || '')}</textarea></label>
                 <label class="span2">📋 How to play<textarea id="ge_${g.id}_rules" name="rules" rows="5" maxlength="1200">${h(g.rules)}</textarea></label>
                 <label>🕳️ Holding Cell rule<input id="ge_${g.id}_hold" name="holdingRule" value="${h(g.holdingRule)}" maxlength="160" /></label>
-                <label>🔒 Solitary rule<input id="ge_${g.id}_sol" name="solitaryRule" value="${h(g.solitaryRule)}" maxlength="160" /></label>
-                <label class="span2">🐀 Snitch sabotage (blank = random)<input id="ge_${g.id}_sab" name="sabotage" value="${h(g.sabotage)}" maxlength="160" /></label>
                 <button class="btn sm span2">Save</button>
               </form>
             </details>
@@ -3034,7 +2850,7 @@
     return `<form data-form="finish" data-game-id="${g.id}" class="finish">
       <p class="fine">${(g.heats || []).length ? 'Heats already paid out as they finished. Add any bonus credits here (blank = 0):' : 'Credits for each block (leave blank for 0, negative to fine):'}</p>
       <div class="grid2">${S.teams.map((t) => `<label>${chip(t)}<input id="fin_${g.id}_${t.id}" name="pts_${t.id}" type="number" inputmode="numeric" placeholder="0" /></label>`).join('')}</div>
-      <label class="check"><input type="checkbox" id="fin_${g.id}_pen" name="penalties" checked /> Apply round penalties (Holding +${S.settings.holdingDrinks} 🍺, Solitary +${S.settings.solitaryDrinks} 🍺, sentences −1)</label>
+      <label class="check"><input type="checkbox" id="fin_${g.id}_pen" name="penalties" checked /> Apply round penalties (Holding +${S.settings.holdingDrinks} 🍺)</label>
       <div class="row"><button type="button" class="btn ghost sm" data-act="finish-close">Cancel</button><button class="btn sm">Pay out & close game</button></div>
     </form>`;
   }
@@ -3047,7 +2863,7 @@
 
   function playerRow(p, extra = '', selectable = false) {
     return `<div class="prow ${p.status}">
-      <div class="p-n">${selectable ? `<input type="checkbox" class="pick" id="sel_${p.id}" name="sel_${p.id}" aria-label="Select ${h(p.name)}" /> ` : ''}<b>${h(p.name)}</b>${p.fromLeParty ? ' <span title="From LeParty">🔗</span>' : ''}${p.lepartyGone ? ' <span class="chip red">not checked in on LeParty</span>' : ''} <span class="fine">#${h(p.inmateNo)} · ${h(roleOf(p.role)?.emoji)}${p.revealed ? ' (exposed)' : ''}${p.drinksOwed ? ` · 🍺×${p.drinksOwed}` : ''}</span> ${p.status === 'solitary' ? `<span class="chip red">🔒 ${plural(p.solitary.rounds, 'rd')}</span>` : ''}</div>
+      <div class="p-n">${selectable ? `<input type="checkbox" class="pick" id="sel_${p.id}" name="sel_${p.id}" aria-label="Select ${h(p.name)}" /> ` : ''}<b>${h(p.name)}</b>${p.fromLeParty ? ' <span title="From LeParty">🔗</span>' : ''}${p.lepartyGone ? ' <span class="chip red">not checked in on LeParty</span>' : ''} <span class="fine">#${h(p.inmateNo)}${p.drinksOwed ? ` · 🍺×${p.drinksOwed}` : ''}</span> ${p.status === 'solitary' ? `<span class="chip red">🔒 ${plural(p.solitary.rounds, 'rd')}</span>` : ''}</div>
       <select id="pt_${p.id}" data-change="updatePlayer" data-player-id="${p.id}" name="teamId">
         <option value="">🕳️ Holding Cell</option>${S.teams.map((t) => `<option value="${t.id}" ${p.teamId === t.id ? 'selected' : ''}>${h(t.name)}</option>`).join('')}
       </select>
@@ -3132,7 +2948,6 @@
             <div class="row wrap fine">
               ${blockmates(t.id).length}/${S.settings.maxBlockSize} inmates · ${t.budget} cr ·
               🔄 ${t.inventory.deflect} ${btn('+', 'setInventory', { teamId: t.id, kind: 'deflect', count: t.inventory.deflect + 1 }, 'ghost xs')}${btn('−', 'setInventory', { teamId: t.id, kind: 'deflect', count: t.inventory.deflect - 1 }, 'ghost xs')}
-              · 💵 ${t.inventory.immunity} ${btn('+', 'setInventory', { teamId: t.id, kind: 'immunity', count: t.inventory.immunity + 1 }, 'ghost xs')}${btn('−', 'setInventory', { teamId: t.id, kind: 'immunity', count: t.inventory.immunity - 1 }, 'ghost xs')}
             </div>
           </li>`)
           .join('')}</ul>
@@ -3157,7 +2972,6 @@
         <label class="span2">Who<select id="pun_target" name="target">
           <option value="all">Everyone (${S.players.length})</option>
           <option value="holding">🕳️ The Holding Cell (${inHolding().length})</option>
-          <option value="solitary">🔒 Everyone in Solitary (${inSolitary().length})</option>
           <optgroup label="Blocks">${S.teams.map((t) => `<option value="team:${t.id}">${h(t.name)}${t.nickname ? ` “${h(t.nickname)}”` : ''} (${blockmates(t.id).length})</option>`).join('')}</optgroup>
           <optgroup label="One inmate">${byBlock(S.players).map((p) => `<option value="player:${p.id}">${h(p.name)} · ${h(p.teamId ? teamName(p.teamId) : 'Holding')}</option>`).join('')}</optgroup>
         </select></label>
@@ -3179,39 +2993,23 @@
   function aLockup() {
     const st = S.settings;
     const holding = inHolding();
-    const solitary = inSolitary();
     return `
       ${punishCard()}
       <section class="card">
         <h3>🕳️ Holding Cell (${holding.length})</h3>
         <p class="fine">Late arrivals and anyone kicked off a block. Parole them onto a block with the dropdown, or let blocks buy a 🔑 Bail Bond.</p>
-        ${holding.length ? `<div class="ptable">${holding.map((p) => playerRow(p, `${btn('🔒 Solitary', 'sendToSolitary', { playerId: p.id, rounds: 1, reason: 'host’s orders' }, 'ghost sm')}${drinkBtns(p)}`)).join('')}</div>` : '<p class="empty">Empty.</p>'}
-      </section>
-      <section class="card">
-        <h3>🔒 Solitary (${solitary.length})</h3>
-        ${solitary.length ? `<div class="ptable">${solitary.map((p) => `<div class="prow solitary">
-            <div class="p-n"><b>${h(p.name)}</b> <span class="fine">${plural(p.solitary.rounds, 'round')} left · ${h(p.solitary.reason)} · returns to ${h(p.teamId ? teamName(p.teamId) : 'Holding')}${p.drinksOwed ? ` · 🍺×${p.drinksOwed}` : ''}</span></div>
-            <div class="row wrap">${btn('+1 round', 'sendToSolitary', { playerId: p.id, rounds: 1, reason: p.solitary.reason }, 'ghost sm')}${btn('🔓 Release', 'releaseSolitary', { playerId: p.id }, 'sm')}${drinkBtns(p)}</div>
-          </div>`).join('')}</div>` : '<p class="empty">Nobody in solitary.</p>'}
-        <form data-admin="sendToSolitary" class="grid2">
-          <label>Send to solitary<select id="sol_p" name="playerId">${S.players.filter((p) => p.status !== 'solitary').map((p) => `<option value="${p.id}">${h(p.name)} (${h(teamName(p.teamId || HOLDING))})</option>`).join('')}</select></label>
-          <label>Rounds<input id="sol_r" name="rounds" type="number" min="1" value="1" /></label>
-          <label class="span2">For (shows in the feed)<input id="sol_why" name="reason" maxlength="80" placeholder="cheating at flip cup" /></label>
-          <button class="btn span2">🔒 Lock them up</button>
-        </form>
+        ${holding.length ? `<div class="ptable">${holding.map((p) => playerRow(p, drinkBtns(p))).join('')}</div>` : '<p class="empty">Empty.</p>'}
       </section>
       <section class="card">
         <h3>🍺 Drink tab</h3>
-        <div class="row wrap">${btn(`⏱️ End round now (Holding +${st.holdingDrinks}, Solitary +${st.solitaryDrinks}, sentences −1)`, 'tickRound', {}, 'ghost sm', 'Apply round penalties now? (Finishing a game already does this.)')}</div>
+        <div class="row wrap">${btn(`⏱️ End round now (Holding +${st.holdingDrinks})`, 'tickRound', {}, 'ghost sm', 'Apply round penalties now? (Finishing a game already does this.)')}</div>
         ${S.players.some((p) => p.drinksOwed) ? `<div class="ptable">${S.players.filter((p) => p.drinksOwed).sort((a, b) => b.drinksOwed - a.drinksOwed).map((p) => `<div class="prow"><div class="p-n"><b>${h(p.name)}</b> ${statusChip(p)}</div><b class="drink-owed">🍺×${p.drinksOwed}</b><div class="row">${drinkBtns(p)}</div></div>`).join('')}</div>` : '<p class="empty">Nobody owes anything.</p>'}
       </section>
       <section class="card">
         <h3>Lockup rules</h3>
         <form data-admin="updateSettings" class="grid2">
           <label class="span2">🕳️ Holding Cell standing rules<input id="lk_hr" name="holdingRules" value="${h(st.holdingRules)}" maxlength="240" /></label>
-          <label class="span2">🔒 Solitary standing rules<input id="lk_sr" name="solitaryRules" value="${h(st.solitaryRules)}" maxlength="240" /></label>
           <label>Holding drinks per round<input id="lk_hd" name="holdingDrinks" type="number" min="0" max="5" value="${st.holdingDrinks}" /></label>
-          <label>Solitary drinks per round<input id="lk_sd" name="solitaryDrinks" type="number" min="0" max="5" value="${st.solitaryDrinks}" /></label>
           <label class="span2">House rules (shown with every drink owed)<input id="lk_house" name="houseRules" value="${h(st.houseRules)}" maxlength="200" /></label>
           <button class="btn span2">Save rules</button>
         </form>
@@ -3255,117 +3053,6 @@
           </li>`)
           .join('')}</ul>
       </section>`;
-  }
-
-  function aMafia() {
-    const m = S.mafia;
-    const st = S.settings;
-    const name = (id) => (id === 'skip' ? 'Keep everyone' : h(player(id)?.name || '?'));
-    const night = m.night || { tips: {}, suspicions: {} };
-    const dealt = m.phase !== 'off';
-    const snitches = S.players.filter((p) => p.role === 'snitch');
-    return `
-      <section class="card">
-        <h3>How it works</h3>
-        <p class="fine">Each block gets a hidden snitch with the chance below (so with 50%, about half the blocks have one — nobody knows which). At <b>Lights Out</b> everyone picks a name on their phone: snitches’ picks get tipped into solitary, everyone else’s become anonymous “most suspected” whispers. At a <b>Block Vote</b> each block votes on its own members; a majority kicks someone. Catch the snitch → bounty, snitch to solitary. Kick an innocent → fine, innocent to the Holding Cell. At the end of the night, <b>Reveal</b> unmasks any snitch who got away with it.</p>
-        <form data-admin="dealSnitches" class="row wrap">
-          <label class="xs-col">Chance per block %<input id="sn_ch" name="chance" type="number" min="0" max="100" value="${st.snitchChance}" /></label>
-          <label class="check"><input type="checkbox" id="sn_one" name="atLeastOne" checked /> At least one snitch overall</label>
-          <button class="btn sm" ${dealt ? 'data-confirm="Re-plant snitches? Current roles are wiped."' : ''}>🐀 Plant snitches</button>
-          ${dealt ? btn('Reset', 'resetMafia', {}, 'ghost sm', 'Reset the snitch game and clear all roles?') : ''}
-        </form>
-        <form data-admin="updateSettings" class="row wrap">
-          <label class="xs-col">Bounty for catching<input id="sn_b" name="snitchBounty" type="number" min="0" value="${st.snitchBounty}" /></label>
-          <label class="xs-col">Fine for wrong kick<input id="sn_w" name="wrongfulPenalty" type="number" min="0" value="${st.wrongfulPenalty}" /></label>
-          <label class="xs-col">Tip → solitary rounds<input id="sn_t" name="tipRounds" type="number" min="1" value="${st.tipRounds}" /></label>
-          <label class="xs-col">Caught snitch solitary rounds<input id="sn_c" name="caughtSnitchRounds" type="number" min="0" value="${st.caughtSnitchRounds}" /></label>
-          <button class="btn ghost sm">Save</button>
-        </form>
-      </section>
-      ${dealt ? `
-      <section class="card">
-        <h3>Phase: ${h(m.phase.toUpperCase())}${m.round ? ` · Night ${m.round}` : ''}</h3>
-        <div class="row wrap">
-          ${m.phase === 'night' ? btn('☀️ Lights On', 'endNight') : m.phase === 'idle' ? btn('🌙 Lights Out', 'startNight') : ''}
-          ${m.phase === 'vote' ? btn('🔨 Close block votes', 'closeVote') : m.phase === 'idle' ? btn('🗳️ Open Block Votes', 'openVote', {}, 'ghost') : ''}
-          ${m.phase !== 'over' ? btn('🎭 Reveal all snitches (end)', 'revealSnitches', {}, 'ghost', 'Unmask every snitch and end the snitch game?') : ''}
-        </div>
-        ${m.lastResult ? `<p class="fine">Last: ${h(m.lastResult.text)}</p>` : ''}
-        ${m.phase === 'night' ? `
-          <div class="grid2">
-            <div><b>🐀 Tips</b>${Object.entries(night.tips).map(([s, t]) => `<div class="fine">${name(s)} → ${name(t)}</div>`).join('') || '<div class="fine">none yet</div>'}</div>
-            <div><b>🗣️ Suspicions</b> <span class="fine">(${Object.keys(night.suspicions).length})</span>${Object.entries(night.suspicions).map(([s, t]) => `<div class="fine">${name(s)} → ${name(t)}</div>`).join('') || '<div class="fine">none yet</div>'}</div>
-          </div>` : ''}
-        ${m.phase === 'vote' ? `
-          <div class="grid2">${S.teams.map((t) => {
-            const tally = m.tallies?.[t.id] || {};
-            const voters = blockmates(t.id).filter((p) => p.status === 'block');
-            return `<div><b>${h(t.name)}</b> <span class="fine">${voters.filter((p) => m.votes[p.id]).length}/${voters.length} voted · majority = ${Math.floor(voters.length / 2) + 1}</span>
-              ${Object.entries(tally).sort((a, b) => b[1] - a[1]).map(([id, n]) => `<div class="fine">${name(id)} — ${n}${m.immune.includes(id) ? ' 🛡️' : ''}</div>`).join('') || '<div class="fine">no votes</div>'}</div>`;
-          }).join('')}</div>` : ''}
-      </section>` : ''}
-      <section class="card">
-        <h3>Secret roles (hosts’ eyes only)</h3>
-        ${dealt ? `<p class="fine">${snitches.length ? `Snitches: ${snitches.map((p) => `<b>${h(p.name)}</b> (${h(teamName(p.teamId || HOLDING))}${p.revealed ? ', exposed' : ''})`).join(', ')}` : 'No snitches this game. 👀'} · Clean blocks: ${S.teams.filter((t) => !snitches.some((p) => p.teamId === t.id && !p.revealed)).map((t) => h(t.name)).join(', ') || 'none'}</p>` : ''}
-        <div class="ptable">${S.players
-          .map((p) => `<div class="prow ${p.status}">
-            <div class="p-n"><b>${h(p.name)}</b> <span class="fine">${statusChip(p)}</span></div>
-            <select id="pr_${p.id}" data-change="updatePlayer" data-player-id="${p.id}" name="role">${Object.entries(S.roles).map(([k, r]) => `<option value="${k}" ${p.role === k ? 'selected' : ''}>${r.emoji} ${h(r.name)}</option>`).join('')}</select>
-            <span></span>
-          </div>`)
-          .join('')}</div>
-      </section>`;
-  }
-
-  function aTasks() {
-    const st = S.settings;
-    const withTasks = S.players.filter((p) => p.task && p.role === 'snitch');
-    const pending = S.claims.filter((c) => c.status === 'pending');
-    const judged = S.claims.filter((c) => c.status !== 'pending').slice(0, 30);
-    const who = (c) => {
-      const p = player(c.playerId);
-      return p ? `<b>${h(p.name)}</b> ${statusChip(p)}` : '<b>(removed)</b>';
-    };
-    const effect = (c) => (c.effect === 'sabotage' ? `skimmed ${c.amount}` : 'no effect (snitch was caught)');
-    return `<section class="card">
-      <h3>⏳ Sabotage claims to judge (${pending.length})</h3>
-      <p class="fine">A snitch taps Done when they think they pulled off their sabotage. Nothing happens until a host approves — judge whether they really did it, and whether anyone noticed. Approving skims their block (only that block sees an “unexplained withdrawal”). Rejecting hands the orders back so they can try again.</p>
-      ${pending.length ? `<div class="ptable">${pending
-        .map((c) => `<div class="prow claim k-${c.kind}">
-          <div class="p-n">${who(c)} <span class="fine">${h(c.gameName)} · ${time(c.ts)}</span></div>
-          <div class="task-line">${h(c.text)}</div>
-          <div class="row">${btn('Reject', 'rejectTask', { claimId: c.id }, 'ghost sm')}${btn('Approve ✅', 'approveTask', { claimId: c.id }, 'sm')}</div>
-        </div>`)
-        .join('')}</div>` : '<p class="empty">Nothing waiting.</p>'}
-      ${judged.length ? `<h3 class="section-h">Recently judged</h3><div class="ptable">${judged
-        .map((c) => `<div class="prow ${c.status === 'approved' ? '' : 'solitary'}">
-          <div class="p-n">${who(c)} <span class="fine">${c.status} by ${h(S.hosts[c.by]?.name || 'host')}${c.status === 'approved' ? ` · ${effect(c)}` : ''}</span></div>
-          <div class="fine">${h(c.text)}</div>
-          <div class="row">${c.status === 'approved' ? btn('Void', 'revokeTask', { claimId: c.id }, 'ghost sm', 'Void this task and undo its effect?') : ''}</div>
-        </div>`)
-        .join('')}</div>` : ''}
-    </section>
-    <section class="card">
-      <h3>🕵️ Snitch sabotage (Among Us style)</h3>
-      <p class="fine">When a game goes ▶ live, every phone pops up the game’s briefing (how to play + lockup rules). Each briefing has a “Classified” box: empty for inmates, and a secret sabotage for each hidden snitch. Approved sabotage skims <b>−${st.sabotageSkim}</b> from the snitch’s block. Surviving snitches cash in <b>${st.snitchRewardDrinks} + ${st.drinksPerSabotage}/sabotage</b> drinks to hand out at the reveal; caught snitches give back what they skimmed.</p>
-      <div class="row wrap">${btn('🐀 Deal new sabotage now', 'dealTasks', {}, 'sm', 'Give every hidden snitch fresh orders? Unfinished ones expire.')}</div>
-      ${withTasks.length ? `<div class="ptable">${withTasks
-        .map((p) => `<div class="prow">
-          <div class="p-n"><b>${h(p.name)}</b> ${statusChip(p)} <span class="fine">${h(p.task.status)} · ${plural(p.dirt, 'sabotage')}, ${p.skimmed} cr skimmed</span></div>
-          <div class="fine">${h(p.task.text)}</div>
-          <span></span>
-        </div>`)
-        .join('')}</div>` : ''}
-      <form data-admin="updateSettings" class="grid2">
-        <label class="check span2"><input type="checkbox" id="tk_on" name="tasksEnabled" ${st.tasksEnabled ? 'checked' : ''} /> Deal sabotage automatically when a game goes live</label>
-        <label>Credits skimmed per sabotage<input id="tk_s" name="sabotageSkim" type="number" min="0" value="${st.sabotageSkim}" /></label>
-        <label>Survivor reward: base drinks to hand out<input id="tk_d" name="snitchRewardDrinks" type="number" min="0" value="${st.snitchRewardDrinks}" /></label>
-        <label>+ drinks per sabotage<input id="tk_dp" name="drinksPerSabotage" type="number" min="0" value="${st.drinksPerSabotage}" /></label>
-        <label class="span2">Survivor prize (shown at the reveal)<input id="tk_prize" name="snitchPrize" value="${h(st.snitchPrize)}" maxlength="160" /></label>
-        <label class="span2">🐀 Sabotage tasks (one per line)<textarea id="tk_sab" name="sabotageTasks" rows="6">${h(st.sabotageTasks.join('\n'))}</textarea></label>
-        <button class="btn span2">Save sabotage settings</button>
-      </form>
-    </section>`;
   }
 
   function aClips() {
@@ -3429,7 +3116,7 @@
       </section>
       <section class="card danger-zone">
         <h3>🧨 Fresh start</h3>
-        <p class="fine">Removes every inmate, block, order, punishment, sabotage claim and feed line, and resets every game to upcoming. Keeps your games and their rules, the commissary shelf, settings and host logins. Use it to clear out test data before the party.</p>
+        <p class="fine">Removes every inmate, block, order, punishment and feed line, and resets every game to upcoming. Keeps your games and their rules, the commissary shelf, settings and host logins. Use it to clear out test data before the party.</p>
         <form data-admin="freshStart" class="row wrap"><input id="fs_confirm" name="confirm" placeholder="Type RESET" autocomplete="off" /><button class="btn danger" data-confirm="Wipe every inmate, block and order and start fresh? This can't be undone.">Wipe it</button></form>
       </section>
       <section class="card">
@@ -3451,11 +3138,9 @@
   function tvPage() {
     const live = S.games.find((g) => g.status === 'live');
     const next = S.games.find((g) => g.status === 'upcoming');
-    const m = S.mafia;
     const rows = standings();
     const max = Math.max(1, ...rows.map((t) => t.points || 0));
     const holding = inHolding();
-    const solitary = inSolitary();
     return `
       <div class="tv">
         ${winnerScreen()}
@@ -3467,21 +3152,14 @@
           <section class="card">
             <h2>🏆 Standings</h2><p class="fine">Blocks score points for every drink they send. Most points wins.</p>
             <ol class="tv-board">${rows.map((t, i) => `<li style="--c:${h(t.color)}"><span class="rank">${i + 1}</span><span class="b-n">${h(t.name)}${t.nickname || streakBits(t).length ? `<small>${[t.nickname && h(t.nickname), ...streakBits(t)].filter(Boolean).join(' · ')}</small>` : ''}</span><span class="tv-bar"><i style="width:${((t.points || 0) / max) * 100}%"></i></span><b>${t.points || 0}</b></li>`).join('') || '<p class="empty">No blocks yet</p>'}</ol>
-            ${m.phase === 'vote' ? `<h3 class="section-h">🗳️ Block votes</h3>${S.teams.map((t) => {
-              const tally = m.tallies?.[t.id] || {};
-              const top = Object.entries(tally).filter(([id]) => id !== 'skip').sort((a, b) => b[1] - a[1])[0];
-              return `<div class="fine">${chip(t)} ${Object.values(tally).reduce((a, b) => a + b, 0)} votes${top ? ` · leading: <b>${h(player(top[0])?.name)}</b> (${top[1]})` : ''}</div>`;
-            }).join('')}` : ''}
           </section>
           <section class="card tv-center">
-            ${S.round ? tvRound() : live ? `<div class="eyebrow">🏁 Now in the yard</div><h2 class="tv-live">${h(live.name)}</h2>${live.desc ? `<p>${h(live.desc)}</p>` : ''}${tvHeat(live)}${live.rules ? `<div class="rules tv-rules">${h(live.rules)}</div>` : ''}${live.holdingRule ? `<p class="rule">🕳️ Holding: ${h(live.holdingRule)}</p>` : ''}${live.solitaryRule ? `<p class="rule">🔒 Solitary: ${h(live.solitaryRule)}</p>` : ''}` : next ? `<div class="eyebrow">Up next</div><h2 class="tv-live">${h(next.name)}</h2>` : `<div class="eyebrow">Yard</div><h2>Free time 🍻</h2>`}
-            ${m.phase === 'night' ? '<div class="tv-night">🌙<br/>LIGHTS OUT<br/><small>Everyone pick a name on your phone.</small></div>' : ''}
+            ${S.round ? tvRound() : live ? `<div class="eyebrow">🏁 Now in the yard</div><h2 class="tv-live">${h(live.name)}</h2>${live.desc ? `<p>${h(live.desc)}</p>` : ''}${tvHeat(live)}${live.rules ? `<div class="rules tv-rules">${h(live.rules)}</div>` : ''}${live.holdingRule ? `<p class="rule">🕳️ Holding: ${h(live.holdingRule)}</p>` : ''}` : next ? `<div class="eyebrow">Up next</div><h2 class="tv-live">${h(next.name)}</h2>` : `<div class="eyebrow">Yard</div><h2>Free time 🍻</h2>`}
             ${S.orders.length ? `<h3>⚠️ Incoming punishments</h3><ul class="feed">${S.orders.map((o) => `<li><span class="f-e">${h(o.emoji)}</span><span class="f-t">${h(o.name)}: ${h(teamName(o.fromTeamId))} → <b>${h(teamName(o.targetTeamId))}</b> (deciding…)</span></li>`).join('')}</ul>` : ''}
           </section>
           ${(S.clips || []).length ? `<section class="card tv-feed tv-reel"><h2>🎥 Shot Cam</h2><div id="reel-slot"></div>${feedList(3)}</section>` : `<section class="card tv-feed"><h2>Yard Gossip</h2>${feedList(12)}${S.settings.clipsEnabled ? '<p class="fine">🎥 Film your block taking its shots in the app to get on the Shot Cam.</p>' : ''}</section>`}
           <section class="card tv-lockup">
             <div><h3>🕳️ Holding Cell</h3><div class="tv-names">${holding.map((p) => `<span>${h(p.name)}${p.drinksOwed ? ` <b>🍺${p.drinksOwed}</b>` : ''}</span>`).join('') || '<span class="fine">empty</span>'}</div><div class="fine">${h(S.settings.holdingRules)}</div></div>
-            <div><h3>🔒 Solitary</h3><div class="tv-names">${solitary.map((p) => `<span>${h(p.name)} <small>${p.solitary.rounds}r</small>${p.drinksOwed ? ` <b>🍺${p.drinksOwed}</b>` : ''}</span>`).join('') || '<span class="fine">empty</span>'}</div><div class="fine">${h(S.settings.solitaryRules)}</div></div>
           </section>
           ${S.settings.phoneMode === 'team'
             ? `<section class="card tv-qr"><div class="mega">📱</div><div><b>One phone per block</b><div class="fine">Scan your block’s card, or go to ${h(location.host)} and type its code.</div><div class="fine">${plural(S.players.length, 'inmate')} on ${plural(S.teams.length, 'block')}</div></div></section>`
@@ -3502,7 +3180,7 @@
 
   // ---------- events ----------
   const ACTIONS = {
-    tab: (d) => { ui.tab = d.tab; ui.reveal = false; ui.revealTask = false; LS.set('sss_tab', d.tab); window.scrollTo(0, 0); render(); },
+    tab: (d) => { ui.tab = d.tab; LS.set('sss_tab', d.tab); window.scrollTo(0, 0); render(); },
     atab: (d) => { ui.atab = d.tab; LS.set('sss_atab', d.tab); render(); },
     senders: () => { ui.senders = !ui.senders; render(); },
     'feed-more': () => { ui.feedAll = !ui.feedAll; render(); },
@@ -3544,11 +3222,6 @@
       const res = await act('bountyReward', { bountyId: d.bountyId, reward: d.reward });
       if (res.ok) toast('🏅 Reward locked in.', 'ok');
     },
-    reveal: () => { ui.reveal = !ui.reveal; render(); },
-    'reveal-task': () => {
-      ui.revealTask = !ui.revealTask;
-      render();
-    },
     commission: async (d) => {
       if (d.confirm && !confirm(d.confirm)) return;
       const res = await act('commission', { commissionId: d.commissionId });
@@ -3585,20 +3258,7 @@
     },
     'brief-ok': () => {
       markBriefSeen();
-      ui.revealTask = false;
       render();
-    },
-    task: async (d) => {
-      const res = await act('task', { result: d.result });
-      if (res.ok) toast(d.result === 'done' ? '⏳ Sent to the hosts. Act natural.' : 'Skipped.', 'ok');
-    },
-    reroll: async () => {
-      const res = await act('reroll');
-      if (res.ok) toast('🎲 New orders.', 'ok');
-    },
-    dealDrink: async (d) => {
-      const res = await act('dealDrink', { targetId: d.targetId });
-      if (res.ok) toast(`🥃 ${player(d.targetId)?.name} drinks!`, 'ok');
     },
     'buy-open': (d) => { ui.sheet = { itemId: d.itemId, targetTeamId: null, targetPlayerId: null }; delete drafts.buy_note; render(); },
     'sheet-close': () => {
@@ -3617,7 +3277,6 @@
       const it = S.items.find((i) => i.id === itemId);
       const r = res.result || {};
       if (r.status === 'requested') toast('🛒 Sent to your block. Get them to second it (or ask the Shot Caller).', 'ok');
-      else if (r.status === 'intel') toast(r.hasSnitch ? '📡 Wiretap says: there IS a snitch on your block. 🐀' : '📡 Wiretap says: your block is clean. For now.', r.hasSnitch ? 'warn' : 'ok');
       else if (r.warp) { /* the pull splash says it all */ }
       else if (r.status === 'stashed' && ['reflect', 'eyespy', 'bounty'].includes(it?.type)) toast(`${it.emoji} Bought. It starts next round.`, 'ok');
       else if (r.status === 'stashed') toast(`${it?.emoji || ''} Stashed on your block. Shhh.`, 'ok');
@@ -3632,18 +3291,6 @@
     respond: async (d) => {
       const res = await act('respond', { orderId: d.orderId, choice: d.choice });
       if (res.ok) toast(d.choice === 'deflect' ? '🔄 Deflected! Right back at ’em.' : '😤 Taken like a champ.', 'ok');
-    },
-    immunity: async (d) => {
-      const res = await act('immunity', { targetId: d.targetId });
-      if (res.ok) toast('💵 Guard bribed.', 'ok');
-    },
-    night: async (d) => {
-      const res = await act('night', { targetId: d.targetId });
-      if (res.ok) toast('Locked in. 🤫', 'ok');
-    },
-    vote: async (d) => {
-      const res = await act('vote', { targetId: d.targetId });
-      if (res.ok) toast('Vote cast 🗳️', 'ok');
     },
     drank: async () => {
       const res = await act('drank');
@@ -3887,7 +3534,7 @@
       }
       if (res.ok) {
         clearDrafts(form);
-        if (['addGame', 'addTeam', 'addItem', 'announce', 'adjustBudget', 'adjustPoints', 'sendToSolitary', 'assignPunishment', 'freshStart'].includes(form.dataset.admin)) form.reset();
+        if (['addGame', 'addTeam', 'addItem', 'announce', 'adjustBudget', 'adjustPoints', 'assignPunishment', 'freshStart'].includes(form.dataset.admin)) form.reset();
         render();
         toast('Done ✔', 'ok');
       }

@@ -68,27 +68,29 @@ test('payouts add to budget and earned; fines never go below zero', () => {
 test('finishing a game pays out and applies round penalties', () => {
   const { g, a, b, players } = setup(4);
   const late = g.join('Late');
-  g.sendToSolitary({ playerId: players[0].id, rounds: 1, reason: 'cheating' });
   const game = g.addGame({ name: 'Beer Pong', holdingRule: 'off hand only' });
   g.finishGame({ gameId: game.id, results: { [a.id]: '30', [b.id]: 10 } });
   assert.equal(game.status, 'done');
   assert.equal(a.earned, 30);
   assert.equal(late.drinksOwed, g.s.settings.holdingDrinks);
-  assert.equal(players[0].drinksOwed, g.s.settings.solitaryDrinks);
-  assert.equal(players[0].solitary, null, 'one-round sentence is served');
-  assert.equal(players[0].teamId, a.id, 'returns to their block');
+  assert.equal(players[0].drinksOwed, 0, 'blocks owe nothing');
   assert.equal(players[1].drinksOwed, 0);
   g.drank(late.id);
   assert.equal(late.drinksOwed, 0);
   assert.throws(() => g.drank(late.id), /paid up/);
 });
 
-test('holding cell and solitary inmates cannot shop', () => {
+test('holding cell inmates cannot shop, and there is no solitary any more', () => {
   const { g, players } = setup(2);
   const late = g.join('Late');
   assert.throws(() => g.buy(late.id, { itemId: itemOf(g, 'supply').id }), /Holding Cell/);
-  g.sendToSolitary({ playerId: players[0].id, rounds: 2 });
-  assert.throws(() => g.buy(players[0].id, { itemId: itemOf(g, 'supply').id }), /solitary/);
+  assert.equal(g.sendToSolitary, undefined);
+  assert.throws(() => g.assignPunishment({ target: 'solitary', drinks: 1 }));
+  // An old save with someone serving time: they're just back on their block.
+  const old = new Game(JSON.parse(JSON.stringify({ ...g.s, players: g.s.players.map((p, i) => (i ? p : { ...p, solitary: { rounds: 2, reason: 'x' } })) })));
+  assert.equal(old.s.players[0].solitary, undefined);
+  assert.equal(old.status(old.s.players[0]), 'block');
+  assert.equal(old.s.settings.solitaryDrinks, undefined);
 });
 
 test('buying a supply deducts budget and queues an order', () => {
@@ -165,145 +167,23 @@ test('bail moves a holding inmate onto the buying block, respecting max size', (
   assert.throws(() => g.buy(players[0].id, { itemId: bail.id, targetPlayerId: late2.id }), /full/);
 });
 
-test('player views hide other blocks’ stash/intel, roles and tokens', () => {
+test('player views hide other blocks’ stash and tokens', () => {
   const { g, players } = setup(6);
-  g.dealSnitches({ chance: 100 });
   const v = g.viewFor(players[0].id);
   const theirs = v.teams.find((t) => t.id !== players[0].teamId);
   assert.equal(theirs.inventory, null);
-  assert.equal(theirs.intel, null);
-  for (const p of v.players) if (p.id !== players[0].id) assert.equal(p.role, null);
-  assert.equal(v.me.role, players[0].role);
   assert.ok(!JSON.stringify(v).includes(players[1].token));
   assert.ok(!JSON.stringify(g.adminView()).includes(players[1].token));
-});
-
-test('dealSnitches: at most one per block, 0% chance still guarantees one by default', () => {
-  const { g } = setup(10);
-  g.dealSnitches({ chance: 100 });
-  for (const t of g.s.teams) assert.equal(g.members(t.id).filter((p) => p.role === 'snitch').length, 1);
-  g.dealSnitches({ chance: 0 });
-  assert.equal(g.s.players.filter((p) => p.role === 'snitch').length, 1);
-  g.dealSnitches({ chance: 0, atLeastOne: false });
-  assert.equal(g.s.players.filter((p) => p.role === 'snitch').length, 0);
-});
-
-test('wiretap tells a block whether it has a hidden snitch', () => {
-  const { g, a, players } = setup(6);
-  g.dealSnitches({ chance: 0, atLeastOne: false });
-  g.updatePlayer({ playerId: players[2].id, role: 'snitch' }); // players[2] is on A
-  const r = g.buy(players[0].id, { itemId: itemOf(g, 'intel').id });
-  assert.equal(r.hasSnitch, true);
-  assert.equal(a.intel[0].hasSnitch, true);
-});
-
-test('lights out: snitch tips send people to solitary; everyone else just whispers', () => {
-  const { g, players } = setup(6);
-  g.dealSnitches({ chance: 0, atLeastOne: false });
-  const snitch = players[0];
-  g.updatePlayer({ playerId: snitch.id, role: 'snitch' });
-  g.startNight();
-  g.nightPick(snitch.id, { targetId: players[1].id });
-  g.nightPick(players[2].id, { targetId: snitch.id });
-  g.nightPick(players[3].id, { targetId: snitch.id });
-  assert.throws(() => g.nightPick(players[4].id, { targetId: players[4].id }), /someone else/);
-  g.endNight();
-  assert.equal(players[1].solitary.rounds, g.s.settings.tipRounds);
-  assert.equal(players[2].solitary, null);
-  assert.equal(snitch.solitary, null);
-  assert.ok(g.s.feed.some((f) => f.text.includes('most suspected') && f.text.includes(snitch.name)));
-});
-
-test('block vote: majority kicks the snitch → bounty, solitary, then holding; game over when all caught', () => {
-  const { g, a, players } = setup(6); // A = P0, P2, P4
-  g.dealSnitches({ chance: 0, atLeastOne: false });
-  const [p0, , p2, , p4] = players;
-  g.updatePlayer({ playerId: p4.id, role: 'snitch' });
-  const before = a.budget;
-  g.openVote();
-  g.castVote(p0.id, { targetId: p4.id });
-  g.castVote(p2.id, { targetId: p4.id });
-  assert.throws(() => g.castVote(p0.id, { targetId: players[1].id }), /own blockmates/);
-  g.closeVote();
-  assert.equal(p4.teamId, null);
-  assert.ok(p4.revealed);
-  assert.equal(a.budget, before + g.s.settings.snitchBounty);
-  assert.equal(g.status(p4), 'solitary');
-  assert.equal(g.s.mafia.phase, 'over');
-  g.tickRound();
-  assert.equal(g.status(p4), 'holding');
-});
-
-test('block vote: kicking an innocent costs credits and sends them to holding', () => {
-  const { g, a, players } = setup(6);
-  g.dealSnitches({ chance: 0, atLeastOne: false });
-  g.updatePlayer({ playerId: players[1].id, role: 'snitch' }); // on B
-  const [p0, , p2, , p4] = players;
-  const before = a.budget;
-  g.openVote();
-  g.castVote(p0.id, { targetId: p4.id });
-  g.castVote(p2.id, { targetId: p4.id });
-  g.closeVote();
-  assert.equal(g.status(p4), 'holding');
-  assert.equal(a.budget, before - g.s.settings.wrongfulPenalty);
-  assert.equal(g.s.mafia.phase, 'idle');
-});
-
-test('block vote needs a majority and respects bribes', () => {
-  const { g, a, players } = setup(6);
-  g.dealSnitches({ chance: 0, atLeastOne: false });
-  const [p0, , p2, , p4] = players;
-  g.openVote();
-  g.castVote(p0.id, { targetId: p4.id }); // 1 of 3: not a majority
-  g.closeVote();
-  assert.equal(p4.teamId, a.id);
-  a.inventory.immunity = 1;
-  g.openVote();
-  g.useImmunity(p4.id, { targetId: p4.id });
-  g.castVote(p0.id, { targetId: p4.id });
-  g.castVote(p2.id, { targetId: p4.id });
-  g.closeVote();
-  assert.equal(p4.teamId, a.id, 'bribed inmate survives');
-});
-
-test('revealSnitches unmasks uncaught snitches and ends the game', () => {
-  const { g, players } = setup(6);
-  g.dealSnitches({ chance: 0, atLeastOne: false });
-  g.updatePlayer({ playerId: players[3].id, role: 'snitch' });
-  g.revealSnitches();
-  assert.equal(g.s.mafia.winner, 'snitches');
-  const v = g.viewFor(players[0].id);
-  assert.equal(v.players.find((p) => p.id === players[3].id).role, 'snitch');
 });
 
 test('loads an older saved state without crashing', () => {
   const old = { settings: { partyName: 'Old' }, players: [{ id: 'x', token: 't', name: 'A', inmateNo: '1', role: 'guard', status: 'solitary' }], teams: [{ id: 't1', name: 'T', budget: 5, earned: 0 }], mafia: { phase: 'day' } };
   const g = new Game(old);
-  assert.equal(g.s.players[0].role, 'inmate');
+  assert.equal(g.s.players[0].role, undefined, 'the snitch game is gone');
   assert.equal(g.s.players[0].drinksOwed, 0);
-  assert.deepEqual(g.s.teams[0].intel, []);
+  assert.equal(g.s.mafia, undefined);
   g.viewFor('x');
   g.adminView();
-});
-
-test('going live gives only the hidden snitch a task; everyone gets the rules', () => {
-  const { g, players } = setup(6);
-  g.dealSnitches({ chance: 0, atLeastOne: false });
-  g.updatePlayer({ playerId: players[0].id, role: 'snitch' });
-  const late = g.join('Late');
-  const game = g.addGame({ name: 'Flip Cup', rules: 'Line up.\nDrink, then flip.\n\n\n\nFirst block done wins.' });
-  assert.equal(game.rules, 'Line up.\nDrink, then flip.\n\nFirst block done wins.');
-  g.setGameStatus({ gameId: game.id, status: 'live' });
-  assert.equal(players[0].task.kind, 'sabotage');
-  assert.ok(g.s.settings.sabotageTasks.includes(players[0].task.text));
-  assert.equal(players[1].task, null);
-  assert.equal(late.task, null);
-  // Every phone gets the same briefing; nobody else's payload carries the sabotage or the task list.
-  const v1 = g.viewFor(players[1].id);
-  assert.equal(v1.games[0].rules, game.rules);
-  assert.equal(v1.settings.sabotageTasks, undefined);
-  assert.ok(!JSON.stringify(v1).includes(players[0].task.text));
-  assert.equal(g.viewFor(players[0].id).me.task.kind, undefined);
 });
 
 test('editing a game bumps the briefing version', () => {
@@ -315,113 +195,6 @@ test('editing a game bumps the briefing version', () => {
   g.updateGame({ gameId: game.id, rules: 'Three cups.' });
   assert.equal(game.rulesVersion, 2);
   assert.match(g.s.feed[0].text, /Rules updated/);
-});
-
-test('per-game sabotage override is used for snitches', () => {
-  const { g, players } = setup(4);
-  g.dealSnitches({ chance: 0, atLeastOne: false });
-  g.updatePlayer({ playerId: players[0].id, role: 'snitch' });
-  const game = g.addGame({ name: 'Beer Pong', sabotage: 'Bounce one into the wrong cup' });
-  g.setGameStatus({ gameId: game.id, status: 'live' });
-  assert.equal(players[0].task.text, 'Bounce one into the wrong cup');
-});
-
-test('sabotage: claim does nothing until approved, then skims silently; void reverses', () => {
-  const { g, a, players } = setup(6); // A = P0, P2, P4
-  g.dealSnitches({ chance: 0, atLeastOne: false });
-  g.updatePlayer({ playerId: players[4].id, role: 'snitch' });
-  g.dealTasks();
-  const start = a.budget;
-  const feedBefore = g.s.feed.length;
-  g.reportTask(players[4].id, { result: 'done' });
-  assert.equal(a.budget, start, 'claiming alone moves no credits');
-  assert.equal(players[4].task.status, 'claimed');
-  const sab = g.s.claims[0];
-  g.approveTask({ claimId: sab.id, by: 'officer' });
-  assert.equal(players[4].task.status, 'done');
-  assert.equal(a.budget, start - g.s.settings.sabotageSkim);
-  assert.equal(players[4].dirt, 1);
-  assert.equal(a.ledger[0].text, 'Unexplained withdrawal');
-  assert.equal(g.s.feed.length, feedBefore, 'no public feed line gives it away');
-  assert.throws(() => g.reportTask(players[4].id, { result: 'done' }), /active task/);
-  assert.throws(() => g.reportTask(players[0].id, { result: 'done' }), /active task/);
-  g.revokeTask({ claimId: sab.id });
-  assert.equal(players[4].dirt, 0);
-  assert.equal(a.budget, start);
-});
-
-test('reroll once per task, skip works', () => {
-  const { g, players } = setup(4);
-  g.dealSnitches({ chance: 0, atLeastOne: false });
-  g.updatePlayer({ playerId: players[0].id, role: 'snitch' });
-  g.dealTasks();
-  g.rerollTask(players[0].id);
-  assert.throws(() => g.rerollTask(players[0].id), /One reroll/);
-  g.reportTask(players[0].id, { result: 'skip' });
-  assert.equal(players[0].task.status, 'skipped');
-});
-
-test('a caught snitch’s pending claim pays nothing; catching recovers what they skimmed', () => {
-  const { g, a, players } = setup(6);
-  g.dealSnitches({ chance: 0, atLeastOne: false });
-  const [p0, , p2, , p4] = players;
-  g.updatePlayer({ playerId: p4.id, role: 'snitch' });
-  g.dealTasks();
-  complete(g, p4);
-  const before = a.budget;
-  g.openVote();
-  g.castVote(p0.id, { targetId: p4.id });
-  g.castVote(p2.id, { targetId: p4.id });
-  g.closeVote();
-  assert.equal(a.budget, before + g.s.settings.snitchBounty + g.s.settings.sabotageSkim);
-  assert.equal(p4.dealerDrinks, 0);
-});
-
-test('surviving snitches get drinks to hand out, scaled by sabotages', () => {
-  const { g, players } = setup(6);
-  g.dealSnitches({ chance: 0, atLeastOne: false });
-  const snitch = players[1];
-  g.updatePlayer({ playerId: snitch.id, role: 'snitch' });
-  g.dealTasks();
-  complete(g, snitch);
-  g.dealTasks();
-  complete(g, snitch);
-  g.revealSnitches();
-  const st = g.s.settings;
-  assert.equal(snitch.dealerDrinks, st.snitchRewardDrinks + 2 * st.drinksPerSabotage);
-  g.dealDrink(snitch.id, { targetId: players[0].id });
-  assert.equal(players[0].drinksOwed, 1);
-  assert.equal(snitch.dealerDrinks, st.snitchRewardDrinks + 2 * st.drinksPerSabotage - 1);
-  assert.throws(() => g.dealDrink(snitch.id, { targetId: snitch.id }), /someone else/);
-  assert.throws(() => g.dealDrink(players[0].id, { targetId: snitch.id }), /no drinks/);
-});
-
-test('task lists are editable from settings', () => {
-  const g = new Game();
-  g.updateSettings({ sabotageTasks: 'One\n\nTwo  \n' });
-  assert.deepEqual(g.s.settings.sabotageTasks, ['One', 'Two']);
-  assert.throws(() => g.updateSettings({ sabotageTasks: '   ' }), /at least one/);
-});
-
-test('rejected claims go back to the snitch; claims can only be judged once', () => {
-  const { g, a, players } = setup(4);
-  g.dealSnitches({ chance: 0, atLeastOne: false });
-  g.updatePlayer({ playerId: players[0].id, role: 'snitch' });
-  g.dealTasks();
-  const start = a.budget;
-  g.reportTask(players[0].id, { result: 'done' });
-  const c = g.s.claims[0];
-  g.rejectTask({ claimId: c.id, by: 'officer' });
-  assert.equal(players[0].task.status, 'active');
-  assert.equal(a.budget, start);
-  assert.throws(() => g.approveTask({ claimId: c.id }), /already judged/);
-  // A claim survives a new deal and can still be approved.
-  g.reportTask(players[0].id, { result: 'done' });
-  const c2 = g.s.claims[0];
-  g.dealTasks();
-  g.approveTask({ claimId: c2.id, by: 'warden' });
-  assert.equal(a.budget, start - g.s.settings.sabotageSkim);
-  assert.equal(players[0].task.status, 'active', 'the new task is untouched');
 });
 
 test('host tokens carry a role; payouts name the host', () => {
@@ -551,7 +324,7 @@ test('old captain-only saves become captain spend mode', () => {
   assert.equal(g.s.settings.captainOnlySpending, undefined);
 });
 
-test('hosts sentence anyone: a player, a block, the Holding Cell, Solitary or everyone', () => {
+test('hosts sentence anyone: a player, a block, the Holding Cell or everyone', () => {
   const { g, a, players } = setup(6);
   const late = g.join('Late');
   g.assignPunishment({ target: `player:${players[1].id}`, drinks: 2, reason: 'cheating', by: 'officer' });
@@ -565,7 +338,6 @@ test('hosts sentence anyone: a player, a block, the Holding Cell, Solitary or ev
   g.assignPunishment({ target: 'all', drinks: 1, by: 'warden' });
   assert.equal(late.drinksOwed, 2);
   assert.equal(players[0].drinksOwed, 1);
-  assert.throws(() => g.assignPunishment({ target: 'solitary', drinks: 1 }), /Nobody/);
   assert.throws(() => g.assignPunishment({ target: 'all' }), /drinks, a punishment/);
   const sid = players[0].sentences[0].id;
   g.completeSentence(players[0].id, { sentenceId: sid });
@@ -590,23 +362,14 @@ test('dare-style commissary punishments land on the victims’ to-do lists', () 
   assert.equal(players[1].sentences.length, 1, 'drink punishments go on the drink tab, not the to-do list twice');
 });
 
-test('removing inmates cleans up votes, picks, requests and claims', () => {
+test('removing inmates cleans up their requests', () => {
   const { g, a, players } = setup(6); // A = P0, P2, P4
-  g.dealSnitches({ chance: 0, atLeastOne: false });
-  g.updatePlayer({ playerId: players[4].id, role: 'snitch' });
-  g.dealTasks();
-  g.reportTask(players[4].id, { result: 'done' });
   g.updateSettings({ spendMode: 'request', requestSeconds: 2 });
   g.buy(players[2].id, { itemId: itemOf(g, 'supply').id });
   g.secondRequest(players[0].id, { requestId: a.requests[0].id });
-  g.openVote();
-  g.castVote(players[0].id, { targetId: players[2].id });
-  g.castVote(players[2].id, { targetId: players[0].id });
   g.removePlayers({ playerIds: [players[2].id, players[4].id] });
   assert.equal(g.s.players.length, 4);
   assert.equal(a.requests.length, 0, 'their request is gone');
-  assert.deepEqual(g.s.mafia.vote.votes, {}, 'votes by or about them are gone');
-  assert.equal(g.s.claims.length, 0);
   assert.equal(g.viewFor(players[2].id), null, 'their phone no longer has a view');
   assert.throws(() => g.removePlayers({ playerIds: ['nope'] }), /at least one/);
 });
@@ -688,10 +451,10 @@ test('Genshin: wishes roll prizes and pity guarantees a 5-star', () => {
   assert.equal(g.viewFor(players[0].id).teams.find((t) => t.id === a.id).pity, 0);
   assert.equal(g.viewFor(players[1].id).teams.find((t) => t.id === a.id).pity, null, 'other blocks can’t see your pity');
   g.updateSettings({ warp5: 100 });
-  const before = { budget: a.budget, deflect: a.inventory.deflect, dealer: players[0].dealerDrinks };
+  const before = { budget: a.budget, deflect: a.inventory.deflect };
   const w = g.buy(players[0].id, { itemId: warp.id }).warp;
   assert.equal(w.stars, 5);
-  const gained = a.budget - (before.budget - warp.price) + (a.inventory.deflect - before.deflect) + (players[0].dealerDrinks - before.dealer);
+  const gained = a.budget - (before.budget - warp.price) + (a.inventory.deflect - before.deflect);
   assert.ok(gained > 0, 'a 5-star always pays something');
 });
 
@@ -724,24 +487,6 @@ test('TFT: augments, streak gold, interest and the Hustler discount', () => {
   g.finishGame({ gameId: game.id, results: {}, penalties: false });
   assert.equal(a.budget, 51, 'interest is 1 per 10, so 4');
   assert.equal(b.budget, 205, 'interest caps at 5');
-});
-
-test('Among Us: sabotage skims and snitch bounties double', () => {
-  const { g, a, players } = setup(6);
-  g.setAct({ index: 3 });
-  const snitch = players[0];
-  snitch.role = 'snitch';
-  g.s.mafia.phase = 'idle';
-  g.dealTasks();
-  const before = a.budget;
-  complete(g, snitch);
-  assert.equal(before - a.budget, g.s.settings.sabotageSkim * 2);
-  g.openVote();
-  for (const p of [players[2], players[4]]) g.castVote(p.id, { targetId: snitch.id });
-  const mid = a.budget;
-  g.closeVote();
-  assert.equal(a.budget - mid, g.s.settings.snitchBounty * 2 + g.s.settings.sabotageSkim * 2);
-  assert.deepEqual(g.s.mafia.lastResult.ejected.map((x) => [x.name, x.snitch]), [[snitch.name, true]]);
 });
 
 test('Genshin: Wish ×10 charges ten and rolls ten, also through a block request', () => {
