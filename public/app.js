@@ -3143,8 +3143,10 @@
   function aClips() {
     const st = S.settings;
     const tag = { live: 'ON THE TV', pending: 'WAITING', hidden: 'HIDDEN' };
+    const storage = { blob: '✅ Videos go to Vercel Blob storage.', local: '💾 Videos are saved on this computer (data/clips).', off: '⚠️ No video storage connected: guests can’t post clips. Connect a public Vercel Blob store to the project and redeploy.' }[S.uploads || 'off'];
     return `<section class="card">
         <h3>🎥 Shot Cam</h3>
+        <p class="${S.uploads === 'off' ? 'warnbox' : 'fine'}">${storage}</p>
         <p class="fine">Inmates on a block film their shots (up to ${CLIP_SECONDS} seconds) from the app, and live clips rotate on the TV. Hide anything that shouldn’t be on the big screen; Remove deletes it for good.</p>
         <form data-admin="updateSettings" class="grid2">
           <label class="check"><input type="checkbox" id="cl_on" name="clipsEnabled" ${st.clipsEnabled ? 'checked' : ''} /> Shot Cam on</label>
