@@ -927,6 +927,20 @@
   // Big moments every screen (phones and the TV) shows: a new act, Among Us meetings and ejections.
   function actEvents(prev, next) {
     if (!prev) return;
+    // A big moment (like a Pickpocket) splashes on every phone and the TV, once.
+    const f = next.flash;
+    if (f && f.id !== prev.flash?.id) {
+      const me = next.me?.teamId;
+      if (kind === 'player' && me === f.toTeamId) {
+        splash('busted', `${f.emoji} You got robbed!`, f.text, 4500);
+        buzz([300, 100, 300]);
+      } else if (kind === 'player' && me === f.fromTeamId) {
+        // the thief already saw their own "Got it!" splash
+      } else {
+        splash('passed', `${f.emoji} ${f.title}`, f.text, 4500);
+        if (kind === 'player') buzz(200);
+      }
+    }
     const a = next.acts[next.act];
     if (prev.acts?.[prev.act]?.id !== a.id) {
       if (kind === 'player') ui.tab = a.engine === 'tft' && !a.words ? 'yard' : 'menu';

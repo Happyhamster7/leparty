@@ -1866,6 +1866,10 @@ test('a Mystery Box can hit the rare $100 Jackpot, or a Pickpocket that takes ha
   assert.equal(a.budget - cash, 40);
   assert.equal(a.pickpockets, 0);
   assert.throws(() => g.pickpocket(players[0].id, { targetTeamId: b.id }), /no Pickpocket/, 'one use each');
+  const flash = g.tvView().flash;
+  assert.equal(flash.kind, 'pickpocket');
+  assert.equal(flash.text, `${a.name} stole $40 from ${b.name}`, 'everyone gets told who robbed whom');
+  assert.equal(g.viewFor(players[1].id).flash.toTeamId, b.id);
   // A broke block can't be picked; with nobody to rob the box pays the Jackpot instead.
   openBox(g, players[0].id, [0.9]);
   b.budget = 1;
