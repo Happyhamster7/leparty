@@ -931,10 +931,10 @@
     const f = next.flash;
     if (f && f.id !== prev.flash?.id) {
       const me = next.me?.teamId;
-      if (kind === 'player' && me === f.toTeamId) {
+      if (kind === 'player' && f.toTeamId && me === f.toTeamId) {
         splash('busted', `${f.emoji} You got robbed!`, f.text, 4500);
         buzz([300, 100, 300]);
-      } else if (kind === 'player' && me === f.fromTeamId) {
+      } else if (kind === 'player' && f.fromTeamId && me === f.fromTeamId) {
         // the thief already saw their own "Got it!" splash
       } else {
         splash('passed', `${f.emoji} ${f.title}`, f.text, 4500);
@@ -2176,7 +2176,7 @@
       const st = myTeam ? serveOf(r, myTeam.id) : { state: 'safe' };
       if (st.state === 'safe') body = '<p class="serve safe">Safe this round. Nobody sent your block anything.</p>';
       else if (st.state === 'queued') body = `<p class="serve">Your block owes <b>${plural(st.s.drinks, 'drink')}</b>${st.s.neat ? ` (🚫 ${st.s.neat} neat, no chaser)` : ''}. You’re <b>${placeName(st.pos)}</b> in line for the bar.</p><p class="fine">${streakNote(myTeam)}.</p>`;
-      else if (st.state === 'serving') body = `<div class="serve now"><div>🍻 Your block is at the bar: <b>${plural(st.s.drinks, 'drink')}</b></div>${st.s.neat ? `<p class="warn-line">🚫 <b>${st.s.neat}</b> of them neat: no chaser!</p>` : ''}<div class="big-cd">${until(st.s.timerEndsAt)}</div><p class="fine">Finish in time for <b>${h(money(nextIncome(myTeam)))}</b>. Run out and it’s an extra shot next round, and your drink income drops back to ${h(money(0))}. Film it for the TV.</p>${canFilm() ? '<button class="btn big" data-act="shotcam">🎥 Film it</button>' : ''}</div>`;
+      else if (st.state === 'serving') body = `<div class="serve now"><div>🍻 Your block is at the bar: <b>${plural(st.s.drinks, 'drink')}</b></div>${st.s.neat ? `<p class="warn-line">🚫 <b>${st.s.neat}</b> of them neat: no chaser!</p>` : ''}${st.s.timerEndsAt ? `<div class="big-cd">${until(st.s.timerEndsAt)}</div>` : `<div class="big-cd">Get ready</div><p class="fine">The bartender is pouring. Your ${S.settings.serveSeconds || 30} seconds start when they tap Start.</p>`}<p class="fine">Finish in time for <b>${h(money(nextIncome(myTeam)))}</b>. Run out and it’s an extra shot next round, and your drink income drops back to ${h(money(0))}. Film it for the TV.</p>${canFilm() ? '<button class="btn big" data-act="shotcam">🎥 Film it</button>' : ''}</div>`;
       else body = `<p class="serve ${st.state}">${st.state === 'failed' ? `❌ Couldn’t finish: your block lost <b>${plural(st.s.pointsLost || 0, 'point')}</b>${st.s.streamLost ? ` and its drink income is back to ${h(money(0))}` : ''}.` : st.state === 'missed' ? `⏰ Out of time: an extra shot next round${st.s.streamLost ? `, and your drink income is back to ${h(money(0))}` : ''}.` : `✅ Done in time: <b>+${h(money(st.s.reward))}</b>. Next time: ${h(money(nextIncome(myTeam)))}.`}</p>`;
       const line = r.serves.filter((s) => !s.finishedAt).map((s) => `${h(teamName(s.teamId))}${s.servedAt ? ' 🍻' : ''}`);
       if (line.length) body += `<p class="fine">At the bar: ${line.join(' → ')}</p>`;
@@ -2294,7 +2294,7 @@
         const clip = clipFor(t.id);
         const drinks = st.s ? `${plural(st.s.drinks, 'drink')}${st.s.neat ? ` · 🚫 ${st.s.neat} neat` : ''}` : '';
         const big =
-          st.state === 'serving' ? `${until(st.s.timerEndsAt, 'tile-cd')}<small>${drinks}</small>`
+          st.state === 'serving' ? (st.s.timerEndsAt ? `${until(st.s.timerEndsAt, 'tile-cd')}<small>${drinks}</small>` : `<span class="tile-big">🍻</span><small>pouring… ${drinks}</small>`)
           : st.state === 'queued' ? `<span class="tile-big">${placeName(st.pos)}</span><small>in line · ${drinks}</small>`
           : st.state === 'done' ? `<span class="tile-big">✅ +${h(money(st.s.reward))}</span><small>done in time</small>`
           : st.state === 'failed' ? `<span class="tile-big">❌</span><small>couldn’t finish</small>`
@@ -2540,7 +2540,7 @@
         ${serving.length ? btn('↶ Back', 'barBack', {}, 'ghost') : ''}
         <button class="btn ghost sm" data-act="senders">${ui.senders ? 'Hide senders' : 'Show senders'}</button>
       </div>
-      ${serving.map((s) => `<div class="bar-now" style="--c:${h(team(s.teamId)?.color || '#888')}"><div class="bar-now-h"><b>${h(teamName(s.teamId))}</b>${until(s.timerEndsAt, 'big-cd')}${btn(`Done in time ✓ (+${h(money(nextIncome(team(s.teamId))))})`, 'barDone', { teamId: s.teamId }, 'sm')}${btn(`✗ Couldn’t finish (−${S.settings.failPointsPct ?? 10}% pts)`, 'barFail', { teamId: s.teamId }, 'ghost sm', `${teamName(s.teamId)} couldn’t finish? They lose ${S.settings.failPointsPct ?? 10}% of their points and their drink income.`)}</div>${pour(s)}</div>`).join('')}
+      ${serving.map((s) => `<div class="bar-now" style="--c:${h(team(s.teamId)?.color || '#888')}"><div class="bar-now-h"><b>${h(teamName(s.teamId))}</b>${s.timerEndsAt ? until(s.timerEndsAt, 'big-cd') : btn(`▶ Start ${S.settings.serveSeconds || 30}s`, 'barStart', { teamId: s.teamId }, 'big')}${btn(`Done in time ✓ (+${h(money(nextIncome(team(s.teamId))))})`, 'barDone', { teamId: s.teamId }, 'sm')}${btn(`✗ Couldn’t finish (−${S.settings.failPointsPct ?? 10}% pts)`, 'barFail', { teamId: s.teamId }, 'ghost sm', `${teamName(s.teamId)} couldn’t finish? They lose ${S.settings.failPointsPct ?? 10}% of their points and their drink income.`)}</div>${pour(s)}</div>`).join('')}
       ${next ? `<h3>Up next: ${h(teamName(next.teamId))} · ${plural(next.drinks, 'drink')}</h3>${pour(next)}` : ''}
       <h3>The line</h3>
       <ol class="queue">${r.serves.map((s) => { const st = serveOf(r, s.teamId); return `<li class="s-${st.state}">${h(teamName(s.teamId))} · ${plural(s.drinks, 'drink')} <span class="tag">${SERVE_LABEL[st.state]}${st.state === 'done' ? ` +${h(money(s.reward))}` : ''}</span> <small class="fine">💵 ${h(money(nextIncome(team(s.teamId))))} next</small></li>`; }).join('') || '<li>Nobody owes anything.</li>'}</ol>

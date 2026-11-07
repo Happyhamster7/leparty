@@ -920,6 +920,7 @@ test('results pay prize money by placing, crown the round winner and open the sh
 
 test('the bar: fewest drinks first, Next pays the senders, Back undoes it, Done or the timer finishes a block', () => {
   const { g, a, b, players } = setup();
+  g.updateSettings({ roundsPerAct: 1 }); // round 2 is Act 2, when the Mystery Box opens
   const c = g.addTeam({ name: 'Block C' });
   const p = g.join('Cee');
   g.updatePlayer({ playerId: p.id, teamId: c.id });
@@ -974,10 +975,11 @@ function openBox(g, playerId, rolls) {
 
 test('Reflect (won from a Mystery Box) works the round after: drinks bounce back to their senders and score for the reflector', () => {
   const { g, a, b, players } = setup();
+  g.updateSettings({ roundsPerAct: 1 }); // round 2 is Act 2, when the Mystery Box opens
   a.budget = b.budget = 1000;
   assert.equal(g.s.items.some((i) => i.type === 'reflect' && i.active), false, 'Reflect is off the shelf');
   playRound(g, a, b, players); // round 1
-  assert.throws(() => openBox(g, players[1].id, [0]), /from round 2/);
+  assert.throws(() => openBox(g, players[1].id, [0]), /off the shelf|open in Act 2/);
   g.startDrinks();
   finishDrinks(g);
   playRound(g, a, b, players); // round 2: B opens a box and wins Reflect for round 3
@@ -1161,6 +1163,7 @@ test('hosts can drop drinks into the queue before drinks start, and crown the wi
 
 test('other blocks can’t see your picks until they’re revealed, or who has Reflect', () => {
   const { g, a, b, players } = setup();
+  g.updateSettings({ roundsPerAct: 1 }); // round 2 is Act 2, when the Mystery Box opens
   g.startRound({ gameId: g.addGame({ name: 'Secret', playersNeeded: 1 }).id });
   g.pickPlayers(players[0].id, { playerIds: [players[0].id] });
   assert.equal(g.viewFor(players[1].id).round.picks[a.id], undefined);
@@ -1183,6 +1186,7 @@ test('other blocks can’t see your picks until they’re revealed, or who has R
 
 test('a Mystery Box can pour 1–5 random drinks on your own block or another, which score nobody', () => {
   const { g, a, b, players } = setup();
+  g.updateSettings({ roundsPerAct: 1 }); // round 2 is Act 2, when the Mystery Box opens
   a.budget = 1000;
   playRound(g, a, b, players);
   g.startDrinks();
@@ -1845,6 +1849,7 @@ test('an older save’s Soju becomes Soju Shot, with a separate Soju Bottle', ()
 
 test('a Mystery Box can hit the rare $100 Jackpot, or a Pickpocket that takes half the cash of a block you pick', () => {
   const { g, a, b, players } = setup();
+  g.updateSettings({ roundsPerAct: 1 }); // round 2 is Act 2, when the Mystery Box opens
   a.budget = 1000;
   playRound(g, a, b, players);
   g.startDrinks();
@@ -1886,6 +1891,7 @@ test('a Mystery Box can hit the rare $100 Jackpot, or a Pickpocket that takes ha
 
 test('Pickpocket comes up more for a block in the bottom half of the standings', () => {
   const { g, a, b, players } = setup();
+  g.updateSettings({ roundsPerAct: 1 }); // round 2 is Act 2, when the Mystery Box opens
   a.budget = b.budget = 1000;
   playRound(g, a, b, players);
   g.startDrinks();
@@ -2049,4 +2055,43 @@ test('couldn’t finish at the bar: lose 10% of points and the drink income, but
   g.barNext();
   g.barFail({ teamId: a.id });
   assert.equal(a.points, 2);
+});
+
+test('the bartender starts the clock: Next only calls the block up; Start begins its 30 seconds', () => {
+  const { g, a, b, players } = setup();
+  a.budget = 1000;
+  playRound(g, a, b, players);
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 2 });
+  g.startDrinks();
+  assert.throws(() => g.barStart(), /Call the block up first/);
+  g.barNext();
+  const s = g.round.serves[0];
+  assert.equal(s.timerEndsAt, null, 'no clock yet');
+  assert.equal(g.nextDeadline(), null);
+  assert.equal(g.tick(Date.now() + 10 * 60 * 1000), false, 'nothing can time out before the clock starts');
+  assert.ok(!s.finishedAt);
+  g.barStart({ teamId: b.id });
+  assert.ok(Math.abs(s.timerEndsAt - (Date.now() + 30000)) < 2000);
+  assert.equal(g.nextDeadline(), s.timerEndsAt);
+  assert.throws(() => g.barStart({ teamId: b.id }), /already running/);
+  g.tick(s.timerEndsAt + 1);
+  assert.equal(s.missed, true, 'once started, running out of time works as before');
+});
+
+test('the Mystery Box stays off the shelf until Act 2, which opens with an announcement on every screen', () => {
+  const { g, a, b, players } = setup(); // 3 rounds an act: Act 2 starts at round 4
+  a.budget = 1000;
+  const box = itemOf(g, 'mystery');
+  for (let n = 1; n <= 3; n++) {
+    playRound(g, a, b, players);
+    assert.ok(!g.viewFor(players[0].id).items.some((i) => i.type === 'mystery'), `hidden in round ${n}`);
+    assert.throws(() => g.buy(players[0].id, { itemId: box.id }), /off the shelf|open in Act 2/);
+    g.startDrinks();
+    finishDrinks(g);
+  }
+  playRound(g, a, b, players); // round 4: Act 2
+  assert.ok(g.viewFor(players[0].id).items.some((i) => i.type === 'mystery'));
+  assert.equal(g.tvView().flash.kind, 'mystery');
+  assert.ok(g.s.feed.some((f) => f.text.includes('Mystery Box')));
+  assert.ok(g.adminView().items.some((i) => i.type === 'mystery'), 'hosts always see it');
 });
