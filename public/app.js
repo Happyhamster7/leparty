@@ -3430,7 +3430,7 @@
       </section>
       <section class="card danger-zone">
         <h3>🧨 Fresh start</h3>
-        <p class="fine">Removes every inmate, block, order, punishment and feed line, and resets every game to upcoming. Keeps your games and their rules, the commissary shelf, settings and host logins. Use it to clear out test data before the party.</p>
+        <p class="fine">Back to round 1: removes every inmate, block, order, bounty, punishment, point and feed line, and the winner. Keeps your games, the act sequence, the shop, settings and host logins. The console goes back to Setup: confirm the night to pull tonight’s guests in from LeParty.</p>
         <form data-admin="freshStart" class="row wrap"><input id="fs_confirm" name="confirm" placeholder="Type RESET" autocomplete="off" /><button class="btn danger" data-confirm="Wipe every inmate, block and order and start fresh? This can't be undone.">Wipe it</button></form>
       </section>
       <section class="card">

@@ -2112,3 +2112,26 @@ test('cash from every source is 20% lower, and a save on the previous defaults m
   const kept = new Game(custom).s.settings;
   assert.deepEqual([kept.startingBudget, kept.prizeMoney[0], kept.streamStep], [60, 100, 7], 'a host’s own numbers are left alone');
 });
+
+test('Fresh start goes back to round 1: rounds, bounties, penalties and the winner are cleared; the sequence is kept', () => {
+  const { g, a, b, players } = setup();
+  g.updateSettings({ actsCount: 1, roundsPerAct: 2 });
+  const game = g.addGame({ name: 'Flip', playersNeeded: 0 });
+  g.setSlot({ act: 1, slot: 1, gameId: game.id });
+  g.setSlot({ act: 1, slot: 2, gameId: game.id });
+  g.confirmNight();
+  a.budget = 1000;
+  a.points = 40;
+  playRound(g, a, b, players);
+  g.buy(players[0].id, { itemId: itemOf(g, 'bounty', (i) => i.bounty === 'open').id, stake: 10 });
+  g.startDrinks();
+  finishDrinks(g);
+  g.crownWinner({});
+  assert.ok(g.s.rounds.length && g.s.bounties.length && g.s.winner);
+  g.freshStart({ confirm: 'RESET' });
+  assert.deepEqual([g.s.rounds.length, g.s.bounties.length, g.s.penalties.length, g.s.winner], [0, 0, 0, null]);
+  assert.equal(g.round, null);
+  assert.equal(g.s.night.status, 'draft', 'back to Setup to pull tonight’s guests in');
+  assert.deepEqual(g.s.night.acts[0].rounds, [game.id, game.id], 'the sequence is kept');
+  assert.equal(g.s.teams.length, 0);
+});
