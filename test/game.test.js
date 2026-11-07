@@ -2162,3 +2162,22 @@ test('Costume Parade: open, one vote per phone (changeable), close ranks best an
   g.costumeHide();
   assert.equal(g.tvView().costume.status, 'off');
 });
+
+test('LeParty blocks nobody is checked in on aren’t mirrored, and hosts can remove empty blocks', () => {
+  const g = new Game();
+  const blocks = [
+    { id: 'L1', name: 'Block A', colour: '#ff0000' }, { id: 'L2', name: 'Block B', colour: '#00ff00' },
+    { id: 'D1', name: 'Block A', colour: '#ff0000' }, { id: 'D2', name: 'Block B', colour: '#00ff00' }, // a duplicate set, empty
+  ];
+  const guests = [{ id: 'g1', name: 'Shen', blockId: 'L1' }, { id: 'g2', name: 'Edwin', blockId: 'L2' }, { id: 'g3', name: 'Mia', blockId: null }];
+  g.applyRoster({ event: { id: 'e', name: 'Party' }, blocks, guests });
+  assert.deepEqual(g.s.teams.map((t) => t.lepartyId), ['L1', 'L2'], 'only blocks with guests');
+  g.applyRoster({ event: { id: 'e', name: 'Party' }, blocks, guests });
+  assert.equal(g.s.teams.length, 2, 'and they don’t come back on the next sync');
+  // Empty blocks made some other way can be cleared in one go; people stay put.
+  g.addTeam({ name: 'Spare 1' });
+  g.addTeam({ name: 'Spare 2' });
+  assert.equal(g.removeEmptyTeams().removed, 2);
+  assert.deepEqual(g.s.teams.map((t) => t.name), ['Block A', 'Block B']);
+  assert.equal(g.s.players.filter((p) => p.teamId).length, 2);
+});

@@ -3283,6 +3283,7 @@
             ${people([...holding].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })))}
           </div>` : ''}
         </div>
+        ${S.teams.some((t) => !blockmates(t.id).length) ? `<div class="row wrap">${btn(`🧹 Remove empty blocks (${S.teams.filter((t) => !blockmates(t.id).length).length})`, 'removeEmptyTeams', {}, 'sm', 'Remove every block with nobody on it?')}</div>` : ''}
         <p class="fine">👑 Shot Caller · ✍️ added here rather than from LeParty · move someone in ⚙️ Settings → their dropdown.</p>
       </section>`;
   }
