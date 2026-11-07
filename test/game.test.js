@@ -2181,3 +2181,34 @@ test('LeParty blocks nobody is checked in on aren’t mirrored, and hosts can re
   assert.deepEqual(g.s.teams.map((t) => t.name), ['Block A', 'Block B']);
   assert.equal(g.s.players.filter((p) => p.teamId).length, 2);
 });
+
+test('Restart from round 1 keeps everyone and their blocks, and wipes everything that happened', () => {
+  const { g, a, b, players } = setup();
+  g.updateSettings({ actsCount: 1, roundsPerAct: 2 });
+  const game = g.addGame({ name: 'Flip', playersNeeded: 0 });
+  g.setSlot({ act: 1, slot: 1, gameId: game.id });
+  g.setSlot({ act: 1, slot: 2, gameId: game.id });
+  g.confirmNight();
+  g.updatePlayer({ playerId: players[0].id, isCaptain: true });
+  const phone = g.claimBlock({ code: a.joinCode });
+  a.budget = 1000;
+  a.points = 40;
+  playRound(g, a, b, players);
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 2 });
+  g.buy(players[0].id, { itemId: itemOf(g, 'bounty', (i) => i.bounty === 'open').id, stake: 10 });
+  g.startDrinks();
+  finishDrinks(g);
+  players[1].drinksOwed = 3;
+  assert.throws(() => g.restartNight({ confirm: 'yes' }), /RESTART/);
+  g.restartNight({ confirm: 'restart' });
+  assert.equal(g.round, null);
+  assert.deepEqual([g.s.rounds.length, g.s.orders.length, g.s.bounties.length, g.s.penalties.length], [0, 0, 0, 0]);
+  assert.deepEqual([a.budget, a.points, a.earned, b.points], [g.s.settings.startingBudget, 0, 0, 0]);
+  assert.equal(players[1].drinksOwed, 0);
+  assert.equal(g.s.teams.length, 2, 'blocks kept');
+  assert.equal(g.members(a.id).length, 3, 'people kept on their blocks');
+  assert.equal(players[0].isCaptain, true, 'Shot Callers kept');
+  assert.equal(g.playerByToken(phone.token)?.id, phone.id, 'the block phone still works');
+  assert.equal(g.s.night.status, 'live', 'the night is still set up');
+  assert.equal(g.startRound().number, 1, 'the next round is round 1');
+});

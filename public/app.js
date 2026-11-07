@@ -3509,6 +3509,11 @@
         </form>
       </section>
       <section class="card danger-zone">
+        <h3>↺ Restart from round 1 (keep everyone)</h3>
+        <p class="fine">As if no game had been played: every block goes back to ${h(money(S.settings.startingBudget))} and 0 points; rounds, orders, bounties, owed drinks and the feed are wiped. Keeps every guest on their block, Shot Callers, block phones (no need to scan again), the act sequence, shop and settings.</p>
+        <form data-admin="restartNight" class="row wrap"><input id="rs_confirm" name="confirm" placeholder="Type RESTART" autocomplete="off" /><button class="btn danger" data-confirm="Restart the night from round 1? Scores, cash and orders are wiped; everyone stays on their block.">Restart</button></form>
+      </section>
+      <section class="card danger-zone">
         <h3>🧨 Fresh start</h3>
         <p class="fine">Back to round 1: removes every inmate, block, order, bounty, punishment, point and feed line, and the winner. Keeps your games, the act sequence, the shop, settings and host logins. The console goes back to Setup: confirm the night to pull tonight’s guests in from LeParty.</p>
         <form data-admin="freshStart" class="row wrap"><input id="fs_confirm" name="confirm" placeholder="Type RESET" autocomplete="off" /><button class="btn danger" data-confirm="Wipe every inmate, block and order and start fresh? This can't be undone.">Wipe it</button></form>
@@ -3984,7 +3989,7 @@
       }
       if (res.ok) {
         clearDrafts(form);
-        if (['addGame', 'addTeam', 'addItem', 'announce', 'adjustBudget', 'adjustPoints', 'assignPunishment', 'freshStart'].includes(form.dataset.admin)) form.reset();
+        if (['addGame', 'addTeam', 'addItem', 'announce', 'adjustBudget', 'adjustPoints', 'assignPunishment', 'freshStart', 'restartNight'].includes(form.dataset.admin)) form.reset();
         render();
         toast('Done ✔', 'ok');
       }
