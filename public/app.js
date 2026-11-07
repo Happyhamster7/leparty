@@ -2507,9 +2507,9 @@
     if (target === 'team') {
       const options = S.teams.filter((t) => t.id !== S.me.teamId).map((t) => ({ id: t.id, name: t.name, color: t.color }));
       if (holding.length) options.push({ id: HOLDING, name: `🕳️ Holding Cell (${holding.length})`, color: '#888888' });
-      // Who's on each block, under its name (phones can't hover) and as a tooltip on a computer.
+      // Every block button is the same size; tapping one selects it and opens it up to show who's on it.
       const who = (id) => (id === HOLDING ? holding : blockmates(id)).map((p) => p.name);
-      picker = `<label>Target</label><div class="targets">${options.map((t) => { const names = who(t.id); return `<button class="target ${ui.sheet.targetTeamId === t.id ? 'on' : ''}" style="--c:${h(t.color)}" data-act="pick-target" data-team-id="${t.id}" title="${h(names.join(', ') || 'Nobody yet')}">${h(t.name)}${names.length ? `<small class="t-who">${h(names.join(', '))}</small>` : ''}</button>`; }).join('') || '<p class="fine">No one to target.</p>'}</div>
+      picker = `<label>Target</label><div class="targets pick-blocks">${options.map((t) => { const on = ui.sheet.targetTeamId === t.id; const names = who(t.id); return `<button class="target ${on ? 'on' : ''}" style="--c:${h(t.color)}" data-act="pick-target" data-team-id="${t.id}" title="${h(names.join(', ') || 'Nobody yet')}">${h(t.name)}${on ? `<small class="t-who">${h(names.join(', ') || 'Nobody yet')}</small>` : ''}</button>`; }).join('') || '<p class="fine">No one to target.</p>'}</div>
         ${ui.sheet.targetTeamId === HOLDING && it.type === 'punishment' ? '<p class="fine">The Holding Cell can’t deflect. It lands immediately. 😈</p>' : ''}`;
       ready = !!ui.sheet.targetTeamId;
     }

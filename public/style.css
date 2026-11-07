@@ -1666,3 +1666,8 @@ details.secret .mega { font-size: 40px; }
 /* While the shop is open the placings stretch to fill the rest of the card. */
 .tv-center:has(.tv-shop) { display: flex; flex-direction: column; min-height: 0; }
 .tv-center:has(.tv-shop) .placings { flex: 1; min-height: 0; grid-auto-rows: minmax(0, 1fr); align-content: stretch; }
+
+/* Buy sheet target picker: equal-size block buttons; the selected one opens up to list its members. */
+.targets.pick-blocks { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); align-items: start; gap: 8px; }
+.targets.pick-blocks .target { width: 100%; min-height: 52px; margin: 0; }
+.targets.pick-blocks .target .t-who { text-align: center; margin-top: 4px; }
