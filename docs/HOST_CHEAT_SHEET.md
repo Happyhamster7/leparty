@@ -76,7 +76,7 @@ The default lineup is **The Long Night**: I · Booking Day (Cell Tosses, soups a
 
 ## Host-run vs app-run games
 
-In 🏁 Games, set **Run by** on each game. Host-run: you enter placings after the game. App-run (Cold War drinking, Trivia, Is Jason lying?): the block phones play and the app places the blocks and pays prizes when you tap **Finish**. For Trivia, type the questions on the game first (`Question | a | b | c | d | right letter`); for Is Jason lying?, set how many stories. During an app-run game the Round tab shows its controls: Reveal now (Cold War), Next question / Reveal (Trivia), Open the vote / It was the TRUTH / It was a LIE (Is Jason lying?). **Enter results by hand instead** is always there if something goes wrong.
+In 🏁 Games, set **Run by** on each game. Host-run: you enter placings after the game. App-run (Cold War drinking, Trivia, Is Jason lying?, Anime opening guessing): the block phones play and the app places the blocks and pays prizes when you tap **Finish**. For Trivia, type the questions on the game first (`Question | a | b | c | d | right letter`); for Is Jason lying?, set how many stories; for Anime openings, type one per line as `Label | anime | other spellings`, tap ▶ Play opening, play the song, and the first block to type it right scores (or tap Give it to… / Nobody got it). During an app-run game the Round tab shows its controls: Reveal now (Cold War), Next question / Reveal (Trivia), Open the vote / It was the TRUTH / It was a LIE (Is Jason lying?). **Enter results by hand instead** is always there if something goes wrong.
 
 ## Every round (🎲 Round tab)
 

@@ -1946,7 +1946,7 @@
   const SERVE_LABEL = { safe: 'Safe this round', queued: 'In line', serving: 'At the bar', done: 'Done', missed: 'Out of time' };
 
   // ---------- app-run games: Cold War, Trivia, Is Jason lying? ----------
-  const APP_RUN = { coldwar: '🧊 Cold War', trivia: '❓ Trivia', lying: '🤥 Is Jason lying?' };
+  const APP_RUN = { coldwar: '🧊 Cold War', trivia: '❓ Trivia', lying: '🤥 Is Jason lying?', anime: '🎵 Anime openings' };
   const LETTERS = 'ABCD';
   const scoreList = (pl) => `<ol class="placings">${roundTeams()
     .map((t) => [t, pl.scores?.[t.id] || 0])
@@ -1970,6 +1970,17 @@
       if (bid?.n) return `<p>Locked in: <b>${plural(bid.n, 'shot')}</b>. Waiting for the other blocks: ${until(pl.deadline)}.</p>`;
       return `<p><b>How many shots will your block take?</b> Pick in secret. The two lowest drink their own plus the two highest blocks’ shots. ${until(pl.deadline)} left.</p>
         <div class="num-grid">${Array.from({ length: pl.max }, (_, i) => i + 1).map((n) => `<button class="target" data-act="answer" data-value="${n}" data-confirm="Lock in ${n} shot${n === 1 ? '' : 's'}?">${n}</button>`).join('')}</div>`;
+    }
+    if (pl.kind === 'anime') {
+      const head = `<p class="fine">Opening ${Math.max(1, pl.i + 1)} of ${pl.count} · your block has ${plural(pl.scores?.[mine] || 0, 'point')}</p>`;
+      if (pl.state === 'ready') return `${head}<p class="serve">🎵 Get ready: the first opening is coming. Listen, then type the anime here.</p>`;
+      if (pl.state === 'open') {
+        return `${head}<p class="q">🎵 ${h(pl.label || `Opening ${pl.i + 1}`)}: what anime is it?</p>
+          <form data-form="guess" class="guess"><input id="guess_box" name="guess" maxlength="80" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Type the anime" required /><button class="btn big">Guess</button></form>
+          <p class="fine">${until(pl.deadline)} left. Only the first block to get it right scores. Guess as often as you like${pl.myTries ? ` (${`${pl.myTries} ${pl.myTries === 1 ? 'try' : 'tries'}`} so far)` : ''}.</p>`;
+      }
+      if (pl.state === 'won') return `${head}<p class="serve">${pl.winner === mine ? '✅ Your block got it first!' : `${h(teamName(pl.winner))} got it first.`} It was <b>${h(pl.answer)}</b>.</p>`;
+      return `${head}<p class="serve">Nobody got it. It was <b>${h(pl.answer)}</b>.</p>`;
     }
     if (pl.kind === 'trivia') {
       const q = pl.question;
@@ -2000,6 +2011,11 @@
       if (pl.revealed) return `<p class="tv-big">🧊 The numbers are in</p>${coldWarResult(pl)}`;
       return `<p class="tv-big">🧊 Every block picks its shots in secret: ${until(pl.deadline)}</p>${lockedList(Object.keys(pl.bids), 'locked in')}`;
     }
+    if (pl.kind === 'anime') {
+      if (pl.state === 'ready') return `<p class="tv-big">🎵 ${plural(pl.count, 'opening')}. Type the anime on your block’s phone: first right answer wins.</p>${scoreList(pl)}`;
+      if (pl.state === 'open') return `<p class="tv-q">🎵 ${h(pl.label || `Opening ${pl.i + 1}`)}</p><p class="tv-big">Type the anime on your phone: ${until(pl.deadline)}</p>`;
+      return `<p class="tv-q">🎵 ${pl.state === 'won' ? `${h(teamName(pl.winner))} got it!` : 'Nobody got it!'}</p><p class="tv-big">It was ${h(pl.answer)}</p>${scoreList(pl)}`;
+    }
     if (pl.kind === 'trivia') {
       const q = pl.question;
       if (!q || pl.state === 'ready') return `<p class="tv-big">❓ ${plural(pl.count, 'question')}. Answer on your block’s phone.</p>${scoreList(pl)}`;
@@ -2023,6 +2039,17 @@
         ${pl.revealed ? `${coldWarResult(pl)}${finish}` : `<p>Blocks are picking 1–${pl.max} shots in secret: ${until(pl.deadline)} left.</p>
           <ul class="picks">${teams.map((t) => `<li style="--c:${h(t.color)}">${chip(t)} <span>${pl.bids[t.id] ? `✅ ${pl.bids[t.id].n}` : '…'}</span></li>`).join('')}</ul>
           <div class="row wrap">${btn('Reveal now', 'playReveal', {}, '', 'Reveal now? Blocks that haven’t picked count as 1.')}</div>`}
+        <p class="fine">${byHand}</p></section>`;
+    }
+    if (pl.kind === 'anime') {
+      const more = pl.i + 1 < pl.count;
+      return `<section class="card"><h3>🎵 ${h(r.gameName)} · ${pl.i < 0 ? `${plural(pl.count, 'opening')} ready` : `opening ${pl.i + 1} of ${pl.count}`}</h3>
+        ${pl.i >= 0 ? `<p class="q">${h(pl.label || `Opening ${pl.i + 1}`)}: <b>${h(pl.answer || '')}</b></p><p class="fine">Accepted: ${(pl.accepted || []).map(h).join(' · ')} (case, punctuation and small typos are forgiven)</p>` : ''}
+        ${pl.state === 'open'
+          ? `<p>Play it now. ${until(pl.deadline)} left · guesses so far: ${teams.map((t) => `${h(t.name)} ${pl.tries?.[t.id] || 0}`).join(' · ')}</p>
+            <div class="row wrap">${btn('Nobody got it', 'playReveal', {}, 'ghost', 'Close this opening with no winner?')}${teams.map((t) => btn(`Give it to ${h(t.name)}`, 'playReveal', { teamId: t.id }, 'ghost sm', `Give opening ${pl.i + 1} to ${t.name}?`)).join('')}</div>`
+          : `${pl.i >= 0 ? `<p class="serve">${pl.state === 'won' ? `✅ ${h(teamName(pl.winner))} got it first.` : '❌ Nobody got it.'}</p>` : ''}<div class="row wrap">${more ? btn(pl.i < 0 ? '▶ Play the first opening' : `▶ Play opening ${pl.i + 2}`, 'playNext', {}, 'big') : ''}${pl.i >= 0 ? finish : ''}</div>`}
+        ${pl.i >= 0 ? scoreList(pl) : ''}
         <p class="fine">${byHand}</p></section>`;
     }
     if (pl.kind === 'trivia') {
@@ -2345,6 +2372,7 @@
           <label>Seconds at the bar<input id="su_serve" name="serveSeconds" type="number" min="10" max="120" value="${st.serveSeconds}" /></label>
           <label>Trivia: seconds per question<input id="su_q" name="questionSeconds" type="number" min="5" max="120" value="${st.questionSeconds}" /></label>
           <label>Is Jason lying?: seconds to vote<input id="su_v" name="voteSeconds" type="number" min="5" max="120" value="${st.voteSeconds}" /></label>
+          <label>Anime openings: seconds to guess<input id="su_g" name="guessSeconds" type="number" min="10" max="300" value="${st.guessSeconds}" /></label>
           <label>Games a player sits out after playing<input id="su_cd" name="cooldownGames" type="number" min="0" max="5" value="${st.cooldownGames}" /></label>
           <label>Streak credits (× drinks finished in a row)<input id="su_streak" name="streakCredits" type="number" min="0" max="100" value="${st.streakCredits}" /></label>
           <label>Phones<select id="su_phones" name="phoneMode"><option value="team" ${st.phoneMode === 'team' ? 'selected' : ''}>One phone per block (scan the block card)</option><option value="guest" ${st.phoneMode === 'guest' ? 'selected' : ''}>Every guest on their own phone (snitch game on)</option></select></label>
@@ -2920,9 +2948,10 @@
           <label>Name<input id="g_name" name="name" maxlength="60" required placeholder="Flip Cup Prison Riot" /></label>
           <label>Description<input id="g_desc" name="desc" maxlength="200" placeholder="Best of 3. Winner +30." /></label>
           <label>Players per block (0 = group game, everyone plays)<input id="g_pn" name="playersNeeded" type="number" min="0" max="10" value="1" /></label>
-          <label>Run by<select id="g_rb" name="runBy">${[['host', '🧑‍⚖️ Hosts (you enter the results)'], ['coldwar', '🧊 App: Cold War drinking'], ['trivia', '❓ App: Trivia'], ['lying', '🤥 App: Is Jason lying?']].map(([k, l]) => `<option value="${k}" ${('host') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+          <label>Run by<select id="g_rb" name="runBy">${[['host', '🧑‍⚖️ Hosts (you enter the results)'], ['coldwar', '🧊 App: Cold War drinking'], ['trivia', '❓ App: Trivia'], ['lying', '🤥 App: Is Jason lying?'], ['anime', '🎵 App: Anime openings (typed, first right answer wins)']].map(([k, l]) => `<option value="${k}" ${('host') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
           <label>Stories (Is Jason lying?)<input id="g_st" name="stories" type="number" min="1" max="20" value="${h(5)}" /></label>
           <label class="span2">❓ Trivia questions, one per line: Question | answer | answer | answer | answer | right one (A–D)<textarea id="g_tq" name="questions" rows="4" placeholder="Capital of France? | Paris | Rome | Oslo | Madrid | A">${h('')}</textarea></label>
+          <label class="span2">🎵 Anime openings, one per line: Label | the anime | other spellings you’ll accept<textarea id="g_op" name="openings" rows="3" placeholder="Opening 1 | Attack on Titan | Shingeki no Kyojin | AoT"></textarea></label>
           <label class="span2">📋 How to play (shown on every phone when the game goes live)<textarea id="g_rules" name="rules" rows="5" maxlength="1200" placeholder="Each block lines up on one side of the table.&#10;Drink, then flip your cup from the edge.&#10;Next person goes when the cup lands upside down.&#10;First block to finish wins."></textarea></label>
           <label>🕳️ Extra rule for Holding Cell<input id="g_hold" name="holdingRule" maxlength="160" placeholder="Must flip with your off hand" /></label>
           <label>🔒 Extra rule for Solitary<input id="g_sol" name="solitaryRule" maxlength="160" placeholder="Drink a full cup every flip" /></label>
@@ -2935,7 +2964,7 @@
         <p class="fine">Put these into rounds in the sequence below. A game can be used in more than one round.</p>
         ${S.games.length ? `<ul class="glist">${S.games
           .map((g) => `<li class="g-${g.status}">
-            <div class="g-h">${usedIn(g.id).map((l) => `<span class="chip">${h(l)}</span>`).join(' ') || '<span class="chip muted">not in the sequence</span>'} <b>${h(g.name)}</b> <span class="tag">${g.status.toUpperCase()}</span> <span class="fine">${APP_RUN[g.runBy] ? `${APP_RUN[g.runBy]} · run by the app${g.runBy === 'trivia' ? ` · ${plural(g.questions?.length || 0, 'question')}` : ''}` : g.playersNeeded ? `${plural(g.playersNeeded, 'player')} per block` : 'group game'}</span></div>
+            <div class="g-h">${usedIn(g.id).map((l) => `<span class="chip">${h(l)}</span>`).join(' ') || '<span class="chip muted">not in the sequence</span>'} <b>${h(g.name)}</b> <span class="tag">${g.status.toUpperCase()}</span> <span class="fine">${APP_RUN[g.runBy] ? `${APP_RUN[g.runBy]} · run by the app${g.runBy === 'trivia' ? ` · ${plural(g.questions?.length || 0, 'question')}` : g.runBy === 'anime' ? ` · ${plural(g.openings?.length || 0, 'opening')}` : ''}` : g.playersNeeded ? `${plural(g.playersNeeded, 'player')} per block` : 'group game'}</span></div>
             ${g.desc ? `<div class="fine">${h(g.desc)}</div>` : ''}
             ${g.rules ? `<div class="rules small">${h(g.rules)}</div>` : '<div class="fine">⚠️ No how-to-play rules yet.</div>'}
             ${g.holdingRule ? `<div class="fine">🕳️ ${h(g.holdingRule)}</div>` : ''}${g.solitaryRule ? `<div class="fine">🔒 ${h(g.solitaryRule)}</div>` : ''}${g.sabotage ? `<div class="fine">🐀 ${h(g.sabotage)}</div>` : ''}
@@ -2948,9 +2977,10 @@
                 <label>Name<input id="ge_${g.id}_name" name="name" value="${h(g.name)}" maxlength="60" /></label>
                 <label>Description<input id="ge_${g.id}_desc" name="desc" value="${h(g.desc)}" maxlength="200" /></label>
                 <label>Players per block (0 = group game)<input id="ge_${g.id}_pn" name="playersNeeded" type="number" min="0" max="10" value="${h(g.playersNeeded ?? 1)}" /></label>
-                <label>Run by<select id="ge_${g.id}_rb" name="runBy">${[['host', '🧑‍⚖️ Hosts (you enter the results)'], ['coldwar', '🧊 App: Cold War drinking'], ['trivia', '❓ App: Trivia'], ['lying', '🤥 App: Is Jason lying?']].map(([k, l]) => `<option value="${k}" ${(g.runBy || 'host') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+                <label>Run by<select id="ge_${g.id}_rb" name="runBy">${[['host', '🧑‍⚖️ Hosts (you enter the results)'], ['coldwar', '🧊 App: Cold War drinking'], ['trivia', '❓ App: Trivia'], ['lying', '🤥 App: Is Jason lying?'], ['anime', '🎵 App: Anime openings (typed, first right answer wins)']].map(([k, l]) => `<option value="${k}" ${(g.runBy || 'host') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
           <label>Stories (Is Jason lying?)<input id="ge_${g.id}_st" name="stories" type="number" min="1" max="20" value="${h(g.stories || 5)}" /></label>
           <label class="span2">❓ Trivia questions, one per line: Question | answer | answer | answer | answer | right one (A–D)<textarea id="ge_${g.id}_tq" name="questions" rows="4" placeholder="Capital of France? | Paris | Rome | Oslo | Madrid | A">${h(g.questionsText || '')}</textarea></label>
+                <label class="span2">🎵 Anime openings: Label | the anime | other spellings<textarea id="ge_${g.id}_op" name="openings" rows="3" placeholder="Opening 1 | Attack on Titan | AoT">${h(g.openingsText || '')}</textarea></label>
                 <label class="span2">📋 How to play<textarea id="ge_${g.id}_rules" name="rules" rows="5" maxlength="1200">${h(g.rules)}</textarea></label>
                 <label>🕳️ Holding Cell rule<input id="ge_${g.id}_hold" name="holdingRule" value="${h(g.holdingRule)}" maxlength="160" /></label>
                 <label>🔒 Solitary rule<input id="ge_${g.id}_sol" name="solitaryRule" value="${h(g.solitaryRule)}" maxlength="160" /></label>
@@ -3716,6 +3746,18 @@
   }
 
   const FORMS = {
+    guess: async (data, form) => {
+      const sent = data.guess;
+      const res = await act('answer', { value: sent });
+      if (!res.ok) return;
+      // Clear only what was sent, so a guess typed while this one was checking isn't lost.
+      // (The page may have redrawn meanwhile, so look the box up again.)
+      if (drafts.guess_box === sent) delete drafts.guess_box;
+      const box = document.getElementById('guess_box');
+      if (box && box.value === sent) box.value = '';
+      if (res.result?.correct) toast('✅ Got it first!', 'ok');
+      else toast(`❌ “${sent}” isn’t it. Try again.`, 'warn');
+    },
     pick: async (data) => {
       const playerIds = Object.keys(data).filter((k) => k.startsWith('p:') && data[k]).map((k) => k.slice(2));
       const res = await act('pick', { playerIds });

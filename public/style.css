@@ -1624,3 +1624,6 @@ details.secret .mega { font-size: 40px; }
 .slot.empty { outline: 2px dashed var(--line); }
 .setup-status.live { border-left: 6px solid var(--green); }
 .act-mech { font-weight: 700; color: var(--orange2); margin: 2px 0 6px; }
+.guess { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin: 8px 0; }
+.guess input { font-size: 18px; }
+.guess .btn.big { width: auto; }

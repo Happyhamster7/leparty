@@ -1784,8 +1784,52 @@ test('the party’s games load into the library once, with how each is run', () 
   const by = Object.fromEntries(g.s.games.map((x) => [x.name, [x.runBy, x.playersNeeded]]));
   assert.deepEqual(by['Is Jason lying?'], ['host', 1]);
   assert.deepEqual(by['Flip 7'], ['host', 1]);
-  assert.deepEqual(by['Anime opening guessing'], ['trivia', 0]);
+  assert.deepEqual(by['Anime opening guessing'], ['anime', 0]);
   assert.deepEqual(by['Cold War drinking'], ['coldwar', 0]);
   assert.deepEqual(by.Trivia, ['trivia', 0]);
   assert.equal(g.s.games.length, 14);
+});
+
+test('Anime openings: blocks type the anime; only the first right answer scores; typos and alternate names count', () => {
+  const { g, teams, phones } = appSetup(3);
+  const game = g.addGame({ name: 'Anime opening guessing', runBy: 'anime', openings: 'Opening 1 | Attack on Titan | Shingeki no Kyojin | AoT\nOpening 2 | Naruto\nOpening 3 | My Hero Academia' });
+  assert.equal(game.openings.length, 3);
+  const r = g.startRound({ gameId: game.id });
+  assert.throws(() => g.playAnswer(phones[0].id, { value: 'Naruto' }), /No opening/);
+  g.playNext();
+  assert.equal(g.viewFor(phones[0].id).round.play.answer, null); // hidden while it plays
+  assert.deepEqual(g.playAnswer(phones[0].id, { value: 'Bleach' }), { correct: false });
+  assert.deepEqual(g.playAnswer(phones[0].id, { value: 'Bleach' }), { correct: false }); // guess again as often as you like
+  assert.deepEqual(g.playAnswer(phones[1].id, { value: 'attack on titen!' }), { correct: true }); // one typo forgiven
+  assert.equal(r.play.state, 'won');
+  assert.throws(() => g.playAnswer(phones[2].id, { value: 'AoT' }), /No opening/); // closed for everyone
+  assert.equal(g.tvView().round.play.answer, 'Attack on Titan');
+  g.playNext();
+  g.playAnswer(phones[2].id, { value: 'NARUTO' });
+  g.playNext();
+  r.play.deadline = Date.now() - 1; // nobody gets opening 3
+  g.tick();
+  assert.equal(r.play.state, 'missed');
+  g.playFinish();
+  assert.equal(r.phase, 'spending');
+  assert.deepEqual([r.play.scores[teams[1].id], r.play.scores[teams[2].id], r.play.scores[teams[0].id] || 0], [1, 1, 0]);
+  assert.equal(r.placings[teams[0].id], 3);
+});
+
+test('Anime openings: hosts can give a near-miss to a block, or call nobody', () => {
+  const { g, teams } = appSetup(2);
+  const r = g.startRound({ gameId: g.addGame({ name: 'Anime', runBy: 'anime', openings: 'O1 | Spy x Family\nO2 | Bleach' }).id });
+  assert.throws(() => g.addGame({ name: 'Bad', runBy: 'anime', openings: 'Just a label' }), /Opening line 1/);
+  g.playNext();
+  g.playReveal({ teamId: teams[1].id });
+  assert.equal(r.play.winners[0], teams[1].id);
+  g.playNext();
+  g.playReveal({});
+  assert.equal(r.play.state, 'missed');
+});
+
+test('an old library with the multiple-choice anime game moves to typed answers', () => {
+  const g = new Game();
+  g.addGame({ name: 'Anime opening guessing', runBy: 'trivia', playersNeeded: 0 });
+  assert.equal(new Game(structuredClone(g.s)).s.games[0].runBy, 'anime');
 });
