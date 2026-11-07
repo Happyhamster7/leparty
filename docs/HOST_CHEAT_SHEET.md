@@ -83,7 +83,7 @@ The night is **4 acts × 3 rounds**: Act 1 · Round 1, Act 1 · Round 2, Act 1 �
 1. **Start round:** pick the game. Players per block is set on each game in the Games tab (0 = group game). Phones get 60 seconds to lock in their players; the briefing pops up too.
 2. **Explain it out loud** while blocks pick. **Reveal now** auto-picks for any block that's dawdling.
 3. **Play the game,** then tap **Game's over: enter results.**
-4. **Results:** set each block's place (and any bonus), then **Pay prizes and open the shop.** Prize money: 90 / 75 / 65 / 55 / 45 / 40 / 30 / 20.
+4. **Results:** ranking and reward are separate. Set each block's **place** (1st unlocks the Winner's Bounty); its **reward** fills in with that place's prize ($90 / 75 / 65 / 55 / 45 / 40 / 30 / 20). Lower a reward to award less (0 pays nothing), then **Pay rewards and open the shop.** App-run games fill in the places for you and wait here, so you can check the rewards before paying.
 5. **Spending:** power-ups bought now (Reflect, Eye Spy, bounties) start next round; the Round tab shows who has Reflect lined up. Give blocks a minute or two to send drinks and buy items. Then **Close shop and start drinks.**
 6. **The bar:** tap **Next** to call the next block (fewest drinks first). Pour what the panel says. Tap **Done in time ✓** if they finish inside 30 seconds: that pays their streak (5 credits × drinks finished in a row; the button shows the amount). If the clock runs out they owe an extra shot next round and their streak resets, automatically. A "−1 shield" or "+1 bonus" tag on the pour list is a Winner's Bounty reward at work: pour the number shown. **Back** undoes a Next pressed by mistake. The round ends when every block is done.
 

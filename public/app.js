@@ -115,7 +115,7 @@
     }
     if (m.done) {
       const got = m.done.results?.[me] || 0;
-      return `<section class="card match"><div class="eyebrow">✅ Your heat is done · ${h(m.g.name)}</div><p>${got ? `Your block earned <b>${got > 0 ? '+' : ''}${got}</b>.` : 'No credits this time.'}</p></section>`;
+      return `<section class="card match"><div class="eyebrow">✅ Your heat is done · ${h(m.g.name)}</div><p>${got ? `Your block earned <b>${got > 0 ? '+' : ''}${got}</b>.` : `No ${h(curAct()?.currency?.name || 'credits')} this time.`}</p></section>`;
     }
     return `<section class="card match"><div class="eyebrow">🪑 Sitting this one out · ${h(m.g.name)}</div>${m.live ? `<p class="fine">Now playing: ${m.live.teamIds.map((id) => h(teamName(id))).join(' vs ')}</p>` : ''}</section>`;
   }
@@ -328,7 +328,7 @@
     <svg viewBox="0 0 400 210" preserveAspectRatio="xMidYM${thin ? 'id' : 'ax'} slice">${(HERO_ART[actId()] || HERO_ART.booking)()}</svg>
   </div>`;
 
-  // Money in the current act's currency: $20, ✦20, 🪙20, or 20 cr.
+  // Money in the current act's currency: $20, ✦20, 🪙20, or 20 credits.
   const money = (n) => {
     const c = curAct()?.currency || {};
     return c.symbol ? `${c.symbol}${n}` : `${n} ${c.short || 'cr'}`;
@@ -1035,7 +1035,7 @@
     const la = ledger(prev);
     const lb = ledger(next);
     if (a.teamId === b.teamId && lb && lb.amount < 0 && (!la || la.ts !== lb.ts)) {
-      toast(`💸 Unexplained withdrawal: ${lb.amount} credits just vanished from your block. Someone’s dirty…`, 'warn');
+      toast(`💸 Unexplained withdrawal: ${money(lb.amount)} just vanished from your block. Someone’s dirty…`, 'warn');
       buzz([100, 50, 100]);
     }
     const openIds = (p) => new Set((p.sentences || []).filter((x) => x.status === 'open').map((x) => x.id));
@@ -1152,7 +1152,7 @@
               : `<span class="who-name">${h(me.name)}${me.isCaptain ? ' <span title="Shot Caller">👑</span>' : ''}</span>${statusChip(me)}`}
           </div>
           <div class="hud pills">
-            ${myTeam ? `<span class="pill pts" title="${h(myTeam.name)} points">★ ${myTeam.points || 0}</span><span class="pill cr" title="${h(myTeam.name)} credits">${h(money(myTeam.budget))}</span>` : ''}
+            ${myTeam ? `<span class="pill pts" title="${h(myTeam.name)} points">★ ${myTeam.points || 0}</span><span class="pill cr" title="${h(myTeam.name)} ${h(curAct()?.currency?.name || 'credits')}">${h(money(myTeam.budget))}</span>` : ''}
             <button class="pill board-btn" data-act="board-open" aria-label="Leaderboard">🏆</button>
           </div>
         </div>
@@ -1213,7 +1213,7 @@
       <div class="eyebrow">Your block · ${ordinal(rankOf(myTeam.id))} of ${S.teams.length}</div>
       <h2>${h(myTeam.name)}${nick(myTeam)}</h2>
       ${myTeam.motto ? `<p class="motto">${h(myTeam.motto)}</p>` : ''}
-      <div class="stats"><div><b>${h(money(myTeam.budget))}</b><span>credits</span></div><div><b>★${myTeam.points || 0}</b><span>points</span></div><div><b>🔥${myTeam.drinkStreak || 0}</b><span>streak</span></div></div>
+      <div class="stats"><div><b>${h(money(myTeam.budget))}</b><span>${h(curAct()?.currency?.name || 'credits')}</span></div><div><b>★${myTeam.points || 0}</b><span>points</span></div><div><b>🔥${myTeam.drinkStreak || 0}</b><span>streak</span></div></div>
       <p class="fine">Streak = drinks finished in time in a row: each time you finish at the bar you get ${h(money(S.settings.streakCredits || 5))} × your streak.</p>
       <p class="mates">${members.map((p) => `${p.isCaptain ? '👑' : ''}${h(p.name)}${p.id === S.me.id ? ' (you)' : ''}`).join(' · ')}</p>
       ${renameControls(myTeam, members)}
@@ -1740,7 +1740,7 @@
         <div class="incoming">
           <div class="incoming-h">⚠️ INCOMING PUNISHMENT</div>
           <div class="incoming-b"><span class="mega">${h(o.emoji)}</span><div><b>${h(o.name)}</b> from ${chip(team(o.fromTeamId))}${o.bounces ? ` <span class="chip yellow">bounced ×${o.bounces}</span>` : ''}
-            ${o.drain || o.drinks ? `<div class="fine">${[o.drain && `Costs your block ${o.drain} credits`, o.drinks && `${plural(o.drinks, 'penalty drink')} each`].filter(Boolean).join(' · ')}</div>` : ''}${o.note ? `<div class="note">“${h(o.note)}”</div>` : ''}</div></div>
+            ${o.drain || o.drinks ? `<div class="fine">${[o.drain && `Costs your block ${money(o.drain)}`, o.drinks && `${plural(o.drinks, 'penalty drink')} each`].filter(Boolean).join(' · ')}</div>` : ''}${o.note ? `<div class="note">“${h(o.note)}”</div>` : ''}</div></div>
           <div class="row">
             <button class="btn ghost" data-act="respond" data-order-id="${o.id}" data-choice="accept">Take it 😤</button>
             <button class="btn" data-act="respond" data-order-id="${o.id}" data-choice="deflect" ${deflects ? '' : 'disabled'}>🔄 Deflect (${deflects})</button>
@@ -1999,7 +1999,9 @@
       else if (!myTeam || me.status !== 'block') body = `<p>Blocks are picking ${plural(r.playersNeeded, 'player')} each. ${until(r.pickDeadline)} left.</p>`;
       else body = pickForm(r, myTeam);
     } else if (r.phase === 'results') {
-      body = `<p>Playing: <b>${names(r.picks[me.teamId]) || 'nobody from your block'}</b></p><p class="fine">The hosts are entering the results.</p>`;
+      body = r.play
+        ? `<p class="fine">Game over. The hosts are confirming the results.</p>`
+        : `<p>Playing: <b>${names(r.picks[me.teamId]) || 'nobody from your block'}</b></p><p class="fine">The hosts are entering the results.</p>`;
     } else if (r.phase === 'spending') {
       const place = r.placings[me.teamId];
       body = `${place ? `<p>Your block came <b>${placeName(place)}</b> and won <b>${h(money(r.prizes[me.teamId] || 0))}</b>.</p>` : ''}
@@ -2178,14 +2180,23 @@
       </section>`;
     } else if (r.phase === 'results') {
       const prizes = S.settings.prizeMoney;
+      // Ranking and reward are separate: the place says who won; the reward is what each block is paid.
+      const placeOf = (t, i) => (r.proposed ? r.proposed[t.id] || '' : i + 1);
+      const ranked = r.proposed ? [...teams].sort((x, y) => (r.proposed[x.id] || 99) - (r.proposed[y.id] || 99)) : teams;
+      const score = (t) => (r.play && r.play.scores ? ` <span class="fine">${r.play.kind === 'coldwar' ? `picked ${r.play.bids?.[t.id]?.n ?? '–'}` : `score ${r.play.scores[t.id] || 0}`}</span>` : '');
       main = `<section class="card"><h3>Results for ${h(r.gameName)}</h3>
+        ${r.proposed ? '<p class="fine">The app ranked the blocks. Check the places, set each reward, then pay.</p>' : ''}
         <form data-form="results" class="results-form">
-          ${teams.map((t, i) => `<div class="res-row" style="--c:${h(t.color)}">${chip(t)}
-            <label>Place<select name="place:${t.id}">${['', ...teams.map((_, n) => n + 1)].map((n) => `<option value="${n}" ${n === i + 1 ? 'selected' : ''}>${n ? `${placeName(n)} · +${prizes[Math.min(n, prizes.length) - 1]}` : 'No placing'}</option>`).join('')}</select></label>
-            <label>Bonus<input name="bonus:${t.id}" type="number" min="0" placeholder="0" /></label></div>`).join('')}
-          <button class="btn big">Pay prizes and open the shop</button>
+          <div class="res-row res-head"><span>Block</span><span>🏆 Place</span><span>💰 Reward (${h(money('').trim() || 'credits')})</span></div>
+          ${ranked.map((t, i) => {
+            const place = placeOf(t, i);
+            return `<div class="res-row" style="--c:${h(t.color)}"><span class="res-b">${chip(t)}${score(t)}</span>
+            <label><span class="sr">Place</span><select id="res_place_${t.id}" name="place:${t.id}" data-reward-for="${t.id}">${['', ...teams.map((_, n) => n + 1)].map((n) => `<option value="${n}" ${n === place ? 'selected' : ''}>${n ? placeName(n) : 'No placing'}</option>`).join('')}</select></label>
+            <label><span class="sr">Reward</span><input id="res_reward_${t.id}" name="reward:${t.id}" type="number" min="0" max="1000" inputmode="numeric" value="${place ? prizes[Math.min(place, prizes.length) - 1] : 0}" /></label></div>`;
+          }).join('')}
+          <button class="btn big">Pay rewards and open the shop</button>
         </form>
-        <p class="fine">Prize money by place: ${prizes.map((n, i) => `${placeName(i + 1)} ${n}`).join(' · ')}. The 1st-place block unlocks the Winner’s Bounty.</p>
+        <p class="fine">Picking a place fills in its usual prize (${prizes.map((n, i) => `${placeName(i + 1)} ${money(n)}`).join(' · ')}). Change the reward to award less, or more; 0 pays nothing. The place still decides who won: 1st unlocks the Winner’s Bounty.</p>
       </section>`;
     } else if (r.phase === 'spending') {
       const pending = S.orders.filter((o) => o.type === 'drink' && o.status === 'pending' && !o.queuedRound);
@@ -2281,14 +2292,14 @@
           <label>Acts<input id="su_acts" name="actsCount" type="number" min="1" max="10" value="${st.actsCount}" /></label>
           <label>Rounds per act (the last is the final round)<input id="su_rpa" name="roundsPerAct" type="number" min="1" max="10" value="${st.roundsPerAct}" /></label>
           <label>Max per block<input id="su_max" name="maxBlockSize" type="number" min="2" max="12" value="${st.maxBlockSize}" /></label>
-          <label>Starting credits per block<input id="su_start" name="startingBudget" type="number" min="0" max="1000" value="${st.startingBudget}" /></label>
+          <label>Starting ${h(money('').trim() || 'credits')} per block<input id="su_start" name="startingBudget" type="number" min="0" max="1000" value="${st.startingBudget}" /></label>
           <label>Seconds to pick players<input id="su_pick" name="pickSeconds" type="number" min="15" max="300" value="${st.pickSeconds}" /></label>
           <label>Seconds at the bar<input id="su_serve" name="serveSeconds" type="number" min="10" max="120" value="${st.serveSeconds}" /></label>
           <label>Trivia: seconds per question<input id="su_q" name="questionSeconds" type="number" min="5" max="120" value="${st.questionSeconds}" /></label>
           <label>Is Jason lying?: seconds to vote<input id="su_v" name="voteSeconds" type="number" min="5" max="120" value="${st.voteSeconds}" /></label>
           <label>Anime openings: seconds to guess<input id="su_g" name="guessSeconds" type="number" min="10" max="300" value="${st.guessSeconds}" /></label>
           <label>Games a player sits out after playing<input id="su_cd" name="cooldownGames" type="number" min="0" max="5" value="${st.cooldownGames}" /></label>
-          <label>Streak credits (× drinks finished in a row)<input id="su_streak" name="streakCredits" type="number" min="0" max="100" value="${st.streakCredits}" /></label>
+          <label>Streak bonus in ${h(money('').trim() || 'credits')} (× drinks finished in a row)<input id="su_streak" name="streakCredits" type="number" min="0" max="100" value="${st.streakCredits}" /></label>
           <label>Phones<select id="su_phones" name="phoneMode"><option value="team" ${st.phoneMode === 'team' ? 'selected' : ''}>One phone per block (scan the block card)</option><option value="guest" ${st.phoneMode === 'guest' ? 'selected' : ''}>Every guest on their own phone</option></select></label>
           <label>Spending<select id="su_spend" name="spendMode">${[['anyone', 'Straight away'], ['request', 'A block decision (seconds)'], ['captain', 'Shot Caller only']].map(([k, l]) => `<option value="${k}" ${st.spendMode === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
           <button class="btn span2">Save</button>
@@ -2340,7 +2351,7 @@
         ${serving.length ? btn('↶ Back', 'barBack', {}, 'ghost') : ''}
         <button class="btn ghost sm" data-act="senders">${ui.senders ? 'Hide senders' : 'Show senders'}</button>
       </div>
-      ${serving.map((s) => `<div class="bar-now" style="--c:${h(team(s.teamId)?.color || '#888')}"><div class="bar-now-h"><b>${h(teamName(s.teamId))}</b>${until(s.timerEndsAt, 'big-cd')}${btn(`Done in time ✓ (+${(S.settings.streakCredits || 5) * ((team(s.teamId)?.drinkStreak || 0) + s.drinks)} cr)`, 'barDone', { teamId: s.teamId }, 'sm')}</div>${pour(s)}</div>`).join('')}
+      ${serving.map((s) => `<div class="bar-now" style="--c:${h(team(s.teamId)?.color || '#888')}"><div class="bar-now-h"><b>${h(teamName(s.teamId))}</b>${until(s.timerEndsAt, 'big-cd')}${btn(`Done in time ✓ (+${h(money((S.settings.streakCredits || 5) * ((team(s.teamId)?.drinkStreak || 0) + s.drinks)))})`, 'barDone', { teamId: s.teamId }, 'sm')}</div>${pour(s)}</div>`).join('')}
       ${next ? `<h3>Up next: ${h(teamName(next.teamId))} · ${plural(next.drinks, 'drink')}</h3>${pour(next)}` : ''}
       <h3>The line</h3>
       <ol class="queue">${r.serves.map((s) => { const st = serveOf(r, s.teamId); return `<li class="s-${st.state}">${h(teamName(s.teamId))} · ${plural(s.drinks, 'drink')} <span class="tag">${SERVE_LABEL[st.state]}${st.state === 'done' ? ` +${s.reward}` : ''}</span> <small class="fine">🔥${team(s.teamId)?.drinkStreak || 0}</small></li>`; }).join('') || '<li>Nobody owes anything.</li>'}</ol>
@@ -2470,7 +2481,7 @@
           <input id="buy_note" maxlength="120" aria-label="Note" placeholder="${it.type === 'punishment' ? 'Enjoy, losers' : 'e.g. vodka soda, extra lime'}" /></details>` : ''}
         <div class="row sheet-actions">
           <button class="btn ghost" data-act="sheet-close">Cancel</button>
-          <button class="btn" data-act="buy-confirm" ${ready ? '' : 'disabled'}>${!ready ? (target === 'team' && !ui.sheet.targetTeamId ? 'Pick a block first' : target === 'holdingPlayer' && !ui.sheet.targetPlayerId ? 'Pick someone first' : 'Not enough credits') : `${willRequest() ? 'Ask the block' : it.type === 'warp' ? 'Warp' : it.type === 'drink' ? 'Send' : 'Buy'} for ${h(money(cost))}`}</button>
+          <button class="btn" data-act="buy-confirm" ${ready ? '' : 'disabled'}>${!ready ? (target === 'team' && !ui.sheet.targetTeamId ? 'Pick a block first' : target === 'holdingPlayer' && !ui.sheet.targetPlayerId ? 'Pick someone first' : `Not enough ${curAct()?.currency?.name || 'credits'}`) : `${willRequest() ? 'Ask the block' : it.type === 'warp' ? 'Warp' : it.type === 'drink' ? 'Send' : 'Buy'} for ${h(money(cost))}`}</button>
         </div>
         ${willRequest() ? `<p class="fine center">Goes to your block. It goes through when the Shot Caller approves it or ${plural(secondsNeeded(myTeam, S.me.id), 'blockmate')} second it.</p>` : ''}
         <p class="fine center">${myTeam ? `${h(myTeam.name)} has ${h(money(myTeam.budget))}.` : ''}</p>
@@ -2496,7 +2507,7 @@
         <h2>${h(myTeam.name)}${nick(myTeam)}</h2>
         ${myTeam.motto ? `<p class="motto">${h(myTeam.motto)}</p>` : ''}
         ${eng() === 'tft' && myTeam.augment ? `<p class="aug-chip">${S.augments[myTeam.augment].emoji} <b>${h(S.augments[myTeam.augment].name)}</b> · ${h(S.augments[myTeam.augment].desc)}</p>` : ''}
-        <div class="stats"><div><b>${h(money(myTeam.budget))}</b><span>credits</span></div><div><b>★${myTeam.points || 0}</b><span>points</span></div><div><b>🔥${myTeam.drinkStreak || 0}</b><span>streak</span></div></div>
+        <div class="stats"><div><b>${h(money(myTeam.budget))}</b><span>${h(curAct()?.currency?.name || 'credits')}</span></div><div><b>★${myTeam.points || 0}</b><span>points</span></div><div><b>🔥${myTeam.drinkStreak || 0}</b><span>streak</span></div></div>
         <p class="fine">Streak = drinks finished in time in a row. Each time you finish at the bar you get ${h(money(S.settings.streakCredits || 5))} × your streak; run out of time and it resets.</p>
         ${renameControls(myTeam, members)}
       </section>
@@ -2703,7 +2714,7 @@
     const from = team(o.originalFromTeamId || o.fromTeamId);
     const route = o.type === 'supply' ? targetChip(o.targetTeamId) : o.type === 'bail' ? `${chip(from)} 🔑 ${h(o.targetPlayerName)}` : `${targetChip(o.fromTeamId)} → ${targetChip(o.targetTeamId)}`;
     return `<li class="order s-${o.status}">
-      <div class="o-main"><span class="mega">${h(o.emoji)}</span><div><b>${h(o.name)}</b> <span class="fine">${o.price} cr · ${time(o.ts)}${o.bounces ? ` · bounced ×${o.bounces}` : ''}${o.drained ? ` · drained ${o.drained}` : ''}${o.drinks ? ` · 🍺×${o.drinks} each` : ''}</span>
+      <div class="o-main"><span class="mega">${h(o.emoji)}</span><div><b>${h(o.name)}</b> <span class="fine">${h(money(o.price))} · ${time(o.ts)}${o.bounces ? ` · bounced ×${o.bounces}` : ''}${o.drained ? ` · drained ${o.drained}` : ''}${o.drinks ? ` · 🍺×${o.drinks} each` : ''}</span>
         <div>${route}</div>
         <div class="fine">bought by ${h(o.buyerName)}${from && o.type !== 'supply' ? ` (${h(from.name)})` : ''}</div>
         ${o.note ? `<div class="note">“${h(o.note)}”</div>` : ''}</div></div>
@@ -2733,7 +2744,7 @@
         <h3>Quick payouts</h3>
         <div class="money">${standings()
           .map((t) => `<div class="money-t" style="--c:${h(t.color)}">
-            <div class="money-h"><b>${h(t.name)}</b><span><b>${t.budget}</b> cr · ${t.earned} earned · <b>${plural(t.points || 0, 'pt')}</b></span></div>
+            <div class="money-h"><b>${h(t.name)}</b><span><b>${h(money(t.budget))}</b> · ${h(money(t.earned))} earned · <b>${plural(t.points || 0, 'pt')}</b></span></div>
             <div class="row wrap">${[1, 5, 10, 25].map((n) => btn(`+${n}`, 'adjustBudget', { teamId: t.id, amount: n }, 'sm')).join('')}${[-5, -10].map((n) => btn(`${n}`, 'adjustBudget', { teamId: t.id, amount: n }, 'ghost sm')).join('')}
               <span class="fine">Points</span>${btn('+1 pt', 'adjustPoints', { teamId: t.id, amount: 1 }, 'ghost sm')}${btn('−1 pt', 'adjustPoints', { teamId: t.id, amount: -1 }, 'ghost sm', `Take a point off ${t.name}?`)}</div>
           </div>`)
@@ -2946,7 +2957,7 @@
               ${btn('🗑', 'removeTeam', { teamId: t.id }, 'ghost sm', `Delete ${t.name}? Its inmates go to the Holding Cell.`)}
             </form>
             <div class="row wrap fine">
-              ${blockmates(t.id).length}/${S.settings.maxBlockSize} inmates · ${t.budget} cr ·
+              ${blockmates(t.id).length}/${S.settings.maxBlockSize} inmates · ${h(money(t.budget))} ·
               🔄 ${t.inventory.deflect} ${btn('+', 'setInventory', { teamId: t.id, kind: 'deflect', count: t.inventory.deflect + 1 }, 'ghost xs')}${btn('−', 'setInventory', { teamId: t.id, kind: 'deflect', count: t.inventory.deflect - 1 }, 'ghost xs')}
             </div>
           </li>`)
@@ -3045,7 +3056,7 @@
         <ul class="ilist">${S.items
           .map((it) => `<li class="${it.active ? '' : 'inactive'}">
             <details>
-              <summary><span class="mega">${h(it.emoji)}</span> <b>${h(it.name)}</b> <span class="fine">${it.price} cr · ${h(S.itemTypes[it.type]?.label)}${it.act ? ` · Act ${S.acts.find((a) => a.engine === it.act)?.numeral} only` : ''}${it.drinks ? ` · 🍺×${it.drinks}` : ''}${it.stock !== null ? ` · ${it.stock} left` : ''}${it.active ? '' : ' · HIDDEN'}</span></summary>
+              <summary><span class="mega">${h(it.emoji)}</span> <b>${h(it.name)}</b> <span class="fine">${h(money(it.price))} · ${h(S.itemTypes[it.type]?.label)}${it.act ? ` · Act ${S.acts.find((a) => a.engine === it.act)?.numeral} only` : ''}${it.drinks ? ` · 🍺×${it.drinks}` : ''}${it.stock !== null ? ` · ${it.stock} left` : ''}${it.active ? '' : ' · HIDDEN'}</span></summary>
               <form data-admin="updateItem" class="grid2"><input type="hidden" name="itemId" value="${it.id}" />${itemFields(`it_${it.id}`, it)}
                 <div class="row span2">${btn(it.active ? 'Hide' : 'Show', 'updateItem', { itemId: it.id, active: !it.active }, 'ghost sm')}${btn('🗑 Delete', 'removeItem', { itemId: it.id }, 'ghost sm', `Delete ${it.name}?`)}<button class="btn sm">Save</button></div>
               </form>
@@ -3099,7 +3110,7 @@
         <form data-admin="updateSettings" class="grid2">
           <label>Party name<input id="s_name" name="partyName" value="${h(st.partyName)}" maxlength="40" /></label>
           <label>Tagline<input id="s_tag" name="tagline" value="${h(st.tagline)}" maxlength="80" /></label>
-          <label>Starting credits for new blocks<input id="s_start" name="startingBudget" type="number" min="0" value="${st.startingBudget}" /></label>
+          <label>Starting ${h(money('').trim() || 'credits')} for new blocks<input id="s_start" name="startingBudget" type="number" min="0" value="${st.startingBudget}" /></label>
           <label>Max inmates per block<input id="s_max" name="maxBlockSize" type="number" min="2" max="12" value="${st.maxBlockSize}" /></label>
           <label>Who can spend a block's credits<select id="s_spend" name="spendMode">
             <option value="request" ${st.spendMode === 'request' ? 'selected' : ''}>Block decides: Shot Caller approves or blockmates second</option>
@@ -3363,6 +3374,13 @@
       }
       return;
     }
+    if (el.dataset.rewardFor) {
+      const box = document.getElementById(`res_reward_${el.dataset.rewardFor}`);
+      const prizes = S.settings.prizeMoney;
+      const n = Number(el.value);
+      if (box) box.value = n ? prizes[Math.min(n, prizes.length) - 1] : 0;
+      if (box) drafts[box.id] = box.value;
+    }
     if (el.dataset.pick && S?.round) {
       const form = el.closest('form');
       ui.picks = { round: S.round.number, ids: [...form.querySelectorAll('[data-pick]:checked')].map((x) => x.dataset.pick) };
@@ -3416,13 +3434,16 @@
     },
     results: async (data) => {
       const placings = {};
-      const bonus = {};
+      const rewards = {};
       for (const [k, v] of Object.entries(data)) {
         if (k.startsWith('place:') && v) placings[k.slice(6)] = v;
-        if (k.startsWith('bonus:') && v) bonus[k.slice(6)] = v;
+        if (k.startsWith('reward:')) rewards[k.slice(7)] = v === '' ? 0 : v;
       }
-      const res = await admin('enterResults', { placings, bonus });
-      if (res.ok) toast('Prizes paid. The shop is open.', 'ok');
+      const res = await admin('enterResults', { placings, rewards });
+      if (res.ok) {
+        for (const k of Object.keys(drafts)) if (k.startsWith('res_')) delete drafts[k];
+        toast('Rewards paid. The shop is open.', 'ok');
+      }
     },
     claim: async (data, form) => {
       const res = await send({ kind: 'claim', code: data.code });

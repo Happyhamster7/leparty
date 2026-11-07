@@ -28,9 +28,9 @@ body[data-era='slammer'] {
   --input: #fde6b2;
   --sky: #4a2e1c;
   --radius: 0px;
-  --stencil: 'Jersey 10', 'Pixelify Sans', monospace;
+  --stencil: 'Jersey 10', 'Outfit', system-ui, sans-serif;
   --script: 'Jersey 10', monospace;
-  --type: 'Pixelify Sans', monospace;
+  --type: 'Outfit', system-ui, sans-serif;
   --body: 'Pixelify Sans';
   --ui: 'Pixelify Sans';
   --gold-light: #ffe27a;
@@ -38,9 +38,9 @@ body[data-era='slammer'] {
   color-scheme: light;
   background: #4a2e1c url('/pixel/floor.png') repeat;
   color: var(--text);
-  font: 16px/1.45 'Pixelify Sans', ui-monospace, monospace;
+  font: 16px/1.45 'Outfit', system-ui, sans-serif;
   image-rendering: pixelated;
-  -webkit-font-smoothing: none;
+  -webkit-font-smoothing: antialiased;
   cursor: url('/pixel/cursor.png') 0 0, auto;
 }
 body[data-era='slammer'] a, body[data-era='slammer'] button, body[data-era='slammer'] label, body[data-era='slammer'] summary, body[data-era='slammer'] select { cursor: url('/pixel/cursor.png') 0 0, pointer; }
@@ -53,7 +53,7 @@ body[data-era='slammer'] h2 { font-size: 30px; line-height: 1; }
 body[data-era='slammer'] h3 { font-size: 24px; line-height: 1; }
 body[data-era='slammer'] a { color: var(--orange2); }
 body[data-era='slammer'] .fine, body[data-era='slammer'] small { color: var(--muted); }
-body[data-era='slammer'] .eyebrow { font-family: 'Pixelify Sans', monospace; font-size: 14px; font-weight: 600; letter-spacing: 0.02em; text-transform: none; color: var(--orange2); }
+body[data-era='slammer'] .eyebrow { font-family: 'Outfit', system-ui, sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 0.02em; text-transform: none; color: var(--orange2); }
 body[data-era='slammer'] .section-h { font-family: 'Jersey 10', monospace; font-size: 26px; color: var(--gold-light); text-shadow: 3px 0 0 var(--outline), -3px 0 0 var(--outline), 0 3px 0 var(--outline), 0 -3px 0 var(--outline); }
 body[data-era='slammer'] .logo {
   font-family: 'Jersey 10', monospace; text-transform: none; letter-spacing: 0.01em; background: none; -webkit-background-clip: border-box; background-clip: border-box;
@@ -61,7 +61,7 @@ body[data-era='slammer'] .logo {
   text-shadow: 3px 0 0 var(--outline), -3px 0 0 var(--outline), 0 3px 0 var(--outline), 0 -3px 0 var(--outline), 3px 3px 0 var(--outline), -3px 3px 0 var(--outline), 3px -3px 0 var(--outline), -3px -3px 0 var(--outline), 0 9px 0 var(--outline);
   filter: none;
 }
-body[data-era='slammer'] .tagline { font-family: 'Pixelify Sans', monospace; color: var(--card); text-shadow: 0 3px 0 var(--outline); }
+body[data-era='slammer'] .tagline { font-family: 'Outfit', system-ui, sans-serif; color: var(--card); text-shadow: 0 3px 0 var(--outline); }
 body[data-era='slammer'] .hero { display: none; }
 body[data-era='slammer'] .landing-inner { padding-top: 36px; }
 body[data-era='slammer'] .stamp { color: var(--red); border: 3px solid var(--red); background: var(--card2); text-shadow: none; font-family: 'Jersey 10', monospace; font-size: 24px; }
@@ -80,7 +80,7 @@ body[data-era='slammer'] .sheet-bg { background: rgba(30, 15, 8, 0.6); }
 /* buttons */
 body[data-era='slammer'] .btn {
   background: none; border-style: solid; border-width: 12px; border-image: url('/pixel/frame-btn.png') 12 fill / 12px stretch;
-  color: var(--card); font: 600 15px 'Pixelify Sans', monospace; text-transform: none; letter-spacing: 0.02em;
+  color: var(--card); font: 600 15px 'Outfit', system-ui, sans-serif; text-transform: none; letter-spacing: 0.02em;
   text-shadow: 0 3px 0 var(--outline); padding: 0 6px; min-height: 42px; filter: none; transition: transform 0.05s;
 }
 body[data-era='slammer'] .btn:hover { transform: translateY(-3px); filter: none; }
@@ -97,11 +97,11 @@ body[data-era='slammer'] .btn:disabled { opacity: 0.55; filter: grayscale(0.4); 
 /* inputs: recessed slots */
 body[data-era='slammer'] input:not([type='checkbox']):not([type='color']), body[data-era='slammer'] select, body[data-era='slammer'] textarea {
   background: none; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-slot.png') 9 fill / 9px stretch;
-  color: var(--text); font: 16px 'Pixelify Sans', monospace; padding: 3px 6px;
+  color: var(--text); font: 16px 'Outfit', system-ui, sans-serif; padding: 3px 6px;
 }
 body[data-era='slammer'] input:focus, body[data-era='slammer'] select:focus, body[data-era='slammer'] textarea:focus { border-image-source: url('/pixel/frame-slot-active.png'); outline: none; }
 body[data-era='slammer'] input::placeholder, body[data-era='slammer'] textarea::placeholder { color: #a8784a; }
-body[data-era='slammer'] label { color: var(--text); font-weight: 600; }
+body[data-era='slammer'] label { color: var(--text); font-weight: 500; }
 
 /* top bar: a plank */
 body[data-era='slammer'] .top {
@@ -125,7 +125,7 @@ body[data-era='slammer'] .tabs {
   background: none; border-style: solid; border-width: 12px 12px 6px; border-image: url('/pixel/frame-hud.png') 12 fill / 12px 12px 6px stretch;
   padding-bottom: env(safe-area-inset-bottom); gap: 3px;
 }
-body[data-era='slammer'] .tabs button { color: var(--muted); font-family: 'Pixelify Sans', monospace; border: 9px solid transparent; padding: 2px 0; }
+body[data-era='slammer'] .tabs button { color: var(--muted); font-family: 'Outfit', system-ui, sans-serif; border: 9px solid transparent; padding: 2px 0; }
 body[data-era='slammer'] .tabs button span { font-size: 11px; font-weight: 600; text-transform: none; letter-spacing: 0; }
 body[data-era='slammer'] .tabs button.on { border-image: url('/pixel/frame-slot-active.png') 9 fill / 9px stretch; color: var(--text); }
 body[data-era='slammer'] .tabs button.on span { color: var(--text); text-shadow: none; }
@@ -156,7 +156,7 @@ body[data-era='slammer'] .incoming-h { color: var(--gold-light); font-family: 'J
 
 /* chips and tags */
 body[data-era='slammer'] .chip { background: var(--card2); border: 3px solid var(--line); color: var(--text); font-weight: 600; }
-body[data-era='slammer'] .tag, body[data-era='slammer'] .badge { border-radius: 0; font-family: 'Pixelify Sans', monospace; }
+body[data-era='slammer'] .tag, body[data-era='slammer'] .badge { border-radius: 0; font-family: 'Outfit', system-ui, sans-serif; }
 
 /* shop items: landscape cards that ring gold */
 body[data-era='slammer'] .items { gap: 6px; }
@@ -200,7 +200,7 @@ body[data-era='slammer'] .act-switch b { font-family: 'Jersey 10', monospace; fo
 body[data-era='slammer'] .atabs { gap: 3px; border-bottom: 0; }
 body[data-era='slammer'] .atabs button {
   border-style: solid; border-width: 12px 12px 0; border-image: url('/pixel/frame-tab-idle.png') 12 12 0 fill / 12px 12px 0 stretch;
-  color: var(--card); font-family: 'Pixelify Sans', monospace; font-weight: 600; padding: 3px 6px;
+  color: var(--card); font-family: 'Outfit', system-ui, sans-serif; font-weight: 600; padding: 3px 6px;
 }
 body[data-era='slammer'] .atabs button.on { border-image-source: url('/pixel/frame-tab.png'); color: var(--text); }
 body[data-era='slammer'] .atabs .badge { background: var(--red); color: var(--card); }
@@ -213,7 +213,7 @@ body[data-era='slammer'] .tv-grid h2 { font-size: clamp(30px, 2.6vw, 44px); }
 body[data-era='slammer'] .tv-live { color: var(--orange2) !important; }
 body[data-era='slammer'] .tv-night { color: var(--teal); font-family: 'Jersey 10', monospace; }
 body[data-era='slammer'] .tv-names span { background: var(--card2); border: 3px solid var(--line); }
-body[data-era='slammer'] .tv-sound { background: none; border-style: solid; border-width: 12px; border-image: url('/pixel/frame-btn-paper.png') 12 fill / 12px stretch; color: var(--text); font-family: 'Pixelify Sans', monospace; }
+body[data-era='slammer'] .tv-sound { background: none; border-style: solid; border-width: 12px; border-image: url('/pixel/frame-btn-paper.png') 12 fill / 12px stretch; color: var(--text); font-family: 'Outfit', system-ui, sans-serif; }
 body[data-era='slammer'] .qr { image-rendering: pixelated; }
 body[data-era='slammer'] .splash-t { font-family: 'Jersey 10', monospace; color: var(--gold-light); text-shadow: 3px 3px 0 var(--outline), -3px -3px 0 var(--outline), 3px -3px 0 var(--outline), -3px 3px 0 var(--outline); }
 
@@ -223,7 +223,7 @@ body[data-era='slammer'] .logo, body[data-era='slammer'] .section-h { color: var
 body[data-era='slammer'] .top h1, body[data-era='slammer'] .top h2 { color: var(--gold-light); }
 body[data-era='slammer'] .feed .k-announce .f-t, body[data-era='slammer'] .feed .k-mafia .f-t { color: var(--orange2); }
 body[data-era='slammer'] .btn { color: var(--text); text-shadow: none; }
-body[data-era='slammer'] .btn.big, body[data-era='slammer'] .btn.danger { color: var(--card); text-shadow: 0 3px 0 var(--outline); }
+body[data-era='slammer'] .btn.big, body[data-era='slammer'] .btn.danger { color: var(--card); text-shadow: 0 1px 0 var(--outline); font-weight: 600; letter-spacing: 0.01em; }
 body[data-era='slammer'] .act-switch { color: var(--text); }
 body[data-era='slammer'] .act-switch .eyebrow { color: var(--orange2); }
 body[data-era='slammer'] .landing .fine, body[data-era='slammer'] .landing .fine a { color: var(--gold-light); text-shadow: 0 3px 0 var(--outline); }
@@ -240,7 +240,7 @@ body[data-era='slammer'] .item-deal { color: var(--muted); font-size: 12px; }
 body[data-era='slammer'][data-kind='player'] { overflow: visible; overflow-x: hidden; }
 
 /* ---------- rounds, in kit components ---------- */
-body[data-era='slammer'] .phases li { background: none; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-slot.png') 9 fill / 9px stretch; padding: 0 2px; color: var(--muted); font-family: 'Pixelify Sans', monospace; }
+body[data-era='slammer'] .phases li { background: none; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-slot.png') 9 fill / 9px stretch; padding: 0 2px; color: var(--muted); font-family: 'Outfit', system-ui, sans-serif; }
 body[data-era='slammer'] .phases li.on { border-image-source: url('/pixel/frame-slot-active.png'); color: var(--text); }
 body[data-era='slammer'] .big-cd, body[data-era='slammer'] .cd.big-cd { font-family: 'Jersey 10', monospace; font-size: 54px; color: var(--orange2); }
 body[data-era='slammer'] .cd.low { color: var(--red); }
@@ -254,7 +254,7 @@ body[data-era='slammer'] .placings .rank { font-family: 'Jersey 10', monospace; 
 body[data-era='slammer'] .placings b { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 22px; color: var(--green); }
 body[data-era='slammer'] .bar-tile { border-style: solid; border-width: 12px; border-image: url('/pixel/frame-card.png') 12 fill / 12px stretch; background: color-mix(in srgb, var(--c) 30%, var(--card2)); }
 body[data-era='slammer'] .bar-tile.s-serving { outline: none; border-width: 15px; border-image: url('/pixel/frame-card-active.png') 15 fill / 15px stretch; }
-body[data-era='slammer'] .bar-tile-t { background: rgba(59, 29, 18, 0.82); color: var(--card); font-family: 'Pixelify Sans', monospace; }
+body[data-era='slammer'] .bar-tile-t { background: rgba(59, 29, 18, 0.82); color: var(--card); font-family: 'Outfit', system-ui, sans-serif; }
 body[data-era='slammer'] .bar-tile-t b { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 22px; color: var(--gold-light); }
 body[data-era='slammer'] .winner { background: #4a2e1c url('/pixel/floor.png') repeat; }
 body[data-era='slammer'] .winner-in { border-style: solid; border-width: 18px; border-image: url('/pixel/frame-wood.png') 18 fill / 18px stretch; padding: 24px 48px; }
@@ -278,16 +278,16 @@ body[data-era='slammer'] .slot.done { border-image: url('/pixel/frame-slot-locke
 body[data-era='slammer'] { font-size: 16px; }
 body[data-era='slammer'] .fine, body[data-era='slammer'] small { font-size: 14px; }
 body[data-era='slammer'] .eyebrow { font-size: 15px; }
-/* Pixelify's small B/8 and 2/8 blur together: block names, chips, phases and numbers use Jersey 10. */
-body[data-era='slammer'] .chip { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 19px; line-height: 1; padding: 2px 8px; }
-body[data-era='slammer'] .phases li { font-family: 'Jersey 10', monospace; font-size: 18px; }
+/* Small text reads best in a clean sans: block names, chips and phase steps use Outfit. */
+body[data-era='slammer'] .chip { font-family: 'Outfit', system-ui, sans-serif; font-weight: 600; font-size: 15px; line-height: 1.2; padding: 2px 8px; }
+body[data-era='slammer'] .phases li { font-family: 'Outfit', system-ui, sans-serif; font-size: 14px; }
 body[data-era='slammer'] .target, body[data-era='slammer'] .b-n, body[data-era='slammer'] .picks, body[data-era='slammer'] .queue, body[data-era='slammer'] .slot-g { font-family: 'Jersey 10', monospace; font-size: 20px; font-weight: 400; }
 body[data-era='slammer'] .top.slim { padding: 0 6px; padding-top: max(0px, env(safe-area-inset-top)); }
 body[data-era='slammer'] .top.slim .who-name { font-family: 'Jersey 10', monospace; font-size: 28px; color: var(--gold-light); text-shadow: 0 3px 0 var(--outline); }
 body[data-era='slammer'] .pill { background: none; border-style: solid; border-width: 12px; border-image: url('/pixel/frame-hud.png') 12 fill / 12px stretch; padding: 0 4px; font-family: 'Jersey 10', monospace; font-size: 26px; color: var(--text); }
 body[data-era='slammer'] .pill.pts { color: var(--orange2); }
 body[data-era='slammer'] .pill.cr { color: var(--green); }
-body[data-era='slammer'] .shop-cats button { background: none; border-style: solid; border-width: 12px 12px 0; border-image: url('/pixel/frame-tab-idle.png') 12 12 0 fill / 12px 12px 0 stretch; color: var(--card); font-family: 'Pixelify Sans', monospace; padding: 2px 4px; }
+body[data-era='slammer'] .shop-cats button { background: none; border-style: solid; border-width: 12px 12px 0; border-image: url('/pixel/frame-tab-idle.png') 12 12 0 fill / 12px 12px 0 stretch; color: var(--card); font-family: 'Outfit', system-ui, sans-serif; padding: 2px 4px; }
 body[data-era='slammer'] .shop-cats button.on { border-image-source: url('/pixel/frame-tab.png'); color: var(--text); }
 body[data-era='slammer'] .shop-cats { gap: 2px; padding: 0 16px; }
 body[data-era='slammer'] .shop-list { margin-top: 0; }
@@ -311,7 +311,7 @@ body[data-era='slammer'] .block-card { background: none; border-style: solid; bo
 body[data-era='slammer'] .block-card b { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 24px; }
 body[data-era='slammer'] .block-card .code { font-family: 'Jersey 10', monospace; font-size: 34px; color: var(--orange2); }
 body[data-era='slammer'] .num-grid .target { font-size: 28px; }
-body[data-era='slammer'] .answer { background: none; border-style: solid; border-width: 12px; border-image: url('/pixel/frame-btn-paper.png') 12 fill / 12px stretch; padding: 2px 6px; font-family: 'Pixelify Sans', monospace; }
+body[data-era='slammer'] .answer { background: none; border-style: solid; border-width: 12px; border-image: url('/pixel/frame-btn-paper.png') 12 fill / 12px stretch; padding: 2px 6px; font-family: 'Outfit', system-ui, sans-serif; }
 body[data-era='slammer'] .answer b { font-family: 'Jersey 10', monospace; font-size: 24px; font-weight: 400; color: var(--orange2); }
 body[data-era='slammer'] .answer.on { border-image-source: url('/pixel/frame-slot-active.png'); border-image-slice: 9 fill; }
 body[data-era='slammer'] .answer.right { border-image-source: url('/pixel/frame-btn-green.png'); color: var(--card); }
@@ -326,3 +326,11 @@ body[data-era='slammer'] .act-name { font-family: 'Jersey 10', monospace; font-s
 body[data-era='slammer'] .slot-select { border-width: 6px; padding: 0 2px; font-size: 14px; background-color: transparent; }
 body[data-era='slammer'] .slot.empty { outline: none; border-image-source: url('/pixel/frame-slot-locked.png'); }
 body[data-era='slammer'] .mechs .check { font-size: 14px; }
+
+/* Readability: pixel fonts only for big headings and numbers; everything else in a clean sans. */
+body[data-era='slammer'] .btn { font-family: 'Outfit', system-ui, sans-serif; font-weight: 600; letter-spacing: 0; }
+body[data-era='slammer'] .phases li { font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 480px) { body[data-era='slammer'] .phases { gap: 2px; } body[data-era='slammer'] .phases li { font-size: 13px; padding: 0; text-overflow: clip; } body[data-era='slammer'] .phases li::before { content: none; } }
+body[data-era='slammer'] .phases li.on { font-weight: 700; }
+body[data-era='slammer'] .fine { font-weight: 400; }
+body[data-era='slammer'] input, body[data-era='slammer'] select, body[data-era='slammer'] textarea { font-family: 'Outfit', system-ui, sans-serif; font-weight: 500; }

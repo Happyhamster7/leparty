@@ -105,7 +105,7 @@ test('cannot overspend or gift yourself; captain-only spending; stock', () => {
   const { g, a, players } = setup(2);
   assert.throws(() => g.buy(players[0].id, { itemId: itemOf(g, 'drink', (i) => i.name === 'Soju').id, targetTeamId: a.id }), /different block/);
   a.budget = 0;
-  assert.throws(() => g.buy(players[0].id, { itemId: itemOf(g, 'supply').id }), /Not enough credits/);
+  assert.throws(() => g.buy(players[0].id, { itemId: itemOf(g, 'supply').id }), /Not enough cash/);
   a.budget = 100;
   g.updateSettings({ spendMode: 'captain' });
   assert.throws(() => g.buy(players[0].id, { itemId: itemOf(g, 'supply').id }), /Shot Caller/);
@@ -251,7 +251,7 @@ test('requests stay inside the block and are re-checked when they go through', (
   assert.equal(g.viewFor(players[1].id).teams.find((t) => t.id === a.id).requests, null, 'other blocks cannot see it');
   assert.equal(g.viewFor(players[2].id).teams.find((t) => t.id === a.id).requests.length, 1);
   a.budget = 0;
-  assert.throws(() => g.secondRequest(players[2].id, { requestId: req.id }), /Not enough credits/);
+  assert.throws(() => g.secondRequest(players[2].id, { requestId: req.id }), /Not enough cash/);
 });
 
 test('a block of one buys directly even in request mode', () => {
@@ -1340,6 +1340,8 @@ test('Cold War: secret picks, revealed together; the two lowest drink theirs plu
   const shots = g.s.orders.filter((o) => o.origin === 'game');
   assert.deepEqual(shots.map((o) => [o.targetTeamId, o.qty]).sort(), [[teams[1].id, 15], [teams[2].id, 9], [teams[3].id, 16]].sort());
   g.playFinish();
+  assert.equal(r.phase, 'results', 'the host confirms the rewards');
+  g.enterResults({ placings: r.proposed });
   assert.equal(r.phase, 'spending');
   assert.deepEqual(r.placings, { [teams[0].id]: 1, [teams[4].id]: 2, [teams[2].id]: 3, [teams[1].id]: 4, [teams[3].id]: 5 });
   assert.equal(r.winnerTeamId, teams[0].id);
@@ -1380,6 +1382,7 @@ test('Trivia: questions from the Games tab, answered on the phones, scored and p
   g.playAnswer(phones[2].id, { value: 1 }); // C right
   assert.throws(() => g.playNext(), /Reveal this question/);
   g.playFinish();
+  g.enterResults({ placings: r.proposed });
   // C has 2 right answers, A and B one each.
   assert.equal(r.placings[teams[2].id], 1);
   assert.deepEqual([r.play.scores[teams[0].id], r.play.scores[teams[1].id], r.play.scores[teams[2].id]], [1, 1, 2]);
@@ -1405,6 +1408,8 @@ test('Is Jason lying?: phones vote Truth or Lie, the host says which it was, rig
   g.playReveal({ truth: 'truth' });
   assert.throws(() => g.playNext(), /last story/);
   g.playFinish();
+  assert.equal(Object.keys(r.proposed).length, 3);
+  g.enterResults({ placings: r.proposed });
   assert.equal(r.phase, 'spending');
   assert.equal(Object.keys(r.placings).length, 3);
 });
@@ -1556,6 +1561,7 @@ test('Anime openings: blocks type the anime; only the first right answer scores;
   g.tick();
   assert.equal(r.play.state, 'missed');
   g.playFinish();
+  g.enterResults({ placings: r.proposed });
   assert.equal(r.phase, 'spending');
   assert.deepEqual([r.play.scores[teams[1].id], r.play.scores[teams[2].id], r.play.scores[teams[0].id] || 0], [1, 1, 0]);
   assert.equal(r.placings[teams[0].id], 3);
@@ -1577,4 +1583,29 @@ test('an old library with the multiple-choice anime game moves to typed answers'
   const g = new Game();
   g.addGame({ name: 'Anime opening guessing', runBy: 'trivia', playersNeeded: 0 });
   assert.equal(new Game(structuredClone(g.s)).s.games[0].runBy, 'anime');
+});
+
+test('ranking and reward are separate: a winner can be awarded less, and an app game waits for the host', () => {
+  const { g, teams } = appSetup(3);
+  const [a, b, c] = teams;
+  g.startRound({ gameId: g.addGame({ name: 'Beer pong', playersNeeded: 0 }).id });
+  const r = g.round;
+  g.toResults();
+  const before = [a.budget, b.budget, c.budget];
+  g.enterResults({ placings: { [a.id]: 1, [b.id]: 2, [c.id]: 3 }, rewards: { [a.id]: 30, [b.id]: '' } });
+  assert.equal(r.winnerTeamId, a.id, 'still the winner');
+  assert.equal(r.prizes[a.id], 30, 'awarded less than 1st place’s 90');
+  assert.equal(r.prizes[b.id], g.s.settings.prizeMoney[1], 'blank reward = the place’s prize');
+  assert.equal(r.prizes[c.id], g.s.settings.prizeMoney[2]);
+  assert.deepEqual([a.budget - before[0], b.budget - before[1]], [30, g.s.settings.prizeMoney[1]]);
+  assert.equal(g.adminView().round.proposed, null);
+});
+
+test('rewards can be zero, and are capped', () => {
+  const { g, teams } = appSetup(2);
+  g.startRound({ gameId: g.addGame({ name: 'Beer pong', playersNeeded: 0 }).id });
+  g.toResults();
+  g.enterResults({ placings: { [teams[0].id]: 1, [teams[1].id]: 2 }, rewards: { [teams[0].id]: 0, [teams[1].id]: 99999 } });
+  assert.equal(g.round.prizes[teams[0].id], 0);
+  assert.equal(g.round.prizes[teams[1].id], 1000);
 });
