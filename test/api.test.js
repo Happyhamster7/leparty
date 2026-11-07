@@ -273,3 +273,21 @@ test('LeParty sync over the API: hosts pick an event and sync; the TV picks up l
   assert.match(r.error, /refused the secret/);
   assert.match((await api2.getState(host2)).view.leparty.error, /refused the secret/);
 });
+
+test('an older save is stocked with the party’s games once, and their ids stay put so Setup can pick them', async () => {
+  const store = new FileStore({ file: null });
+  const api = createApi({ store, pins });
+  // Already logged in, as on the night: from here on the host's polls only read.
+  const host = { host: (await api.action({ kind: 'login', pin: '1111' })).result.adminToken };
+  const { state, version } = await store.load();
+  state.games = [];
+  delete state.starterGames; // a save from before the games were stocked
+  await store.save(state, version);
+  const first = (await api.getState(host)).view.games;
+  const again = (await api.getState(host)).view.games;
+  assert.equal(first.length, 14);
+  assert.deepEqual(again.map((g) => g.id), first.map((g) => g.id));
+  const res = await api.action({ kind: 'admin', type: 'setSlot', args: { act: 1, slot: 1, gameId: first[0].id } }, host);
+  assert.equal(res.ok, true, res.error);
+  assert.equal(res.view.night.acts[0].rounds[0], first[0].id);
+});
