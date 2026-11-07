@@ -31,7 +31,7 @@ You play in a block of 4 or 5 (Block A, Block B and so on). Each block starts wi
 - **Earning credits:** win games. The two hosts, the Warden and the Commissary Officer, pay out after every heat and can hand out bonuses or fines. Nobody else can create credits.
 - **Spending is a block decision:** pick something in the Commissary and it goes to your block as a request. It goes through when your Shot Caller approves it or 2 blockmates second it. You can withdraw your own request, and the Shot Caller can veto one.
 - **Name your block:** your Shot Caller (or anyone, if your block has none) sets a nickname and motto on the My Block tab. It shows on everyone's phones and the TV.
-- **Points win the night:** send drinks to other blocks (or the Holding Cell) from **Send drinks** in the Commissary. Every drink costs credits and scores points for your block: Spirit 3, Mystery Spirit 3, Soju 1, Wine 4, Mystery Cocktail 4. Sending 5 or 10 at once (or a whole Soju bottle) is cheaper and scores extra. Drinks land on a block, not a person: the block decides who drinks them. Most points at the end wins.
+- **Points win the night:** send drinks to other blocks (or the Holding Cell) from **Send drinks** in the Commissary. Every drink costs credits and scores points for your block: Spirit 3, Mystery Spirit 3, Soju Shot 1, Soju Bottle 9, Wine 4, Mystery Cocktail 4. Sending 5 or 10 at once (or a whole Soju bottle) is cheaper and scores extra. Drinks land on a block, not a person: the block decides who drinks them. Most points at the end wins.
 - **The shop opens and closes:** the hosts close the commissary at times during the night. While it's closed, nobody can buy or approve requests.
 
 ## The four acts
@@ -60,7 +60,7 @@ Each act also turns your phone into that game's screen: a GTA smartphone, the Ge
 
 | Item | Credits | What it does |
 | --- | --- | --- |
-| Send drinks | 7–25 each | Spirit, Mystery Spirit, Soju, Wine or Mystery Cocktail for another block or the Holding Cell, 1–10 at a time. Deals: 5 or 10 Spirits / Mystery Spirits / Cocktails, or a Soju bottle (8) |
+| Send drinks | 7–25 each | Spirit, Mystery Spirit, Soju Shot, Soju Bottle, Wine or Mystery Cocktail for another block or the Holding Cell, 1–10 at a time. Deals: 5 or 10 Spirits / Mystery Spirits / Cocktails; a Soju Bottle is $42 for the whole bottle |
 | No Chasers | 50 | Every drink your block sends this round is taken neat: no mixer, no chaser |
 | Shot Penalty | 25 | Everyone in the target block owes 1 penalty drink |
 | Chain Gang | 20 | Target block plays the next game linked arm in arm |

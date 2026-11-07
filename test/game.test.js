@@ -105,7 +105,7 @@ test('buying a supply deducts budget and queues an order', () => {
 
 test('cannot overspend or gift yourself; captain-only spending; stock', () => {
   const { g, a, players } = setup(2);
-  assert.throws(() => g.buy(players[0].id, { itemId: itemOf(g, 'drink', (i) => i.name === 'Soju').id, targetTeamId: a.id }), /different block/);
+  assert.throws(() => g.buy(players[0].id, { itemId: itemOf(g, 'drink', (i) => i.name === 'Soju Shot').id, targetTeamId: a.id }), /different block/);
   a.budget = 0;
   assert.throws(() => g.buy(players[0].id, { itemId: itemOf(g, 'supply').id }), /Not enough cash/);
   a.budget = 100;
@@ -153,7 +153,7 @@ test('punishing the Holding Cell lands immediately with no deflect', () => {
   assert.equal(late1.drinksOwed, 1);
   assert.equal(late2.drinksOwed, 1);
   assert.equal(players[0].drinksOwed, 0);
-  const gift = g.buy(players[0].id, { itemId: itemOf(g, 'drink', (i) => i.name === 'Soju').id, targetTeamId: HOLDING });
+  const gift = g.buy(players[0].id, { itemId: itemOf(g, 'drink', (i) => i.name === 'Soju Shot').id, targetTeamId: HOLDING });
   assert.equal(gift.status, 'pending');
 });
 
@@ -670,8 +670,8 @@ test('drinks cost and score per the menu; bundles are cheaper and score more', (
   assert.deepEqual((({ cost, points }) => ({ cost, points }))(step(() => send('Mystery Spirit', 10))), { cost: 105, points: 35 });
   assert.deepEqual((({ cost, points }) => ({ cost, points }))(step(() => send('Mystery Cocktail', 5))), { cost: 72, points: 22 });
   assert.deepEqual((({ cost, points }) => ({ cost, points }))(step(() => send('Mystery Cocktail', 10))), { cost: 126, points: 46 });
-  const bottle = step(() => send('Soju', 8));
-  assert.deepEqual([bottle.cost, bottle.points, bottle.o.name], [42, 9, '8× Soju (bottle)']);
+  const bottle = step(() => send('Soju Bottle', 1));
+  assert.deepEqual([bottle.cost, bottle.points, bottle.o.name, bottle.o.qty], [42, 9, 'Soju Bottle', 1], 'a bottle is one bottle at the bar, not 8 shots');
   assert.deepEqual((({ cost, points }) => ({ cost, points }))(step(() => send('Wine', 5))), { cost: 125, points: 20 });
   assert.equal(a.points, 0); // nothing scores until the drinks are served
   serveAll(g);
@@ -713,9 +713,9 @@ test('old saves get the drink menu and lose the two one-size drink gifts', () =>
   old.items = old.items.filter((i) => i.type !== 'drink');
   old.items.push({ id: 'r', emoji: '🍺', name: 'Send a Round', desc: '', price: 15, type: 'gift', stock: null, active: true, drain: 0, drinks: 0, steal: false, act: null });
   const g2 = new Game(old);
-  assert.deepEqual(g2.s.items.filter((i) => i.type === 'drink').map((i) => i.name), ['Spirit', 'Mystery Spirit', 'Soju', 'Wine', 'Mystery Cocktail']);
+  assert.deepEqual(g2.s.items.filter((i) => i.type === 'drink').map((i) => i.name), ['Spirit', 'Mystery Spirit', 'Soju Shot', 'Soju Bottle', 'Wine', 'Mystery Cocktail']);
   assert.equal(g2.s.items.find((i) => i.name === 'Send a Round').active, false);
-  assert.equal(new Game(structuredClone(g2.s)).s.items.filter((i) => i.type === 'drink').length, 5); // only once
+  assert.equal(new Game(structuredClone(g2.s)).s.items.filter((i) => i.type === 'drink').length, 6); // only once
 });
 
 test('penalty-drink punishments score a point; drink-free ones and supplies do not', () => {
@@ -731,7 +731,7 @@ test('penalty-drink punishments score a point; drink-free ones and supplies do n
 test('drinks sent to the Holding Cell score too', () => {
   const { g, a, players } = setup();
   g.join('Late');
-  g.buy(players[0].id, { itemId: itemOf(g, 'drink', (i) => i.name === 'Soju').id, targetTeamId: HOLDING });
+  g.buy(players[0].id, { itemId: itemOf(g, 'drink', (i) => i.name === 'Soju Shot').id, targetTeamId: HOLDING });
   serveAll(g);
   assert.equal(a.points, 1);
 });
@@ -748,7 +748,7 @@ test('a deflected drink still scores for the block that paid for it', () => {
 test('a purchase request only scores once it goes through', () => {
   const { g, a, b, players } = setup();
   g.updateSettings({ spendMode: 'request' });
-  const { requestId } = g.buy(players[0].id, { itemId: itemOf(g, 'drink', (i) => i.name === 'Soju').id, targetTeamId: b.id });
+  const { requestId } = g.buy(players[0].id, { itemId: itemOf(g, 'drink', (i) => i.name === 'Soju Shot').id, targetTeamId: b.id });
   assert.equal(a.points, 0);
   g.secondRequest(players[2].id, { requestId });
   g.secondRequest(players[4].id, { requestId });
@@ -758,7 +758,7 @@ test('a purchase request only scores once it goes through', () => {
 
 test('cancelling a sent drink refunds the credits and takes the point back', () => {
   const { g, a, b, players } = setup();
-  const gift = itemOf(g, 'drink', (i) => i.name === 'Soju');
+  const gift = itemOf(g, 'drink', (i) => i.name === 'Soju Shot');
   const o = g.buy(players[0].id, { itemId: gift.id, targetTeamId: b.id });
   g.resolveOrder({ orderId: o.id, action: 'cancel', by: 'warden' });
   assert.equal(a.budget, 200);
@@ -776,7 +776,7 @@ test('hosts can correct points, never below zero', () => {
 
 test('points go public at the end of each act; your own block and the hosts see them live', () => {
   const { g, a, b, players } = setup();
-  g.buy(players[0].id, { itemId: itemOf(g, 'drink', (i) => i.name === 'Soju').id, targetTeamId: b.id });
+  g.buy(players[0].id, { itemId: itemOf(g, 'drink', (i) => i.name === 'Soju Shot').id, targetTeamId: b.id });
   serveAll(g);
   assert.equal(a.points, 1);
   assert.equal(g.viewFor(players[0].id).teams.find((t) => t.id === a.id).points, 1, 'A sees its own score live');
@@ -798,7 +798,7 @@ test('points go public at the end of each act; your own block and the hosts see 
 
 test('closing the shop blocks buying and requests until it reopens', () => {
   const { g, a, b, players } = setup();
-  const gift = itemOf(g, 'drink', (i) => i.name === 'Soju');
+  const gift = itemOf(g, 'drink', (i) => i.name === 'Soju Shot');
   g.updateSettings({ shopOpen: 'false' });
   assert.throws(() => g.buy(players[0].id, { itemId: gift.id, targetTeamId: b.id }), /closed/);
   g.updateSettings({ spendMode: 'request' });
@@ -814,7 +814,7 @@ test('closing the shop blocks buying and requests until it reopens', () => {
 test('a request made while open cannot go through after the shop closes', () => {
   const { g, a, b, players } = setup();
   g.updateSettings({ spendMode: 'request' });
-  const { requestId } = g.buy(players[0].id, { itemId: itemOf(g, 'drink', (i) => i.name === 'Soju').id, targetTeamId: b.id });
+  const { requestId } = g.buy(players[0].id, { itemId: itemOf(g, 'drink', (i) => i.name === 'Soju Shot').id, targetTeamId: b.id });
   g.updateSettings({ shopOpen: false });
   g.secondRequest(players[2].id, { requestId });
   assert.throws(() => g.secondRequest(players[4].id, { requestId }), /closed/);
@@ -949,7 +949,7 @@ test('the bar: fewest drinks first, Next pays the senders, Back undoes it, Done 
   const pen = g.round.serves.find((s) => s.teamId === b.id);
   assert.equal(pen.drinks, 1);
   assert.equal(g.order(pen.orderIds[0]).origin, 'penalty');
-  assert.equal(g.order(pen.orderIds[0]).name, '1× Soju');
+  assert.equal(g.order(pen.orderIds[0]).name, '1× Soju Shot');
 });
 
 // Open a Mystery Box with the dice fixed: inside the box, each Math.random() call returns the next roll.
@@ -1190,7 +1190,7 @@ test('a Mystery Box can pour 1–5 random drinks on your own block or another, w
   assert.equal(self.kind, 'self');
   assert.equal(self.qty, 5);
   assert.equal(self.targetTeamId, a.id);
-  assert.ok(['Soju', 'Spirit', 'Mystery Cocktail'].includes(self.drink));
+  assert.ok(['Soju Shot', 'Spirit', 'Mystery Cocktail'].includes(self.drink));
   const other = openBox(g, players[0].id, [0.9, 0, 0, 0.9, 0]).mystery;
   assert.equal(other.kind, 'other');
   assert.equal(other.qty, 1);
@@ -1821,4 +1821,18 @@ test('No Chasers: everything the block sends this round is poured neat, includin
   playRound(g, a, b, players); // next round: back to normal
   g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 1 });
   assert.equal(g.s.orders.find((o) => o.type === 'drink').noChaser, undefined);
+});
+
+test('an older save’s Soju becomes Soju Shot, with a separate Soju Bottle', () => {
+  const g = new Game();
+  const old = structuredClone(g.s);
+  old.economy = 4;
+  old.items = old.items.filter((i) => i.name !== 'Soju Bottle');
+  const shot = old.items.find((i) => i.name === 'Soju Shot');
+  Object.assign(shot, { name: 'Soju', bundles: [{ qty: 8, cost: 42, points: 9, label: 'Bottle' }] });
+  const moved = new Game(old);
+  const names = moved.s.items.filter((i) => i.type === 'drink').map((i) => i.name);
+  assert.deepEqual(names.slice(2, 4), ['Soju Shot', 'Soju Bottle']);
+  assert.deepEqual(moved.s.items.find((i) => i.name === 'Soju Shot').bundles, []);
+  assert.equal(moved.s.items.find((i) => i.name === 'Soju Bottle').price, 42);
 });

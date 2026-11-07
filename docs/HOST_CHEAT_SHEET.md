@@ -139,6 +139,6 @@ Nobody else can change credits, so every dispute ends with you.
 
 ## Still to decide
 
-- [x] **How the winning block is chosen.** Most points wins. Points come from drinks sent: Spirit 3, Mystery Spirit 3, Soju 1, Wine 4, Mystery Cocktail 4 each, more for 5/10 deals and the Soju bottle. A Shot Penalty scores 1. Ties fall back to credits earned. Drink orders land in the Orders tab as one line per order ("5× Spirit, Block A → Block B"); pour them for that block and tap Delivered.
+- [x] **How the winning block is chosen.** Most points wins. Points come from drinks sent: Spirit 3, Mystery Spirit 3, Soju Shot 1, Soju Bottle 9, Wine 4, Mystery Cocktail 4 each, more for 5/10 deals and the Soju bottle. A Shot Penalty scores 1. Ties fall back to credits earned. Drink orders land in the Orders tab as one line per order ("5× Spirit, Block A → Block B"); pour them for that block and tap Delivered.
 - [ ] **The top block's prize.**
 - [ ] **A Holding Cell way out besides bail.** For example, a parole mini-challenge where the winner gets placed on a block by a host.
