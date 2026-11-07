@@ -2220,7 +2220,7 @@
       const games = [...S.games].sort((a, b) => (a.status === 'done' ? 1 : 0) - (b.status === 'done' ? 1 : 0));
       const n = (r?.number || 0) + 1;
       const over = n > (S.plan?.total || 12);
-      main = over ? `<section class="card"><h3>That was the final round of Act ${S.plan.acts}.</h3><p>Time to crown the winner below.</p></section>` : `<section class="card">
+      main = over ? `<section class="card"><h3>That’s the night.</h3><p>${S.winner ? `👑 ${h(teamName(S.winner.teamId))} won with the most points.` : 'The winner is crowned when the last round finishes.'}</p></section>` : `<section class="card">
         <h3>${r ? `${h(r.label)} is done.` : 'No rounds yet.'} Next up: ${h(slotLabel(n))}</h3>
         ${games.length ? `<form data-admin="startRound" class="row wrap">
           <label class="grow">Game (next in the schedule is picked)<select id="rd_game" name="gameId">${games.map((g) => `<option value="${g.id}">${h(g.name)} · ${g.playersNeeded ? `${plural(g.playersNeeded, 'player')} per block` : 'group game'}${g.status === 'done' ? ' (played)' : ''}</option>`).join('')}</select></label>
@@ -2268,14 +2268,7 @@
       ${S.penaltiesOwed?.length ? `<section class="card"><h3>⏰ Owed next round</h3><ul class="roster">${S.penaltiesOwed.map((x) => `<li>${h(teamName(x.teamId))}: ${x.qty}× ${h(x.drinkName)} <span class="fine">${h(x.reason)}</span></li>`).join('')}</ul></section>` : ''}
       ${(S.bounties || []).some((b) => b.status === 'active') ? `<section class="card"><h3>🎯 Bounties running</h3><ul class="roster">${S.bounties.filter((b) => b.status === 'active').map((b) => `<li>${h(teamName(b.teamId))}: ${b.kind === 'winner' ? 'Winner’s' : 'Open'} · ${b.sent}/5 sent · last round ${b.deadlineRound}</li>`).join('')}</ul></section>` : ''}
       ${S.night?.status === 'draft' && !r ? '<section class="card"><h3>🎬 Set up the night first</h3><p class="fine">Choose the games for each act and confirm in Setup.</p><button class="btn" data-act="atab" data-tab="setup">Go to Setup</button></section>' : ''}
-      ${nightPlan(false)}
-      <section class="card">
-        <h3>👑 End of the night</h3>
-        <form data-admin="crownWinner" class="row wrap">
-          <label class="grow">Winner<select id="cw_team" name="teamId">${standings().map((t, i) => `<option value="${t.id}">${i === 0 ? '🏆 ' : ''}${h(t.name)} · ${plural(t.points || 0, 'pt')}</option>`).join('')}</select></label>
-          <button class="btn" data-confirm="Crown this block? Every screen shows the winner.">Crown the winner</button>
-        </form>
-      </section>`;
+      <p class="fine center">👑 When the last act’s final round finishes, the block with the most points is crowned automatically.</p>`;
   }
 
   // Where a library game sits in the sequence, by act name and round.
@@ -2837,7 +2830,6 @@
       <div class="act-now"><span class="mega">${a.emoji}</span><div><div class="eyebrow">${oneAct() ? 'Tonight' : `Act ${a.numeral} of ${S.acts.length} · ${h(a.game)}`}</div><b>${h(oneAct() ? S.settings.partyName : a.name)}</b></div></div>
       <div class="row">
         ${i > 0 ? btn('◀', 'setAct', { index: i - 1 }, 'ghost sm', `Go back to Act ${S.acts[i - 1].numeral}: ${S.acts[i - 1].name}?`) : ''}
-        ${btn(S.settings.shopOpen ? '🔒 Close shop' : '🛒 Open shop', 'updateSettings', { shopOpen: !S.settings.shopOpen }, S.settings.shopOpen ? 'ghost sm' : 'sm')}
         ${btn('📺 Play intro on TV', 'playIntro', {}, 'ghost sm')}
         ${nextA ? btn(`Next: ${nextA.emoji} ${h(nextA.name)} ▶`, 'setAct', { index: i + 1 }, 'sm', `Start Act ${nextA.numeral}: ${nextA.name} (${nextA.game})? Every phone and the TV switch over now.`) : oneAct() ? '' : '<span class="fine">Final act</span>'}
       </div>
@@ -3363,6 +3355,8 @@
     return `
       <h3 class="section-h">🔐 Blocks</h3>
       ${aBlocks(false)}
+      <h3 class="section-h">🎬 Schedule</h3>
+      ${nightPlan(false)}
       <h3 class="section-h">⚙️ Everything else</h3>
       <section class="card">
         <h3>📣 PA announcement</h3>

@@ -90,7 +90,7 @@ The night is **4 acts × 3 rounds**: Act 1 · Round 1, Act 1 · Round 2, Act 1 �
 6. **The bar:** tap **Next** to call the next block (fewest drinks first). Pour what the panel says. Tap **Done in time ✓** if they finish inside 30 seconds: that pays their streak (5 credits × drinks finished in a row; the button shows the amount). If the clock runs out they owe an extra shot next round and their streak resets, automatically. A "−1 shield" or "+1 bonus" tag on the pour list is a Winner's Bounty reward at work: pour the number shown. **Back** undoes a Next pressed by mistake. The round ends when every block is done.
 7. **Snitch phase** if it's due (see Running the snitch game).
 
-At the end of the night: **Crown the winner** (most points is pre-selected).
+The night ends itself: when the last act's final round finishes, the block with the most points is crowned on every screen.
 
 ## Calls you make
 

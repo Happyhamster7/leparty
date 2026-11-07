@@ -1757,3 +1757,21 @@ test('deleting a game from the library empties the rounds that used it', () => {
   g.removeGame({ gameId: quiz.id });
   assert.deepEqual(g.s.night.acts[0].rounds, [null, null]);
 });
+
+test('the night ends itself: when the last act’s final round finishes, most points wins', () => {
+  const { g, a, b, players } = setup();
+  g.updateSettings({ actsCount: 1, roundsPerAct: 2 });
+  playRound(g, a, b, players);
+  g.startDrinks();
+  assert.equal(g.s.winner, null); // not after the first round
+  playRound(g, a, b, players);
+  b.points = 12;
+  a.points = 7;
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 1 });
+  g.startDrinks();
+  g.barNext();
+  assert.equal(g.s.winner, null); // the bar's still going
+  g.barDone({ teamId: b.id });
+  assert.equal(g.s.winner.teamId, b.id); // B 12 beats A 7 + 3
+  assert.equal(g.tvView().winner.teamId, b.id);
+});

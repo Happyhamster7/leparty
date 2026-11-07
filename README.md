@@ -96,7 +96,7 @@ The host console opens on **🎬 Setup** until the night is created:
 4. **The sequence**: one column per act. Name each act, switch on its mechanics, and tap a round to choose its game.
 5. **✅ Confirm and create the night**: needs a game in every round. It locks the setup in (rounds then follow the sequence, labelled by act name, e.g. "Booking Day · Final round") and pulls the contestants in from LeParty. Rounds not played yet can still change; **Reopen setup** goes back to editing.
 
-Blocks (guests, block cards, build blocks) live in ⚙️ Settings.
+Blocks (guests, block cards, build blocks) and the read-only schedule live in ⚙️ Settings. The shop opens and closes by itself (open in Spending, shut when drinks start), so the host bar has no shop button. **The night ends itself**: when the last act's final round finishes at the bar, the block with the most points (credits earned break a tie) is crowned on every screen.
 
 **Act mechanics** are the hook for per-act rules. Each mechanic is registered in `lib/game.js` with `registerMechanic(key, { name, desc, ...hooks })`; the engine calls its hooks while an act that switched it on is running: `actStart`, `roundStart`, `results`, `drinksStart`, `price` (what a block pays) and `points` (what a served drink scores). Registered mechanics appear as checkboxes on each act in Setup, and phones and the TV show the act's active mechanics under the round title.
 
