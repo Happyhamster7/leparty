@@ -74,6 +74,10 @@ Each act also turns your phone into that game's screen: a GTA smartphone, the Ge
 
 When a punishment hits your block, every phone gets an alert: **Take it** or **Deflect**. A deflected punishment can be deflected again. The Holding Cell can't deflect anything. Other blocks only see that you bought "something suspicious" when you buy a Snitch Slip or a Bribe.
 
+## Your block's phone
+
+Each block plays on **one phone**. Scan your block's card (or type its code on the site) and that phone plays for the whole block: picking players, shopping and sending drinks, taking punishments and filming at the bar. If another phone scans the card, it takes over. Keep the card face down.
+
 ## Each round
 
 The night runs in **4 acts of 3 rounds**: Act 1 · Round 1, Act 1 · Round 2, Act 1 · Final round, then on to Act 2, all the way to Act 4's final round. Every round works the same way:

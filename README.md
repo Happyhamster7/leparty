@@ -86,6 +86,17 @@ Augments (Act III): Windfall (+20 now), Rich Get Richer (+5 now and an interest 
 
 Warp odds and pity are in Settings. Any shop item can be limited to one act in the Commissary tab ("On the shelf during").
 
+### One phone per block (LeParty's format)
+
+By default each **block plays on one phone**, as in LeParty. Guests don't book in on their own phones:
+
+1. **Hosts add the guests** in 🔐 Blocks → **Add guests** (paste names, one per line), then **Build blocks** as usual.
+2. **Every block gets a card**: a QR code and a 4-letter code, shown in 🔐 Blocks → **Block phones**, with **🖨 Print block cards** for a printable sheet. Codes never appear on the TV: anyone with a code can take that block over.
+3. **Someone on the block scans the card** (or types the code at the site), and that device becomes the block's phone. **The latest scan wins**: the previous phone is signed out and told so. If a card leaks, **New code** issues a fresh one and signs the phone out.
+4. **The block phone does everything for the block**, straight away with no seconding: picks players from the roster, shops and sends drinks, takes or deflects punishments, picks bounty rewards, films at the bar and renames the block. It shows who on the block owes penalty drinks or dares (hosts tick them off in ⚖️ Punish / Lockup).
+
+With one phone per block the **snitch game is off** (a secret role needs a private phone), so the Snitches and Sabotage host tabs are hidden. To go back to every guest on their own phone, with the snitch game, set ⚙️ Settings → **Phones** to "Every guest on their own phone" (or the `PHONE_MODE=guest` environment variable for new nights).
+
 ### The phone
 
 With the one-look lineup the phone is **one screen with no tab bar**. It shows only what that guest needs right now, and changes by itself as the round moves on:

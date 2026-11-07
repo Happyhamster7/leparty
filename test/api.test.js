@@ -1,4 +1,6 @@
 const test = require('node:test');
+// These suites cover guests booking in on their own phones; team-phone tests switch the mode themselves.
+process.env.PHONE_MODE = 'guest';
 const assert = require('node:assert/strict');
 const { createApi } = require('../lib/api');
 const { FileStore, RedisStore } = require('../lib/store');
@@ -198,4 +200,29 @@ test('rounds over the API: players pick, the tick settles a passed deadline, and
   // Nothing due yet: the tick is a no-op.
   assert.deepEqual(await api.action({ kind: 'tick' }, {}), { ok: true, same: true });
   assert.equal((await api.getState({ tv: true })).view.round.revealedAt, null);
+});
+
+test('team phones over the API: claim by code, act as the block, and the old phone is told it moved', async () => {
+  const api = createApi({ store: new FileStore({ file: null }), pins });
+  const login = await api.action({ kind: 'login', pin: '1111' });
+  const host = { host: login.result.adminToken };
+  const admin = (type, args = {}) => api.action({ kind: 'admin', type, args }, host);
+  await admin('updateSettings', { phoneMode: 'team' });
+  assert.equal((await api.getState({})).phoneMode, 'team');
+  assert.equal((await api.action({ kind: 'join', name: 'Shen' }, {})).ok, false);
+  await admin('addGuests', { names: 'Shen\nEdwin\nJason\nMia' });
+  await admin('updateSettings', { maxBlockSize: 2 });
+  const built = await admin('buildBlocks');
+  assert.equal(built.ok, true);
+  const code = (await api.getState(host)).view.teams[0].joinCode;
+  const one = await api.action({ kind: 'claim', code }, {});
+  assert.equal(one.ok, true);
+  assert.equal(one.kind, 'player');
+  assert.ok(one.view.me.device);
+  const two = await api.action({ kind: 'claim', code }, {});
+  const kicked = await api.getState({ player: one.result.token });
+  assert.equal(kicked.kind, 'guest');
+  assert.equal(kicked.kicked, true);
+  assert.equal((await api.getState({ player: two.result.token })).kind, 'player');
+  assert.equal((await api.action({ kind: 'claim', code: 'ZZZZ' }, {})).ok, false);
 });

@@ -1,4 +1,6 @@
 const test = require('node:test');
+// These suites cover guests booking in on their own phones; team-phone tests switch the mode themselves.
+process.env.PHONE_MODE = 'guest';
 const assert = require('node:assert/strict');
 const { Game, GameError, HOLDING } = require('../lib/game');
 
@@ -1400,4 +1402,92 @@ test('an old save that predates the power-ups gets them on load, and keeps them 
   const after = structuredClone(g.s);
   after.items = after.items.filter((i) => i.name !== 'Eye Spy');
   assert.equal(new Game(after).s.items.some((i) => i.name === 'Eye Spy'), false);
+});
+
+// ---------- team phones (LeParty's format) ----------
+
+function teamSetup() {
+  const g = new Game();
+  g.s.settings.phoneMode = 'team';
+  g.addGuests({ names: 'Shen\nEdwin\nJason\nMia, Priya, Tom' });
+  g.updateSettings({ maxBlockSize: 3 });
+  g.buildBlocks();
+  const [a, b] = g.s.teams;
+  a.budget = b.budget = 500;
+  return { g, a, b };
+}
+
+test('team phones: guests can’t book in; hosts add names; each block has a code and a QR token', () => {
+  const { g, a, b } = teamSetup();
+  assert.throws(() => g.join('Late'), /one phone/);
+  assert.equal(g.members(a.id).length + g.members(b.id).length, 6);
+  assert.match(a.joinCode, /^[ACDEFGHJKMNPQRTUVWXY234679]{4}$/);
+  assert.notEqual(a.joinCode, b.joinCode);
+  assert.ok(a.joinToken.length >= 12);
+  assert.equal(g.addGuests({ names: 'shen\nNora' }).added, 1); // names stay unique
+});
+
+test('claiming a block: by code or card, latest scan wins, and a reissued code signs the phone out', () => {
+  const { g, a } = teamSetup();
+  const first = g.claimBlock({ code: a.joinCode.toLowerCase() });
+  const t1 = first.token;
+  assert.equal(g.playerByToken(t1).teamId, a.id);
+  const second = g.claimBlock({ token: a.joinToken });
+  assert.equal(second.id, first.id); // same block phone…
+  assert.equal(g.playerByToken(t1), null); // …and the old device is signed out
+  assert.ok(g.playerByToken(second.token));
+  const oldCode = a.joinCode;
+  const t2 = second.token;
+  g.reissueBlockCode({ teamId: a.id, by: 'warden' });
+  assert.equal(g.playerByToken(t2), null);
+  assert.throws(() => g.claimBlock({ code: oldCode }), /No block/);
+  assert.ok(g.claimBlock({ code: a.joinCode }));
+});
+
+test('the block phone acts for the block but never plays, drinks or shows up in rosters', () => {
+  const { g, a, b } = teamSetup();
+  g.updateSettings({ spendMode: 'request' });
+  const phone = g.claimBlock({ code: a.joinCode });
+  g.claimBlock({ code: b.joinCode });
+  assert.equal(g.members(a.id).length, 3);
+  assert.ok(!g.viewFor(phone.id).players.some((p) => p.id === phone.id));
+  assert.ok(!g.tvView().players.some((p) => /phone/.test(p.name)));
+  // Picks come from the real blockmates.
+  const r = g.startRound({ gameId: g.addGame({ name: 'Flip', playersNeeded: 1 }).id });
+  assert.throws(() => g.pickPlayers(phone.id, { playerIds: [phone.id] }), /can’t play/);
+  g.pickPlayers(phone.id, { playerIds: [g.members(a.id)[0].id] });
+  assert.deepEqual(r.picks[a.id], [g.members(a.id)[0].id]);
+  // It buys straight away, even when spending is a block decision.
+  g.revealPicks();
+  g.toResults();
+  g.enterResults({ placings: { [a.id]: 1 } });
+  const spirit = g.s.items.find((i) => i.name === 'Spirit');
+  const o = g.buy(phone.id, { itemId: spirit.id, targetTeamId: b.id, qty: 2 });
+  assert.equal(o.qty, 2);
+  // A Shot Penalty on its block lands on the people, not the phone.
+  const pen = g.s.items.find((i) => i.name === 'Shot Penalty');
+  const bPhone = g.phoneOf(b.id);
+  const hit = g.buy(bPhone.id, { itemId: pen.id, targetTeamId: a.id });
+  g.respondPunishment(phone.id, { orderId: hit.id, choice: 'accept' });
+  assert.ok(g.members(a.id).every((m) => m.drinksOwed === 1));
+  assert.equal(phone.drinksOwed, 0);
+  // Removing the block removes its phone.
+  g.removeTeam({ teamId: a.id });
+  assert.equal(g.playerByToken(phone.token), null);
+});
+
+test('PHONE_MODE picks the default for a new night; hosts can switch it', () => {
+  const g = new Game();
+  assert.equal(g.s.settings.phoneMode, 'guest'); // this test file runs with PHONE_MODE=guest
+  g.updateSettings({ phoneMode: 'team' });
+  assert.throws(() => g.join('Shen'), /one phone/);
+  assert.throws(() => g.updateSettings({ phoneMode: 'nope' }), /Unknown/);
+});
+
+test('block codes reach hosts only, never phones or the TV', () => {
+  const { g, a } = teamSetup();
+  const phone = g.claimBlock({ code: a.joinCode });
+  assert.equal(g.adminView().teams[0].joinCode, a.joinCode);
+  assert.equal(g.viewFor(phone.id).teams[0].joinCode, undefined);
+  assert.equal(g.tvView().teams[0].joinToken, undefined);
 });

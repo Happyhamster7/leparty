@@ -1593,3 +1593,7 @@ details.note-fold { margin: 6px 0; }
 .mates { font-weight: 600; }
 .board-sheet .card { margin: 8px 0; }
 details.secret .mega { font-size: 40px; }
+.cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; margin: 8px 0; }
+.block-card { display: grid; grid-template-columns: 96px 1fr; gap: 10px; align-items: center; padding: 8px; border-left: 6px solid var(--c); background: var(--card2); border-radius: 8px; }
+.block-card .qr { width: 96px; height: 96px; background: #fff; }
+.block-card .code { font: 700 26px/1 ui-monospace, monospace; letter-spacing: 4px; margin: 4px 0; }

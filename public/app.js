@@ -399,7 +399,7 @@
     if (res.kind === 'guest') {
       if (res.kicked) {
         LS.del('sss_token');
-        if (kind === 'player') toast('A host released you from the system. Book in again to rejoin.', 'error');
+        if (kind === 'player') toast(S?.me?.device ? 'Your block was taken over by another phone. Scan your card again to take it back.' : 'A host released you from the system. Book in again to rejoin.', 'error');
       }
       kind = 'guest';
       guest = res;
@@ -1130,12 +1130,17 @@
           <div class="stamp">BOOKING</div>
           <h1 class="logo">${h(guest.partyName || 'Shifty Shen\'s Slammer')}</h1>
           <p class="tagline">${h(guest.tagline || '')}</p>
-          <form data-form="join" class="card booking">
+          ${guest.phoneMode === 'team' ? `<form data-form="claim" class="card booking">
+            <label for="claim_code">Your block’s code</label>
+            <input id="claim_code" name="code" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="e.g. KX7P" required />
+            <button class="btn big" type="submit">Play for my block 📱</button>
+            <p class="fine">One phone plays for each block. Scan the QR on your block’s card, or type the code printed on it. If someone else on your block already has it, this phone takes over.</p>
+          </form>` : `<form data-form="join" class="card booking">
             <label for="join_name">Name for the booking sheet</label>
             <input id="join_name" name="name" maxlength="24" autocomplete="nickname" placeholder="e.g. Shen" required />
             <button class="btn big" type="submit">Book me in 🚔</button>
             <p class="fine">You’ll start in the Holding Cell with an inmate number and a charge until a host puts you on a block. Keep this tab open all night — it remembers you.</p>
-          </form>
+          </form>`}
           <p class="fine center"><a href="/warden">Host login</a> · <a href="/tv">TV screen</a></p>
         </div>
       </main>`;
@@ -1168,8 +1173,9 @@
       <header class="top slim" ${myTeam && me.status === 'block' ? `style="border-bottom-color:${h(myTeam.color)}"` : ''}>
         <div class="top-row">
           <div class="who">
-            <span class="who-name">${h(me.name)}${me.isCaptain ? ' <span title="Shot Caller">👑</span>' : ''}</span>
-            ${statusChip(me)}
+            ${me.device
+              ? `<span class="who-name">${h(myTeam?.name || 'Your block')}</span><span class="chip">📱 Block phone</span>`
+              : `<span class="who-name">${h(me.name)}${me.isCaptain ? ' <span title="Shot Caller">👑</span>' : ''}</span>${statusChip(me)}`}
           </div>
           <div class="hud pills">
             ${myTeam ? `<span class="pill pts" title="${h(myTeam.name)} points">★ ${myTeam.points || 0}</span><span class="pill cr" title="${h(myTeam.name)} credits">${h(money(myTeam.budget))}</span>` : ''}
@@ -1197,15 +1203,16 @@
     // Only when it's time to buy: the round's Spending phase, or between rounds if a host opens it.
     const shopTime = S.settings.shopOpen !== false && onBlock && !!r && ['spending', 'done'].includes(r.phase);
     const between = !r || r.phase === 'done';
-    const todos = todoItems();
+    const todos = me.device ? [] : todoItems();
     return `
       ${S.winner ? winnerCard() : ''}
+      ${me.device ? blockOwedCard(myTeam) : ''}
       ${me.status !== 'block' ? lockupRules(me.status, live) : ''}
       ${incomingAlerts()}
       ${dealerCard()}
       ${rewardPicker()}
-      ${myTeam ? requestsCard(myTeam) : ''}
-      ${['night', 'vote'].includes(m.phase) ? mafiaPanel() : ''}
+      ${myTeam && !me.device ? requestsCard(myTeam) : ''}
+      ${['night', 'vote'].includes(m.phase) && !me.device ? mafiaPanel() : ''}
       ${todos.length ? `<section class="card todo-card"><h3>📌 To do</h3><ul class="todos">${todos.join('')}</ul></section>` : ''}
       ${roundCard()}
       ${matchCard()}
@@ -1213,9 +1220,21 @@
       ${onBlock && (shopTime || between) ? blockExtras(myTeam) : ''}
       ${onBlock && between ? blockSummary(myTeam) : ''}
       ${me.status === 'holding' ? holdingRoster() : ''}
-      ${m.phase === 'over' ? mafiaPanel() : ''}
-      ${m.phase !== 'off' ? secretFold() : ''}
+      ${m.phase === 'over' && !me.device ? mafiaPanel() : ''}
+      ${m.phase !== 'off' && !me.device ? secretFold() : ''}
       ${!r && !shopTime && !todos.length ? '<section class="card center"><div class="mega">⏳</div><h2>Waiting for the first round</h2><p class="fine">Keep this page open. It changes by itself when it’s your turn to do something.</p></section>' : ''}`;
+  }
+
+  // A block phone: who on the block owes penalty drinks or a dare (hosts tick them off).
+  function blockOwedCard(myTeam) {
+    if (!myTeam) return '';
+    const rows = blockmates(myTeam.id)
+      .map((p) => {
+        const dares = (p.sentences || []).filter((x) => x.status === 'open').length;
+        return p.drinksOwed || dares ? `<li><b>${h(p.name)}</b> ${p.drinksOwed ? `🍺×${p.drinksOwed}` : ''}${dares ? ` ⚖️ ${plural(dares, 'dare')}` : ''}</li>` : '';
+      })
+      .join('');
+    return rows ? `<section class="card todo-card"><h3>📌 Owed by your block</h3><ul class="roster">${rows}</ul><p class="fine">${h(S.settings.houseRules)} The hosts tick these off.</p></section>` : '';
   }
 
   // Between rounds: your block at a glance.
@@ -2616,8 +2635,7 @@
       ['blocks', '🔐 Blocks'],
       ['lockup', `⚖️ Punish / Lockup${lockup ? ` <b class="badge grey">${lockup}</b>` : ''}`],
       ['shop', '🛒 Commissary'],
-      ['tasks', `🕵️ Sabotage${pendingClaims ? ` <b class="badge">${pendingClaims}</b>` : ''}`],
-      ['mafia', '🐀 Snitches'],
+      ...(S.settings.phoneMode === 'team' ? [] : [['tasks', `🕵️ Sabotage${pendingClaims ? ` <b class="badge">${pendingClaims}</b>` : ''}`], ['mafia', '🐀 Snitches']]),
       ['clips', `🎥 Clips${S.clips.filter((c) => c.status === 'pending').length ? ` <b class="badge">${S.clips.filter((c) => c.status === 'pending').length}</b>` : ''}`],
       ['settings', '⚙️ Settings'],
     ];
@@ -2828,9 +2846,36 @@
     </div>`;
   }
 
+  // A block's card: what its phone scans, or the code it types.
+  const cardUrl = (t) => `${location.origin}/?b=${t.joinToken}`;
+  const qrFor = (t) => `/qr.svg?url=${encodeURIComponent(cardUrl(t))}`;
+
   function aBlocks() {
     const waiting = inHolding().length;
+    const team = S.settings.phoneMode === 'team';
     return `
+      <section class="card">
+        <h3>🚔 Add guests</h3>
+        <form data-admin="addGuests" class="grid2">
+          <label class="span2">Names, one per line<textarea id="ag_names" name="names" rows="5" placeholder="Shen&#10;Edwin&#10;Jason"></textarea></label>
+          <label>Put them on<select id="ag_team" name="teamId"><option value="">Holding (then Build blocks)</option>${S.teams.map((t) => `<option value="${t.id}">${h(t.name)}</option>`).join('')}</select></label>
+          <button class="btn">Add guests</button>
+        </form>
+        <p class="fine">${team ? 'Guests don’t book in on their phones tonight: each block plays on one phone. Add everyone here, then Build blocks.' : 'Guests can also book themselves in on their phones.'}</p>
+      </section>
+      ${team && S.teams.length ? `<section class="card">
+        <h3>📱 Block phones</h3>
+        <p class="fine">Each block’s phone scans its card (or types the code at ${h(location.host)}). The latest scan wins. Never show these on the TV: anyone with a code can take that block over. If a card leaks, give it a new code.</p>
+        <div class="cards-grid">${S.teams
+          .map((t) => `<div class="block-card" style="--c:${h(t.color)}">
+            <img class="qr" src="${qrFor(t)}" alt="QR code for ${h(t.name)}" />
+            <div><b>${h(t.name)}</b><div class="code">${h(t.joinCode)}</div>
+            <div class="fine">${t.phoneAt ? `📱 Phone connected ${time(t.phoneAt)}` : 'No phone yet'}</div>
+            ${btn('New code', 'reissueBlockCode', { teamId: t.id }, 'ghost xs', `Give ${t.name} a new code? Its phone is signed out and the old card stops working.`)}</div>
+          </div>`)
+          .join('')}</div>
+        <button class="btn ghost sm" data-act="print-cards">🖨 Print block cards</button>
+      </section>` : ''}
       <section class="card">
         <h3>Build blocks</h3>
         <p class="fine">Splits everyone waiting in the Holding Cell into blocks of up to ${S.settings.maxBlockSize} (Block A, B, C…), filling the smallest blocks first and creating new ones as needed. Late arrivals land in Holding — run it again or parole them individually.</p>
@@ -3128,6 +3173,7 @@
           <label>Seconds at the bar<input id="s_serve" name="serveSeconds" type="number" min="10" max="120" value="${st.serveSeconds}" /></label>
           <label>Games a player sits out after playing<input id="s_cd" name="cooldownGames" type="number" min="0" max="5" value="${st.cooldownGames}" /></label>
           <label>Streak credits (× drinks finished in a row)<input id="s_streak" name="streakCredits" type="number" min="0" max="100" value="${st.streakCredits}" /></label>
+          <label class="span2">Phones<select id="s_phones" name="phoneMode"><option value="team" ${st.phoneMode === 'team' ? 'selected' : ''}>One phone per block (scan the block card)</option><option value="guest" ${st.phoneMode === 'guest' ? 'selected' : ''}>Every guest on their own phone (snitch game on)</option></select></label>
           <button class="btn span2">Save</button>
         </form>
       </section>
@@ -3212,7 +3258,9 @@
             <div><h3>🕳️ Holding Cell</h3><div class="tv-names">${holding.map((p) => `<span>${h(p.name)}${p.drinksOwed ? ` <b>🍺${p.drinksOwed}</b>` : ''}</span>`).join('') || '<span class="fine">empty</span>'}</div><div class="fine">${h(S.settings.holdingRules)}</div></div>
             <div><h3>🔒 Solitary</h3><div class="tv-names">${solitary.map((p) => `<span>${h(p.name)} <small>${p.solitary.rounds}r</small>${p.drinksOwed ? ` <b>🍺${p.drinksOwed}</b>` : ''}</span>`).join('') || '<span class="fine">empty</span>'}</div><div class="fine">${h(S.settings.solitaryRules)}</div></div>
           </section>
-          <section class="card tv-qr"><img class="qr" src="/qr.svg?url=${encodeURIComponent(`${location.origin}/`)}" alt="QR code to join" /><div><b>Scan to get booked</b><div class="fine">${h(location.host)}</div><div class="fine">${plural(S.players.length, 'inmate')} booked</div></div></section>
+          ${S.settings.phoneMode === 'team'
+            ? `<section class="card tv-qr"><div class="mega">📱</div><div><b>One phone per block</b><div class="fine">Scan your block’s card, or go to ${h(location.host)} and type its code.</div><div class="fine">${plural(S.players.length, 'inmate')} on ${plural(S.teams.length, 'block')}</div></div></section>`
+            : `<section class="card tv-qr"><img class="qr" src="/qr.svg?url=${encodeURIComponent(`${location.origin}/`)}" alt="QR code to join" /><div><b>Scan to get booked</b><div class="fine">${h(location.host)}</div><div class="fine">${plural(S.players.length, 'inmate')} booked</div></div></section>`}
         </div>
       </div>`;
   }
@@ -3234,6 +3282,14 @@
     senders: () => { ui.senders = !ui.senders; render(); },
     'feed-more': () => { ui.feedAll = !ui.feedAll; render(); },
     'board-open': () => { ui.board = true; render(); },
+    // One printable page of block cards: QR, block name and code.
+    'print-cards': () => {
+      const w = window.open('', '_blank');
+      if (!w) return toast('Allow pop-ups to print the cards.', 'warn');
+      const cards = S.teams.map((t) => `<div class="c" style="border-color:${h(t.color)}"><img src="${location.origin}${qrFor(t)}" /><h2>${h(t.name)}</h2><p class="code">${h(t.joinCode)}</p><p>Scan to make this phone ${h(t.name)}’s phone, or go to <b>${h(location.host)}</b> and type the code.</p><p class="small">${h(S.settings.partyName)} · keep this card face down</p></div>`).join('');
+      w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Block cards</title><style>body{font-family:system-ui,sans-serif;margin:0}main{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px}.c{border:6px solid;border-radius:10px;padding:14px;text-align:center;break-inside:avoid}img{width:62%;max-width:240px}h2{margin:6px 0 0;font-size:28px}.code{font:700 40px/1 ui-monospace,monospace;letter-spacing:6px;margin:6px 0}.small{color:#666;font-size:12px}@media print{button{display:none}}</style></head><body><button onclick="print()" style="margin:12px;font-size:18px">Print</button><main>${cards}</main></body></html>`);
+      w.document.close();
+    },
     'board-close': () => { ui.board = false; opened.delete('board'); render(); },
     'shop-cat': (d) => { ui.shopCat = d.cat; render(); },
     'bounty-reward': async (d) => {
@@ -3445,6 +3501,16 @@
       const res = await admin('enterResults', { placings, bonus });
       if (res.ok) toast('Prizes paid. The shop is open.', 'ok');
     },
+    claim: async (data, form) => {
+      const res = await send({ kind: 'claim', code: data.code });
+      if (res.ok) {
+        LS.set('sss_token', res.result.token);
+        kind = 'player';
+        clearDrafts(form);
+        toast('📱 This phone now plays for your block.', 'ok');
+        render();
+      }
+    },
     join: async (data, form) => {
       const res = await send({ kind: 'join', name: data.name });
       if (res.ok) {
@@ -3527,6 +3593,14 @@
       const submitter = form.querySelector('button:not([type=button])[data-confirm]');
       if (submitter && !confirm(submitter.dataset.confirm)) return;
       const res = await admin(form.dataset.admin, data);
+      if (res.ok && form.dataset.admin === 'addGuests') {
+        const ta = form.querySelector('textarea');
+        if (ta && ta.value === data.names) ta.value = '';
+        delete drafts[ta?.id];
+        toast(`Added ${plural(res.result?.added || 0, 'guest')}${res.result?.skipped ? ` (${res.result.skipped} already on the list)` : ''}.`, 'ok');
+        render();
+        return;
+      }
       if (res.ok) {
         clearDrafts(form);
         if (['addGame', 'addTeam', 'addItem', 'announce', 'adjustBudget', 'adjustPoints', 'sendToSolitary', 'assignPunishment', 'freshStart'].includes(form.dataset.admin)) form.reset();
@@ -3537,6 +3611,18 @@
   });
 
   render();
+  // A block card's QR code opens /?b=<token>: this device becomes that block's phone.
+  const cardToken = !hostRoute && route === '/' ? new URLSearchParams(location.search).get('b') : null;
+  if (cardToken) {
+    history.replaceState(null, '', '/');
+    send({ kind: 'claim', token: cardToken }).then((res) => {
+      if (!res.ok) return;
+      LS.set('sss_token', res.result.token);
+      kind = 'player';
+      toast('📱 This phone now plays for your block.', 'ok');
+      render();
+    });
+  }
   poll().then(schedule);
   // Any tap on the TV counts as the click browsers need before they'll play sound.
   document.addEventListener('pointerdown', () => kind === 'tv' && unlockAudio());

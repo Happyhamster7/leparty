@@ -307,3 +307,6 @@ body[data-era='slammer'] .board-btn { color: var(--text); font-size: 22px; paddi
 body[data-era='slammer'] .board-btn:active { border-image-source: url('/pixel/frame-slot-active.png'); }
 body[data-era='slammer'] .mates { font-family: 'Jersey 10', monospace; font-size: 20px; font-weight: 400; }
 body[data-era='slammer'] .board-sheet { max-height: 88vh; }
+body[data-era='slammer'] .block-card { background: none; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-paper.png') 9 fill / 9px stretch; border-left: 9px solid var(--c); }
+body[data-era='slammer'] .block-card b { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 24px; }
+body[data-era='slammer'] .block-card .code { font-family: 'Jersey 10', monospace; font-size: 34px; color: var(--orange2); }

@@ -68,6 +68,12 @@ The default lineup is **The Long Night**: I · Booking Day (Cell Tosses, soups a
 - Warp odds and pity live in Settings. Limit any shop item to one act in the Commissary tab.
 - In Act III, remind Shot Callers to pick their augment (it's at the top of their Now tab).
 
+## Before guests arrive: block phones
+
+1. 🔐 Blocks → **Add guests**: paste everyone's names, one per line. Then **Build blocks**.
+2. **🖨 Print block cards** (QR + 4-letter code per block) and hand one to each block. Never put a code on the TV.
+3. Each block scans its card on one phone. Latest scan wins; if a card leaks, tap **New code**.
+
 ## Every round (🎲 Round tab)
 
 The night is **4 acts × 3 rounds**: Act 1 · Round 1, Act 1 · Round 2, Act 1 · Final round, then Act 2, and so on. Put the 12 games in the 🏁 Games tab in the order you want to play them: the first three are Act 1. The Round tab shows the whole plan and pre-selects the next game.
