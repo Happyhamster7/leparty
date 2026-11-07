@@ -22,7 +22,7 @@ Either PIN works on either page; the PIN decides your title, which only changes 
 - [ ] Put `/tv` on the TV; both hosts log in on their phones
 - [ ] Games tab: add every game with its How to play text and an optional Holding Cell rule
 - [ ] Commissary tab: hide anything you can't actually serve, adjust prices, set stock limits
-- [ ] Settings tab: party name, tagline, starting credits, max block size, who can spend (block decides by default)
+- [ ] Settings tab: party name, tagline, starting cash, max block size, who can spend (block decides by default)
 - [ ] Lockup tab: check the Holding Cell rules and drinks per round
 - [ ] Stock the real bar: mixers, ice, shot glasses, plenty of water
 - [ ] Test with 3 or 4 phones, then wipe it: Settings tab, Fresh start (type RESET)
@@ -83,9 +83,13 @@ The night is **4 acts × 3 rounds**: Act 1 · Round 1, Act 1 · Round 2, Act 1 �
 1. **Start round:** pick the game. Players per block is set on each game in the Games tab (0 = group game). Phones get 60 seconds to lock in their players; the briefing pops up too.
 2. **Explain it out loud** while blocks pick. **Reveal now** auto-picks for any block that's dawdling.
 3. **Play the game,** then tap **Game's over: enter results.**
-4. **Results:** ranking and reward are separate. Set each block's **place** (1st unlocks the Winner's Bounty); its **reward** fills in with that place's prize ($90 / 75 / 65 / 55 / 45 / 40 / 30 / 20). Lower a reward to award less (0 pays nothing), then **Pay rewards and open the shop.** App-run games fill in the places for you and wait here, so you can check the rewards before paying.
+4. **Results:** ranking and reward are separate. Set each block's **place** (1st unlocks the Winner's Bounty); its **reward** fills in with that place's prize ($44 / 36 / 30 / 25 / 21 / 18 / 15 / 11). Lower a reward to award less (0 pays nothing), then **Pay rewards and open the shop.** App-run games fill in the places for you and wait here, so you can check the rewards before paying.
 5. **Spending:** power-ups bought now (Reflect, Eye Spy, bounties) start next round; the Round tab shows who has Reflect lined up. Give blocks a minute or two to send drinks and buy items. Then **Close shop and start drinks.**
-6. **The bar:** tap **Next** to call the next block (fewest drinks first). Pour what the panel says. Tap **Done in time ✓** if they finish inside 30 seconds: that pays their streak (5 credits × drinks finished in a row; the button shows the amount). If the clock runs out they owe an extra shot next round and their streak resets, automatically. A "−1 shield" or "+1 bonus" tag on the pour list is a Winner's Bounty reward at work: pour the number shown. **Back** undoes a Next pressed by mistake. The round ends when every block is done.
+**Standings:** you see live points; the TV and blocks see them as of the last act's end (a block always sees its own live).
+
+**Pace:** the Round tab shows standard drinks sent against the 400 target and where the night is heading. Running hot: lower the prizes on Results or the income step in Setup.
+
+6. **The bar:** tap **Next** to call the next block (fewest drinks first). Pour what the panel says. Tap **Done in time ✓** if they finish inside 30 seconds: that pays their drink income, $5 more than last time (the button shows the amount). If the clock runs out they owe an extra shot next round and their income drops back to $0, automatically. **Back** undoes a Next pressed by mistake. The round ends when every block is done.
 
 The night ends itself: when the last act's final round finishes, the block with the most points is crowned on every screen.
 
@@ -111,7 +115,11 @@ Nobody else can change credits, so every dispute ends with you.
 
 | Setting | Default | Tab |
 | --- | --- | --- |
-| Starting credits per block | 20 | Settings |
+| Starting cash per block | $40 | Setup |
+| Game prizes by place | $44 / 36 / 30 / 25 / 21 / 18 / 15 / 11 | Setup |
+| Drink income step | +$5 a round | Setup |
+| Bounty stake | 5–30 points; Open pays ×3, Winner's ×5 | Setup |
+| Standard drinks target | 400 | Setup |
 | Max inmates per block | 5 | Settings |
 | Who can spend | Block decides (Shot Caller approves or blockmates second) | Settings |
 | Seconds needed | 2 | Settings |

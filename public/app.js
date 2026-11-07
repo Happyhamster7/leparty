@@ -1182,7 +1182,6 @@
       ${me.device ? blockOwedCard(myTeam) : ''}
       ${me.status !== 'block' ? lockupRules(me.status, live) : ''}
       ${incomingAlerts()}
-      ${rewardPicker()}
       ${myTeam && !me.device ? requestsCard(myTeam) : ''}
       ${todos.length ? `<section class="card todo-card"><h3>📌 To do</h3><ul class="todos">${todos.join('')}</ul></section>` : ''}
       ${roundCard()}
@@ -1213,8 +1212,8 @@
       <div class="eyebrow">Your block · ${ordinal(rankOf(myTeam.id))} of ${S.teams.length}</div>
       <h2>${h(myTeam.name)}${nick(myTeam)}</h2>
       ${myTeam.motto ? `<p class="motto">${h(myTeam.motto)}</p>` : ''}
-      <div class="stats"><div><b>${h(money(myTeam.budget))}</b><span>${h(curAct()?.currency?.name || 'credits')}</span></div><div><b>★${myTeam.points || 0}</b><span>points</span></div><div><b>🔥${myTeam.drinkStreak || 0}</b><span>streak</span></div></div>
-      <p class="fine">Streak = drinks finished in time in a row: each time you finish at the bar you get ${h(money(S.settings.streakCredits || 5))} × your streak.</p>
+      <div class="stats"><div><b>${h(money(myTeam.budget))}</b><span>${h(curAct()?.currency?.name || 'credits')}</span></div><div><b>★${myTeam.points || 0}</b><span>points</span></div><div><b>${h(money(nextIncome(myTeam)))}</b><span>next finish</span></div></div>
+      <p class="fine">Drink income: every round you finish your drinks in time you get ${h(money(S.settings.streamStep || 5))} more than last time (${h(money(S.settings.streamStep || 5))}, ${h(money(2 * (S.settings.streamStep || 5)))}, ${h(money(3 * (S.settings.streamStep || 5)))}…). Run out of time and it drops back to ${h(money(0))}.</p>
       <p class="mates">${members.map((p) => `${p.isCaptain ? '👑' : ''}${h(p.name)}${p.id === S.me.id ? ' (you)' : ''}`).join(' · ')}</p>
       ${renameControls(myTeam, members)}
     </section>`;
@@ -2005,15 +2004,15 @@
     } else if (r.phase === 'spending') {
       const place = r.placings[me.teamId];
       body = `${place ? `<p>Your block came <b>${placeName(place)}</b> and won <b>${h(money(r.prizes[me.teamId] || 0))}</b>.</p>` : ''}
-        ${r.winnerTeamId && r.winnerTeamId === me.teamId ? '<p class="win-note">🏅 You won this game: the Winner’s Bounty is unlocked in the shop.</p>' : ''}
+        ${r.winnerTeamId && r.winnerTeamId === me.teamId ? `<p class="win-note">🏅 You won this game: the Winner’s Bounty (pays ${S.settings.winnerMultiplier}× your stake) is unlocked under Power-ups${(myTeam?.points || 0) < S.settings.bountyMinStake ? `, but you need ${S.settings.bountyMinStake} points to stake. Points land when your drinks are served at the bar` : ''}.</p>` : ''}
         <p><b>The shop is open${flat() ? ' below' : ''}.</b> Send drinks to other blocks to score points. Power-ups you buy now start next round.</p>
         ${flat() ? '' : '<button class="btn big" data-act="tab" data-tab="shop">🛒 Go to the Commissary</button>'}`;
     } else if (r.phase === 'drinks') {
       const st = myTeam ? serveOf(r, myTeam.id) : { state: 'safe' };
       if (st.state === 'safe') body = '<p class="serve safe">Safe this round. Nobody sent your block anything.</p>';
       else if (st.state === 'queued') body = `<p class="serve">Your block owes <b>${plural(st.s.drinks, 'drink')}</b>. You’re <b>${placeName(st.pos)}</b> in line for the bar.</p><p class="fine">${streakNote(myTeam)}.</p>`;
-      else if (st.state === 'serving') body = `<div class="serve now"><div>🍻 Your block is at the bar: <b>${plural(st.s.drinks, 'drink')}</b></div><div class="big-cd">${until(st.s.timerEndsAt)}</div><p class="fine">Finish in time for <b>${h(money((S.settings.streakCredits || 5) * ((myTeam.drinkStreak || 0) + st.s.drinks)))}</b> (streak ${(myTeam.drinkStreak || 0) + st.s.drinks}). Run out and it’s an extra shot next round, and your streak resets. Film it for the TV.</p>${canFilm() ? '<button class="btn big" data-act="shotcam">🎥 Film it</button>' : ''}</div>`;
-      else body = `<p class="serve ${st.state}">${st.state === 'missed' ? `⏰ Out of time: an extra shot next round${st.s.streakLost ? `, and your ${plural(st.s.streakLost, 'drink')} streak is gone` : ''}.` : `✅ Done in time: <b>+${h(money(st.s.reward))}</b>. Streak: ${plural(st.s.streak, 'drink')}.`}</p>`;
+      else if (st.state === 'serving') body = `<div class="serve now"><div>🍻 Your block is at the bar: <b>${plural(st.s.drinks, 'drink')}</b></div><div class="big-cd">${until(st.s.timerEndsAt)}</div><p class="fine">Finish in time for <b>${h(money(nextIncome(myTeam)))}</b>. Run out and it’s an extra shot next round, and your drink income drops back to ${h(money(0))}. Film it for the TV.</p>${canFilm() ? '<button class="btn big" data-act="shotcam">🎥 Film it</button>' : ''}</div>`;
+      else body = `<p class="serve ${st.state}">${st.state === 'missed' ? `⏰ Out of time: an extra shot next round${st.s.streamLost ? `, and your drink income is back to ${h(money(0))}` : ''}.` : `✅ Done in time: <b>+${h(money(st.s.reward))}</b>. Next time: ${h(money(nextIncome(myTeam)))}.`}</p>`;
       const line = r.serves.filter((s) => !s.finishedAt).map((s) => `${h(teamName(s.teamId))}${s.servedAt ? ' 🍻' : ''}`);
       if (line.length) body += `<p class="fine">At the bar: ${line.join(' → ')}</p>`;
     } else {
@@ -2047,16 +2046,6 @@
       ${r.picks[myTeam.id] ? `<p class="fine">Locked in: ${names(r.picks[myTeam.id])}. Waiting for ${plural(roundTeams().length - r.picked.length, 'block')}.</p>` : ''}`;
   }
 
-  // A Winner's Bounty that's been hit waits for the block to choose its reward.
-  function rewardPicker() {
-    const b = (S.bounties || []).find((x) => x.kind === 'winner' && x.status === 'hit' && !x.reward);
-    if (!b || S.me?.status !== 'block') return '';
-    return `<section class="card reward-pick"><div class="eyebrow">🏅 Winner’s Bounty hit</div><h3>Pick your reward</h3><p class="fine">It starts next round and lasts the rest of the night. Anyone on your block can choose.</p>
-      <div class="rewards">${Object.entries(S.winnerRewards || {})
-        .map(([k, r]) => `<button class="reward" data-act="bounty-reward" data-bounty-id="${b.id}" data-reward="${k}" data-confirm="Take ${h(r.name)} for the rest of the night?"><span class="mega">${r.emoji}</span><b>${h(r.name)}</b><span class="fine">${h(r.desc)}</span></button>`)
-        .join('')}</div></section>`;
-  }
-
   // Power-ups bought or picked this round start the round after.
   const PENDING = { reflect: '🪞 Reflect', eyespy: '👁️ Eye Spy', bounty: '🎯 Bounty starts counting', bonus: '🎁 Bonus drinks', fewer: '🛡️ Fewer drinks', points: '⭐ +1 point per drink' };
   function pendingCard() {
@@ -2066,11 +2055,13 @@
     return `<section class="card pending"><h3>⏳ Power-ups</h3>${live}${list.length ? `<ul class="roster">${list.map((x) => `<li>${PENDING[x.kind] || h(x.kind)} <span class="fine">starts ${h(x.label)}</span></li>`).join('')}</ul><p class="fine">Everything you buy or pick starts the round after.</p>` : ''}</section>`;
   }
 
-  const streakNote = (t) => (t?.drinkStreak ? `🔥 Streak: ${plural(t.drinkStreak, 'drink')} finished in time` : 'No streak yet');
+  // Drink income: what the block's next finish in time pays (one step more each time; a miss resets it).
+  const nextIncome = (t) => (t?.drinkStream || 0) + (S.settings.streamStep || 0);
+  const streakNote = (t) => `💵 Finish in time for ${money(nextIncome(t))}${t?.drinkStream ? ` (last time ${money(t.drinkStream)})` : ''}`;
 
   // ---------- phone: Eye Spy, bounties and penalties on My Block ----------
   function blockExtras(myTeam) {
-    const parts = [rewardPicker(), pendingCard()];
+    const parts = [pendingCard()];
     const now = S.round && S.round.phase !== 'done' ? S.round.number : (S.rounds || []).length;
     const perk = (k, base) => base + (S.bounties || []).filter((b) => b.reward === k && b.rewardFrom <= now).length;
     const [bonus, fewer, pts] = [perk('bonus', myTeam.bonusDrinks || 0), perk('fewer', myTeam.fewerDrinks || 0), perk('points', myTeam.bonusPerDrink || 0)];
@@ -2084,8 +2075,8 @@
     const done = (S.bounties || []).filter((b) => b.status !== 'active').slice(-2);
     if (active || done.length) {
       parts.push(`<section class="card"><h3>🎯 Bounties</h3>
-        ${active ? `<p><b>${active.kind === 'winner' ? 'Winner’s' : 'Open'} Bounty</b>: ${active.sent}/5 drinks sent${active.startRound > now ? `, counting from ${h(slotLabel(active.startRound))}` : ''}. Last round: ${h(slotLabel(active.deadlineRound))}.</p><div class="meter"><i style="width:${Math.min(100, active.sent * 20)}%"></i></div>` : ''}
-        ${done.map((b) => `<p class="fine">${b.kind === 'winner' ? 'Winner’s' : 'Open'} Bounty: ${b.status === 'hit' ? `✅ hit${b.kind === 'winner' ? (b.reward ? `: ${h(S.winnerRewards?.[b.reward]?.name || b.reward)}` : ': pick your reward') : ': +25 points'}` : '💀 missed'}</p>`).join('')}
+        ${active ? `<p><b>${active.kind === 'winner' ? 'Winner’s' : 'Open'} Bounty</b>${active.stake != null ? ` · ${active.stake} staked to win <b>★ ${active.stake * (active.mult || 3)}</b>` : ''}: ${active.sent}/5 drinks sent${active.startRound > now ? `, counting from ${h(slotLabel(active.startRound))}` : ''}. Last round: ${h(slotLabel(active.deadlineRound))}.</p><div class="meter"><i style="width:${Math.min(100, active.sent * 20)}%"></i></div>` : ''}
+        ${done.map((b) => `<p class="fine">${b.kind === 'winner' ? 'Winner’s' : 'Open'} Bounty: ${b.status === 'hit' ? `✅ hit: +${b.paid ?? 25} points` : `💀 missed${b.stake ? `: ${b.stake} points lost` : ''}`}</p>`).join('')}
       </section>`);
     }
     const owed = (S.penaltiesOwed || []).filter((x) => x.teamId === myTeam.id);
@@ -2135,7 +2126,7 @@
         const clip = clipFor(t.id);
         return `<div class="bar-tile s-${st.state}" style="--c:${h(t.color)}">
           ${clip ? `<video src="${h(clip.url)}" autoplay muted loop playsinline></video>` : ''}
-          <div class="bar-tile-t"><b>${h(t.name)}</b><span>${st.state === 'serving' ? until(st.s.timerEndsAt) : st.state === 'queued' ? `${placeName(st.pos)} in line · ${plural(st.s.drinks, 'drink')}` : st.state === 'done' ? `Done · +${h(money(st.s.reward))} · 🔥${st.s.streak}` : st.state === 'missed' && st.s.streakLost ? 'Out of time · streak lost' : SERVE_LABEL[st.state]}</span></div>
+          <div class="bar-tile-t"><b>${h(t.name)}</b><span>${st.state === 'serving' ? until(st.s.timerEndsAt) : st.state === 'queued' ? `${placeName(st.pos)} in line · ${plural(st.s.drinks, 'drink')}` : st.state === 'done' ? `Done · +${h(money(st.s.reward))}` : st.state === 'missed' && st.s.streamLost ? `Out of time · income back to ${h(money(0))}` : SERVE_LABEL[st.state]}</span></div>
         </div>`;
       })
       .join('')}</div>`;
@@ -2219,7 +2210,18 @@
       ${S.penaltiesOwed?.length ? `<section class="card"><h3>⏰ Owed next round</h3><ul class="roster">${S.penaltiesOwed.map((x) => `<li>${h(teamName(x.teamId))}: ${x.qty}× ${h(x.drinkName)} <span class="fine">${h(x.reason)}</span></li>`).join('')}</ul></section>` : ''}
       ${(S.bounties || []).some((b) => b.status === 'active') ? `<section class="card"><h3>🎯 Bounties running</h3><ul class="roster">${S.bounties.filter((b) => b.status === 'active').map((b) => `<li>${h(teamName(b.teamId))}: ${b.kind === 'winner' ? 'Winner’s' : 'Open'} · ${b.sent}/5 sent · last round ${b.deadlineRound}</li>`).join('')}</ul></section>` : ''}
       ${S.night?.status === 'draft' && !r ? '<section class="card"><h3>🎬 Set up the night first</h3><p class="fine">Choose the games for each act and confirm in Setup.</p><button class="btn" data-act="atab" data-tab="setup">Go to Setup</button></section>' : ''}
+      ${standardsCard()}
       <p class="fine center">👑 When the last act’s final round finishes, the block with the most points is crowned automatically.</p>`;
+  }
+
+  // The night's pace: standard drinks sent so far against the target, and where it's heading.
+  function standardsCard() {
+    const x = S.standards;
+    if (!x || !x.target) return '';
+    const pct = Math.min(100, Math.round((x.sent / x.target) * 100));
+    const pace = x.played ? Math.round((x.sent / x.played) * x.rounds) : null;
+    const note = pace === null ? 'Pace shows after the first round.' : `On pace for about <b>${pace}</b> by the end${pace > x.target * 1.15 ? ' (running hot: lower prizes or the income step in Setup)' : pace < x.target * 0.85 ? ' (running slow: raise prizes or the income step in Setup)' : ''}.`;
+    return `<section class="card"><h3>🥃 Standard drinks tonight: ${x.sent} / ${x.target}</h3><div class="meter"><i style="width:${pct}%"></i></div><p class="fine">${note} Game shots and penalties count too.</p></section>`;
   }
 
   // Where a library game sits in the sequence, by act name and round.
@@ -2299,7 +2301,12 @@
           <label>Is Jason lying?: seconds to vote<input id="su_v" name="voteSeconds" type="number" min="5" max="120" value="${st.voteSeconds}" /></label>
           <label>Anime openings: seconds to guess<input id="su_g" name="guessSeconds" type="number" min="10" max="300" value="${st.guessSeconds}" /></label>
           <label>Games a player sits out after playing<input id="su_cd" name="cooldownGames" type="number" min="0" max="5" value="${st.cooldownGames}" /></label>
-          <label>Streak bonus in ${h(money('').trim() || 'credits')} (× drinks finished in a row)<input id="su_streak" name="streakCredits" type="number" min="0" max="100" value="${st.streakCredits}" /></label>
+          <label>Drink income step (grows by this each round you finish in time)<input id="su_streak" name="streamStep" type="number" min="0" max="50" value="${st.streamStep}" /></label>
+          <label>Open Bounty pays (× stake)<input id="su_bm" name="bountyMultiplier" type="number" min="1" max="10" value="${st.bountyMultiplier}" /></label>
+          <label>Winner’s Bounty pays (× stake)<input id="su_wm" name="winnerMultiplier" type="number" min="1" max="10" value="${st.winnerMultiplier}" /></label>
+          <label>Smallest stake (points)<input id="su_smin" name="bountyMinStake" type="number" min="1" max="100" value="${st.bountyMinStake}" /></label>
+          <label>Biggest stake (points)<input id="su_smax" name="bountyMaxStake" type="number" min="1" max="500" value="${st.bountyMaxStake}" /></label>
+          <label>Standard drinks to aim for tonight<input id="su_std" name="targetStandards" type="number" min="0" max="5000" value="${st.targetStandards}" /></label>
           <label>Phones<select id="su_phones" name="phoneMode"><option value="team" ${st.phoneMode === 'team' ? 'selected' : ''}>One phone per block (scan the block card)</option><option value="guest" ${st.phoneMode === 'guest' ? 'selected' : ''}>Every guest on their own phone</option></select></label>
           <label>Spending<select id="su_spend" name="spendMode">${[['anyone', 'Straight away'], ['request', 'A block decision (seconds)'], ['captain', 'Shot Caller only']].map(([k, l]) => `<option value="${k}" ${st.spendMode === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
           <button class="btn span2">Save</button>
@@ -2351,10 +2358,10 @@
         ${serving.length ? btn('↶ Back', 'barBack', {}, 'ghost') : ''}
         <button class="btn ghost sm" data-act="senders">${ui.senders ? 'Hide senders' : 'Show senders'}</button>
       </div>
-      ${serving.map((s) => `<div class="bar-now" style="--c:${h(team(s.teamId)?.color || '#888')}"><div class="bar-now-h"><b>${h(teamName(s.teamId))}</b>${until(s.timerEndsAt, 'big-cd')}${btn(`Done in time ✓ (+${h(money((S.settings.streakCredits || 5) * ((team(s.teamId)?.drinkStreak || 0) + s.drinks)))})`, 'barDone', { teamId: s.teamId }, 'sm')}</div>${pour(s)}</div>`).join('')}
+      ${serving.map((s) => `<div class="bar-now" style="--c:${h(team(s.teamId)?.color || '#888')}"><div class="bar-now-h"><b>${h(teamName(s.teamId))}</b>${until(s.timerEndsAt, 'big-cd')}${btn(`Done in time ✓ (+${h(money(nextIncome(team(s.teamId))))})`, 'barDone', { teamId: s.teamId }, 'sm')}</div>${pour(s)}</div>`).join('')}
       ${next ? `<h3>Up next: ${h(teamName(next.teamId))} · ${plural(next.drinks, 'drink')}</h3>${pour(next)}` : ''}
       <h3>The line</h3>
-      <ol class="queue">${r.serves.map((s) => { const st = serveOf(r, s.teamId); return `<li class="s-${st.state}">${h(teamName(s.teamId))} · ${plural(s.drinks, 'drink')} <span class="tag">${SERVE_LABEL[st.state]}${st.state === 'done' ? ` +${s.reward}` : ''}</span> <small class="fine">🔥${team(s.teamId)?.drinkStreak || 0}</small></li>`; }).join('') || '<li>Nobody owes anything.</li>'}</ol>
+      <ol class="queue">${r.serves.map((s) => { const st = serveOf(r, s.teamId); return `<li class="s-${st.state}">${h(teamName(s.teamId))} · ${plural(s.drinks, 'drink')} <span class="tag">${SERVE_LABEL[st.state]}${st.state === 'done' ? ` +${h(money(s.reward))}` : ''}</span> <small class="fine">💵 ${h(money(nextIncome(team(s.teamId))))} next</small></li>`; }).join('') || '<li>Nobody owes anything.</li>'}</ol>
     </section>`;
   }
 
@@ -2364,7 +2371,6 @@
     const feedN = ui.feedAll ? 40 : 5;
     return `
       ${S.winner ? winnerCard() : ''}
-      ${rewardPicker()}
       ${incomingAlerts()}
       
       ${roundCard()}
@@ -2424,7 +2430,7 @@
             return `<button class="item shop-row t-${h(it.type)}" data-act="buy-open" data-item-id="${it.id}" ${blocked || soldOut || broke ? 'disabled' : ''}>
               <span class="item-e">${h(it.emoji)}</span>
               <span class="row-main"><span class="item-n">${h(it.name)}</span><span class="item-d">${hint(it)}</span></span>
-              <span class="row-price"><b>${soldOut ? 'Sold out' : h(money(priceOf(it)))}</b>${it.type === 'drink' ? `<small>★${it.points || 0} each</small>` : it.stock !== null && !soldOut ? `<small>${it.stock} left</small>` : ''}</span>
+              <span class="row-price"><b>${soldOut ? 'Sold out' : it.type === 'bounty' ? `★ stake` : h(money(priceOf(it)))}</b>${it.type === 'bounty' ? `<small>wins ${it.bounty === 'winner' ? S.settings.winnerMultiplier : S.settings.bountyMultiplier}×</small>` : it.type === 'drink' ? `<small>★${it.points || 0} each</small>` : it.stock !== null && !soldOut ? `<small>${it.stock} left</small>` : ''}</span>
             </button>`;
           })
           .join('')}
@@ -2470,6 +2476,31 @@
         <p class="fine">The block you send them to decides who drinks.${myTeam && myTeam.budget < cost ? ` <b class="red-t">${h(myTeam.name)} only has ${h(money(myTeam.budget))}.</b>` : ''}</p>`;
       if (myTeam && myTeam.budget < cost) ready = false;
     }
+    let stakeNote = '';
+    if (it.type === 'bounty') {
+      const st = S.settings;
+      const have = myTeam?.points || 0;
+      const top = Math.min(st.bountyMaxStake, have);
+      const stake = Math.max(st.bountyMinStake, Math.min(ui.sheet.stake || Math.min(10, top), top));
+      ui.sheet.stake = stake;
+      const mult = it.bounty === 'winner' ? st.winnerMultiplier : st.bountyMultiplier;
+      cost = 0;
+      qtyPicker = `<label>Points to stake</label>
+        <div class="qty-row">
+          <button class="btn ghost sm" data-act="stake" data-stake="${stake - 5}" ${stake <= st.bountyMinStake ? 'disabled' : ''} aria-label="5 fewer">−5</button>
+          <b class="qty-n" aria-live="polite">${stake}</b>
+          <button class="btn sm" data-act="stake" data-stake="${stake + 5}" ${stake >= top ? 'disabled' : ''} aria-label="5 more">+5</button>
+          ${[5, 10, 20, 30].filter((n) => n >= st.bountyMinStake && n <= top).map((n) => `<button class="target deal ${stake === n ? 'on' : ''}" data-act="stake" data-stake="${n}">${n}</button>`).join('')}
+        </div>
+        <div class="qty-total"><span>Send ${S.bountyRules?.target || 5} drinks in ${S.bountyRules?.rounds || 3} rounds</span><span>win <b>★ ${stake * mult}</b> (${mult}× ${stake})</span></div>
+        <p class="fine">The stake comes off your score now. Hit the bounty and you get ${mult}× it back; miss it and the stake is gone, plus ${S.bountyRules?.missQty || 3} ${h(S.bountyRules?.missDrink || 'Spirit')} shots.</p>`;
+      if (have < st.bountyMinStake) {
+        ready = false;
+        stakeNote = `Need ${st.bountyMinStake} points to stake`;
+        qtyPicker = `<p class="fine"><b class="red-t">${h(myTeam?.name || 'Your block')} has ${plural(have, 'point')}. A bounty needs at least ${st.bountyMinStake} to stake.</b> Send drinks to score points first.</p>`;
+      }
+      stakeNote = stakeNote || '';
+    }
     return `
       <div class="sheet-bg" data-act="sheet-close"></div>
       <div class="sheet ${enter(`buy:${it.id}`)}" role="dialog" aria-label="Buy ${h(it.name)}">
@@ -2481,7 +2512,7 @@
           <input id="buy_note" maxlength="120" aria-label="Note" placeholder="${it.type === 'punishment' ? 'Enjoy, losers' : 'e.g. vodka soda, extra lime'}" /></details>` : ''}
         <div class="row sheet-actions">
           <button class="btn ghost" data-act="sheet-close">Cancel</button>
-          <button class="btn" data-act="buy-confirm" ${ready ? '' : 'disabled'}>${!ready ? (target === 'team' && !ui.sheet.targetTeamId ? 'Pick a block first' : target === 'holdingPlayer' && !ui.sheet.targetPlayerId ? 'Pick someone first' : `Not enough ${curAct()?.currency?.name || 'credits'}`) : `${willRequest() ? 'Ask the block' : it.type === 'warp' ? 'Warp' : it.type === 'drink' ? 'Send' : 'Buy'} for ${h(money(cost))}`}</button>
+          <button class="btn" data-act="buy-confirm" ${ready ? '' : 'disabled'}>${!ready ? stakeNote || (target === 'team' && !ui.sheet.targetTeamId ? 'Pick a block first' : target === 'holdingPlayer' && !ui.sheet.targetPlayerId ? 'Pick someone first' : `Not enough ${curAct()?.currency?.name || 'credits'}`) : it.type === 'bounty' ? `${willRequest() ? 'Ask the block to stake' : 'Stake'} ${plural(ui.sheet.stake, 'point')}` : `${willRequest() ? 'Ask the block' : it.type === 'warp' ? 'Warp' : it.type === 'drink' ? 'Send' : 'Buy'} for ${h(money(cost))}`}</button>
         </div>
         ${willRequest() ? `<p class="fine center">Goes to your block. It goes through when the Shot Caller approves it or ${plural(secondsNeeded(myTeam, S.me.id), 'blockmate')} second it.</p>` : ''}
         <p class="fine center">${myTeam ? `${h(myTeam.name)} has ${h(money(myTeam.budget))}.` : ''}</p>
@@ -2507,8 +2538,8 @@
         <h2>${h(myTeam.name)}${nick(myTeam)}</h2>
         ${myTeam.motto ? `<p class="motto">${h(myTeam.motto)}</p>` : ''}
         ${eng() === 'tft' && myTeam.augment ? `<p class="aug-chip">${S.augments[myTeam.augment].emoji} <b>${h(S.augments[myTeam.augment].name)}</b> · ${h(S.augments[myTeam.augment].desc)}</p>` : ''}
-        <div class="stats"><div><b>${h(money(myTeam.budget))}</b><span>${h(curAct()?.currency?.name || 'credits')}</span></div><div><b>★${myTeam.points || 0}</b><span>points</span></div><div><b>🔥${myTeam.drinkStreak || 0}</b><span>streak</span></div></div>
-        <p class="fine">Streak = drinks finished in time in a row. Each time you finish at the bar you get ${h(money(S.settings.streakCredits || 5))} × your streak; run out of time and it resets.</p>
+        <div class="stats"><div><b>${h(money(myTeam.budget))}</b><span>${h(curAct()?.currency?.name || 'credits')}</span></div><div><b>★${myTeam.points || 0}</b><span>points</span></div><div><b>${h(money(nextIncome(myTeam)))}</b><span>next finish</span></div></div>
+        <p class="fine">Drink income: every round you finish your drinks in time you get ${h(money(S.settings.streamStep || 5))} more than last time. Run out of time and it drops back to ${h(money(0))}.</p>
         ${renameControls(myTeam, members)}
       </section>
       ${matchCard()}
@@ -2614,6 +2645,9 @@
     return `<section class="card brief-card"><div class="eyebrow">📋 Briefing</div><p class="fine">No game running.${next ? ` Up next: <b>${h(next.name)}</b>.` : ''}</p></section>`;
   }
 
+  // Other blocks' points are only published at the end of each act.
+  const pointsNote = () => (S.isAdmin ? 'Hosts see live points. The TV and the blocks see them as of the last act’s end.' : S.pointsAsOf ? `Standings as of the end of ${S.pointsAsOf}. They update when each act ends.` : 'Standings go up at the end of Act 1, and update when each act ends.');
+
   function standings() {
     return [...S.teams].sort((a, b) => (b.points || 0) - (a.points || 0) || b.earned - a.earned || b.budget - a.budget);
   }
@@ -2635,6 +2669,7 @@
       ${adventurers.length ? `<section class="card"><h3>${h(W('topList', 'Top Adventurers'))}</h3><ol class="gi-ranks">${adventurers.map((p, i) => `<li class="${p.id === S.me?.id ? 'mine' : ''}"><span class="rank">${i + 1}</span>${avatar(p)}<span class="b-n">${h(p.name)}<small>${h(teamName(p.teamId))}</small></span><b>${eng() === 'genshin' && W('rank') ? 'Lv' : 'AR'} ${arOf(p)}</b></li>`).join('')}</ol></section>` : ''}
       <section class="card">
         <h3>🏆 Block Standings</h3>
+        <p class="fine">${h(pointsNote())}${S.me?.teamId ? ' Your own block’s points are live.' : ''}</p>
         ${rows.length ? `<ol class="board">${rows
           .map((t, i) => `<li style="--c:${h(t.color)}" class="${t.id === S.me?.teamId ? 'mine' : ''}"><span class="rank">${i + 1}</span><span class="b-n">${h(t.name)}${nick(t)}<small>${t.motto ? `${h(t.motto)} · ` : ''}${plural(blockmates(t.id).length, 'inmate')}</small></span><span class="b-s"><b>${plural(t.points || 0, 'pt')}</b><small>${h(money(t.earned))} earned · ${h(money(t.budget))} left${streakTag(t)}</small></span></li>`)
           .join('')}</ol>` : '<p class="empty">No blocks yet.</p>'}
@@ -3161,7 +3196,7 @@
         ${S.announcement ? `<div class="announce tv-ann"><span class="mega">📣</span><div class="announce-t">${h(S.announcement.text)}</div></div>` : ''}
         <div class="tv-grid ${S.round?.phase === 'drinks' || (S.round?.phase === 'game' && S.round.play) ? 'drinks' : ''}">
           <section class="card">
-            <h2>🏆 Standings</h2><p class="fine">Blocks score points for every drink they send. Most points wins.</p>
+            <h2>🏆 Standings</h2><p class="fine">${h(pointsNote())} Most points wins.</p>
             <ol class="tv-board">${rows.map((t, i) => `<li style="--c:${h(t.color)}"><span class="rank">${i + 1}</span><span class="b-n">${h(t.name)}${t.nickname || streakBits(t).length ? `<small>${[t.nickname && h(t.nickname), ...streakBits(t)].filter(Boolean).join(' · ')}</small>` : ''}</span><span class="tv-bar"><i style="width:${((t.points || 0) / max) * 100}%"></i></span><b>${t.points || 0}</b></li>`).join('') || '<p class="empty">No blocks yet</p>'}</ol>
           </section>
           <section class="card tv-center">
@@ -3228,11 +3263,7 @@
     },
     'board-close': () => { ui.board = false; opened.delete('board'); render(); },
     'shop-cat': (d) => { ui.shopCat = d.cat; render(); },
-    'bounty-reward': async (d) => {
-      if (d.confirm && !confirm(d.confirm)) return;
-      const res = await act('bountyReward', { bountyId: d.bountyId, reward: d.reward });
-      if (res.ok) toast('🏅 Reward locked in.', 'ok');
-    },
+
     commission: async (d) => {
       if (d.confirm && !confirm(d.confirm)) return;
       const res = await act('commission', { commissionId: d.commissionId });
@@ -3279,11 +3310,12 @@
     },
     'pick-target': (d) => { ui.sheet.targetTeamId = d.teamId; render(); },
     qty: (d) => { ui.sheet.qty = Math.max(1, Math.min(10, Number(d.qty) || 1)); render(); },
+    stake: (d) => { ui.sheet.stake = Number(d.stake) || 0; render(); },
     'pick-player': (d) => { ui.sheet.targetPlayerId = d.playerId; render(); },
     'buy-confirm': async () => {
       const noteEl = document.getElementById('buy_note');
-      const { itemId, targetTeamId, targetPlayerId, qty } = ui.sheet;
-      const res = await act('buy', { itemId, targetTeamId, targetPlayerId, qty: qty || 1, note: noteEl ? noteEl.value : '' });
+      const { itemId, targetTeamId, targetPlayerId, qty, stake } = ui.sheet;
+      const res = await act('buy', { itemId, targetTeamId, targetPlayerId, qty: qty || 1, stake, note: noteEl ? noteEl.value : '' });
       if (!res.ok) return;
       const it = S.items.find((i) => i.id === itemId);
       const r = res.result || {};

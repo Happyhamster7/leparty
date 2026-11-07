@@ -353,3 +353,5 @@ body[data-era='slammer'] .pill { font-size: 18px; }
 body[data-era='slammer'] .px-pts { font-size: 18px; }
 body[data-era='slammer'] .big-cd, body[data-era='slammer'] .cd.big-cd { font-size: 46px; font-weight: 800; }
 body[data-era='slammer'] .tv-board b { font-size: clamp(20px, 2vw, 30px); }
+body[data-era='slammer'] .qty-n { min-width: 64px; padding: 0 4px; text-align: center; font-size: 28px; }
+body[data-era='slammer'] .qty-row { flex-wrap: wrap; }
