@@ -1635,3 +1635,6 @@ details.secret .mega { font-size: 40px; }
 .tv-feed { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
 .feed-scroll { flex: 1; min-height: 0; overflow: hidden; }
 .tv-feed h2 small { font-size: 0.5em; font-weight: 500; margin-left: 6px; }
+
+/* Who's on a block, under its name in the buy sheet's target picker. */
+.target .t-who { display: block; font-size: 12px; font-weight: 500; opacity: 0.75; line-height: 1.25; margin-top: 2px; white-space: normal; text-align: left; }
