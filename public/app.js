@@ -671,13 +671,9 @@
     reel.cur = c.id;
     v.loop = (S.clips || []).length === 1;
     v.src = c.url;
-    // With sound on (someone tapped 🔊 on the TV), the main reel plays clips with their audio.
-    // The bar wall's tiles stay muted so several clips never talk over each other.
-    v.muted = !soundOn();
-    v.play().catch(() => {
-      v.muted = true;
-      v.play().catch(() => {});
-    });
+    // The main reel is always silent; clip sound only plays on the drinks wall (see syncTileVideos).
+    v.muted = true;
+    v.play().catch(() => {});
     const t = team(c.teamId);
     reel.el.querySelector('.reel-cap').innerHTML = `${t ? chip(t) : ''}<b>${h(c.caption || `${t ? t.name : 'Someone'} takes their shots`)}</b><small>filmed by ${h(c.playerName)} · ${time(c.ts)}</small>`;
     reel.el.classList.toggle('is-new', isNew);
@@ -685,6 +681,39 @@
     clearTimeout(reel.timer);
     if (!v.loop) reel.timer = setTimeout(nextClip, 30000); // a clip that never ends still moves on
   }
+  // The drinks wall's clips. Each tile keeps one live <video> across redraws (the page is rebuilt on
+  // every update, which would otherwise restart every clip). Only the most recently added clip plays
+  // with sound, and only once someone has tapped 🔊 on the TV; the rest stay muted.
+  const tileVids = new Map(); // clip id -> <video>
+  function syncTileVideos() {
+    const slots = [...document.querySelectorAll('.tile-vid')];
+    const newest = slots.reduce((best, el) => (!best || Number(el.dataset.ts) > Number(best.dataset.ts) ? el : best), null);
+    const keep = new Set();
+    for (const slot of slots) {
+      const id = slot.dataset.clipId;
+      keep.add(id);
+      let v = tileVids.get(id);
+      if (!v) {
+        v = document.createElement('video');
+        v.src = slot.dataset.src;
+        v.loop = true;
+        v.playsInline = true;
+        v.muted = true;
+        tileVids.set(id, v);
+      }
+      if (v.parentNode !== slot) slot.append(v);
+      const loud = slot === newest && soundOn();
+      if (v.muted === loud) v.muted = !loud;
+      if (v.paused) v.play().catch(() => { v.muted = true; v.play().catch(() => {}); });
+    }
+    for (const [id, v] of tileVids) {
+      if (keep.has(id)) continue;
+      v.pause();
+      v.removeAttribute('src');
+      tileVids.delete(id);
+    }
+  }
+
   function nextClip() {
     const clips = S?.clips || [];
     if (!reel.el || !clips.length) return;
@@ -1076,7 +1105,10 @@
     document.body.dataset.status = S?.me?.status || '';
     $app.innerHTML = page();
 
-    if (kind === 'tv') syncReel();
+    if (kind === 'tv') {
+      syncReel();
+      syncTileVideos();
+    }
     for (const [id, val] of Object.entries(drafts)) {
       const el = document.getElementById(id);
       if (!el) continue;
@@ -2189,7 +2221,7 @@
           : st.state === 'missed' ? `<span class="tile-big">⏰</span><small>out of time${st.s.streamLost ? ` · income back to ${h(money(0))}` : ''}</small>`
           : `<span class="tile-big">😎</span><small>${h(SERVE_LABEL[st.state] || '')}</small>`;
         return `<div class="bar-tile s-${st.state}${clip ? ' has-clip' : ''}" style="--c:${h(t.color)}">
-          ${clip ? `<video src="${h(clip.url)}" autoplay muted loop playsinline></video>` : ''}
+          ${clip ? `<div class="tile-vid" data-clip-id="${h(clip.id)}" data-src="${h(clip.url)}" data-ts="${clip.ts}"></div>` : ''}
           <div class="bar-tile-main">${big}</div>
           <div class="bar-tile-t"><b>${h(t.name)}</b></div>
         </div>`;
@@ -3361,12 +3393,7 @@
     },
     'tv-sound': () => {
       unlockAudio();
-      const v = reel.el?.querySelector('video');
-      if (v) {
-        v.muted = false;
-        v.play().catch(() => {});
-      }
-      setTimeout(render, 100);
+      setTimeout(() => { render(); syncTileVideos(); }, 100);
     },
     'act-ok': () => {
       LS.set('sss_act', actId());

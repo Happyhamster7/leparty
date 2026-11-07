@@ -1513,6 +1513,7 @@ body[data-era='heist'] .drinkcard .btn { color: #1d0b0b; }
 .bar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-top: 10px; }
 .bar-tile { position: relative; aspect-ratio: 4 / 3; background: color-mix(in srgb, var(--c) 35%, var(--card2)); border-radius: 10px; overflow: hidden; display: flex; align-items: flex-end; }
 .bar-tile video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.bar-tile .tile-vid { position: absolute; inset: 0; }
 .bar-tile-t { position: relative; width: 100%; display: flex; justify-content: space-between; gap: 6px; padding: 6px 10px; background: rgba(0, 0, 0, 0.55); color: #fff; font-size: 15px; }
 .bar-tile.s-serving { outline: 4px solid var(--yellow); }
 .bar-tile.s-safe, .bar-tile.s-done { opacity: 0.75; }
