@@ -1185,13 +1185,13 @@ test('a Mystery Box can pour 1–5 random drinks on your own block or another, w
   g.startDrinks();
   finishDrinks(g);
   playRound(g, a, b, players); // round 2
-  // rolls: skip Reflect (0.9), pick the drink, qty roll 0.99 → 5, then the coin: 0.1 → own block
-  const self = openBox(g, players[0].id, [0.9, 0.4, 0.99, 0.1]).mystery;
+  // rolls: the prize (0.3 → drinks), pick the drink, qty roll 0.99 → 5, then the coin: 0.1 → own block
+  const self = openBox(g, players[0].id, [0.3, 0.4, 0.99, 0.1]).mystery;
   assert.equal(self.kind, 'self');
   assert.equal(self.qty, 5);
   assert.equal(self.targetTeamId, a.id);
   assert.ok(['Soju Shot', 'Spirit', 'Mystery Cocktail'].includes(self.drink));
-  const other = openBox(g, players[0].id, [0.9, 0, 0, 0.9, 0]).mystery;
+  const other = openBox(g, players[0].id, [0.3, 0, 0, 0.9, 0]).mystery;
   assert.equal(other.kind, 'other');
   assert.equal(other.qty, 1);
   assert.equal(other.targetTeamId, b.id);
@@ -1835,4 +1835,49 @@ test('an older save’s Soju becomes Soju Shot, with a separate Soju Bottle', ()
   assert.deepEqual(names.slice(2, 4), ['Soju Shot', 'Soju Bottle']);
   assert.deepEqual(moved.s.items.find((i) => i.name === 'Soju Shot').bundles, []);
   assert.equal(moved.s.items.find((i) => i.name === 'Soju Bottle').price, 42);
+});
+
+test('a Mystery Box can hit the Jackpot (+$40) or pickpocket $15 from another block', () => {
+  const { g, a, b, players } = setup();
+  a.budget = 1000;
+  playRound(g, a, b, players);
+  g.startDrinks();
+  finishDrinks(g);
+  playRound(g, a, b, players); // round 2
+  // shares with Reflect available: reflect, drinks, drinks, jackpot, pickpocket
+  let cash = a.budget;
+  const jp = openBox(g, players[0].id, [0.7]).mystery;
+  assert.equal(jp.kind, 'jackpot');
+  assert.equal(a.budget - cash, 40 - 30, 'pays $40 on a $30 box');
+  assert.match(g.s.feed[0].text, /JACKPOT/);
+  cash = a.budget;
+  const bCash = b.budget;
+  const pp = openBox(g, players[0].id, [0.9, 0]).mystery;
+  assert.equal(pp.kind, 'pickpocket');
+  assert.equal(pp.targetTeamId, b.id);
+  assert.equal(bCash - b.budget, 15);
+  assert.equal(a.budget - cash, 15 - 30);
+  assert.equal(b.ledger[0].amount, -15);
+  // Nothing to steal: it pays the Jackpot instead.
+  b.budget = 0;
+  assert.equal(openBox(g, players[0].id, [0.9]).mystery.kind, 'jackpot');
+  // A block with less than $15 loses only what it has.
+  b.budget = 6;
+  assert.equal(openBox(g, players[0].id, [0.9, 0]).mystery.amount, 6);
+  assert.equal(b.budget, 0);
+});
+
+test('Pickpocket comes up more for a block in the bottom half of the standings', () => {
+  const { g, a, b, players } = setup();
+  a.budget = b.budget = 1000;
+  playRound(g, a, b, players);
+  g.startDrinks();
+  finishDrinks(g);
+  playRound(g, a, b, players); // round 2
+  a.points = 50;
+  b.points = 0;
+  // Same roll, different odds: the leader has 5 shares, so 0.75 lands on index 3 (Jackpot);
+  // the trailing block has 6 (an extra Pickpocket), so it lands on index 4 (Pickpocket).
+  assert.equal(openBox(g, players[0].id, [0.75]).mystery.kind, 'jackpot');
+  assert.equal(openBox(g, players[1].id, [0.75, 0]).mystery.kind, 'pickpocket');
 });

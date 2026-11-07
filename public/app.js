@@ -3391,7 +3391,9 @@
       else if (r.warp) { /* the pull splash says it all */ }
       else if (r.mystery) {
         const m = r.mystery;
-        if (m.kind === 'reflect') splash('passed', '🪞 Reflect!', `Next round (${m.label}) every drink aimed at you bounces back to its sender, and you score it. Keep it quiet.`, 4200);
+        if (m.kind === 'jackpot') splash('passed', '💰 JACKPOT!', `+${money(m.amount)} for your block.`, 4200);
+        else if (m.kind === 'pickpocket') splash('passed', '🫳 Pickpocket!', `You lifted ${money(m.amount)} from ${teamName(m.targetTeamId)}.`, 4200);
+        else if (m.kind === 'reflect') splash('passed', '🪞 Reflect!', `Next round (${m.label}) every drink aimed at you bounces back to its sender, and you score it. Keep it quiet.`, 4200);
         else if (m.kind === 'self') splash('failed', `${m.emoji} ${m.qty}× ${m.drink}`, `…for your own block. It’s in this round’s drinks. 😂`, 4200);
         else splash('passed', `${m.emoji} ${m.qty}× ${m.drink}`, `…lands on ${teamName(m.targetTeamId)} this round!`, 4200);
       }
