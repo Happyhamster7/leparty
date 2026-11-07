@@ -2152,6 +2152,8 @@ test('Costume Parade: each phone picks 3 best and 3 worst (changeable); close ra
   g.costumeVote({ voterId: 'phone-0003', best: [id(0), id(4), id(6)], worst: [id(1), id(5), id(7)] });
   assert.equal(g.tvView().costume.votes, 3);
   assert.equal(g.tvView().costume.results, null, 'no results while voting');
+  assert.equal(g.tvView().costume.live, undefined, 'the TV never sees the running tally');
+  assert.equal(g.adminView().costume.live.best[0].id, id(0), 'hosts can watch it');
   const before = a.points;
   g.costumeClose();
   const res = g.tvView().costume.results;
