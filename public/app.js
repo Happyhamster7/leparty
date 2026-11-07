@@ -1164,15 +1164,6 @@
     if (shell) return shell();
     const me = S.me;
     const myTeam = team(me.teamId);
-    const tabs = [
-      ['yard', '📌', 'Now'],
-      ['shop', '🛒', 'Shop'],
-      ['cell', me.status === 'block' ? '🔐' : me.status === 'holding' ? '🕳️' : '🔒', me.status === 'block' ? 'Block' : me.status === 'holding' ? 'Holding' : 'Solitary'],
-      ['board', '🏆', 'Board'],
-      ['rap', '🕵️', 'Secret'],
-    ];
-    const body = { yard: yardTab, shop: shopTab, cell: cellTab, rap: rapTab, board: boardTab }[ui.tab] || yardTab;
-    if (!['yard', 'shop', 'cell', 'rap', 'board'].includes(ui.tab)) ui.tab = 'yard';
     return `
       <header class="top slim" ${myTeam && me.status === 'block' ? `style="border-bottom-color:${h(myTeam.color)}"` : ''}>
         <div class="top-row">
@@ -1182,17 +1173,83 @@
           </div>
           <div class="hud pills">
             ${myTeam ? `<span class="pill pts" title="${h(myTeam.name)} points">★ ${myTeam.points || 0}</span><span class="pill cr" title="${h(myTeam.name)} credits">${h(money(myTeam.budget))}</span>` : ''}
+            <button class="pill board-btn" data-act="board-open" aria-label="Leaderboard">🏆</button>
           </div>
         </div>
       </header>
       ${phaseBanner()}
       ${announcement()}
-      <main class="content">${body()}</main>
-      ${ui.sheet ? buySheet() : ''}
-      ${actUnseen() ? actModal() : briefingUnseen() ? briefingModal() : ''}
-      <nav class="tabs">
-        ${tabs.map(([k, icon, label]) => `<button data-act="tab" data-tab="${k}" class="${ui.tab === k ? 'on' : ''}"><i class="ti">${icon}</i><span>${label}</span>${k === 'rap' && needsMafiaAction() ? '<i class="dot"></i>' : ''}${k === 'yard' && ui.tab !== 'yard' && (todoItems().length || myIncoming().length || needsPick()) ? '<i class="dot"></i>' : ''}${k === 'cell' && actionableRequests().length ? '<i class="dot"></i>' : ''}</button>`).join('')}
-      </nav>`;
+      <main class="content flat">${phoneScreen()}</main>
+      ${ui.sheet ? buySheet() : ui.board ? boardSheet() : ''}
+      ${actUnseen() ? actModal() : briefingUnseen() ? briefingModal() : ''}`;
+  }
+
+  // ---------- the phone: one screen, only what this inmate needs right now ----------
+  const flat = () => eng() === 'pixel';
+
+  function phoneScreen() {
+    const me = S.me;
+    const myTeam = team(me.teamId);
+    const r = S.round;
+    const m = S.mafia;
+    const live = S.games.find((g) => g.status === 'live');
+    const onBlock = me.status === 'block' && myTeam;
+    // Only when it's time to buy: the round's Spending phase, or between rounds if a host opens it.
+    const shopTime = S.settings.shopOpen !== false && onBlock && !!r && ['spending', 'done'].includes(r.phase);
+    const between = !r || r.phase === 'done';
+    const todos = todoItems();
+    return `
+      ${S.winner ? winnerCard() : ''}
+      ${me.status !== 'block' ? lockupRules(me.status, live) : ''}
+      ${incomingAlerts()}
+      ${dealerCard()}
+      ${rewardPicker()}
+      ${myTeam ? requestsCard(myTeam) : ''}
+      ${['night', 'vote'].includes(m.phase) ? mafiaPanel() : ''}
+      ${todos.length ? `<section class="card todo-card"><h3>📌 To do</h3><ul class="todos">${todos.join('')}</ul></section>` : ''}
+      ${roundCard()}
+      ${matchCard()}
+      ${shopTime ? `<h3 class="section-h">🛒 The shop is open</h3>${shopTab()}` : ''}
+      ${onBlock && (shopTime || between) ? blockExtras(myTeam) : ''}
+      ${onBlock && between ? blockSummary(myTeam) : ''}
+      ${me.status === 'holding' ? holdingRoster() : ''}
+      ${m.phase === 'over' ? mafiaPanel() : ''}
+      ${m.phase !== 'off' ? secretFold() : ''}
+      ${!r && !shopTime && !todos.length ? '<section class="card center"><div class="mega">⏳</div><h2>Waiting for the first round</h2><p class="fine">Keep this page open. It changes by itself when it’s your turn to do something.</p></section>' : ''}`;
+  }
+
+  // Between rounds: your block at a glance.
+  function blockSummary(myTeam) {
+    const members = blockmates(myTeam.id);
+    return `<section class="card cell-head block-banner" style="--c:${h(myTeam.color)}">
+      <div class="eyebrow">Your block · ${ordinal(rankOf(myTeam.id))} of ${S.teams.length}</div>
+      <h2>${h(myTeam.name)}${nick(myTeam)}</h2>
+      ${myTeam.motto ? `<p class="motto">${h(myTeam.motto)}</p>` : ''}
+      <div class="stats"><div><b>${h(money(myTeam.budget))}</b><span>credits</span></div><div><b>★${myTeam.points || 0}</b><span>points</span></div><div><b>🔥${myTeam.drinkStreak || 0}</b><span>streak</span></div></div>
+      <p class="fine">Streak = drinks finished in time in a row: each time you finish at the bar you get ${h(money(S.settings.streakCredits || 5))} × your streak.</p>
+      <p class="mates">${members.map((p) => `${p.isCaptain ? '👑' : ''}${h(p.name)}${p.id === S.me.id ? ' (you)' : ''}${p.status === 'solitary' ? ' 🔒' : ''}`).join(' · ')}</p>
+      ${renameControls(myTeam, members)}
+    </section>`;
+  }
+
+  // The snitch game's secret role, folded away until you want to look.
+  function secretFold() {
+    const role = roleOf(S.me.role);
+    return `<details class="card fold secret"><summary>🕵️ Your secret role</summary>
+      <p class="fine">Shield your screen.</p>
+      <div class="mega">${role.emoji}</div><h3>${h(role.name)}</h3><p>${h(role.blurb)}</p>
+      ${S.me.role === 'snitch' ? `<p class="fine">Sabotages pulled off: <b>${S.me.dirt}</b> · credits skimmed: <b>${S.me.skimmed}</b>.</p>` : ''}
+      ${S.me.revealed ? '<p class="fine">You’ve been exposed. Your powers are gone.</p>' : ''}
+      ${classifiedBox()}
+    </details>`;
+  }
+
+  function boardSheet() {
+    return `<div class="sheet-bg" data-act="board-close"></div>
+      <div class="sheet board-sheet ${enter('board')}" role="dialog" aria-label="Leaderboard">
+        <div class="row"><h2 class="grow">🏆 Leaderboard</h2><button class="btn ghost sm" data-act="board-close">Close</button></div>
+        ${boardTab()}
+      </div>`;
   }
 
   // ---------- Act II: Genshin Impact, played in landscape ----------
@@ -1692,7 +1749,7 @@
   }
 
   function mafiaBanner(m) {
-    if (m.phase === 'night') return `<div class="phase night">🌙 LIGHTS OUT — Night ${m.round}${kind === 'player' ? ' · everyone pick a name on your Rap Sheet' : ''}</div>`;
+    if (m.phase === 'night') return `<div class="phase night">🌙 LIGHTS OUT — Night ${m.round}${kind === 'player' ? ` · everyone pick a name ${flat() ? 'below' : 'on your Rap Sheet'}` : ''}</div>`;
     if (m.phase === 'vote') return `<div class="phase vote">${eng() === 'amongus' ? `🚨 ${W('meeting', 'Emergency Meeting').toUpperCase()}` : '🗳️ BLOCK VOTES OPEN'} · ${plural(m.votesCast, 'vote')} cast</div>`;
     if (m.phase === 'over') return `<div class="phase over">${m.winner === 'snitches' ? '🐀 Snitches got away with it!' : '🎉 Every snitch was caught!'}</div>`;
     return '';
@@ -1808,6 +1865,7 @@
       items.push(`<li class="todo sentence"><span class="mega">⚖️</span><div><b>${h(x.text)}</b><div class="fine">from ${h(x.from)}${x.reason ? ` · ${h(x.reason)}` : ''} · ${time(x.ts)}</div></div><button class="btn sm" data-act="sentence-done" data-sentence-id="${x.id}">Done ✅</button></li>`);
     }
     if (me.dealerDrinks) items.push(goItem('🥃', `Hand out ${plural(me.dealerDrinks, 'drink')}`, 'Pick who drinks at the top of the screen.'));
+    if (flat()) return items; // night picks, votes and requests show as their own cards
     if (m.phase === 'night' && me.status !== 'solitary' && !m.myNight) items.push(goItem('🌙', 'Lights Out: pick a name', 'Everyone picks, so nobody can tell who the snitch is.', 'rap'));
     if (m.phase === 'vote' && me.status === 'block' && !m.myVote) items.push(goItem('🗳️', 'Vote in your block vote', 'Majority kicks someone off the block.', 'rap'));
     const reqs = actionableRequests();
@@ -1886,8 +1944,8 @@
       const place = r.placings[me.teamId];
       body = `${place ? `<p>Your block came <b>${placeName(place)}</b> and won <b>${h(money(r.prizes[me.teamId] || 0))}</b>.</p>` : ''}
         ${r.winnerTeamId && r.winnerTeamId === me.teamId ? '<p class="win-note">🏅 You won this game: the Winner’s Bounty is unlocked in the shop.</p>' : ''}
-        <p><b>The shop is open.</b> Send drinks to other blocks to score points. Power-ups you buy now start next round.</p>
-        <button class="btn big" data-act="tab" data-tab="shop">🛒 Go to the Commissary</button>`;
+        <p><b>The shop is open${flat() ? ' below' : ''}.</b> Send drinks to other blocks to score points. Power-ups you buy now start next round.</p>
+        ${flat() ? '' : '<button class="btn big" data-act="tab" data-tab="shop">🛒 Go to the Commissary</button>'}`;
     } else if (r.phase === 'drinks') {
       const st = myTeam ? serveOf(r, myTeam.id) : { state: 'safe' };
       if (st.state === 'safe') body = '<p class="serve safe">Safe this round. Nobody sent your block anything.</p>';
@@ -2485,7 +2543,7 @@
       return `<section class="card night-card">
         <h3>${isSnitch ? '🐀 Who are you tipping off to the guards?' : '🗣️ Who do you suspect? (anonymous)'}</h3>
         ${groupedTargets(targets, (p) => `<button class="target ${m.myNight === p.id ? 'on' : ''}" data-act="night" data-target-id="${p.id}">${h(p.name)}</button>`)}
-        <p class="fine">${isSnitch ? `Your target gets ${plural(S.settings.tipRounds, 'round')} in solitary at Lights On. Nobody will know it was you.` : 'Everyone picks a name so the snitches can’t be spotted by who’s on their phone. Top suspects get whispered in the feed.'} You can change your pick until Lights On.</p>
+        <p class="fine">${isSnitch ? `Your target gets ${plural(S.settings.tipRounds, 'round')} in solitary at Lights On. Nobody will know it was you.` : `Everyone picks a name so the snitches can’t be spotted by who’s on their phone. Top suspects get whispered ${flat() ? 'on the TV' : 'in the feed'}.`} You can change your pick until Lights On.</p>
       </section>`;
     }
 
@@ -3175,6 +3233,8 @@
     atab: (d) => { ui.atab = d.tab; LS.set('sss_atab', d.tab); render(); },
     senders: () => { ui.senders = !ui.senders; render(); },
     'feed-more': () => { ui.feedAll = !ui.feedAll; render(); },
+    'board-open': () => { ui.board = true; render(); },
+    'board-close': () => { ui.board = false; opened.delete('board'); render(); },
     'shop-cat': (d) => { ui.shopCat = d.cat; render(); },
     'bounty-reward': async (d) => {
       if (d.confirm && !confirm(d.confirm)) return;

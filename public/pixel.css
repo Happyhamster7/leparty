@@ -302,3 +302,8 @@ body[data-era='slammer'] details.howto > summary, body[data-era='slammer'] detai
 body[data-era='slammer'] .incoming { padding: 2px 6px; }
 body[data-era='slammer'] .incoming-h { font-size: 20px; }
 body[data-era='slammer'] .incoming-b { margin: 2px 0 6px; }
+body[data-era='slammer'] .content.flat { padding-bottom: 40px; }
+body[data-era='slammer'] .board-btn { color: var(--text); font-size: 22px; padding: 0 2px; }
+body[data-era='slammer'] .board-btn:active { border-image-source: url('/pixel/frame-slot-active.png'); }
+body[data-era='slammer'] .mates { font-family: 'Jersey 10', monospace; font-size: 20px; font-weight: 400; }
+body[data-era='slammer'] .board-sheet { max-height: 88vh; }

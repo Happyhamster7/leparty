@@ -86,15 +86,19 @@ Augments (Act III): Windfall (+20 now), Rich Get Richer (+5 now and an interest 
 
 Warp odds and pity are in Settings. Any shop item can be limited to one act in the Commissary tab ("On the shelf during").
 
-### Player tabs
+### The phone
 
-- **Now** (the home screen): your to-do list (penalty drinks to pay off, punishments to serve with a Done button, incoming punishments, Lights Out picks, votes and purchase requests waiting on you), then your matchup, the game that's on now with its heats, the schedule and the gossip feed.
-- **My Block**: your block's name, nickname and motto, its rank, credits, your current matchup, purchase requests waiting on a second, account activity (watch for unexplained withdrawals), blockmates, contraband stash, wiretap results, who's in Holding (people you could bail), and your block's orders. The tab becomes **Holding** or **Solitary** when that's where you are.
-- **Commissary**: spend, or ask your block to spend, the block's credits.
-- **Rap Sheet**: your mugshot (inmate #, a random charge), your secret role (tap to reveal) and the current game's briefing with its Classified box. Lights Out picks and block votes happen here.
-- **Board**: standings, the full roster and the 🍺 drink tab.
+With the one-look lineup the phone is **one screen with no tab bar**. It shows only what that guest needs right now, and changes by itself as the round moves on:
 
-A **🍺 drinks owed** card appears on every tab whenever you owe penalty drinks. Tap *Drank one ✅* as you pay them off. It's the honor system, but the whole room can see the tab on the TV.
+- **Always:** a slim header (name, block, ★ points, credits) and a **🏆 button** that opens the leaderboard (standings, roster, drink tab).
+- **When it applies:** incoming punishments, a Winner's Bounty reward to pick, purchase requests to second, penalty drinks and punishments to do, and Lights Out or block-vote picks.
+- **Game:** pick your block's players (with How to play and your Classified box folded in).
+- **Spending:** the shop, as category tabs with one-line rows, plus your bounties and power-ups. The shop only shows while it's open: in Spending, or between rounds if a host opens it.
+- **Drinks:** your place in line, or the 30-second clock with Film it when your block is at the bar.
+- **Between rounds:** your block at a glance (credits, points, streak, blockmates, rename) and power-ups coming up.
+- **Secret role:** a one-line fold once snitches are planted.
+
+The gossip feed is on the TV only. The four-act lineups keep their own game-style phone interfaces.
 
 ### How the commissary works
 

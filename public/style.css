@@ -1586,3 +1586,10 @@ details.note-fold { margin: 6px 0; }
 .qty-row { flex-wrap: nowrap; overflow-x: auto; }
 .qty-row .target.deal { white-space: nowrap; }
 .top.slim .hud.pills { flex-direction: row; align-items: center; gap: 6px; }
+
+/* ---------- one-screen phone ---------- */
+.content.flat { padding-bottom: 40px; }
+.board-btn { cursor: pointer; font-size: 18px; }
+.mates { font-weight: 600; }
+.board-sheet .card { margin: 8px 0; }
+details.secret .mega { font-size: 40px; }
