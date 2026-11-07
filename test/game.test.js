@@ -1385,3 +1385,19 @@ test('the night runs 4 acts of 3 rounds, games in schedule order, and stops afte
   g.updateSettings({ actsCount: 5 });
   assert.equal(g.startRound().label, 'Act 5 · Round 1');
 });
+
+test('an old save that predates the power-ups gets them on load, and keeps them after', () => {
+  const old = structuredClone(new Game().s);
+  delete old.catalogue; // saved before the field existed
+  old.items = old.items.filter((i) => !['reflect', 'eyespy', 'bounty'].includes(i.type));
+  const g = new Game(old);
+  assert.deepEqual(g.s.items.filter((i) => ['reflect', 'eyespy', 'bounty'].includes(i.type)).map((i) => i.name), ['Reflect', 'Eye Spy', 'Open Bounty', 'Winner’s Bounty']);
+  // A save stamped with an older catalogue number but missing them (the live save) is repaired too.
+  const stamped = structuredClone(old);
+  stamped.catalogue = 3;
+  assert.equal(new Game(stamped).s.items.filter((i) => i.type === 'bounty').length, 2);
+  // And it only happens once: a host who deletes one later doesn't get it back.
+  const after = structuredClone(g.s);
+  after.items = after.items.filter((i) => i.name !== 'Eye Spy');
+  assert.equal(new Game(after).s.items.some((i) => i.name === 'Eye Spy'), false);
+});
