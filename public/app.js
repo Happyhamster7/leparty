@@ -2344,6 +2344,7 @@
       return `<div class="act-plan">${title}${mech}<ol class="slots">${rows.join('')}</ol></div>`;
     });
     return `<section class="card"><h3>🎬 The night: ${night.acts.length} acts × ${per} rounds</h3>
+      ${editable && !S.games.length ? `<p class="row wrap warn-line">⚠️ No games in the library yet, so the rounds have nothing to choose from. ${btn('📥 Add the party’s games', 'loadStarterGames', {}, 'sm')}</p>` : ''}
       <p class="fine">${editable ? 'Name each act, switch on its mechanics, and tap a round to choose its game.' : night.status === 'draft' ? 'Not confirmed yet: set it up in 🎬 Setup.' : 'Rounds follow this sequence. Change future rounds in 🎬 Setup.'}</p>
       <div class="night-plan">${acts.join('')}</div></section>`;
   }

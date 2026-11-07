@@ -189,7 +189,7 @@ test('rounds over the API: players pick, the tick settles a passed deadline, and
   for (const n of ['Ann', 'Ben', 'Cat', 'Dan']) tokens.push((await api.action({ kind: 'join', name: n })).result.token);
   await admin('updateSettings', { maxBlockSize: 2 });
   await admin('buildBlocks');
-  const game = (await admin('addGame', { name: 'Flip cup', playersNeeded: 1 })).view.games.find((x) => x.name === 'Flip cup');
+  const game = (await admin('addGame', { name: 'Test relay', playersNeeded: 1 })).view.games.find((x) => x.name === 'Test relay');
   assert.equal((await api.action({ kind: 'act', type: 'startRound', args: { gameId: game.id } }, { player: tokens[0] })).ok, false);
   const started = await admin('startRound', { gameId: game.id });
   assert.equal(started.ok, true);
