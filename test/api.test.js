@@ -291,3 +291,22 @@ test('an older save is stocked with the party’s games once, and their ids stay
   assert.equal(res.ok, true, res.error);
   assert.equal(res.view.night.acts[0].rounds[0], first[0].id);
 });
+
+test('costume votes come from any phone, with no login, through the guest view', async () => {
+  const api = createApi({ store: new FileStore({ file: null }), pins });
+  const host = { host: (await api.action({ kind: 'login', pin: '1111' })).result.adminToken };
+  const admin = (type, args = {}) => api.action({ kind: 'admin', type, args }, host);
+  await admin('addGuests', { names: 'Ann\nBen\nCat' });
+  assert.equal((await api.getState({})).costume.status, 'off');
+  assert.equal((await api.action({ kind: 'act', type: 'costumeOpen' }, {})).ok, false, 'guests can’t open it');
+  await admin('costumeOpen');
+  const g = await api.getState({});
+  assert.equal(g.kind, 'guest');
+  assert.equal(g.costume.people.length, 3);
+  const [ann, ben] = g.costume.people;
+  const vote = await api.action({ kind: 'costumeVote', voterId: 'phone-abcdef12', best: ann.id, worst: ben.id }, {});
+  assert.equal(vote.ok, true, vote.error);
+  assert.equal(vote.result.votes, 1);
+  await admin('costumeClose');
+  assert.equal((await api.getState({})).costume.results.best[0].name, 'Ann');
+});

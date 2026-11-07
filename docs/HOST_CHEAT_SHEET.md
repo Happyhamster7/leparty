@@ -94,6 +94,10 @@ The night is **4 acts × 3 rounds**: Act 1 · Round 1, Act 1 · Round 2, Act 1 �
 
 The night ends itself: when the last act's final round finishes, the block with the most points is crowned on every screen.
 
+## Costume Parade
+
+Round tab → **👗 Open costume voting** whenever everyone's ready: the QR fills the TV and guests vote best and worst on their own phones. When the votes slow down, **Close voting and reveal** (best costume's block +10 points, worst's block owes a shot), then **Take it off the TV**.
+
 ## Calls you make
 
 | Situation | Tab | Do |

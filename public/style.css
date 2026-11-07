@@ -1700,3 +1700,18 @@ details.secret .mega { font-size: 40px; }
 .roster-h { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 8px; align-items: baseline; margin-bottom: 4px; }
 .roster-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 2px; }
 .roster-list li { overflow-wrap: anywhere; }
+
+/* Costume Parade */
+.tv-costume { position: fixed; inset: 0; z-index: 25; display: flex; align-items: center; justify-content: center; gap: 5vw; padding: 5vw; background: var(--card, #fdeec8); color: var(--text, #2b1a10); text-align: left; }
+.tv-costume h1 { font-size: clamp(36px, 4.4vw, 80px); line-height: 1; margin: 8px 0 16px; }
+.tv-costume p { font-size: clamp(18px, 1.6vw, 30px); }
+.tv-costume .qr { width: min(40vw, 70vh); height: auto; background: #fff; padding: 16px; border-radius: 12px; }
+.tv-costume.results { flex-direction: column; gap: 2vh; }
+.costume-results { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; width: 100%; }
+.costume-results.big { max-width: 1400px; }
+.costume-results.big h3 { font-size: clamp(26px, 2.6vw, 48px); }
+.costume-results.big .placings li { font-size: clamp(20px, 2vw, 36px); }
+.vote .card { max-width: 520px; margin: 0 auto; }
+.vote select { width: 100%; font-size: 18px; }
+.vote-h { text-align: center; margin-bottom: 12px; }
+@media (max-width: 520px) { .costume-results { grid-template-columns: 1fr; } }

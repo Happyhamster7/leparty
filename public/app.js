@@ -380,7 +380,7 @@
 
   // Each screen sends only the credential it acts with: hosts on /warden and /officer, players on /, nothing on /tv.
   const creds = () =>
-    route === '/tv' ? {} : hostRoute ? { 'x-host-token': LS.get('sss_admin') || '' } : { 'x-player-token': LS.get('sss_token') || '' };
+    route === '/tv' || route === '/vote' ? {} : hostRoute ? { 'x-host-token': LS.get('sss_admin') || '' } : { 'x-player-token': LS.get('sss_token') || '' };
 
   // Takes a server reply carrying { kind, version, view } and shows it.
   function apply(res) {
@@ -1224,7 +1224,48 @@
     if (kind === 'tv') return offline + (S ? tvPage() : '');
     if (kind === 'admin') return offline + (S ? adminPage() : '');
     if (kind === 'player') return offline + (S ? playerPage() : '<div class="boot">Loading your rap sheet…</div>');
+    if (route === '/vote') return offline + votePage();
     return offline + (hostRoute ? wardenLogin() : landing());
+  }
+
+  // ---------- the Costume Parade ----------
+  const voterId = () => {
+    let id = LS.get('sss_voter');
+    if (!id) {
+      id = `v-${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+      LS.set('sss_voter', id);
+    }
+    return id;
+  };
+  const costumeResults = (res, big = false) => {
+    const list = (rows, medal) => rows.length ? `<ol class="placings costume">${rows.map((x, i) => `<li><span class="rank">${i === 0 ? medal : placeName(i + 1)}</span><span class="b-n">${h(x.name)}</span><b>${plural(x.votes, 'vote')}</b></li>`).join('')}</ol>` : '<p class="fine">No votes.</p>';
+    return `<div class="costume-results ${big ? 'big' : ''}"><div><h3>👑 Best costume</h3>${list(res.best, '👑')}</div><div><h3>🗑️ Worst costume</h3>${list(res.worst, '🗑️')}</div></div>`;
+  };
+  // The page behind the TV's QR code: any phone, no login.
+  function votePage() {
+    const c = guest.costume || { status: 'off' };
+    const head = `<header class="vote-h"><h1 class="logo">${h(guest.partyName || 'The Slammer')}</h1><p class="tagline">👗 Costume Parade</p></header>`;
+    if (c.status === 'closed' && c.results) return `<main class="landing vote">${head}<section class="card">${costumeResults(c.results)}</section></main>`;
+    if (c.status !== 'open') return `<main class="landing vote">${head}<section class="card center"><div class="mega">👗</div><h2>Voting isn’t open right now</h2><p class="fine">Keep this page open: it opens by itself when the hosts start the Costume Parade.</p></section></main>`;
+    const teamName2 = (id) => (c.teams || []).find((t) => t.id === id)?.name || 'Holding Cell';
+    const groups = {};
+    for (const p of c.people || []) (groups[p.teamId || ''] ||= []).push(p);
+    const order = Object.keys(groups).sort((a, b) => teamName2(a).localeCompare(teamName2(b), undefined, { numeric: true }));
+    const options = (sel) => `<option value="">Choose someone…</option>${order.map((k) => `<optgroup label="${h(teamName2(k))}">${groups[k].sort((x, y) => x.name.localeCompare(y.name)).map((p) => `<option value="${p.id}" ${p.id === sel ? 'selected' : ''}>${h(p.name)}</option>`).join('')}</optgroup>`).join('')}`;
+    let mine = null;
+    try { mine = JSON.parse(LS.get(`sss_vote_${c.id}`) || 'null'); } catch {}
+    const nameOf = (id) => (c.people || []).find((p) => p.id === id)?.name || '?';
+    return `<main class="landing vote">${head}
+      <section class="card">
+        <h2>Vote: best and worst costume</h2>
+        ${mine ? `<p class="serve">✅ You voted <b>${h(nameOf(mine.best))}</b> best and <b>${h(nameOf(mine.worst))}</b> worst. You can change it until voting closes.</p>` : '<p class="fine">One vote per phone. You can change it until the hosts close voting.</p>'}
+        <form data-form="costume" class="grid1">
+          <label>👑 Best costume<select id="cv_best" name="best" required>${options(mine?.best)}</select></label>
+          <label>🗑️ Worst costume<select id="cv_worst" name="worst" required>${options(mine?.worst)}</select></label>
+          <button class="btn big">${mine ? 'Change my vote' : 'Vote'}</button>
+        </form>
+        <p class="fine center">${plural(c.votes || 0, 'vote')} so far</p>
+      </section></main>`;
   }
 
   // ---------- guest screens ----------
@@ -2467,8 +2508,18 @@
       ${S.penaltiesOwed?.length ? `<section class="card"><h3>⏰ Owed next round</h3><ul class="roster">${S.penaltiesOwed.map((x) => `<li>${h(teamName(x.teamId))}: ${x.qty}× ${h(x.drinkName)} <span class="fine">${h(x.reason)}</span></li>`).join('')}</ul></section>` : ''}
       ${(S.bounties || []).some((b) => b.status === 'active') ? `<section class="card"><h3>🎯 Bounties running</h3><ul class="roster">${S.bounties.filter((b) => b.status === 'active').map((b) => `<li>${h(teamName(b.teamId))}: ${b.kind === 'winner' ? 'Winner’s' : 'Open'} · ${b.sent}/${S.bountyRules?.target || 7} sent${b.stake != null ? ` · staked ${b.stake} for ${b.stake * (b.mult || 3)}` : ''} · last round ${b.deadlineRound}</li>`).join('')}</ul></section>` : ''}
       ${S.night?.status === 'draft' && !r ? '<section class="card"><h3>🎬 Set up the night first</h3><p class="fine">Choose the games for each act and confirm in Setup.</p><button class="btn" data-act="atab" data-tab="setup">Go to Setup</button></section>' : ''}
+      ${costumeCard()}
       ${standardsCard()}
       <p class="fine center">👑 When the last act’s final round finishes, the block with the most points is crowned automatically.</p>`;
+  }
+
+  // The Costume Parade: open voting (QR on the TV), close to reveal and pay out, then take it off the TV.
+  function costumeCard() {
+    const c = S.costume || { status: 'off' };
+    const st = S.settings;
+    if (c.status === 'open') return `<section class="card"><h3>👗 Costume Parade: voting open · ${plural(c.votes, 'vote')}</h3><p class="fine">The TV shows the QR code. Everyone votes best and worst on their own phone (at ${h(location.host)}/vote).</p>${btn('🏁 Close voting and reveal', 'costumeClose', {}, 'big', `Close voting and reveal? Best costume’s block +${st.costumeBestPoints ?? 10} pts; worst costume’s block owes ${plural(st.costumeWorstShots ?? 1, 'shot')}.`)}</section>`;
+    if (c.status === 'closed' && c.results) return `<section class="card"><h3>👗 Costume Parade results</h3>${costumeResults(c.results)}<p class="fine">Paid: best costume’s block +${st.costumeBestPoints ?? 10} pts; worst costume’s block owes ${plural(st.costumeWorstShots ?? 1, 'Spirit shot')} next drinks.</p>${btn('Take it off the TV', 'costumeHide', {}, '')}</section>`;
+    return `<section class="card"><h3>👗 Costume Parade</h3><p class="fine">Get everyone to show off their costume, then open voting: a QR code fills the TV and everyone votes best and worst on their own phone. The best costume’s block gets +${st.costumeBestPoints ?? 10} points; the worst costume’s block owes ${plural(st.costumeWorstShots ?? 1, 'shot')}.</p>${btn('👗 Open costume voting', 'costumeOpen', {}, '', 'Put the costume vote QR code on the TV?')}</section>`;
   }
 
   // The night's pace: standard drinks sent so far against the target, and where it's heading.
@@ -2566,6 +2617,8 @@
           <label>Biggest stake (points)<input id="su_smax" name="bountyMaxStake" type="number" min="1" max="500" value="${st.bountyMaxStake}" /></label>
           <label>Missed bounty: extra loss (% of the stake)<input id="su_sx" name="bountyMissExtra" type="number" min="0" max="300" value="${st.bountyMissExtra ?? 100}" /></label>
           <label>Couldn’t finish at the bar: points lost (%)<input id="su_fp" name="failPointsPct" type="number" min="0" max="100" value="${st.failPointsPct ?? 10}" /></label>
+          <label>Costume Parade: best costume’s block scores<input id="su_cb" name="costumeBestPoints" type="number" min="0" max="200" value="${st.costumeBestPoints ?? 10}" /></label>
+          <label>Costume Parade: worst costume’s block owes (shots)<input id="su_cw" name="costumeWorstShots" type="number" min="0" max="10" value="${st.costumeWorstShots ?? 1}" /></label>
           <label>Standard drinks to aim for tonight<input id="su_std" name="targetStandards" type="number" min="0" max="5000" value="${st.targetStandards}" /></label>
           <label>Phones<select id="su_phones" name="phoneMode"><option value="team" ${st.phoneMode === 'team' ? 'selected' : ''}>One phone per block (scan the block card)</option><option value="guest" ${st.phoneMode === 'guest' ? 'selected' : ''}>Every guest on their own phone</option></select></label>
           <label>Spending<select id="su_spend" name="spendMode">${[['anyone', 'Straight away'], ['request', 'A block decision (seconds)'], ['captain', 'Shot Caller only']].map(([k, l]) => `<option value="${k}" ${st.spendMode === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
@@ -3487,7 +3540,9 @@
         ${audio?.state === 'running' ? '' : '<button class="tv-sound" data-act="tv-sound">🔊 Tap once to enable intro sound</button>'}
         <button class="tv-camera-btn" data-act="tvcam-open" title="Camera for host-run games">📷 ${tvCam.deviceId ? 'Camera on' : 'Camera'}</button>
         ${tvCamPicker()}
-        ${tvCamWanted() ? tvCamScreen() : ''}
+        ${tvCamWanted() && S.costume?.status !== 'open' ? tvCamScreen() : ''}
+        ${S.costume?.status === 'open' ? `<div class="tv-costume"><div><div class="eyebrow">👗 Costume Parade</div><h1>Vote: best &amp; worst costume</h1><p>Scan with your phone’s camera. One vote per phone.</p><p class="tv-big">${plural(S.costume.votes, 'vote')} so far</p></div><img class="qr" src="/qr.svg?url=${encodeURIComponent(`${location.origin}/vote`)}" alt="QR code to vote" /><p class="fine">${h(location.host)}/vote</p></div>` : ''}
+        ${S.costume?.status === 'closed' && S.costume.results ? `<div class="tv-costume results"><div class="eyebrow">👗 Costume Parade · ${plural(S.costume.results.voters, 'vote')}</div>${costumeResults(S.costume.results, true)}</div>` : ''}
         <header class="tv-h">${hero(true)}${oneAct() ? '' : `<div class="act-tag">${curAct().emoji} Act ${curAct().numeral} · ${h(curAct().name)}</div>`}<h1 class="logo">${h(S.settings.partyName)}</h1><div class="tagline">${h(curAct().tagline)}</div></header>
         ${phaseBanner()}
         ${S.announcement ? `<div class="announce tv-ann"><span class="mega">📣</span><div class="announce-t">${h(S.announcement.text)}</div></div>` : ''}
@@ -3767,6 +3822,17 @@
   }
 
   const FORMS = {
+    costume: async (data) => {
+      if (!data.best || !data.worst) return toast('Pick a best and a worst costume.', 'warn');
+      if (data.best === data.worst) return toast('Best and worst have to be different people.', 'warn');
+      const res = await send({ kind: 'costumeVote', voterId: voterId(), best: data.best, worst: data.worst });
+      if (!res?.ok) return toast(res?.error || 'That didn’t go through. Try again.', 'error');
+      LS.set(`sss_vote_${guest.costume?.id}`, JSON.stringify({ best: data.best, worst: data.worst }));
+      delete drafts.cv_best;
+      delete drafts.cv_worst;
+      toast('🗳️ Vote in. Thanks!', 'ok');
+      render();
+    },
     twothirds: async (data) => {
       const res = await act('answer', { value: Number(data.n) });
       if (res.ok) {

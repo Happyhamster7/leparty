@@ -15,7 +15,7 @@ if (pins.warden === pins.officer) {
 const app = express();
 app.use(express.json({ limit: '200kb' }));
 app.use(express.static(path.join(__dirname, 'public')));
-app.get(['/tv', '/warden', '/officer'], (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get(['/tv', '/warden', '/officer', '/vote'], (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/qr.svg', handlers.qr);
 app.get('/api/state', handlers.state);
 app.post('/api/action', handlers.action);
