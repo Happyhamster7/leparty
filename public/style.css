@@ -1693,3 +1693,10 @@ details.secret .mega { font-size: 40px; }
 .tv-cam-error { position: absolute; top: 45%; left: 10%; right: 10%; text-align: center; color: #fff; font: 600 22px system-ui, sans-serif; }
 .tvcam-sheet { max-width: 640px; }
 .tvcam-test { margin-top: 12px; aspect-ratio: 16 / 9; background: #000; }
+
+/* Host: who's on which block */
+.roster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.roster-block { border-left: 6px solid var(--c); background: var(--card2); padding: 8px 10px; border-radius: 8px; min-width: 0; }
+.roster-h { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 8px; align-items: baseline; margin-bottom: 4px; }
+.roster-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 2px; }
+.roster-list li { overflow-wrap: anywhere; }

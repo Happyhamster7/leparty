@@ -2574,6 +2574,7 @@
       </section>
       <h3 class="section-h">2 · Contestants from LeParty</h3>
       ${lepartyCard()}
+      ${S.teams.length || inHolding().length ? blockRoster() : ''}
       <h3 class="section-h">3 · Games</h3>
       ${aGames()}
       <h3 class="section-h">4 · The sequence</h3>
@@ -2955,6 +2956,7 @@
     const lockup = inHolding().length;
     const tabs = [
       ['round', `🎲 Round${S.round && S.round.phase !== 'done' ? ` <b class="badge">${h(S.round.phase)}</b>` : ''}`],
+      ['blocks', `👥 Blocks <b class="badge grey">${S.teams.length}</b>`],
       ['orders', `🧾 Orders${pending + incoming ? ` <b class="badge">${pending + incoming}</b>` : ''}`],
       ['money', '💰 Payouts'],
       ['lockup', `⚖️ Punish / Lockup${lockup ? ` <b class="badge grey">${lockup}</b>` : ''}`],
@@ -2963,9 +2965,8 @@
       ['settings', '⚙️ Settings'],
     ];
     // Games live in Setup now and Blocks in Settings; old remembered tabs land there.
-    if (ui.atab === 'blocks') ui.atab = 'settings';
     if (!tabs.some(([k]) => k === ui.atab)) ui.atab = 'round';
-    const body = { round: aRound, orders: aOrders, money: aMoney, lockup: aLockup, shop: aShop, clips: aClips, settings: aSettings }[ui.atab] || aRound;
+    const body = { round: aRound, blocks: blockRoster, orders: aOrders, money: aMoney, lockup: aLockup, shop: aShop, clips: aClips, settings: aSettings }[ui.atab] || aRound;
     return `
       <header class="top admin-top">
         <div class="top-row">
@@ -3206,6 +3207,31 @@
       ${gone.length ? `<p class="fine">⚠️ No longer checked in on LeParty: ${gone.map((p) => `${h(p.name)} ${btn('Remove', 'removePlayer', { playerId: p.id }, 'ghost xs', `Remove ${p.name} from tonight?`)}`).join(' · ')}</p>` : ''}
       <p class="fine">Blocks and checked-in guests come from LeParty. Late check-ins land on the block LeParty gives them (the lightest one), moves follow LeParty, and nobody is removed mid-game: anyone who drops off is flagged here instead.</p>
     </section>`;
+  }
+
+  // Who's on which block, at a glance: one card per block, then the Holding Cell.
+  function blockRoster() {
+    const people = (list) => list.length
+      ? `<ul class="roster-list">${list.map((p) => `<li>${p.isCaptain ? '👑 ' : ''}${h(p.name)}${p.fromLeParty ? '' : ' <span class="fine" title="Added here, not from LeParty">✍️</span>'}${p.drinksOwed ? ` <span class="chip yellow">🍺×${p.drinksOwed}</span>` : ''}${p.lepartyGone ? ' <span class="chip muted">left</span>' : ''}</li>`).join('')}</ul>`
+      : '<p class="empty">Nobody yet.</p>';
+    const holding = inHolding();
+    const total = S.players.length;
+    return `<section class="card">
+        <h3>👥 Who’s on which block · ${plural(total, 'guest')} on ${plural(S.teams.length, 'block')}</h3>
+        <div class="roster-grid">${S.teams.map((t) => {
+          const mates = blockmates(t.id).sort((a, b) => (b.isCaptain ? 1 : 0) - (a.isCaptain ? 1 : 0) || a.name.localeCompare(b.name, undefined, { numeric: true }));
+          return `<div class="roster-block" style="--c:${h(t.color)}">
+            <div class="roster-h"><b>${h(t.name)}${t.nickname ? ` “${h(t.nickname)}”` : ''}</b><span class="fine">${mates.length}/${S.settings.maxBlockSize} · ${h(money(t.budget))} · ★${t.points || 0}</span></div>
+            ${people(mates)}
+          </div>`;
+        }).join('')}
+          ${holding.length || !S.teams.length ? `<div class="roster-block holding" style="--c:#888">
+            <div class="roster-h"><b>🕳️ Holding Cell</b><span class="fine">${holding.length}</span></div>
+            ${people([...holding].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })))}
+          </div>` : ''}
+        </div>
+        <p class="fine">👑 Shot Caller · ✍️ added here rather than from LeParty · move someone in ⚙️ Settings → their dropdown.</p>
+      </section>`;
   }
 
   function aBlocks(showLeParty = true) {
