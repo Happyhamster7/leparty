@@ -1672,3 +1672,9 @@ details.secret .mega { font-size: 40px; }
 .targets.pick-blocks { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); align-items: start; gap: 8px; }
 .targets.pick-blocks .target { width: 100%; min-height: 52px; margin: 0; }
 .targets.pick-blocks .target .t-who { text-align: center; margin-top: 4px; }
+
+/* Prisoner's Dilemma pairs */
+.pd-pairs { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 6px; }
+.pd-pairs li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; padding: 8px 10px; background: var(--card2); border-radius: 8px; }
+.pd-pairs li.mine { outline: 3px solid var(--orange); }
+.pd-pairs .vs { opacity: 0.6; font-weight: 700; }

@@ -1619,7 +1619,7 @@ test('the night ends itself: when the last act’s final round finishes, most po
 test('the party’s games load into the library once, with how each is run', () => {
   const g = new Game();
   g.addGame({ name: 'Flip cup', playersNeeded: 0 });
-  assert.equal(g.loadStarterGames().added, 13);
+  assert.equal(g.loadStarterGames().added, 15);
   assert.equal(g.loadStarterGames().added, 0);
   const by = Object.fromEntries(g.s.games.map((x) => [x.name, [x.runBy, x.playersNeeded]]));
   assert.deepEqual(by['Is Jason lying?'], ['host', 1]);
@@ -1627,7 +1627,10 @@ test('the party’s games load into the library once, with how each is run', () 
   assert.deepEqual(by['Anime opening guessing'], ['anime', 0]);
   assert.deepEqual(by['Cold War drinking'], ['coldwar', 0]);
   assert.deepEqual(by.Trivia, ['trivia', 0]);
-  assert.equal(g.s.games.length, 14);
+  assert.deepEqual(by['Prisoner’s Dilemma'], ['dilemma', 0]);
+  assert.deepEqual(by['Two-Thirds of the Average'], ['twothirds', 0]);
+  assert.equal(g.s.games.find((x) => x.runBy === 'dilemma').stories, 3, 'three turns by default');
+  assert.equal(g.s.games.length, 16);
 });
 
 test('Anime openings: blocks type the anime; only the first right answer scores; typos and alternate names count', () => {
@@ -1891,4 +1894,112 @@ test('Pickpocket comes up more for a block in the bottom half of the standings',
   // the trailing block has 11 (2 extra Pickpockets), so it lands on index 8 (Pickpocket).
   assert.equal(openBox(g, players[0].id, [0.75]).mystery.kind, 'jackpot');
   assert.equal(openBox(g, players[1].id, [0.75, 0]).mystery.kind, 'pickpocket');
+});
+
+test('Two-Thirds of the Average: closest to ⅔ of the average wins; ties to the first to lock in; no-shows last; the furthest drinks', () => {
+  const { g, teams, phones } = appSetup(5);
+  const game = g.addGame({ name: 'Two-Thirds', runBy: 'twothirds' });
+  g.startRound({ gameId: game.id });
+  const r = g.round;
+  const [A, Bt, C, D, E] = teams;
+  const pick = (i, n) => g.playAnswer(phones[i].id, { value: n });
+  assert.throws(() => pick(0, 101), /0 to 100/);
+  assert.throws(() => pick(0, 2.5), /whole number/);
+  pick(0, 50);
+  assert.throws(() => pick(0, 20), /already locked/);
+  assert.deepEqual(g.viewFor(phones[1].id).round.play.picks[A.id], { locked: true }, 'picks stay secret');
+  pick(1, 30);
+  pick(2, 20);
+  pick(3, 100);
+  // E never picks: the clock runs out
+  g.tick(r.play.deadline + 1);
+  const pl = r.play;
+  assert.equal(pl.revealed, true);
+  assert.equal(pl.average, 50, 'the average counts only the blocks that picked');
+  assert.equal(pl.target, 33.3);
+  assert.deepEqual(pl.order, [Bt.id, C.id, A.id, D.id, E.id]);
+  assert.equal(pl.drinks[D.id], 7, '100 is 66.7 off: 7 shots');
+  assert.equal(pl.drinks[E.id], 1, 'didn’t pick: 1 shot');
+  g.playFinish();
+  assert.equal(r.phase, 'results');
+  assert.deepEqual(r.proposed, { [Bt.id]: 1, [C.id]: 2, [A.id]: 3, [D.id]: 4, [E.id]: 5 });
+  g.enterResults({ placings: r.proposed });
+  g.startDrinks();
+  assert.equal(g.round.serves.find((s) => s.teamId === D.id).drinks, 7);
+});
+
+test('Two-Thirds: a tie goes to the block that locked in first', () => {
+  const { g, teams, phones } = appSetup(3);
+  g.startRound({ gameId: g.addGame({ name: 'Two-Thirds', runBy: 'twothirds' }).id });
+  g.playAnswer(phones[2].id, { value: 10 });
+  g.round.play.picks[teams[2].id].at -= 1000; // locked in a second earlier
+  g.playAnswer(phones[0].id, { value: 10 });
+  g.playAnswer(phones[1].id, { value: 40 }); // all in: reveals. avg 20 → target 13.3
+  assert.deepEqual(g.round.play.order, [teams[2].id, teams[0].id, teams[1].id]);
+});
+
+test('Prisoner’s Dilemma: fixed pairs, secret picks, the payoff table, no-shows stay silent, and the ranking', () => {
+  const { g, teams, phones } = appSetup(4);
+  const game = g.addGame({ name: 'PD', runBy: 'dilemma', stories: 2 });
+  g.startRound({ gameId: game.id });
+  const r = g.round;
+  const pl = r.play;
+  assert.equal(pl.pairs.length, 2);
+  assert.equal(pl.total, 2);
+  const [[a, b], [c, d]] = pl.pairs;
+  const phoneOf = (id) => phones[teams.findIndex((t) => t.id === id)];
+  const choose = (id, v) => g.playAnswer(phoneOf(id).id, { value: v });
+  assert.throws(() => choose(a, 'silent'), /No turn is open/);
+  g.playNext(); // turn 1
+  assert.throws(() => choose(a, 'maybe'), /Stay Silent or Snitch/);
+  choose(a, 'silent');
+  assert.throws(() => choose(a, 'snitch'), /already picked/);
+  assert.ok(!g.viewFor(phoneOf(b).id).round.play.results[1], 'nothing shows while the turn is open');
+  assert.equal(g.viewFor(phoneOf(b).id).round.play.partner, a);
+  choose(b, 'snitch');
+  choose(c, 'snitch');
+  choose(d, 'snitch'); // everyone in: resolves
+  assert.equal(pl.state, 'revealed');
+  assert.deepEqual([pl.scores[a], pl.scores[b], pl.scores[c], pl.scores[d]], [0, 5, 1, 1]);
+  assert.deepEqual([pl.shots[a], pl.shots[b], pl.shots[c], pl.shots[d]], [5, 0, 3, 3]);
+  g.playNext(); // turn 2: a and b both silent, c silent, d never picks (counts as silent)
+  choose(a, 'silent');
+  choose(b, 'silent');
+  choose(c, 'silent');
+  g.tick(pl.deadline + 1);
+  assert.equal(pl.results[2][d].auto, true);
+  assert.deepEqual([pl.scores[a], pl.scores[b], pl.scores[c], pl.scores[d]], [3, 8, 4, 4]);
+  assert.deepEqual([pl.shots[a], pl.shots[b], pl.shots[c], pl.shots[d]], [6, 1, 4, 4]);
+  assert.throws(() => g.playNext(), /last turn/);
+  g.playFinish();
+  // b 8 pts; c and d tie on 4 points and 4 shots; a 3 points last
+  assert.equal(r.proposed[b], 1);
+  assert.equal(r.proposed[a], 4);
+  g.enterResults({ placings: r.proposed });
+  g.startDrinks();
+  assert.equal(g.round.serves.find((s) => s.teamId === a).drinks, 6, 'the turn shots go to the bar');
+  assert.equal(g.round.serves.find((s) => s.teamId === b)?.drinks, 1);
+});
+
+test('Prisoner’s Dilemma: with an odd number of blocks, the spare one plays the House', () => {
+  const { g, phones } = appSetup(3);
+  g.startRound({ gameId: g.addGame({ name: 'PD', runBy: 'dilemma' }).id });
+  const pl = g.round.play;
+  assert.equal(pl.pairs.filter((p) => p.includes('house')).length, 1);
+  g.playNext();
+  for (const ph of phones) g.playAnswer(ph.id, { value: 'snitch' });
+  assert.equal(pl.state, 'revealed');
+  assert.equal(Object.keys(pl.results[1]).length, 3, 'the House isn’t scored');
+});
+
+test('older saves get the two new app-run games added to their library once', () => {
+  const g = new Game();
+  g.loadStarterGames();
+  const old = structuredClone(g.s);
+  old.economy = 7;
+  old.games = old.games.filter((x) => !['dilemma', 'twothirds'].includes(x.runBy));
+  const moved = new Game(old);
+  assert.ok(moved.s.games.some((x) => x.runBy === 'dilemma'));
+  assert.ok(moved.s.games.some((x) => x.runBy === 'twothirds'));
+  assert.equal(new Game(structuredClone(moved.s)).s.games.length, moved.s.games.length, 'only once');
 });

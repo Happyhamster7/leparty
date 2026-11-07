@@ -1957,7 +1957,7 @@
   const SERVE_LABEL = { safe: 'Safe this round', queued: 'In line', serving: 'At the bar', done: 'Done', missed: 'Out of time' };
 
   // ---------- app-run games: Cold War, Trivia, Is Jason lying? ----------
-  const APP_RUN = { coldwar: '🧊 Cold War', trivia: '❓ Trivia', lying: '🤥 Is Jason lying?', anime: '🎵 Anime openings' };
+  const APP_RUN = { coldwar: '🧊 Cold War', trivia: '❓ Trivia', lying: '🤥 Is Jason lying?', anime: '🎵 Anime openings', dilemma: '🐀 Prisoner’s Dilemma', twothirds: '🧠 Two-Thirds' };
   const LETTERS = 'ABCD';
   const scoreList = (pl) => `<ol class="placings">${roundTeams()
     .map((t) => [t, pl.scores?.[t.id] || 0])
@@ -1972,9 +1972,46 @@
       .join('')}</ol>${Object.values(pl.bids).some((b) => b.auto) ? '<p class="fine">* didn’t pick in time, counted as 1.</p>' : ''}<p class="fine">The two lowest drink their own shots plus the two highest blocks’ shots. The shots join this round’s bar queue.</p>`;
   }
 
+  // Two-Thirds of the Average: the reveal, ranked closest first.
+  function twoThirdsResult(pl, mine) {
+    return `<p class="fine">Average <b>${pl.average}</b> → two-thirds is <b>${pl.target}</b>.</p><ol class="placings cw">${pl.order
+      .map((id, i) => { const p = pl.picks[id]; return `<li style="--c:${h(team(id)?.color || '#888')}" class="${id === mine ? 'mine' : ''}"><span class="rank">${placeName(i + 1)}</span><span class="b-n">${h(teamName(id))} · ${p ? p.n : 'no pick'}</span><b>${pl.drinks[id] ? `drinks ${pl.drinks[id]}` : p ? `${Math.abs(p.n - pl.target).toFixed(1)} off` : ''}</b></li>`; })
+      .join('')}</ol>`;
+  }
+  // Prisoner's Dilemma: one turn's result for every pair, then the running score.
+  const PD_WORD = { silent: '🤐 silent', snitch: '🐀 snitched' };
+  function dilemmaTurn(pl, n, mine) {
+    const res = pl.results?.[n];
+    if (!res) return '';
+    return `<ul class="pd-pairs">${pl.pairs.map(([a, b]) => {
+      const side = (id) => (id === 'house' ? `<span class="fine">the House</span>` : `<b>${h(teamName(id))}</b> ${PD_WORD[res[id].choice]}${res[id].auto ? '*' : ''} <span class="fine">+${plural(res[id].pts, 'pt')} · 🥃${res[id].shots}</span>`);
+      return `<li class="${a === mine || b === mine ? 'mine' : ''}">${side(a)} <span class="vs">vs</span> ${side(b)}</li>`;
+    }).join('')}</ul>${Object.values(res).some((x) => x.auto) ? '<p class="fine">* didn’t pick in time: stayed silent.</p>' : ''}`;
+  }
+  function dilemmaScores(pl, mine) {
+    const ids = roundTeams().map((t) => t.id).sort((a, b) => (pl.scores[b] || 0) - (pl.scores[a] || 0) || (pl.shots[a] || 0) - (pl.shots[b] || 0));
+    return `<ol class="placings">${ids.map((id, i) => `<li style="--c:${h(team(id)?.color || '#888')}" class="${id === mine ? 'mine' : ''}"><span class="rank">${placeName(i + 1)}</span><span class="b-n">${h(teamName(id))}</span><b>${plural(pl.scores[id] || 0, 'pt')} · 🥃${pl.shots[id] || 0}</b></li>`).join('')}</ol>`;
+  }
+
+  const dilemmaRules = () => '<p class="fine">Both silent: 3 pts, 1 shot each · one snitches: snitch 5 pts and no shots, silent block 0 pts and 5 shots · both snitch: 1 pt, 3 shots each. Most points wins.</p>';
+
   function phonePlay(r, myTeam) {
     const pl = r.play;
     const mine = myTeam.id;
+    if (pl.kind === 'twothirds') {
+      if (pl.revealed) return `<p class="serve">${pl.drinks[mine] ? `🧠 Your block drinks <b>${pl.drinks[mine]}</b> at the bar.` : `🧠 Your block came <b>${placeName(pl.order.indexOf(mine) + 1)}</b>.`}</p>${twoThirdsResult(pl, mine)}`;
+      const p = pl.picks[mine];
+      if (p && p.n != null) return `<p>Locked in: <b>${p.n}</b>. Waiting for the other blocks: ${until(pl.deadline)}.</p>`;
+      return `<p><b>Pick a number from 0 to ${pl.max}.</b> Closest to <b>two-thirds of the average</b> of every block’s pick wins. The furthest drinks. ${until(pl.deadline)} left.</p>
+        <form data-form="twothirds" class="guess"><input id="tt_box" name="n" type="number" inputmode="numeric" min="0" max="${pl.max}" step="1" placeholder="0–${pl.max}" required /><button class="btn big">Lock it in</button></form>`;
+    }
+    if (pl.kind === 'dilemma') {
+      const head = `<p class="fine">Turn ${Math.max(1, pl.n)} of ${pl.total} · your partner: <b>${pl.partner === 'house' ? 'the House' : h(teamName(pl.partner))}</b> · ${plural(pl.scores?.[mine] || 0, 'pt')} · 🥃${pl.shots?.[mine] || 0}</p>`;
+      if (pl.state === 'ready') return `${head}<p class="serve">🐀 Each turn you and your partner secretly pick: stay silent or snitch.</p>${dilemmaRules()}`;
+      if (pl.state === 'open' && !pl.mine) return `${head}<p><b>Stay silent or snitch?</b> ${until(pl.deadline)} left.</p><div class="answers two"><button class="answer" data-act="answer" data-value="silent" data-confirm="Stay silent?">🤐 Stay Silent</button><button class="answer" data-act="answer" data-value="snitch" data-confirm="Snitch?">🐀 Snitch</button></div>${dilemmaRules()}`;
+      if (pl.state === 'open') return `${head}<p class="serve">You picked <b>${PD_WORD[pl.mine]}</b>. Waiting for the others: ${until(pl.deadline)}.</p>`;
+      return `${head}${dilemmaTurn(pl, pl.n, mine)}${dilemmaScores(pl, mine)}`;
+    }
     if (pl.kind === 'coldwar') {
       if (pl.revealed) return `<p class="serve">${pl.drinks[mine] ? `🧊 Your block drinks <b>${pl.drinks[mine]}</b> at the bar.` : '🧊 Your block drinks nothing. Cold.'}</p>${coldWarResult(pl, mine)}`;
       const bid = pl.bids[mine];
@@ -2018,6 +2055,15 @@
 
   function tvPlay(r) {
     const pl = r.play;
+    if (pl.kind === 'twothirds') {
+      if (pl.revealed) return `<p class="tv-big">🧠 Two-thirds of ${pl.average} is ${pl.target}</p>${twoThirdsResult(pl)}`;
+      return `<p class="tv-big">🧠 Pick 0–${pl.max}: closest to two-thirds of the average wins. ${until(pl.deadline)}</p>${lockedList(Object.keys(pl.picks), 'locked in')}`;
+    }
+    if (pl.kind === 'dilemma') {
+      if (pl.state === 'ready') return `<p class="tv-big">🐀 The Prisoner’s Dilemma: ${plural(pl.total, 'turn')}. Stay silent or snitch?</p>${dilemmaRules()}`;
+      if (pl.state === 'open') return `<p class="tv-big">🐀 Turn ${pl.n}: stay silent or snitch? ${until(pl.deadline)}</p>${lockedList(pl.picked, 'picked')}`;
+      return `<p class="tv-big">🐀 Turn ${pl.n} of ${pl.total}</p>${dilemmaTurn(pl, pl.n)}${dilemmaScores(pl)}`;
+    }
     if (pl.kind === 'coldwar') {
       if (pl.revealed) return `<p class="tv-big">🧊 The numbers are in</p>${coldWarResult(pl)}`;
       return `<p class="tv-big">🧊 Every block picks its shots in secret: ${until(pl.deadline)}</p>${lockedList(Object.keys(pl.bids), 'locked in')}`;
@@ -2045,6 +2091,25 @@
     const teams = roundTeams();
     const byHand = btn('Enter results by hand instead', 'toResults', {}, 'ghost sm', 'Stop the app game and enter placings yourself?');
     const finish = btn('🏁 Finish: place the blocks and pay prizes', 'playFinish', {}, 'big', 'Finish this game, place the blocks by score and pay the prize money?');
+    if (pl.kind === 'twothirds') {
+      return `<section class="card"><h3>🧠 ${h(r.gameName)}</h3>
+        ${pl.revealed ? `${twoThirdsResult(pl)}${finish}` : `<p>Blocks are picking 0–${pl.max} in secret: ${until(pl.deadline)} left.</p>
+          <ul class="picks">${teams.map((t) => `<li style="--c:${h(t.color)}">${chip(t)} <span>${pl.picks[t.id] ? `✅ ${pl.picks[t.id].n}` : '…'}</span></li>`).join('')}</ul>
+          <div class="row wrap">${btn('Reveal now', 'playReveal', {}, '', 'Reveal now? Blocks that haven’t picked come last and drink 1.')}</div>`}
+        <p class="fine">${byHand}</p></section>`;
+    }
+    if (pl.kind === 'dilemma') {
+      const more = pl.n < pl.total;
+      return `<section class="card"><h3>🐀 ${h(r.gameName)} · ${pl.n ? `turn ${pl.n} of ${pl.total}` : `${plural(pl.total, 'turn')}`}</h3>
+        <p class="fine">Pairs: ${pl.pairs.map(([a, b]) => `${h(teamName(a))} vs ${b === 'house' ? 'the House' : h(teamName(b))}`).join(' · ')}</p>
+        ${pl.state === 'open'
+          ? `<p>Picking: ${until(pl.deadline)} left · ${plural(pl.picked.length, 'block')} of ${teams.length} picked</p>
+            <ul class="picks">${teams.map((t) => `<li style="--c:${h(t.color)}">${chip(t)} <span>${pl.live?.[t.id] ? PD_WORD[pl.live[t.id].choice] : '…'}</span></li>`).join('')}</ul>
+            ${btn('Reveal this turn now', 'playReveal', {}, '', 'Reveal now? Blocks that haven’t picked stay silent.')}`
+          : `${pl.n ? dilemmaTurn(pl, pl.n) : dilemmaRules()}<div class="row wrap">${more ? btn(pl.n ? `▶ Open turn ${pl.n + 1}` : '▶ Open turn 1', 'playNext', {}, 'big') : ''}${pl.n ? finish : ''}</div>`}
+        ${pl.n ? dilemmaScores(pl) : ''}
+        <p class="fine">${byHand}</p></section>`;
+    }
     if (pl.kind === 'coldwar') {
       return `<section class="card"><h3>🧊 Cold War drinking</h3>
         ${pl.revealed ? `${coldWarResult(pl)}${finish}` : `<p>Blocks are picking 1–${pl.max} shots in secret: ${until(pl.deadline)} left.</p>
@@ -2933,8 +2998,8 @@
           <label>Name<input id="g_name" name="name" maxlength="60" required placeholder="Flip Cup Prison Riot" /></label>
           <label>Description<input id="g_desc" name="desc" maxlength="200" placeholder="Best of 3. Winner +30." /></label>
           <label>Players per block (0 = group game, everyone plays)<input id="g_pn" name="playersNeeded" type="number" min="0" max="10" value="1" /></label>
-          <label>Run by<select id="g_rb" name="runBy">${[['host', '🧑‍⚖️ Hosts (you enter the results)'], ['coldwar', '🧊 App: Cold War drinking'], ['trivia', '❓ App: Trivia'], ['lying', '🤥 App: Is Jason lying?'], ['anime', '🎵 App: Anime openings (typed, first right answer wins)']].map(([k, l]) => `<option value="${k}" ${('host') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-          <label>Stories (Is Jason lying?)<input id="g_st" name="stories" type="number" min="1" max="20" value="${h(5)}" /></label>
+          <label>Run by<select id="g_rb" name="runBy">${[['host', '🧑‍⚖️ Hosts (you enter the results)'], ['coldwar', '🧊 App: Cold War drinking'], ['trivia', '❓ App: Trivia'], ['lying', '🤥 App: Is Jason lying?'], ['dilemma', '🐀 App: Prisoner’s Dilemma'], ['twothirds', '🧠 App: Two-Thirds of the Average'], ['anime', '🎵 App: Anime openings (typed, first right answer wins)']].map(([k, l]) => `<option value="${k}" ${('host') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+          <label>Stories (Is Jason lying?) / turns (Prisoner’s Dilemma)<input id="g_st" name="stories" type="number" min="1" max="20" value="${h(5)}" /></label>
           <label class="span2">❓ Trivia questions, one per line: Question | answer | answer | answer | answer | right one (A–D)<textarea id="g_tq" name="questions" rows="4" placeholder="Capital of France? | Paris | Rome | Oslo | Madrid | A">${h('')}</textarea></label>
           <label class="span2">🎵 Anime openings, one per line: Label | the anime | other spellings you’ll accept<textarea id="g_op" name="openings" rows="3" placeholder="Opening 1 | Attack on Titan | Shingeki no Kyojin | AoT"></textarea></label>
           <label class="span2">📋 How to play (shown on every phone when the game goes live)<textarea id="g_rules" name="rules" rows="5" maxlength="1200" placeholder="Each block lines up on one side of the table.&#10;Drink, then flip your cup from the edge.&#10;Next person goes when the cup lands upside down.&#10;First block to finish wins."></textarea></label>
@@ -2960,8 +3025,8 @@
                 <label>Name<input id="ge_${g.id}_name" name="name" value="${h(g.name)}" maxlength="60" /></label>
                 <label>Description<input id="ge_${g.id}_desc" name="desc" value="${h(g.desc)}" maxlength="200" /></label>
                 <label>Players per block (0 = group game)<input id="ge_${g.id}_pn" name="playersNeeded" type="number" min="0" max="10" value="${h(g.playersNeeded ?? 1)}" /></label>
-                <label>Run by<select id="ge_${g.id}_rb" name="runBy">${[['host', '🧑‍⚖️ Hosts (you enter the results)'], ['coldwar', '🧊 App: Cold War drinking'], ['trivia', '❓ App: Trivia'], ['lying', '🤥 App: Is Jason lying?'], ['anime', '🎵 App: Anime openings (typed, first right answer wins)']].map(([k, l]) => `<option value="${k}" ${(g.runBy || 'host') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-          <label>Stories (Is Jason lying?)<input id="ge_${g.id}_st" name="stories" type="number" min="1" max="20" value="${h(g.stories || 5)}" /></label>
+                <label>Run by<select id="ge_${g.id}_rb" name="runBy">${[['host', '🧑‍⚖️ Hosts (you enter the results)'], ['coldwar', '🧊 App: Cold War drinking'], ['trivia', '❓ App: Trivia'], ['lying', '🤥 App: Is Jason lying?'], ['dilemma', '🐀 App: Prisoner’s Dilemma'], ['twothirds', '🧠 App: Two-Thirds of the Average'], ['anime', '🎵 App: Anime openings (typed, first right answer wins)']].map(([k, l]) => `<option value="${k}" ${(g.runBy || 'host') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+          <label>Stories (Is Jason lying?) / turns (Prisoner’s Dilemma)<input id="ge_${g.id}_st" name="stories" type="number" min="1" max="20" value="${h(g.stories || 5)}" /></label>
           <label class="span2">❓ Trivia questions, one per line: Question | answer | answer | answer | answer | right one (A–D)<textarea id="ge_${g.id}_tq" name="questions" rows="4" placeholder="Capital of France? | Paris | Rome | Oslo | Madrid | A">${h(g.questionsText || '')}</textarea></label>
                 <label class="span2">🎵 Anime openings: Label | the anime | other spellings<textarea id="ge_${g.id}_op" name="openings" rows="3" placeholder="Opening 1 | Attack on Titan | AoT">${h(g.openingsText || '')}</textarea></label>
                 <label class="span2">📋 How to play<textarea id="ge_${g.id}_rules" name="rules" rows="5" maxlength="1200">${h(g.rules)}</textarea></label>
@@ -3579,6 +3644,13 @@
   }
 
   const FORMS = {
+    twothirds: async (data) => {
+      const res = await act('answer', { value: Number(data.n) });
+      if (res.ok) {
+        delete drafts.tt_box;
+        toast(`🧠 Locked in ${data.n}.`, 'ok');
+      }
+    },
     guess: async (data, form) => {
       const sent = data.guess;
       const res = await act('answer', { value: sent });

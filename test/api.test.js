@@ -285,7 +285,7 @@ test('an older save is stocked with the party’s games once, and their ids stay
   await store.save(state, version);
   const first = (await api.getState(host)).view.games;
   const again = (await api.getState(host)).view.games;
-  assert.equal(first.length, 14);
+  assert.equal(first.length, 16);
   assert.deepEqual(again.map((g) => g.id), first.map((g) => g.id));
   const res = await api.action({ kind: 'admin', type: 'setSlot', args: { act: 1, slot: 1, gameId: first[0].id } }, host);
   assert.equal(res.ok, true, res.error);
