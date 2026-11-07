@@ -2028,7 +2028,7 @@
     if (pl.kind === 'trivia') {
       const q = pl.question;
       const more = pl.qi + 1 < pl.count;
-      return `<section class="card"><h3>❓ Trivia · ${pl.qi < 0 ? `${plural(pl.count, 'question')} ready` : `question ${pl.qi + 1} of ${pl.count}`}</h3>
+      return `<section class="card"><h3>❓ ${h(r.gameName)} · ${pl.qi < 0 ? `${plural(pl.count, 'question')} ready` : `question ${pl.qi + 1} of ${pl.count}`}</h3>
         ${q ? `<p class="q">${h(q.q)}</p><ol class="opts">${q.options.map((o, i) => `<li class="${q.answer === i ? 'right' : ''}">${LETTERS[i]}. ${h(o)}${q.answer === i ? ' ✓' : ''}</li>`).join('')}</ol>` : ''}
         ${pl.state === 'asking' ? `<p>${plural(pl.answered.length, 'block')} of ${teams.length} answered · ${until(pl.deadline)} left</p>${btn('Reveal the answer now', 'playReveal', {}, '')}` : `<div class="row wrap">${more ? btn(pl.qi < 0 ? '▶ Ask the first question' : '▶ Next question', 'playNext', {}, 'big') : ''}${pl.qi >= 0 ? finish : ''}</div>`}
         ${pl.qi >= 0 ? scoreList(pl) : ''}
@@ -2915,6 +2915,7 @@
     return `
       <section class="card">
         <h3>Add a game to the library</h3>
+        <p class="row wrap">${btn('📥 Add the party’s games', 'loadStarterGames', {}, 'sm')}<span class="fine">Loads the 14 games on the party’s list (skips any you already have).</span></p>
         <form data-admin="addGame" class="grid2">
           <label>Name<input id="g_name" name="name" maxlength="60" required placeholder="Flip Cup Prison Riot" /></label>
           <label>Description<input id="g_desc" name="desc" maxlength="200" placeholder="Best of 3. Winner +30." /></label>

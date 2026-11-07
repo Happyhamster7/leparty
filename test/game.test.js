@@ -1775,3 +1775,17 @@ test('the night ends itself: when the last act’s final round finishes, most po
   assert.equal(g.s.winner.teamId, b.id); // B 12 beats A 7 + 3
   assert.equal(g.tvView().winner.teamId, b.id);
 });
+
+test('the party’s games load into the library once, with how each is run', () => {
+  const g = new Game();
+  g.addGame({ name: 'Flip cup', playersNeeded: 0 });
+  assert.equal(g.loadStarterGames().added, 13);
+  assert.equal(g.loadStarterGames().added, 0);
+  const by = Object.fromEntries(g.s.games.map((x) => [x.name, [x.runBy, x.playersNeeded]]));
+  assert.deepEqual(by['Is Jason lying?'], ['host', 1]);
+  assert.deepEqual(by['Flip 7'], ['host', 1]);
+  assert.deepEqual(by['Anime opening guessing'], ['trivia', 0]);
+  assert.deepEqual(by['Cold War drinking'], ['coldwar', 0]);
+  assert.deepEqual(by.Trivia, ['trivia', 0]);
+  assert.equal(g.s.games.length, 14);
+});
