@@ -226,3 +226,50 @@ test('team phones over the API: claim by code, act as the block, and the old pho
   assert.equal((await api.getState({ player: two.result.token })).kind, 'player');
   assert.equal((await api.action({ kind: 'claim', code: 'ZZZZ' }, {})).ok, false);
 });
+
+test('LeParty sync over the API: hosts pick an event and sync; the TV picks up late check-ins on its own', async () => {
+  const { createLeParty } = require('../lib/leparty');
+  let roster = {
+    event: { id: 'ev1', name: 'November lockup' },
+    blocks: [{ id: 'b1', name: 'Cellblock A', colour: '#c9402f' }],
+    guests: [{ id: 'p1', name: 'Shen', blockId: 'b1' }],
+  };
+  const calls = [];
+  const fakeFetch = async (url, opts) => {
+    calls.push([url, opts.headers.Authorization]);
+    if (url.endsWith('/api/sss/events')) return { ok: true, status: 200, json: async () => ({ events: [{ id: 'ev1', name: 'November lockup' }] }) };
+    return { ok: true, status: 200, json: async () => roster };
+  };
+  const leparty = createLeParty({ LEPARTY_URL: 'https://lp.example/', LEPARTY_SECRET: 's3cret' }, fakeFetch);
+  const api = createApi({ store: new FileStore({ file: null }), pins, leparty });
+  const host = { host: (await api.action({ kind: 'login', pin: '1111' })).result.adminToken };
+  const admin = (type, args = {}) => api.action({ kind: 'admin', type, args }, host);
+  assert.equal((await api.action({ kind: 'admin', type: 'syncLeParty' }, {})).ok, false); // hosts only
+  const events = await admin('lepartyEvents');
+  assert.deepEqual(events.result.events.map((e) => e.id), ['ev1']);
+  assert.deepEqual(calls[0], ['https://lp.example/api/sss/events', 'Bearer s3cret']);
+  assert.equal((await admin('syncLeParty')).ok, false); // no event picked yet
+  await admin('updateSettings', { lepartyEventId: 'ev1' });
+  const first = await admin('syncLeParty');
+  assert.equal(first.ok, true, first.error);
+  assert.equal(first.view.lepartyConfigured, true);
+  assert.deepEqual(first.view.teams.map((t) => t.name), ['Cellblock A']);
+  // A late check-in on LeParty shows up the next time the TV polls (once 30s have passed).
+  roster = { ...roster, guests: [...roster.guests, { id: 'p2', name: 'Nora', blockId: 'b1' }] };
+  const realNow = Date.now;
+  Date.now = () => realNow() + 31000;
+  try {
+    const tv = await api.getState({ tv: true });
+    assert.deepEqual(tv.view.players.map((p) => p.name).sort(), ['Nora', 'Shen']);
+  } finally {
+    Date.now = realNow;
+  }
+  // A wrong secret is reported clearly and remembered for the hosts.
+  const bad = createLeParty({ LEPARTY_URL: 'https://lp.example', LEPARTY_SECRET: 'x' }, async () => ({ ok: false, status: 401, json: async () => ({}) }));
+  const api2 = createApi({ store: new FileStore({ file: null }), pins, leparty: bad });
+  const host2 = { host: (await api2.action({ kind: 'login', pin: '1111' })).result.adminToken };
+  await api2.action({ kind: 'admin', type: 'updateSettings', args: { lepartyEventId: 'ev1' } }, host2);
+  const r = await api2.action({ kind: 'admin', type: 'syncLeParty' }, host2);
+  assert.match(r.error, /refused the secret/);
+  assert.match((await api2.getState(host2)).view.leparty.error, /refused the secret/);
+});

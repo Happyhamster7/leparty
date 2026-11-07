@@ -86,6 +86,21 @@ Augments (Act III): Windfall (+20 now), Rich Get Richer (+5 now and an interest 
 
 Warp odds and pity are in Settings. Any shop item can be limited to one act in the Commissary tab ("On the shelf during").
 
+### Running the night on LeParty's check-in and draw
+
+LeParty (signup, RSVP, check-in at the door, the capacity-balanced draw) can feed this game directly:
+
+1. Set `LEPARTY_URL` (the LeParty site, e.g. `https://leparty.vercel.app`) and `LEPARTY_SECRET` on this deployment, and the same secret as `SSS_ROSTER_SECRET` on LeParty's. Redeploy both.
+2. In 🔐 Blocks → **🔗 LeParty**, tap **Pick the event**, choose tonight's, and **Use this event**. Its blocks (names and colours) and checked-in guests are imported, each block with its own card code.
+3. After that it **keeps itself in sync** about every 30 seconds while a host console or the TV is open (or tap **Sync now**):
+   - **Late check-ins** land on the block LeParty gives them (LeParty puts a latecomer on the lightest block), even past the block size limit, and show up in the feed: "🚔 Late check-in: Nora → Cellblock B".
+   - Guests checked in before the draw wait in Holding until LeParty gives them a block.
+   - **Moves** in LeParty move the guest here; points and credits stay with the block.
+   - Nobody is deleted mid-game: guests who drop off LeParty's list (or are flagged as having left early) are flagged in the LeParty card for a host to remove.
+   - Guests and blocks are matched by their LeParty id (or by name the first time), so syncing never duplicates anyone.
+
+Blocks hold up to **10** by default (⚙️ Settings).
+
 ### One phone per block (LeParty's format)
 
 By default each **block plays on one phone**, as in LeParty. Guests don't book in on their own phones:

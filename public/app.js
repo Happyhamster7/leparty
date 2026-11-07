@@ -2838,7 +2838,7 @@
 
   function playerRow(p, extra = '', selectable = false) {
     return `<div class="prow ${p.status}">
-      <div class="p-n">${selectable ? `<input type="checkbox" class="pick" id="sel_${p.id}" name="sel_${p.id}" aria-label="Select ${h(p.name)}" /> ` : ''}<b>${h(p.name)}</b> <span class="fine">#${h(p.inmateNo)} · ${h(roleOf(p.role)?.emoji)}${p.revealed ? ' (exposed)' : ''}${p.drinksOwed ? ` · 🍺×${p.drinksOwed}` : ''}</span> ${p.status === 'solitary' ? `<span class="chip red">🔒 ${plural(p.solitary.rounds, 'rd')}</span>` : ''}</div>
+      <div class="p-n">${selectable ? `<input type="checkbox" class="pick" id="sel_${p.id}" name="sel_${p.id}" aria-label="Select ${h(p.name)}" /> ` : ''}<b>${h(p.name)}</b>${p.fromLeParty ? ' <span title="From LeParty">🔗</span>' : ''}${p.lepartyGone ? ' <span class="chip red">not checked in on LeParty</span>' : ''} <span class="fine">#${h(p.inmateNo)} · ${h(roleOf(p.role)?.emoji)}${p.revealed ? ' (exposed)' : ''}${p.drinksOwed ? ` · 🍺×${p.drinksOwed}` : ''}</span> ${p.status === 'solitary' ? `<span class="chip red">🔒 ${plural(p.solitary.rounds, 'rd')}</span>` : ''}</div>
       <select id="pt_${p.id}" data-change="updatePlayer" data-player-id="${p.id}" name="teamId">
         <option value="">🕳️ Holding Cell</option>${S.teams.map((t) => `<option value="${t.id}" ${p.teamId === t.id ? 'selected' : ''}>${h(t.name)}</option>`).join('')}
       </select>
@@ -2850,10 +2850,33 @@
   const cardUrl = (t) => `${location.origin}/?b=${t.joinToken}`;
   const qrFor = (t) => `/qr.svg?url=${encodeURIComponent(cardUrl(t))}`;
 
+  // Run the night on LeParty's check-in and draw: pick the event, then it keeps itself in sync.
+  function lepartyCard() {
+    const lp = S.leparty || {};
+    const st = S.settings;
+    if (!S.lepartyConfigured) {
+      return `<section class="card"><h3>🔗 LeParty</h3><p class="fine">Not connected. To run tonight on LeParty’s check-in and draw, add <code>LEPARTY_URL</code> and <code>LEPARTY_SECRET</code> to this deployment (the secret must match LeParty’s <code>SSS_ROSTER_SECRET</code>), then redeploy.</p></section>`;
+    }
+    const gone = S.players.filter((p) => p.lepartyGone);
+    const events = ui.lpEvents;
+    return `<section class="card">
+      <h3>🔗 LeParty</h3>
+      ${events
+        ? `<form data-admin="updateSettings" class="row wrap"><label class="grow">Event<select id="lp_event" name="lepartyEventId"><option value="">Pick an event…</option>${events.map((e) => `<option value="${h(e.id)}" ${e.id === st.lepartyEventId ? 'selected' : ''}>${h(e.name || e.theme_title || e.id)}${e.held_on ? ` · ${h(e.held_on)}` : ''}${e.status ? ` (${h(e.status)})` : ''}</option>`).join('')}</select></label><button class="btn sm">Use this event</button></form>`
+        : `<p>${st.lepartyEventId ? `Event: <b>${h(lp.eventName || st.lepartyEventId)}</b>` : 'No event picked yet.'} <button class="btn ghost sm" data-act="lp-events">${st.lepartyEventId ? 'Change event' : 'Pick the event'}</button></p>`}
+      ${st.lepartyEventId ? `<div class="row wrap">${btn('🔄 Sync now', 'syncLeParty', {}, 'sm')}<span class="fine">${lp.lastSync ? `Last synced ${time(lp.lastSync)}. Checks again about every 30 seconds while this console or the TV is open.` : 'Not synced yet.'}</span></div>` : ''}
+      ${lp.error ? `<p class="warnbox">⚠️ ${h(lp.error)}</p>` : ''}
+      ${lp.changes?.length ? `<details class="fold"><summary>Recent changes (${lp.changes.length})</summary><ul class="roster">${lp.changes.map((c) => `<li>${h(c)}</li>`).join('')}</ul></details>` : ''}
+      ${gone.length ? `<p class="fine">⚠️ No longer checked in on LeParty: ${gone.map((p) => `${h(p.name)} ${btn('Remove', 'removePlayer', { playerId: p.id }, 'ghost xs', `Remove ${p.name} from tonight?`)}`).join(' · ')}</p>` : ''}
+      <p class="fine">Blocks and checked-in guests come from LeParty. Late check-ins land on the block LeParty gives them (the lightest one), moves follow LeParty, and nobody is removed mid-game: anyone who drops off is flagged here instead.</p>
+    </section>`;
+  }
+
   function aBlocks() {
     const waiting = inHolding().length;
     const team = S.settings.phoneMode === 'team';
     return `
+      ${lepartyCard()}
       <section class="card">
         <h3>🚔 Add guests</h3>
         <form data-admin="addGuests" class="grid2">
@@ -3282,6 +3305,14 @@
     senders: () => { ui.senders = !ui.senders; render(); },
     'feed-more': () => { ui.feedAll = !ui.feedAll; render(); },
     'board-open': () => { ui.board = true; render(); },
+    'lp-events': async () => {
+      const res = await admin('lepartyEvents');
+      if (res.ok) {
+        ui.lpEvents = res.result.events;
+        if (!ui.lpEvents.length) toast('LeParty has no open events.', 'warn');
+        render();
+      }
+    },
     // One printable page of block cards: QR, block name and code.
     'print-cards': () => {
       const w = window.open('', '_blank');
@@ -3432,7 +3463,11 @@
     admin: async (d) => {
       if (d.confirm && !confirm(d.confirm)) return;
       const { act: _a, type, confirm: _c, ...args } = d;
-      await admin(type, args);
+      const res = await admin(type, args);
+      if (type === 'syncLeParty' && res.ok) {
+        const c = res.result?.changes || [];
+        toast(c.length ? `🔗 ${plural(c.length, 'change')} from LeParty: ${c.slice(0, 3).join(' · ')}${c.length > 3 ? '…' : ''}` : '🔗 Already up to date with LeParty.', 'ok');
+      }
     },
   };
 
@@ -3593,6 +3628,14 @@
       const submitter = form.querySelector('button:not([type=button])[data-confirm]');
       if (submitter && !confirm(submitter.dataset.confirm)) return;
       const res = await admin(form.dataset.admin, data);
+      if (res.ok && form.querySelector('#lp_event')) {
+        // Picked the LeParty event: close the picker and pull its guests straight away.
+        ui.lpEvents = null;
+        render();
+        const sync = await admin('syncLeParty');
+        if (sync.ok) toast(`🔗 Imported from LeParty: ${plural((sync.result?.changes || []).length, 'change')}.`, 'ok');
+        return;
+      }
       if (res.ok && form.dataset.admin === 'addGuests') {
         const ta = form.querySelector('textarea');
         if (ta && ta.value === data.names) ta.value = '';

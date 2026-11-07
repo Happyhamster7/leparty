@@ -42,6 +42,7 @@ test('join puts new arrivals in the Holding Cell', () => {
 
 test('buildBlocks makes Block A/B/... of at most maxBlockSize', () => {
   const g = new Game();
+  g.updateSettings({ maxBlockSize: 5 });
   for (let i = 0; i < 14; i++) g.join(`P${i}`);
   g.buildBlocks();
   assert.equal(g.s.teams.length, 3);
@@ -500,6 +501,7 @@ test('Shot Caller renames the block; others cannot once there is a Shot Caller',
 
 test('heats: pairs with no block left alone, paid per heat, totals on the game', () => {
   const g = new Game();
+  g.updateSettings({ maxBlockSize: 5 });
   for (let i = 0; i < 15; i++) g.join(`P${i}`);
   g.buildBlocks(); // 3 blocks of 5
   g.seedTeams({ count: 2 });
@@ -1490,4 +1492,72 @@ test('block codes reach hosts only, never phones or the TV', () => {
   assert.equal(g.adminView().teams[0].joinCode, a.joinCode);
   assert.equal(g.viewFor(phone.id).teams[0].joinCode, undefined);
   assert.equal(g.tvView().teams[0].joinToken, undefined);
+});
+
+// ---------- LeParty sync ----------
+
+const roster = (blocks, guests) => ({ event: { id: 'ev1', name: 'November lockup' }, blocks, guests });
+const LB = [{ id: 'b1', name: 'Cellblock A', colour: '#c9402f' }, { id: 'b2', name: 'Cellblock B', colour: '#24477e' }];
+
+test('LeParty import: blocks and checked-in guests arrive on their blocks; syncing again changes nothing', () => {
+  const g = new Game();
+  g.s.settings.phoneMode = 'team';
+  const guests = [
+    { id: 'p1', name: 'Shen', blockId: 'b1' },
+    { id: 'p2', name: 'Edwin', blockId: 'b1' },
+    { id: 'p3', name: 'Jason', blockId: 'b2' },
+    { id: 'p4', name: 'Mia', blockId: null }, // checked in before the draw
+  ];
+  const first = g.applyRoster(roster(LB, guests));
+  assert.equal(first.changed, true);
+  const [a, b] = g.s.teams;
+  assert.deepEqual([a.name, a.color, a.lepartyId, b.name], ['Cellblock A', '#c9402f', 'b1', 'Cellblock B']);
+  assert.deepEqual(g.members(a.id).map((p) => p.name).sort(), ['Edwin', 'Shen']);
+  assert.equal(g.status(g.s.players.find((p) => p.name === 'Mia')), 'holding');
+  assert.ok(a.joinCode); // block cards work as usual
+  assert.equal(g.s.leparty.eventName, 'November lockup');
+  assert.ok(g.s.feed.some((f) => /Imported from LeParty: 4 guests on 2 blocks/.test(f.text)));
+  assert.equal(g.applyRoster(roster(LB, guests)).changed, false);
+  assert.equal(g.s.players.length, 4);
+  assert.equal(g.s.teams.length, 2);
+});
+
+test('LeParty sync: late check-ins follow LeParty’s block, even past the size limit; moves follow; leavers are only flagged', () => {
+  const g = new Game();
+  g.s.settings.phoneMode = 'team';
+  g.updateSettings({ maxBlockSize: 2 });
+  g.applyRoster(roster(LB, [{ id: 'p1', name: 'Shen', blockId: 'b1' }, { id: 'p2', name: 'Edwin', blockId: 'b1' }, { id: 'p3', name: 'Jason', blockId: 'b2' }]));
+  const [a, b] = g.s.teams;
+  a.points = 9;
+  const r = g.applyRoster(roster(LB, [
+    { id: 'p1', name: 'Shen', blockId: 'b1' },
+    { id: 'p2', name: 'Edwin', blockId: 'b2' }, // moved by the host in LeParty
+    { id: 'p4', name: 'Nora', blockId: 'b1' }, // late check-in, lightest block per LeParty
+    { id: 'p5', name: 'Kai', blockId: 'b1' }, // over the size limit: LeParty still wins
+  ]));
+  assert.deepEqual(r.changes.sort(), ['Edwin moved: Cellblock A → Cellblock B', 'Jason is no longer checked in on LeParty', 'Late check-in: Kai → Cellblock A', 'Late check-in: Nora → Cellblock A'].sort());
+  assert.deepEqual(g.members(a.id).map((p) => p.name).sort(), ['Kai', 'Nora', 'Shen']);
+  assert.equal(a.points, 9); // points stay with the block
+  const jason = g.s.players.find((p) => p.name === 'Jason');
+  assert.equal(jason.teamId, b.id); // not removed mid-game…
+  assert.equal(g.adminView().players.find((p) => p.name === 'Jason').lepartyGone, true); // …just flagged
+  assert.ok(g.s.feed.some((f) => /Late check-in: Nora → Cellblock A/.test(f.text)));
+  // A guest the hosts already added by hand is linked by name, not duplicated.
+  const g2 = new Game();
+  g2.s.settings.phoneMode = 'team';
+  g2.addGuests({ names: 'Shen' });
+  g2.applyRoster(roster(LB, [{ id: 'p1', name: 'shen', blockId: 'b1' }]));
+  assert.equal(g2.s.players.length, 1);
+  assert.equal(g2.s.players[0].lepartyId, 'p1');
+});
+
+test('blocks hold up to 10 by default, and saves on the old default of 5 move up', () => {
+  assert.equal(new Game().s.settings.maxBlockSize, 10);
+  const old = structuredClone(new Game().s);
+  old.settings.maxBlockSize = 5;
+  delete old.settings.blockSize10;
+  assert.equal(new Game(old).s.settings.maxBlockSize, 10);
+  const custom = structuredClone(old);
+  custom.settings.maxBlockSize = 7;
+  assert.equal(new Game(custom).s.settings.maxBlockSize, 7);
 });
