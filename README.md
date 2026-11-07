@@ -5,7 +5,7 @@ A jailhouse-themed party game web app for a birthday night. Everyone plays from 
 It mixes two things:
 
 - **Survivor-style blocks.** Guests are split into teams of 4–5 called *Block A, Block B…*. The Warden runs games and pays winning blocks in commissary credits.
-- **Prison commissary.** Each block spends its shared budget on mixers, drinks for other blocks, punishments, bail bonds and contraband.
+- **Prison commissary.** Each block spends its shared budget on drinks for other blocks, power-ups and punishments.
 
 Plus one place nobody wants to be:
 
@@ -156,7 +156,10 @@ The gossip feed is on the TV only. The four-act lineups keep their own game-styl
 | Send a drink    | A gift for another block or the Holding Cell, delivered by the Warden                                                                                         |
 | Punishment      | The target block gets a pulsing alert: **Take it** or **🔄 Deflect**. A deflect bounces it back to the sender, who can deflect again. The **Holding Cell can't deflect**, so it lands immediately. Penalty drinks (e.g. Shot Penalty = 1 each) go straight onto the drink tab, and credit drains (Shakedown −15) are charged automatically. The rest goes to the Warden to enforce. |
 | Bail bond       | 🔑 Pull a specific inmate out of the Holding Cell onto your block (blocks max out at 5, which is configurable)                                                 |
+| No Chasers      | 🚫 $50. Every drink your block sends this round is poured neat (covers drinks already sent this round and not yet poured). The bar's pour list, the receiving block's phone and the TV's bar tile all flag it. |
 | Deflect card    | Into your block's stash. Other blocks only see "a suspicious purchase".                                                                                       |
+
+**Off the shelf tonight:** mixers and ice, and the stash (Deflect Card, Bail Bond, wishes). Their mechanics still work if a host re-shows them in the 🛒 Commissary tab; without bail, hosts move people out of the Holding Cell.
 
 Hosts can add, edit, hide, price and stock-limit any item, and can refund any order.
 

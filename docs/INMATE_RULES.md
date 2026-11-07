@@ -10,7 +10,7 @@ Scan the QR code on the TV and type your name. You get an inmate number, a charg
 
 - Everyone starts in the **Holding Cell**. When the hosts build the blocks, you're moved onto one automatically.
 - Keep the tab open all night. Your phone remembers you, so closing it is fine but don't clear your browser.
-- Arrive late and you stay in the Holding Cell until a block bails you out or a host moves you.
+- Arrive late and you stay in the Holding Cell until a host moves you onto a block.
 
 ## Your phone
 
@@ -60,17 +60,15 @@ Each act also turns your phone into that game's screen: a GTA smartphone, the Ge
 
 | Item | Credits | What it does |
 | --- | --- | --- |
-| Mixers and ice | 4–10 | Lime and soda, Red Bull, juice or ice, delivered to your block |
 | Send drinks | 7–25 each | Spirit, Mystery Spirit, Soju, Wine or Mystery Cocktail for another block or the Holding Cell, 1–10 at a time. Deals: 5 or 10 Spirits / Mystery Spirits / Cocktails, or a Soju bottle (8) |
+| No Chasers | 50 | Every drink your block sends this round is taken neat: no mixer, no chaser |
 | Shot Penalty | 25 | Everyone in the target block owes 1 penalty drink |
 | Chain Gang | 20 | Target block plays the next game linked arm in arm |
 | Yard Drills | 12 | 10 push-ups or squats each for the target block |
 | Confession Booth | 15 | Target block sings a chorus of your choice |
 | Shakedown | 20 | Target block loses 15 credits |
-| Bail Bond | 30 | Pull someone out of the Holding Cell onto your block (max 5 per block) |
-| Deflect Card | 30 | Bounce a punishment back to whoever sent it |
 
-When a punishment hits your block, every phone gets an alert: **Take it** or **Deflect**. A deflected punishment can be deflected again. The Holding Cell can't deflect anything. Other blocks only see that you bought "something suspicious" when you buy a Deflect Card.
+When a punishment hits your block, every phone gets an alert: **Take it** or **Deflect**. A deflected punishment can be deflected again. The Holding Cell can't deflect anything. Punishments have no deflecting tonight: take them like a champ.
 
 ## Your block's phone
 
@@ -95,7 +93,7 @@ Late arrivals and anyone kicked off a block wait here.
 - **Rules:** play every game with your weak hand; call everyone on a block "boss". Games can add a tougher Holding Cell rule on top; it shows in the briefing.
 - **Shopping:** no account.
 - **Punishable:** by any block, and you can't deflect.
-- **Way out:** a block buys your Bail Bond, or a host moves you.
+- **Way out:** a host moves you onto a block.
 
 ## Penalty drinks and house rules
 

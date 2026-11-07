@@ -2053,8 +2053,8 @@
     } else if (r.phase === 'drinks') {
       const st = myTeam ? serveOf(r, myTeam.id) : { state: 'safe' };
       if (st.state === 'safe') body = '<p class="serve safe">Safe this round. Nobody sent your block anything.</p>';
-      else if (st.state === 'queued') body = `<p class="serve">Your block owes <b>${plural(st.s.drinks, 'drink')}</b>. You’re <b>${placeName(st.pos)}</b> in line for the bar.</p><p class="fine">${streakNote(myTeam)}.</p>`;
-      else if (st.state === 'serving') body = `<div class="serve now"><div>🍻 Your block is at the bar: <b>${plural(st.s.drinks, 'drink')}</b></div><div class="big-cd">${until(st.s.timerEndsAt)}</div><p class="fine">Finish in time for <b>${h(money(nextIncome(myTeam)))}</b>. Run out and it’s an extra shot next round, and your drink income drops back to ${h(money(0))}. Film it for the TV.</p>${canFilm() ? '<button class="btn big" data-act="shotcam">🎥 Film it</button>' : ''}</div>`;
+      else if (st.state === 'queued') body = `<p class="serve">Your block owes <b>${plural(st.s.drinks, 'drink')}</b>${st.s.neat ? ` (🚫 ${st.s.neat} neat, no chaser)` : ''}. You’re <b>${placeName(st.pos)}</b> in line for the bar.</p><p class="fine">${streakNote(myTeam)}.</p>`;
+      else if (st.state === 'serving') body = `<div class="serve now"><div>🍻 Your block is at the bar: <b>${plural(st.s.drinks, 'drink')}</b></div>${st.s.neat ? `<p class="warn-line">🚫 <b>${st.s.neat}</b> of them neat: no chaser!</p>` : ''}<div class="big-cd">${until(st.s.timerEndsAt)}</div><p class="fine">Finish in time for <b>${h(money(nextIncome(myTeam)))}</b>. Run out and it’s an extra shot next round, and your drink income drops back to ${h(money(0))}. Film it for the TV.</p>${canFilm() ? '<button class="btn big" data-act="shotcam">🎥 Film it</button>' : ''}</div>`;
       else body = `<p class="serve ${st.state}">${st.state === 'missed' ? `⏰ Out of time: an extra shot next round${st.s.streamLost ? `, and your drink income is back to ${h(money(0))}` : ''}.` : `✅ Done in time: <b>+${h(money(st.s.reward))}</b>. Next time: ${h(money(nextIncome(myTeam)))}.`}</p>`;
       const line = r.serves.filter((s) => !s.finishedAt).map((s) => `${h(teamName(s.teamId))}${s.servedAt ? ' 🍻' : ''}`);
       if (line.length) body += `<p class="fine">At the bar: ${line.join(' → ')}</p>`;
@@ -2169,7 +2169,7 @@
         const clip = clipFor(t.id);
         return `<div class="bar-tile s-${st.state}" style="--c:${h(t.color)}">
           ${clip ? `<video src="${h(clip.url)}" autoplay muted loop playsinline></video>` : ''}
-          <div class="bar-tile-t"><b>${h(t.name)}</b><span>${st.state === 'serving' ? until(st.s.timerEndsAt) : st.state === 'queued' ? `${placeName(st.pos)} in line · ${plural(st.s.drinks, 'drink')}` : st.state === 'done' ? `Done · +${h(money(st.s.reward))}` : st.state === 'missed' && st.s.streamLost ? `Out of time · income back to ${h(money(0))}` : SERVE_LABEL[st.state]}</span></div>
+          <div class="bar-tile-t"><b>${h(t.name)}</b><span>${st.state === 'serving' ? until(st.s.timerEndsAt) : st.state === 'queued' ? `${placeName(st.pos)} in line · ${plural(st.s.drinks, 'drink')}${st.s.neat ? ` · 🚫 ${st.s.neat} neat` : ''}` : st.state === 'done' ? `Done · +${h(money(st.s.reward))}` : st.state === 'missed' && st.s.streamLost ? `Out of time · income back to ${h(money(0))}` : SERVE_LABEL[st.state]}</span></div>
         </div>`;
       })
       .join('')}</div>`;
@@ -2388,14 +2388,15 @@
     const pour = (s) => `<ul class="pour">${Object.values(
       s.breakdown.reduce((acc, b) => {
         const k = b.name.replace(/^\d+× /, '').replace(/ \(.*\)$/, '');
-        acc[k] = acc[k] || { k, emoji: b.emoji, qty: 0, from: [], adjust: [] };
-        acc[k].qty += b.qty;
-        if (b.adjust) acc[k].adjust.push(b.adjust);
-        acc[k].from.push(`${b.from}${b.note ? ` “${b.note}”` : ''}`);
+        const key = b.noChaser ? `${k}|neat` : k;
+        acc[key] = acc[key] || { k, emoji: b.emoji, qty: 0, from: [], adjust: [], neat: b.noChaser };
+        acc[key].qty += b.qty;
+        if (b.adjust) acc[key].adjust.push(b.adjust);
+        acc[key].from.push(`${b.from}${b.note ? ` “${b.note}”` : ''}`);
         return acc;
       }, {}),
     )
-      .map((x) => `<li><span class="mega">${h(x.emoji)}</span><b>${x.qty}× ${h(x.k)}</b>${x.adjust.length ? ` <span class="chip yellow">${h(x.adjust.join(', '))}</span>` : ''}${ui.senders ? `<small>${h(x.from.join(', '))}</small>` : ''}</li>`)
+      .map((x) => `<li><span class="mega">${h(x.emoji)}</span><b>${x.qty}× ${h(x.k)}</b>${x.neat ? ' <span class="chip red">🚫 no chaser</span>' : ''}${x.adjust.length ? ` <span class="chip yellow">${h(x.adjust.join(', '))}</span>` : ''}${ui.senders ? `<small>${h(x.from.join(', '))}</small>` : ''}</li>`)
       .join('')}</ul>`;
     return `<section class="card bar">
       <div class="row wrap bar-actions">
@@ -2447,7 +2448,8 @@
     const CATS = [
       ['drinks', '🍺 Drinks', ['drink', 'gift']],
       ['power', '⚡ Power-ups', ['mystery', 'ghost', 'eyespy', 'bounty', 'reflect']],
-      ['punish', '😈 Punish', ['punishment']],
+      ['punish', '😈 Punish', ['nochaser', 'punishment']],
+      // Hidden tonight unless a host puts them back on the shelf (a tab only shows when it has items).
       ['stash', '🔄 Stash', ['deflect', 'bail', 'warp']],
       ['supplies', '🧃 Supplies', ['supply']],
     ];
@@ -3382,6 +3384,7 @@
         else if (m.kind === 'self') splash('failed', `${m.emoji} ${m.qty}× ${m.drink}`, `…for your own block. It’s in this round’s drinks. 😂`, 4200);
         else splash('passed', `${m.emoji} ${m.qty}× ${m.drink}`, `…lands on ${teamName(m.targetTeamId)} this round!`, 4200);
       }
+      else if (it?.type === 'nochaser') toast('🚫 No Chasers on: every drink you send this round gets taken neat.', 'ok');
       else if (it?.type === 'ghost') toast('🕶️ Burner Phone on: every drink you send for the rest of this round is anonymous.', 'ok');
       else if (r.status === 'stashed' && ['reflect', 'eyespy', 'bounty'].includes(it?.type)) toast(`${it.emoji} Bought. It starts next round.`, 'ok');
       else if (r.status === 'stashed') toast(`${it?.emoji || ''} Stashed on your block. Shhh.`, 'ok');

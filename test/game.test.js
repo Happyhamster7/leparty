@@ -7,6 +7,8 @@ const { Game, GameError, HOLDING } = require('../lib/game');
 // n players split across 2 blocks (alternating), budgets topped up.
 function setup(n = 6) {
   const g = new Game();
+  // Supplies and the stash are off the shelf tonight, but their mechanics still work if a host re-shelves them.
+  for (const i of g.s.items) if (['supply', 'deflect', 'bail', 'warp'].includes(i.type)) i.active = true;
   g.seedTeams({ count: 2 });
   const [a, b] = g.s.teams;
   const players = [];
@@ -603,6 +605,7 @@ test('Shot Cam: block members send clips; hosts can require approval, hide and r
 
 test('The Long Night: each act renames its engine', () => {
   const g = new Game();
+  for (const i of g.s.items) if (i.type === 'warp') i.active = true; // off the shelf tonight; the act still renames it
   g.s.settings.actSet = 'longnight';
   g.seedTeams({ count: 2 });
   const [a, b] = g.s.teams;
@@ -1779,4 +1782,43 @@ test('the shop has a 90-second clock: when it runs out the shop closes and drink
   finishDrinks(g);
   const r2 = playRound(g, a, b, players);
   assert.equal(r2.shopDeadline, null, '0 = no clock');
+});
+
+test('supplies and the stash are off the shelf on a new night and on older saves; No Chasers is on it', () => {
+  const g = new Game();
+  const shelf = (game) => game.s.items.filter((i) => i.active).map((i) => i.type);
+  for (const t of ['supply', 'deflect', 'bail', 'warp']) assert.ok(!shelf(g).includes(t), `${t} hidden`);
+  assert.ok(shelf(g).includes('nochaser'));
+  const old = structuredClone(g.s);
+  old.economy = 3;
+  old.items = old.items.filter((i) => i.type !== 'nochaser').map((i) => ({ ...i, active: true }));
+  const moved = new Game(old);
+  for (const t of ['supply', 'deflect', 'bail', 'warp']) assert.ok(!shelf(moved).includes(t));
+  assert.ok(shelf(moved).includes('nochaser'));
+});
+
+test('No Chasers: everything the block sends this round is poured neat, including drinks already sent', () => {
+  const { g, a, b, players } = setup();
+  a.budget = 1000;
+  const nc = itemOf(g, 'nochaser');
+  assert.throws(() => g.buy(players[0].id, { itemId: nc.id }), /while a round is on/);
+  playRound(g, a, b, players);
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 2 }); // before buying: covered too
+  g.buy(players[0].id, { itemId: nc.id });
+  assert.throws(() => g.buy(players[0].id, { itemId: nc.id }), /already has No Chasers/);
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 3 });
+  g.buy(players[1].id, { itemId: spirit(g).id, targetTeamId: a.id, qty: 1 }); // B's own sends aren't affected
+  assert.match(g.s.feed[2].text, /No Chasers/);
+  g.startDrinks();
+  const serveB = g.tvView().round.serves.find((x) => x.teamId === b.id);
+  assert.equal(serveB.neat, 5, 'all 5 of A’s drinks are neat, and everyone can see it');
+  assert.equal(g.tvView().round.serves.find((x) => x.teamId === a.id).neat, 0);
+  g.barNext();
+  g.barNext();
+  const bd = g.adminView().round.serves.find((x) => x.teamId === b.id).breakdown;
+  assert.ok(bd.every((x) => x.noChaser));
+  finishDrinks(g);
+  playRound(g, a, b, players); // next round: back to normal
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 1 });
+  assert.equal(g.s.orders.find((o) => o.type === 'drink').noChaser, undefined);
 });
