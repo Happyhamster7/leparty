@@ -1536,6 +1536,14 @@ table.spy th, table.spy td { text-align: left; padding: 5px 6px; border-bottom: 
 .pour small { flex-basis: 100%; color: var(--muted); font-size: 13px; }
 .queue { padding-left: 22px; }
 .queue li { padding: 4px 0; }
+/* Cafeteria: one card per block, coloured edge like the bar */
+.cafe-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.cafe-grid .card { margin: 0; }
+.cafe-block { border-left: 8px solid var(--c); min-width: 0; }
+.cafe-block .cafe-n { font-weight: 800; margin-left: auto; }
+.cafe-past { opacity: 0.55; }
+.spread { justify-content: space-between; }
+.big-chip { font-size: 16px; padding: 6px 10px; }
 .queue .s-serving { font-weight: 800; }
 .queue .s-done, .queue .s-missed { opacity: 0.6; }
 /* During drinks the TV turns its right side into the bar wall: one tile per block. */

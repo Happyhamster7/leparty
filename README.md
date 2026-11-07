@@ -213,6 +213,7 @@ The Warden opens `http://localhost:3000/warden` and the Commissary Officer opens
 2. **🔐 Blocks**: "Build blocks from Holding" splits everyone into Block A, B, C… of up to 5. Late arrivals stay in Holding until a block bails them out or you parole them with the dropdown.
 3. **🏁 Games**: add the schedule with **how-to-play rules** for each game (plus an optional Holding Cell rule). Tap **Pairs** (or Threes, Fours, or a custom heat) to set matchups. **▶ Start heat** makes the game live and pops the briefing up on every phone. **🏁 Score heat** pays out each heat. **🏆 Finish & pay out** closes the game and applies the round penalties.
 4. **🧾 Orders**: your bartender queue. Tap Delivered / Enforced as you go.
+   **🍽️ Cafeteria**: how many drinks each block is getting, drink by drink, plus a pour list for the whole bar. Before drinks start it adds up everything sent so far and any penalties owed (Reflect, bonus drinks and shields only apply once drinks start); during drinks it follows the bar line and greys out blocks already served. The tab's badge is the number of drinks still to pour. Members' personal drink tab shows under each block.
 5. **⛓️ Lockup**: hand out punishments, fix the drink tab, and edit the standing rules.
 
 Environment variables:

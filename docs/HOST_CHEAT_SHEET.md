@@ -93,6 +93,7 @@ The night ends itself: when the last act's final round finishes, the block with 
 
 | Situation | Tab | Do |
 | --- | --- | --- |
+| The bar needs to know how much to pour for each block | Cafeteria | Every block's drinks by type, plus the total to pour; during drinks it follows the bar line |
 | A drink or mixer was ordered | Orders | Make it, deliver it, tap Delivered |
 | A block took a punishment | Orders | Make sure it happens, tap Enforced |
 | A block is stalling on a punishment | Orders | Force it |

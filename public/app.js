@@ -2318,12 +2318,10 @@
       </form></section>`;
   }
 
-  // The bartender's view: who's drinking, who's next and what to pour.
-  function barPanel(r) {
-    const serving = r.serves.filter((s) => s.servedAt && !s.finishedAt);
-    const next = r.serves.find((s) => !s.servedAt);
-    const pour = (s) => `<ul class="pour">${Object.values(
-      s.breakdown.reduce((acc, b) => {
+  // One row per drink: two "5× Spirit" orders from different senders pour as "10× Spirit".
+  function pourGroups(lines) {
+    return Object.values(
+      lines.reduce((acc, b) => {
         const k = b.name.replace(/^\d+× /, '').replace(/ \(.*\)$/, '');
         acc[k] = acc[k] || { k, emoji: b.emoji, qty: 0, from: [], adjust: [] };
         acc[k].qty += b.qty;
@@ -2331,9 +2329,18 @@
         acc[k].from.push(`${b.from}${b.note ? ` “${b.note}”` : ''}`);
         return acc;
       }, {}),
-    )
+    );
+  }
+  const pourList = (lines) =>
+    `<ul class="pour">${pourGroups(lines)
       .map((x) => `<li><span class="mega">${h(x.emoji)}</span><b>${x.qty}× ${h(x.k)}</b>${x.adjust.length ? ` <span class="chip yellow">${h(x.adjust.join(', '))}</span>` : ''}${ui.senders ? `<small>${h(x.from.join(', '))}</small>` : ''}</li>`)
       .join('')}</ul>`;
+
+  // The bartender's view: who's drinking, who's next and what to pour.
+  function barPanel(r) {
+    const serving = r.serves.filter((s) => s.servedAt && !s.finishedAt);
+    const next = r.serves.find((s) => !s.servedAt);
+    const pour = (s) => pourList(s.breakdown);
     return `<section class="card bar">
       <div class="row wrap bar-actions">
         ${next ? btn(`Next: ${h(teamName(next.teamId))} ▶`, 'barNext', {}, 'big') : '<p class="fine">Everyone’s been served.</p>'}
@@ -2643,8 +2650,10 @@
     const pending = S.orders.filter((o) => o.status === 'pending').length;
     const incoming = S.orders.filter((o) => o.status === 'incoming').length;
     const lockup = inHolding().length;
+    const toPour = cafeteria().toPour;
     const tabs = [
       ['round', `🎲 Round${S.round && S.round.phase !== 'done' ? ` <b class="badge">${h(S.round.phase)}</b>` : ''}`],
+      ['cafe', `🍽️ Cafeteria${toPour ? ` <b class="badge">${toPour}</b>` : ''}`],
       ['orders', `🧾 Orders${pending + incoming ? ` <b class="badge">${pending + incoming}</b>` : ''}`],
       ['money', '💰 Payouts'],
       ['lockup', `⚖️ Punish / Lockup${lockup ? ` <b class="badge grey">${lockup}</b>` : ''}`],
@@ -2655,7 +2664,7 @@
     // Games live in Setup now and Blocks in Settings; old remembered tabs land there.
     if (ui.atab === 'blocks') ui.atab = 'settings';
     if (!tabs.some(([k]) => k === ui.atab)) ui.atab = 'round';
-    const body = { round: aRound, orders: aOrders, money: aMoney, lockup: aLockup, shop: aShop, clips: aClips, settings: aSettings }[ui.atab] || aRound;
+    const body = { round: aRound, cafe: aCafeteria, orders: aOrders, money: aMoney, lockup: aLockup, shop: aShop, clips: aClips, settings: aSettings }[ui.atab] || aRound;
     return `
       <header class="top admin-top">
         <div class="top-row">
@@ -2713,6 +2722,78 @@
         ${['pending', 'incoming'].includes(o.status) ? btn('Refund', 'resolveOrder', { orderId: o.id, action: 'cancel' }, 'ghost sm', `Cancel ${o.name} and refund ${o.price} credits?`) : ''}
       </div>
     </li>`;
+  }
+
+  // The cafeteria: every block's drinks at once, so the bar can pour ahead.
+  // Before drinks start it adds up what's on order plus penalties owed; once the queue is built it follows the queue.
+  function cafeteria() {
+    const r = S.round;
+    const live = r?.phase === 'drinks';
+    const drinkItem = (name) => S.items.find((i) => i.type === 'drink' && i.name === name);
+    const rows = new Map();
+    const row = (teamId) => {
+      if (!rows.has(teamId)) rows.set(teamId, { teamId, lines: [], drinks: 0, serve: null });
+      return rows.get(teamId);
+    };
+    if (live) {
+      for (const s of r.serves) {
+        const x = row(s.teamId);
+        x.lines = s.breakdown || [];
+        x.drinks = s.drinks;
+        x.serve = serveOf(r, s.teamId);
+      }
+    } else {
+      const orders = S.orders.filter((o) => o.type === 'drink' && o.status === 'pending' && !o.queuedRound);
+      for (const o of orders) {
+        const qty = o.pourQty ?? o.qty ?? 1;
+        const x = row(o.targetTeamId);
+        x.lines.push({ emoji: o.emoji, name: o.name, qty, adjust: o.adjust || '', from: o.origin === 'admin' ? 'The hosts' : teamName(o.fromTeamId), note: o.origin ? '' : o.note });
+        x.drinks += qty;
+      }
+      for (const p of S.penaltiesOwed || []) {
+        const x = row(p.teamId);
+        x.lines.push({ emoji: drinkItem(p.drinkName)?.emoji || '🥃', name: p.drinkName, qty: p.qty, adjust: '', from: `Penalty: ${p.reason}`, note: '' });
+        x.drinks += p.qty;
+      }
+    }
+    // Personal drinks on the drink tab (Shot Penalty, host sentences, Holding Cell rounds), per block.
+    const tabOf = (teamId) => (teamId === HOLDING ? inHolding() : blockmates(teamId)).reduce((a, p) => a + (p.drinksOwed || 0), 0);
+    const blocks = [...rows.values()].filter((x) => x.drinks > 0 || (x.serve && x.serve.state !== 'safe'));
+    // Pour order: the bar's queue once it exists; before that fewest first, like the bar will be.
+    if (!live) blocks.sort((a, b) => a.drinks - b.drinks);
+    const waiting = live ? blocks.filter((x) => x.serve?.state === 'queued') : blocks;
+    const toPour = waiting.reduce((a, x) => a + x.drinks, 0);
+    const safe = [...S.teams.map((t) => t.id), ...(inHolding().length ? [HOLDING] : [])].filter((id) => !blocks.some((x) => x.teamId === id));
+    return { r, live, blocks, waiting, toPour, safe, tabOf };
+  }
+
+  function aCafeteria() {
+    const c = cafeteria();
+    const { r, live } = c;
+    const totals = pourGroups(c.waiting.flatMap((x) => x.lines));
+    const when = live ? `${h(r.label)} · drinks are on` : r && r.phase !== 'done' ? `${h(r.label)} · ${h(r.phase)}` : 'Between rounds';
+    const head = `<section class="card">
+      <div class="row wrap spread"><div><div class="eyebrow">🍽️ Cafeteria · ${when}</div><h3>${live ? 'Still to pour' : 'Coming up at the bar'}: ${plural(c.toPour, 'drink')}</h3></div>
+        <button class="btn ghost sm" data-act="senders">${ui.senders ? 'Hide senders' : 'Show senders'}</button></div>
+      ${totals.length ? `<div class="row wrap">${totals.map((x) => `<span class="chip muted big-chip">${h(x.emoji)} ${x.qty}× ${h(x.k)}</span>`).join('')}</div>` : ''}
+      <p class="fine">${live
+        ? 'Every block in tonight’s bar line, in the order they’re served. Blocks already at the bar or done are greyed out.'
+        : 'Drinks sent so far plus penalties owed, per block. These can still change: the shop may be open, and Reflect, bonus drinks and shields only apply when drinks start.'}</p>
+    </section>`;
+    const card = (x) => {
+      const t = team(x.teamId);
+      const st = x.serve?.state;
+      const tab = c.tabOf(x.teamId);
+      return `<section class="card cafe-block${live && st !== 'queued' ? ' cafe-past' : ''}" style="--c:${h(t?.color || '#888888')}">
+        <div class="bar-now-h">${targetChip(x.teamId)}<span class="cafe-n">${plural(x.drinks, 'drink')}</span>${st ? `<span class="tag">${SERVE_LABEL[st]}${st === 'queued' ? ` · #${x.serve.pos}` : ''}</span>` : ''}</div>
+        ${pourList(x.lines)}
+        ${tab ? `<p class="fine">🍺 Plus ${plural(tab, 'drink')} on members’ drink tab</p>` : ''}
+      </section>`;
+    };
+    const safeTabs = c.safe.map((id) => [id, c.tabOf(id)]).filter(([, n]) => n);
+    return `${head}
+      ${c.blocks.length ? `<div class="cafe-grid">${c.blocks.map(card).join('')}</div>` : `<section class="card"><p class="empty">Nothing to pour yet. Drinks show up here as blocks send them.</p></section>`}
+      ${c.safe.length ? `<section class="card"><h3>Nothing from the bar${live ? ' this round' : ' yet'}</h3><p>${c.safe.map((id) => h(teamName(id))).join(', ')}</p>${safeTabs.length ? `<p class="fine">On the drink tab: ${safeTabs.map(([id, n]) => `${h(teamName(id))} ${n}`).join(', ')}</p>` : ''}</section>` : ''}`;
   }
 
   function aOrders() {
