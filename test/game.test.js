@@ -1017,7 +1017,7 @@ test('Eye Spy opens at the start of the next round and shows who sent what to wh
   assert.equal(g.viewFor(players[1].id).eyeSpy, null);
 });
 
-test('bounties are staked with points: Open pays 3× the stake, Winner’s 5×; they count from next round; a miss loses the stake and costs 3 Spirit shots', () => {
+test('bounties are staked with points: send 7 in 3 rounds; Open pays 5×, Winner’s 8×; a miss loses the stake and the same again, plus 3 Spirit shots', () => {
   const { g, a, b, players } = setup();
   a.budget = b.budget = 1000;
   a.points = b.points = 40;
@@ -1026,8 +1026,8 @@ test('bounties are staked with points: Open pays 3× the stake, Winner’s 5×; 
   const winners = itemOf(g, 'bounty', (i) => i.bounty === 'winner');
   assert.equal(open.price, 0, 'bounties cost points, not cash');
   assert.throws(() => g.buy(players[1].id, { itemId: winners.id, stake: 10 }), /just won/);
-  assert.throws(() => g.buy(players[0].id, { itemId: winners.id, stake: 2 }), /Stake between 5 and 30/);
-  assert.throws(() => g.buy(players[0].id, { itemId: winners.id, stake: 31 }), /Stake between/);
+  assert.throws(() => g.buy(players[0].id, { itemId: winners.id, stake: 2 }), /Stake between 5 and 50/);
+  assert.throws(() => g.buy(players[0].id, { itemId: winners.id, stake: 51 }), /Stake between/);
   const cash = a.budget;
   g.buy(players[0].id, { itemId: winners.id, stake: 10 });
   assert.equal(a.points, 30, 'the stake leaves the score');
@@ -1041,11 +1041,13 @@ test('bounties are staked with points: Open pays 3× the stake, Winner’s 5×; 
   finishDrinks(g);
   playRound(g, a, b, players); // round 2
   const startB = b.points;
-  g.buy(players[1].id, { itemId: spirit(g).id, targetTeamId: a.id, qty: 5 }); // B hits its Open Bounty
-  assert.equal(b.points - startB, 60, '3× the 20 stake');
+  g.buy(players[1].id, { itemId: spirit(g).id, targetTeamId: a.id, qty: 5 });
+  assert.equal(b.points, startB, '5 drinks isn’t enough any more');
+  g.buy(players[1].id, { itemId: spirit(g).id, targetTeamId: a.id, qty: 2 }); // B hits its Open Bounty at 7
+  assert.equal(b.points - startB, 100, '5× the 20 stake');
   const startA = a.points;
-  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 5 }); // A hits the Winner's
-  assert.equal(a.points - startA, 50, '5× the 10 stake');
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 7 }); // A hits the Winner's
+  assert.equal(a.points - startA, 80, '8× the 10 stake');
   assert.equal(g.s.bounties.find((x) => x.teamId === a.id).status, 'hit');
   g.startDrinks();
   finishDrinks(g);
@@ -1063,6 +1065,7 @@ test('bounties are staked with points: Open pays 3× the stake, Winner’s 5×; 
   }
   const missed = g.s.bounties.filter((x) => x.teamId === a.id).pop();
   assert.equal(missed.status, 'missed');
+  assert.equal(missed.lostExtra, 15, 'a miss takes the stake again');
   playRound(g, a, b, players);
   g.startDrinks();
   const owed = g.round.serves.find((x) => x.teamId === a.id);
@@ -2002,4 +2005,48 @@ test('older saves get the two new app-run games added to their library once', ()
   assert.ok(moved.s.games.some((x) => x.runBy === 'dilemma'));
   assert.ok(moved.s.games.some((x) => x.runBy === 'twothirds'));
   assert.equal(new Game(structuredClone(moved.s)).s.games.length, moved.s.games.length, 'only once');
+});
+
+test('a missed bounty’s extra loss never takes a block below 0 points', () => {
+  const { g, a, b, players } = setup();
+  a.budget = 1000;
+  a.points = 10;
+  playRound(g, a, b, players);
+  g.buy(players[0].id, { itemId: itemOf(g, 'bounty', (i) => i.bounty === 'open').id, stake: 8 });
+  assert.equal(a.points, 2);
+  for (let i = 0; i < 4; i++) {
+    g.startDrinks();
+    finishDrinks(g);
+    playRound(g, a, b, players);
+  }
+  assert.equal(g.s.bounties[0].status, 'missed');
+  assert.equal(a.points, 0);
+});
+
+test('couldn’t finish at the bar: lose 10% of points and the drink income, but no extra shot (unlike running out of time)', () => {
+  const { g, a, b, players } = setup();
+  a.budget = b.budget = 1000;
+  a.points = 57;
+  a.drinkStream = 15;
+  playRound(g, a, b, players);
+  g.buy(players[1].id, { itemId: spirit(g).id, targetTeamId: a.id, qty: 2 });
+  g.startDrinks();
+  g.barNext();
+  assert.throws(() => g.barFail({ teamId: b.id }), /hasn’t been served/);
+  g.barFail({ teamId: a.id });
+  assert.equal(a.points, 51, '57 − 6 (10%, rounded)');
+  assert.equal(a.drinkStream, 0);
+  const s = g.tvView().round.serves.find((x) => x.teamId === a.id);
+  assert.deepEqual([s.failed, s.pointsLost], [true, 6]);
+  assert.throws(() => g.barFail({ teamId: a.id }), /already done|No round/);
+  assert.equal(g.s.penalties.filter((x) => x.teamId === a.id).length, 0, 'no extra shot next round');
+  assert.ok(!g.s.feed[0].text.includes('51') && !g.s.feed[0].text.includes('6 '), 'the feed doesn’t give the numbers away');
+  // A block with 3 points still loses at least 1.
+  playRound(g, a, b, players);
+  a.points = 3;
+  g.buy(players[1].id, { itemId: spirit(g).id, targetTeamId: a.id, qty: 1 });
+  g.startDrinks();
+  g.barNext();
+  g.barFail({ teamId: a.id });
+  assert.equal(a.points, 2);
 });

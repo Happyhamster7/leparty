@@ -89,7 +89,7 @@ The night is **4 acts × 3 rounds**: Act 1 · Round 1, Act 1 · Round 2, Act 1 �
 
 **Pace:** the Round tab shows standard drinks sent against the 400 target and where the night is heading. Running hot: lower the prizes on Results or the income step in Setup.
 
-6. **The bar:** tap **Next** to call the next block (fewest drinks first). Pour what the panel says. Tap **Done in time ✓** if they finish inside 30 seconds: that pays their drink income, $5 more than last time (the button shows the amount). If the clock runs out they owe an extra shot next round and their income drops back to $0, automatically. **Back** undoes a Next pressed by mistake. The round ends when every block is done.
+6. **The bar:** tap **Next** to call the next block (fewest drinks first). Pour what the panel says. Tap **Done in time ✓** if they finish inside 30 seconds: that pays their drink income, $5 more than last time (the button shows the amount). If the clock runs out they owe an extra shot next round and their income drops back to $0, automatically. If they give up, tap **✗ Couldn't finish**: they lose 10% of their points and their income, but no extra shot. **Back** undoes a Next pressed by mistake. The round ends when every block is done.
 
 The night ends itself: when the last act's final round finishes, the block with the most points is crowned on every screen.
 
