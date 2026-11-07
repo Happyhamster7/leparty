@@ -1837,34 +1837,41 @@ test('an older save’s Soju becomes Soju Shot, with a separate Soju Bottle', ()
   assert.equal(moved.s.items.find((i) => i.name === 'Soju Bottle').price, 42);
 });
 
-test('a Mystery Box can hit the Jackpot (+$40) or pickpocket $15 from another block', () => {
+test('a Mystery Box can hit the rare $100 Jackpot, or a Pickpocket that takes half the cash of a block you pick', () => {
   const { g, a, b, players } = setup();
   a.budget = 1000;
   playRound(g, a, b, players);
   g.startDrinks();
   finishDrinks(g);
   playRound(g, a, b, players); // round 2
-  // shares with Reflect available: reflect, drinks, drinks, jackpot, pickpocket
+  // shares with Reflect available (9): reflect ×2, drinks ×4, jackpot, pickpocket ×2
   let cash = a.budget;
   const jp = openBox(g, players[0].id, [0.7]).mystery;
   assert.equal(jp.kind, 'jackpot');
-  assert.equal(a.budget - cash, 40 - 30, 'pays $40 on a $30 box');
+  assert.equal(a.budget - cash, 100 - 30, 'pays $100 on a $30 box');
   assert.match(g.s.feed[0].text, /JACKPOT/);
-  cash = a.budget;
-  const bCash = b.budget;
-  const pp = openBox(g, players[0].id, [0.9, 0]).mystery;
+  // Pickpocket: rolled now, used whenever the block picks a target.
+  const pp = openBox(g, players[0].id, [0.9]).mystery;
   assert.equal(pp.kind, 'pickpocket');
-  assert.equal(pp.targetTeamId, b.id);
-  assert.equal(bCash - b.budget, 15);
-  assert.equal(a.budget - cash, 15 - 30);
-  assert.equal(b.ledger[0].amount, -15);
-  // Nothing to steal: it pays the Jackpot instead.
+  assert.equal(a.pickpockets, 1);
+  assert.equal(g.viewFor(players[0].id).teams.find((t) => t.id === a.id).pickpockets, 1);
+  assert.equal(g.viewFor(players[1].id).teams.find((t) => t.id === a.id).pickpockets, null, 'other blocks can’t see it');
+  assert.throws(() => g.pickpocket(players[1].id, { targetTeamId: a.id }), /no Pickpocket/);
+  assert.throws(() => g.pickpocket(players[0].id, { targetTeamId: a.id }), /someone else/);
+  b.budget = 81;
+  cash = a.budget;
+  const got = g.pickpocket(players[0].id, { targetTeamId: b.id });
+  assert.equal(got.amount, 40, 'half of $81, rounded down');
+  assert.equal(b.budget, 41);
+  assert.equal(a.budget - cash, 40);
+  assert.equal(a.pickpockets, 0);
+  assert.throws(() => g.pickpocket(players[0].id, { targetTeamId: b.id }), /no Pickpocket/, 'one use each');
+  // A broke block can't be picked; with nobody to rob the box pays the Jackpot instead.
+  openBox(g, players[0].id, [0.9]);
+  b.budget = 1;
+  assert.throws(() => g.pickpocket(players[0].id, { targetTeamId: b.id }), /broke/);
   b.budget = 0;
   assert.equal(openBox(g, players[0].id, [0.9]).mystery.kind, 'jackpot');
-  // A block with less than $15 loses only what it has.
-  b.budget = 6;
-  assert.equal(openBox(g, players[0].id, [0.9, 0]).mystery.amount, 6);
-  assert.equal(b.budget, 0);
 });
 
 test('Pickpocket comes up more for a block in the bottom half of the standings', () => {
@@ -1876,8 +1883,8 @@ test('Pickpocket comes up more for a block in the bottom half of the standings',
   playRound(g, a, b, players); // round 2
   a.points = 50;
   b.points = 0;
-  // Same roll, different odds: the leader has 5 shares, so 0.75 lands on index 3 (Jackpot);
-  // the trailing block has 6 (an extra Pickpocket), so it lands on index 4 (Pickpocket).
+  // Same roll, different odds: the leader has 9 shares, so 0.75 lands on index 6 (Jackpot);
+  // the trailing block has 11 (2 extra Pickpockets), so it lands on index 8 (Pickpocket).
   assert.equal(openBox(g, players[0].id, [0.75]).mystery.kind, 'jackpot');
   assert.equal(openBox(g, players[1].id, [0.75, 0]).mystery.kind, 'pickpocket');
 });

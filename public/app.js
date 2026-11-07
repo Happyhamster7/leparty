@@ -1189,6 +1189,7 @@
       ${me.device ? blockOwedCard(myTeam) : ''}
       ${me.status !== 'block' ? lockupRules(me.status, live) : ''}
       ${incomingAlerts()}
+      ${pickpocketCard(myTeam)}
       ${myTeam && !me.device ? requestsCard(myTeam) : ''}
       ${todos.length ? `<section class="card todo-card"><h3>📌 To do</h3><ul class="todos">${todos.join('')}</ul></section>` : ''}
       ${roundCard()}
@@ -1210,6 +1211,16 @@
       })
       .join('');
     return rows ? `<section class="card todo-card"><h3>📌 Owed by your block</h3><ul class="roster">${rows}</ul><p class="fine">${h(S.settings.houseRules)} The hosts tick these off.</p></section>` : '';
+  }
+
+  // A Pickpocket from a Mystery Box: pick any block and take half its cash.
+  function pickpocketCard(myTeam) {
+    if (!myTeam?.pickpockets) return '';
+    const marks = S.teams.filter((t) => t.id !== myTeam.id);
+    return `<section class="card todo-card"><h3>🫳 Pickpocket ready${myTeam.pickpockets > 1 ? ` ×${myTeam.pickpockets}` : ''}</h3>
+      <p class="fine">Pick a block to rob: you take <b>half</b> its cash. Use it now or save it for later.</p>
+      <div class="targets pick-blocks">${marks.map((t) => `<button class="target" style="--c:${h(t.color)}" data-act="pickpocket" data-team-id="${t.id}" ${t.budget < 2 ? 'disabled' : ''} data-confirm="Pickpocket ${h(t.name)} for ${h(money(Math.floor(t.budget / 2)))}?">${h(t.name)}<small class="t-who">${h(money(t.budget))} → take ${h(money(Math.floor(t.budget / 2)))}</small></button>`).join('')}</div>
+    </section>`;
   }
 
   // Between rounds: your block at a glance.
@@ -3370,6 +3381,11 @@
       markBriefSeen();
       render();
     },
+    pickpocket: async (d) => {
+      if (d.confirm && !confirm(d.confirm)) return;
+      const res = await act('pickpocket', { targetTeamId: d.teamId });
+      if (res.ok) splash('passed', '🫳 Got it!', `You lifted ${money(res.result.amount)} from ${teamName(d.teamId)}.`, 3600);
+    },
     'buy-open': (d) => { ui.sheet = { itemId: d.itemId, targetTeamId: null, targetPlayerId: null }; delete drafts.buy_note; render(); },
     'sheet-close': () => {
       if (ui.sheet) opened.delete(`buy:${ui.sheet.itemId}`);
@@ -3392,7 +3408,7 @@
       else if (r.mystery) {
         const m = r.mystery;
         if (m.kind === 'jackpot') splash('passed', '💰 JACKPOT!', `+${money(m.amount)} for your block.`, 4200);
-        else if (m.kind === 'pickpocket') splash('passed', '🫳 Pickpocket!', `You lifted ${money(m.amount)} from ${teamName(m.targetTeamId)}.`, 4200);
+        else if (m.kind === 'pickpocket') splash('passed', '🫳 Pickpocket!', 'Pick a block to rob: you take half their cash. It’s at the top of your screen.', 4200);
         else if (m.kind === 'reflect') splash('passed', '🪞 Reflect!', `Next round (${m.label}) every drink aimed at you bounces back to its sender, and you score it. Keep it quiet.`, 4200);
         else if (m.kind === 'self') splash('failed', `${m.emoji} ${m.qty}× ${m.drink}`, `…for your own block. It’s in this round’s drinks. 😂`, 4200);
         else splash('passed', `${m.emoji} ${m.qty}× ${m.drink}`, `…lands on ${teamName(m.targetTeamId)} this round!`, 4200);
