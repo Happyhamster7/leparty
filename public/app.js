@@ -1749,6 +1749,41 @@
       .join('');
   }
 
+  // The TV's Yard Gossip: this round's lines only (everything so far before the first round).
+  function tvFeed() {
+    const since = S.round?.startedAt || 0;
+    const lines = since ? S.feed.filter((f) => f.ts >= since) : S.feed.slice(0, 12);
+    if (!lines.length) return '<p class="empty">Quiet in the yard… for now.</p>';
+    return `<div class="feed-scroll" id="tv_feed"><ul class="feed">${lines
+      .slice(0, 80)
+      .map((f) => `<li class="k-${h(f.kind)}"><span class="f-e">${h(f.emoji)}</span><span class="f-t">${h(f.text)}</span><span class="f-ts">${time(f.ts)}</span></li>`)
+      .join('')}</ul></div>`;
+  }
+
+  // Slow auto-scroll for the gossip when it doesn't fit: down at a reading pace, a pause, then back to the top.
+  // The page redraws every poll, so the position lives here, not in the element.
+  const feedScroll = { y: 0, pauseUntil: 0, last: 0 };
+  function tickFeedScroll(now) {
+    const el = document.getElementById('tv_feed');
+    if (el) {
+      const max = el.scrollHeight - el.clientHeight;
+      const dt = feedScroll.last ? Math.min(100, now - feedScroll.last) : 0;
+      if (max <= 2) feedScroll.y = 0;
+      else if (now >= feedScroll.pauseUntil) {
+        feedScroll.y += dt * 0.018; // about 18px a second
+        if (feedScroll.y >= max) {
+          feedScroll.y = max;
+          feedScroll.pauseUntil = now + 4000;
+          setTimeout(() => { feedScroll.y = 0; feedScroll.pauseUntil = performance.now() + 4000; }, 4000);
+        }
+      }
+      el.scrollTop = feedScroll.y;
+    }
+    feedScroll.last = now;
+    requestAnimationFrame(tickFeedScroll);
+  }
+  requestAnimationFrame(tickFeedScroll); // a no-op anywhere but the TV
+
   function feedList(limit = 40) {
     if (!S.feed.length) return '<p class="empty">Quiet in the yard… for now.</p>';
     return `<ul class="feed">${S.feed
@@ -2084,7 +2119,7 @@
     if (S.eyeSpy) {
       const rows = S.eyeSpy.rows;
       parts.push(`<section class="card"><h3>👁️ Eye Spy</h3><p class="fine">Every drink sent up to ${time(S.eyeSpy.at)}.</p>
-        ${rows.length ? `<table class="spy"><thead><tr><th>Round</th><th>From</th><th>To</th><th>Drinks</th></tr></thead><tbody>${rows.map((x) => `<tr><td>${x.round || '–'}</td><td>${h(teamName(x.from))}</td><td>${h(teamName(x.to))}</td><td>${x.qty}</td></tr>`).join('')}</tbody></table>` : '<p class="empty">Nobody has sent anything yet.</p>'}
+        ${rows.length ? `<table class="spy"><thead><tr><th>Round</th><th>From</th><th>To</th><th>Drinks</th></tr></thead><tbody>${rows.map((x) => `<tr><td>${x.round || '–'}</td><td>${x.from === 'anonymous' ? '🕶️ Anonymous' : h(teamName(x.from))}</td><td>${h(teamName(x.to))}</td><td>${x.qty}</td></tr>`).join('')}</tbody></table>` : '<p class="empty">Nobody has sent anything yet.</p>'}
       </section>`);
     }
     return parts.join('');
@@ -2401,7 +2436,7 @@
     // One category at a time, as compact rows; tap a row for the details and the Buy button.
     const CATS = [
       ['drinks', '🍺 Drinks', ['drink', 'gift']],
-      ['power', '⚡ Power-ups', ['reflect', 'eyespy', 'bounty']],
+      ['power', '⚡ Power-ups', ['mystery', 'ghost', 'eyespy', 'bounty', 'reflect']],
       ['punish', '😈 Punish', ['punishment']],
       ['stash', '🔄 Stash', ['deflect', 'bail', 'warp']],
       ['supplies', '🧃 Supplies', ['supply']],
@@ -2559,7 +2594,7 @@
       ${ledger.length ? `<details class="card fold"><summary>🧾 Account activity</summary><ul class="roster ledger">${ledger.map((l) => `<li><span class="${l.amount < 0 ? 'red-t' : 'green-t'}">${l.amount > 0 ? '+' : ''}${l.amount}</span> ${h(l.text)} <span class="fine">${time(l.ts)}</span></li>`).join('')}</ul><p class="fine">Unexplained withdrawals happen when a snitch pulls off a sabotage.</p></details>` : ''}
       ${orders.length ? `<details class="card fold"><summary>📦 Block orders · ${orders.length}</summary><ul class="orders">${orders
         .map((o) => {
-          const dir = o.type === 'bail' ? `bailed ${h(o.targetPlayerName)}` : o.type === 'supply' ? 'for us' : o.targetTeamId === me.teamId ? `from ${h(teamName(o.fromTeamId))}` : `→ ${h(teamName(o.targetTeamId))}`;
+          const dir = o.type === 'bail' ? `bailed ${h(o.targetPlayerName)}` : o.type === 'supply' ? 'for us' : o.targetTeamId === me.teamId ? `from ${h(o.fromTeamId ? teamName(o.fromTeamId) : '🕶️ Anonymous')}}` : `→ ${h(teamName(o.targetTeamId))}`;
           return `<li class="s-${o.status}"><span>${h(o.emoji)} <b>${h(o.name)}</b> <span class="fine">${dir}${o.originalFromTeamId === me.teamId ? ` · by ${h(o.buyerName)}` : ''}</span></span><span class="tag">${ORDER_STATUS[o.status] || o.status}</span></li>`;
         })
         .join('')}</ul></details>` : ''}`;
@@ -2747,10 +2782,11 @@
 
   function orderRow(o) {
     const from = team(o.originalFromTeamId || o.fromTeamId);
+    const ghost = o.hidden ? ' <span class="chip muted" title="Sent with a Burner Phone: anonymous to everyone but the hosts">🕶️</span>' : '';
     const route = o.type === 'supply' ? targetChip(o.targetTeamId) : o.type === 'bail' ? `${chip(from)} 🔑 ${h(o.targetPlayerName)}` : `${targetChip(o.fromTeamId)} → ${targetChip(o.targetTeamId)}`;
     return `<li class="order s-${o.status}">
       <div class="o-main"><span class="mega">${h(o.emoji)}</span><div><b>${h(o.name)}</b> <span class="fine">${h(money(o.price))} · ${time(o.ts)}${o.bounces ? ` · bounced ×${o.bounces}` : ''}${o.drained ? ` · drained ${o.drained}` : ''}${o.drinks ? ` · 🍺×${o.drinks} each` : ''}</span>
-        <div>${route}</div>
+        <div>${route}${ghost}</div>
         <div class="fine">bought by ${h(o.buyerName)}${from && o.type !== 'supply' ? ` (${h(from.name)})` : ''}</div>
         ${o.note ? `<div class="note">“${h(o.note)}”</div>` : ''}</div></div>
       <div class="row">
@@ -3203,7 +3239,7 @@
             ${S.round ? tvRound() : live ? `<div class="eyebrow">🏁 Now in the yard</div><h2 class="tv-live">${h(live.name)}</h2>${live.desc ? `<p>${h(live.desc)}</p>` : ''}${tvHeat(live)}${live.rules ? `<div class="rules tv-rules">${h(live.rules)}</div>` : ''}${live.holdingRule ? `<p class="rule">🕳️ Holding: ${h(live.holdingRule)}</p>` : ''}` : next ? `<div class="eyebrow">Up next</div><h2 class="tv-live">${h(next.name)}</h2>` : `<div class="eyebrow">Yard</div><h2>Free time 🍻</h2>`}
             ${S.orders.length ? `<h3>⚠️ Incoming punishments</h3><ul class="feed">${S.orders.map((o) => `<li><span class="f-e">${h(o.emoji)}</span><span class="f-t">${h(o.name)}: ${h(teamName(o.fromTeamId))} → <b>${h(teamName(o.targetTeamId))}</b> (deciding…)</span></li>`).join('')}</ul>` : ''}
           </section>
-          ${(S.clips || []).length ? `<section class="card tv-feed tv-reel"><h2>🎥 Shot Cam</h2><div id="reel-slot"></div>${feedList(3)}</section>` : `<section class="card tv-feed"><h2>Yard Gossip</h2>${feedList(12)}${S.settings.clipsEnabled ? '<p class="fine">🎥 Film your block taking its shots in the app to get on the Shot Cam.</p>' : ''}</section>`}
+          ${(S.clips || []).length ? `<section class="card tv-feed tv-reel"><h2>🎥 Shot Cam</h2><div id="reel-slot"></div>${feedList(3)}</section>` : `<section class="card tv-feed"><h2>Yard Gossip <small class="fine">this round</small></h2>${tvFeed()}${S.settings.clipsEnabled ? '<p class="fine">🎥 Film your block taking its shots in the app to get on the Shot Cam.</p>' : ''}</section>`}
           <section class="card tv-lockup">
             <div><h3>🕳️ Holding Cell</h3><div class="tv-names">${holding.map((p) => `<span>${h(p.name)}${p.drinksOwed ? ` <b>🍺${p.drinksOwed}</b>` : ''}</span>`).join('') || '<span class="fine">empty</span>'}</div><div class="fine">${h(S.settings.holdingRules)}</div></div>
           </section>
@@ -3321,6 +3357,13 @@
       const r = res.result || {};
       if (r.status === 'requested') toast('🛒 Sent to your block. Get them to second it (or ask the Shot Caller).', 'ok');
       else if (r.warp) { /* the pull splash says it all */ }
+      else if (r.mystery) {
+        const m = r.mystery;
+        if (m.kind === 'reflect') splash('passed', '🪞 Reflect!', `Next round (${m.label}) every drink aimed at you bounces back to its sender, and you score it. Keep it quiet.`, 4200);
+        else if (m.kind === 'self') splash('failed', `${m.emoji} ${m.qty}× ${m.drink}`, `…for your own block. It’s in this round’s drinks. 😂`, 4200);
+        else splash('passed', `${m.emoji} ${m.qty}× ${m.drink}`, `…lands on ${teamName(m.targetTeamId)} this round!`, 4200);
+      }
+      else if (it?.type === 'ghost') toast('🕶️ Burner Phone on: every drink you send for the rest of this round is anonymous.', 'ok');
       else if (r.status === 'stashed' && ['reflect', 'eyespy', 'bounty'].includes(it?.type)) toast(`${it.emoji} Bought. It starts next round.`, 'ok');
       else if (r.status === 'stashed') toast(`${it?.emoji || ''} Stashed on your block. Shhh.`, 'ok');
       else if (it?.type === 'bail') toast('🔑 Bail posted. Welcome your new blockmate.', 'ok');

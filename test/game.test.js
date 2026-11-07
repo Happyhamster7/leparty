@@ -949,28 +949,54 @@ test('the bar: fewest drinks first, Next pays the senders, Back undoes it, Done 
   assert.equal(g.order(pen.orderIds[0]).name, '1× Soju');
 });
 
-test('Reflect works the round after it’s bought: drinks bounce back to their senders and score for the reflector', () => {
+// Open a Mystery Box with the dice fixed: inside the box, each Math.random() call returns the next roll.
+function openBox(g, playerId, rolls) {
+  const open = g.openMysteryBox;
+  g.openMysteryBox = (...args) => {
+    const real = Math.random;
+    const queue = [...rolls];
+    Math.random = () => (queue.length ? queue.shift() : 0);
+    try {
+      return open.apply(g, args);
+    } finally {
+      Math.random = real;
+    }
+  };
+  try {
+    return g.buy(playerId, { itemId: itemOf(g, 'mystery').id });
+  } finally {
+    delete g.openMysteryBox;
+  }
+}
+
+test('Reflect (won from a Mystery Box) works the round after: drinks bounce back to their senders and score for the reflector', () => {
   const { g, a, b, players } = setup();
   a.budget = b.budget = 1000;
-  playRound(g, a, b, players);
-  const reflect = itemOf(g, 'reflect');
-  g.buy(players[1].id, { itemId: reflect.id }); // B buys in round 1, for round 2
-  assert.throws(() => g.buy(players[0].id, { itemId: reflect.id }), /already has Reflect for next round/);
+  assert.equal(g.s.items.some((i) => i.type === 'reflect' && i.active), false, 'Reflect is off the shelf');
+  playRound(g, a, b, players); // round 1
+  assert.throws(() => openBox(g, players[1].id, [0]), /from round 2/);
+  g.startDrinks();
+  finishDrinks(g);
+  playRound(g, a, b, players); // round 2: B opens a box and wins Reflect for round 3
+  const out = openBox(g, players[1].id, [0]);
+  assert.equal(out.mystery.kind, 'reflect');
+  assert.equal(out.mystery.round, 3);
   g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 5 });
   g.startDrinks();
   assert.deepEqual(g.round.serves.map((x) => x.teamId), [b.id]); // not active yet: B drinks
   finishDrinks(g);
-  assert.equal(a.points, 17);
-  playRound(g, a, b, players); // round 2: B's Reflect is live
+  const a2 = a.points;
+  playRound(g, a, b, players); // round 3: B's Reflect is live
   g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 5 });
   g.startDrinks();
   assert.deepEqual(g.round.serves.map((x) => x.teamId), [a.id]);
+  const b3 = b.points;
   g.barNext();
-  assert.equal(b.points, 17);
-  assert.equal(a.points, 17);
+  assert.equal(b.points - b3, 17, 'the reflector scores');
+  assert.equal(a.points, a2, 'the sender doesn’t');
   g.barDone({ teamId: a.id });
   playRound(g, a, b, players);
-  assert.throws(() => g.buy(players[1].id, { itemId: reflect.id }), /already used/); // one per night
+  assert.notEqual(openBox(g, players[1].id, [0, 0, 0, 0]).mystery.kind, 'reflect', 'one Reflect per block per night');
 });
 
 test('Eye Spy opens at the start of the next round and shows who sent what to whom, round by round', () => {
@@ -1136,14 +1162,42 @@ test('other blocks can’t see your picks until they’re revealed, or who has R
   g.pickPlayers(players[1].id, { playerIds: [players[1].id] });
   g.toResults();
   g.enterResults({ placings: { [a.id]: 1 } });
-  g.buy(players[1].id, { itemId: itemOf(g, 'reflect').id });
+  g.startDrinks();
+  playRound(g, a, b, players); // round 2
+  b.budget = 1000;
+  openBox(g, players[1].id, [0]); // Reflect for round 3
   g.startDrinks();
   playRound(g, a, b, players);
   assert.equal(g.viewFor(players[0].id).round.reflectTeamId, null);
   assert.equal(g.tvView().round.reflectTeamId, null);
-  assert.deepEqual(g.adminView().reflects, [{ teamId: b.id, round: 2 }]);
+  assert.deepEqual(g.adminView().reflects, [{ teamId: b.id, round: 3 }]);
   g.startDrinks();
   assert.equal(g.tvView().round.reflectTeamId, b.id); // public once drinks start
+});
+
+test('a Mystery Box can pour 1–5 random drinks on your own block or another, which score nobody', () => {
+  const { g, a, b, players } = setup();
+  a.budget = 1000;
+  playRound(g, a, b, players);
+  g.startDrinks();
+  finishDrinks(g);
+  playRound(g, a, b, players); // round 2
+  // rolls: skip Reflect (0.9), pick the drink, qty roll 0.99 → 5, then the coin: 0.1 → own block
+  const self = openBox(g, players[0].id, [0.9, 0.4, 0.99, 0.1]).mystery;
+  assert.equal(self.kind, 'self');
+  assert.equal(self.qty, 5);
+  assert.equal(self.targetTeamId, a.id);
+  assert.ok(['Soju', 'Spirit', 'Mystery Cocktail'].includes(self.drink));
+  const other = openBox(g, players[0].id, [0.9, 0, 0, 0.9, 0]).mystery;
+  assert.equal(other.kind, 'other');
+  assert.equal(other.qty, 1);
+  assert.equal(other.targetTeamId, b.id);
+  const pointsA = a.points;
+  g.startDrinks();
+  const serveA = g.round.serves.find((x) => x.teamId === a.id);
+  assert.equal(serveA.drinks, 5, 'its own box lands on A');
+  finishDrinks(g);
+  assert.equal(a.points, pointsA, 'box drinks score nobody');
 });
 
 test('the night runs 4 acts of 3 rounds, games in schedule order, and stops after Act 4’s final round', () => {
@@ -1171,9 +1225,9 @@ test('the night runs 4 acts of 3 rounds, games in schedule order, and stops afte
 test('an old save that predates the power-ups gets them on load, and keeps them after', () => {
   const old = structuredClone(new Game().s);
   delete old.catalogue; // saved before the field existed
-  old.items = old.items.filter((i) => !['reflect', 'eyespy', 'bounty'].includes(i.type));
+  old.items = old.items.filter((i) => !['reflect', 'mystery', 'eyespy', 'bounty'].includes(i.type));
   const g = new Game(old);
-  assert.deepEqual(g.s.items.filter((i) => ['reflect', 'eyespy', 'bounty'].includes(i.type)).map((i) => i.name), ['Reflect', 'Eye Spy', 'Open Bounty', 'Winner’s Bounty']);
+  assert.deepEqual(g.s.items.filter((i) => ['mystery', 'eyespy', 'bounty'].includes(i.type)).map((i) => i.name), ['Mystery Box', 'Eye Spy', 'Open Bounty', 'Winner’s Bounty']);
   // A save stamped with an older catalogue number but missing them (the live save) is repaired too.
   const stamped = structuredClone(old);
   stamped.catalogue = 3;
@@ -1667,4 +1721,41 @@ test('an act’s final round publishes the standings', () => {
   assert.equal(g.round.final, true);
   assert.equal(g.tvView().teams.find((t) => t.id === a.id).points, a.points);
   assert.ok(a.points > 0);
+});
+
+test('a Burner Phone hides a block’s sends from when it’s bought to the end of the round, from the TV, the feed, the blocks it hits and Eye Spy', () => {
+  const { g, a, b, players } = setup();
+  a.budget = b.budget = 1000;
+  const burner = itemOf(g, 'ghost');
+  assert.throws(() => g.buy(players[0].id, { itemId: burner.id }), /while a round is on/);
+  playRound(g, a, b, players);
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 2 }); // sent before buying: stays named
+  assert.match(g.s.feed[0].text, new RegExp(`^${a.name} sent`));
+  const cash = a.budget;
+  g.buy(players[0].id, { itemId: burner.id });
+  assert.equal(cash - a.budget, burner.price);
+  assert.throws(() => g.buy(players[0].id, { itemId: burner.id }), /already anonymous/);
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 3 });
+  assert.match(g.s.feed[0].text, /^🕶️ Anonymous sent/);
+  assert.ok(!g.s.feed.slice(0, 2).some((f) => f.text.includes(a.name)), 'neither the buy nor the send names A');
+  const seenByB = g.viewFor(players[1].id).orders.filter((o) => o.type === 'drink');
+  assert.equal(seenByB.filter((o) => o.fromTeamId === null && o.buyerName === '🕶️ Anonymous').length, 1);
+  assert.equal(seenByB.filter((o) => o.fromTeamId === a.id).length, 1, 'the one sent before stays named');
+  assert.ok(g.viewFor(players[0].id).orders.filter((o) => o.type === 'drink').every((o) => o.fromTeamId === a.id), 'A still sees its own');
+  assert.ok(g.adminView().orders.filter((o) => o.type === 'drink').every((o) => o.fromTeamId === a.id), 'hosts still know');
+  g.startDrinks();
+  g.barNext();
+  const bd = g.adminView().round.serves.find((s) => s.teamId === b.id).breakdown;
+  assert.ok(bd.some((x) => x.from === '🕶️ Anonymous'), 'the bar’s Show senders list too');
+  finishDrinks(g);
+  assert.equal(a.points, 15, 'anonymous drinks still score (2 + 3 Spirits)');
+  // Next round A is visible again.
+  playRound(g, a, b, players);
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 1 });
+  assert.match(g.s.feed[0].text, new RegExp(`^${a.name} sent`));
+  // Eye Spy shows anonymous rows to other blocks.
+  b.eyeSpyAt = Date.now();
+  const rows = g.eyeSpyTable(b).rows;
+  assert.ok(rows.some((r) => r.from === 'anonymous'));
+  assert.ok(rows.some((r) => r.from === a.id));
 });

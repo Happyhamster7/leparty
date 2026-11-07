@@ -1630,3 +1630,8 @@ details.secret .mega { font-size: 40px; }
 .guess { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin: 8px 0; }
 .guess input { font-size: 18px; }
 .guess .btn.big { width: auto; }
+
+/* TV gossip: fills its card and scrolls slowly (driven from app.js) when it overflows. */
+.tv-feed { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.feed-scroll { flex: 1; min-height: 0; overflow: hidden; }
+.tv-feed h2 small { font-size: 0.5em; font-weight: 500; margin-left: 6px; }
