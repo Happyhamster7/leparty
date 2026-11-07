@@ -86,6 +86,20 @@ Augments (Act III): Windfall (+20 now), Rich Get Richer (+5 now and an interest 
 
 Warp odds and pity are in Settings. Any shop item can be limited to one act in the Commissary tab ("On the shelf during").
 
+### Creating the night (🎬 Setup)
+
+The host console opens on **🎬 Setup** until the night is created:
+
+1. **The night**: name, tagline, how many acts and rounds per act, block size, starting credits, timers, cooldown, streak rate, phones and spending.
+2. **Contestants from LeParty**: pick the party to sync guests and blocks from (see below).
+3. **Games**: the game library. Add each game once, host-run or app-run (with trivia questions or a story count); a game can be used in several rounds.
+4. **The sequence**: one column per act. Name each act, switch on its mechanics, and tap a round to choose its game.
+5. **✅ Confirm and create the night**: needs a game in every round. It locks the setup in (rounds then follow the sequence, labelled by act name, e.g. "Booking Day · Final round") and pulls the contestants in from LeParty. Rounds not played yet can still change; **Reopen setup** goes back to editing.
+
+Blocks (guests, block cards, build blocks) live in ⚙️ Settings.
+
+**Act mechanics** are the hook for per-act rules. Each mechanic is registered in `lib/game.js` with `registerMechanic(key, { name, desc, ...hooks })`; the engine calls its hooks while an act that switched it on is running: `actStart`, `roundStart`, `results`, `drinksStart`, `price` (what a block pays) and `points` (what a served drink scores). Registered mechanics appear as checkboxes on each act in Setup, and phones and the TV show the act's active mechanics under the round title.
+
 ### Host-run and app-run games
 
 Every game in 🏁 Games has a **Run by** setting:

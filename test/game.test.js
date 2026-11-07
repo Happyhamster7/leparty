@@ -1671,3 +1671,89 @@ test('an app-run game can still be finished by hand', () => {
   g.enterResults({ placings: { [teams[1].id]: 1, [teams[0].id]: 2 } });
   assert.equal(r.winnerTeamId, teams[1].id);
 });
+
+// ---------- the night's setup and act mechanics ----------
+
+test('setup: name each act, choose a game for every round, confirm; rounds then follow the sequence', () => {
+  const g = new Game();
+  g.updateSettings({ actsCount: 2, roundsPerAct: 2 });
+  assert.equal(g.s.night.status, 'draft');
+  assert.deepEqual(g.s.night.acts.map((a) => [a.name, a.rounds.length]), [['Act 1', 2], ['Act 2', 2]]);
+  const [cup, quiz, chess, dance] = ['Flip cup', 'Trivia', 'Chess', 'Dance'].map((name) => g.addGame({ name, playersNeeded: 0 }));
+  g.renameAct({ act: 1, name: 'Booking Day' });
+  g.setSlot({ act: 1, slot: 1, gameId: chess.id });
+  g.setSlot({ act: 1, slot: 2, gameId: cup.id });
+  g.setSlot({ act: 2, slot: 1, gameId: dance.id });
+  assert.throws(() => g.confirmNight({}), /1 round still empty/);
+  g.setSlot({ act: 2, slot: 2, gameId: quiz.id });
+  g.confirmNight({});
+  assert.equal(g.s.night.status, 'live');
+  assert.deepEqual(g.s.games.map((x) => x.name), ['Chess', 'Flip cup', 'Dance', 'Trivia']);
+  // Rounds follow the sequence, labelled by the act's name.
+  const p = g.join('Shen');
+  g.seedTeams({ count: 1 });
+  g.updatePlayer({ playerId: p.id, teamId: g.s.teams[0].id });
+  const r1 = g.startRound();
+  assert.deepEqual([r1.gameName, r1.label], ['Chess', 'Booking Day · Round 1']);
+  assert.throws(() => g.setSlot({ act: 1, slot: 1, gameId: cup.id }), /already been played/);
+  g.toResults();
+  g.enterResults({ placings: { [g.s.teams[0].id]: 1 } });
+  g.startDrinks();
+  assert.deepEqual([g.startRound().gameName, g.round.label], ['Flip cup', 'Booking Day · Final round']);
+  // Growing the night keeps what's set; shrinking trims.
+  g.updateSettings({ actsCount: 3 });
+  assert.equal(g.s.night.acts[0].name, 'Booking Day');
+  assert.equal(g.s.night.acts[2].rounds.length, 2);
+});
+
+test('act mechanics: hooks run only in the acts that switch them on', () => {
+  const { registerMechanic } = require('../lib/game');
+  const seen = [];
+  registerMechanic('happyhour', {
+    name: 'Happy hour',
+    desc: 'Half-price drinks, double points.',
+    actStart: (game, act) => seen.push(`start ${act.name}`),
+    roundStart: (game, r) => seen.push(`round ${r.number}`),
+    results: (game, r) => seen.push(`results ${r.number}`),
+    drinksStart: (game, r) => seen.push(`drinks ${r.number}`),
+    price: (game, team, item, price) => (item.type === 'drink' ? Math.ceil(price / 2) : price),
+    points: (game, order, points) => points * 2,
+  });
+  const { g, a, b, players } = setup();
+  a.budget = b.budget = 1000;
+  g.updateSettings({ actsCount: 2, roundsPerAct: 1 });
+  assert.throws(() => g.setActMechanics({ act: 1, mechanics: ['nope'] }), /Unknown mechanic/);
+  g.setActMechanics({ act: 2, mechanics: ['happyhour'] });
+  g.renameAct({ act: 2, name: 'Happy Hour' });
+  const spirit = itemOf(g, 'drink', (i) => i.name === 'Spirit');
+  // Act 1: no mechanics.
+  playRound(g, a, b, players);
+  const before = a.budget;
+  g.buy(players[0].id, { itemId: spirit.id, targetTeamId: b.id, qty: 1 });
+  assert.equal(before - a.budget, 15);
+  g.startDrinks();
+  finishDrinks(g);
+  assert.equal(a.points, 3);
+  assert.deepEqual(seen, []);
+  // Act 2: Happy hour.
+  playRound(g, a, b, players);
+  const before2 = a.budget;
+  g.buy(players[0].id, { itemId: spirit.id, targetTeamId: b.id, qty: 1 });
+  assert.equal(before2 - a.budget, 8);
+  g.startDrinks();
+  finishDrinks(g);
+  assert.equal(a.points, 3 + 6);
+  assert.deepEqual(seen, ['start Happy Hour', 'round 2', 'results 2', 'drinks 2']);
+  assert.deepEqual(g.tvView().round.actMechanics, ['Happy hour']);
+  assert.equal(g.tvView().mechanicsCatalog.happyhour.name, 'Happy hour');
+});
+
+test('deleting a game from the library empties the rounds that used it', () => {
+  const g = new Game();
+  g.updateSettings({ actsCount: 1, roundsPerAct: 2 });
+  const quiz = g.addGame({ name: 'Trivia', playersNeeded: 0 });
+  g.setSlot({ act: 1, slot: 1, gameId: quiz.id });
+  g.setSlot({ act: 1, slot: 2, gameId: quiz.id });
+  g.removeGame({ gameId: quiz.id });
+  assert.deepEqual(g.s.night.acts[0].rounds, [null, null]);
+});

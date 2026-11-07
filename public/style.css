@@ -1617,3 +1617,10 @@ details.secret .mega { font-size: 40px; }
 .placings.cw li.mine { outline: 3px solid var(--orange); }
 .answers.tv { align-content: start; grid-auto-rows: min-content; }
 .answers.tv .answer { font-size: clamp(20px, 2vw, 32px); padding: 14px 18px; }
+.act-name { font-family: var(--stencil); font-size: 18px; margin-bottom: 6px; }
+.mechs { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 6px; }
+.slot.pick-slot { grid-template-columns: 92px 1fr; align-items: center; }
+.slot-select { width: 100%; padding: 6px; font-size: 14px; }
+.slot.empty { outline: 2px dashed var(--line); }
+.setup-status.live { border-left: 6px solid var(--green); }
+.act-mech { font-weight: 700; color: var(--orange2); margin: 2px 0 6px; }

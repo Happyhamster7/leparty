@@ -18,7 +18,7 @@
   let pendingRender = false;
   const ui = {
     tab: LS.get('sss_tab') || 'yard',
-    atab: LS.get('sss_atab') || 'round',
+    atab: LS.get('sss_atab') || '', // empty: Setup while the night is a draft, Round after
     sheet: null, // { itemId, targetTeamId, targetPlayerId }
     reveal: false,
     revealTask: false,
@@ -2049,7 +2049,7 @@
     if (!r) return '';
     const me = S.me;
     const myTeam = team(me.teamId);
-    const head = `<div class="eyebrow">${h(r.label)}${r.phase === 'done' ? ' · over' : ''}</div><h2>${h(r.gameName)}</h2>${r.phase === 'done' ? '' : phaseStrip(r)}`;
+    const head = `<div class="eyebrow">${h(r.label)}${r.phase === 'done' ? ' · over' : ''}</div><h2>${h(r.gameName)}</h2>${r.actMechanics?.length ? `<p class="act-mech">⚙️ ${h(r.actName)}: ${r.actMechanics.map(h).join(', ')}</p>` : ''}${r.phase === 'done' ? '' : phaseStrip(r)}`;
     let body = '';
     if (r.phase === 'game' && r.play) {
       body = myTeam && me.status === 'block' ? phonePlay(r, myTeam) : '<p>The blocks are playing on their phones.</p>';
@@ -2161,7 +2161,7 @@
   function tvRound() {
     const r = S.round;
     if (!r) return '';
-    const head = `<div class="eyebrow">${h(r.label)}${r.final ? ' 🔥' : ''}</div><h2 class="tv-live">${h(r.gameName)}</h2>${r.phase === 'done' ? '' : phaseStrip(r)}`;
+    const head = `<div class="eyebrow">${h(r.label)}${r.final ? ' 🔥' : ''}</div><h2 class="tv-live">${h(r.gameName)}</h2>${r.actMechanics?.length ? `<p class="act-mech">⚙️ ${h(r.actName)}: ${r.actMechanics.map(h).join(', ')}</p>` : ''}${r.phase === 'done' ? '' : phaseStrip(r)}`;
     if (r.phase === 'game' && r.play) return `${head}${tvPlay(r)}`;
     if (r.phase === 'game') {
       if (!r.revealedAt) return `${head}<p class="tv-big">Blocks are picking their players: ${until(r.pickDeadline)}</p>
@@ -2267,7 +2267,8 @@
       ${!r || r.phase !== 'drinks' ? assignDrinksCard() : ''}
       ${S.penaltiesOwed?.length ? `<section class="card"><h3>⏰ Owed next round</h3><ul class="roster">${S.penaltiesOwed.map((x) => `<li>${h(teamName(x.teamId))}: ${x.qty}× ${h(x.drinkName)} <span class="fine">${h(x.reason)}</span></li>`).join('')}</ul></section>` : ''}
       ${(S.bounties || []).some((b) => b.status === 'active') ? `<section class="card"><h3>🎯 Bounties running</h3><ul class="roster">${S.bounties.filter((b) => b.status === 'active').map((b) => `<li>${h(teamName(b.teamId))}: ${b.kind === 'winner' ? 'Winner’s' : 'Open'} · ${b.sent}/5 sent · last round ${b.deadlineRound}</li>`).join('')}</ul></section>` : ''}
-      ${nightPlan()}
+      ${S.night?.status === 'draft' && !r ? '<section class="card"><h3>🎬 Set up the night first</h3><p class="fine">Choose the games for each act and confirm in Setup.</p><button class="btn" data-act="atab" data-tab="setup">Go to Setup</button></section>' : ''}
+      ${nightPlan(false)}
       <section class="card">
         <h3>👑 End of the night</h3>
         <form data-admin="crownWinner" class="row wrap">
@@ -2275,6 +2276,12 @@
           <button class="btn" data-confirm="Crown this block? Every screen shows the winner.">Crown the winner</button>
         </form>
       </section>`;
+  }
+
+  // Where a library game sits in the sequence, by act name and round.
+  function usedIn(gameId) {
+    const per = S.settings.roundsPerAct;
+    return (S.night?.acts || []).flatMap((a) => a.rounds.map((gid, i) => (gid === gameId ? `${a.name} · ${i + 1 === per ? 'Final' : `R${i + 1}`}` : null))).filter(Boolean);
   }
 
   // Round n's place in the night, worked out the same way as the server.
@@ -2285,22 +2292,83 @@
   }
 
   // The whole night: every act's rounds, the games lined up for them, and how each went.
-  function nightPlan() {
-    const plan = S.plan || { acts: 4, perAct: 3, total: 12 };
+  // In Setup each round is a picker; on the Round tab it's read-only.
+  function nightPlan(editable = false) {
+    const night = S.night || { acts: [], status: 'draft' };
+    const per = S.settings.roundsPerAct;
     const played = S.rounds || [];
-    const upcoming = S.games.filter((g) => g.status !== 'done' && !played.some((x) => x.gameName === g.name && x.phase !== 'done'));
-    let u = 0;
-    const acts = Array.from({ length: plan.acts }, (_, a) => {
-      const rows = Array.from({ length: plan.perAct }, (_, i) => {
-        const n = a * plan.perAct + i + 1;
+    const catalog = Object.entries(S.mechanicsCatalog || {});
+    const gameName = (id) => S.games.find((g) => g.id === id)?.name;
+    const acts = night.acts.map((act, a) => {
+      const rows = act.rounds.map((gid, i) => {
+        const n = a * per + i + 1;
         const done = played.find((x) => x.number === n);
-        const game = done ? done.gameName : upcoming[u++]?.name;
         const state = done ? (done.phase === 'done' ? 'done' : 'live') : '';
-        return `<li class="slot ${state}"><span class="slot-l">${i + 1 === plan.perAct ? 'Final round' : `Round ${i + 1}`}</span><span class="slot-g">${game ? h(game) : '<i class="fine">no game yet</i>'}</span><span class="fine">${done?.winnerTeamId ? `🏆 ${h(teamName(done.winnerTeamId))}` : state === 'live' ? h(done.phase) : ''}</span></li>`;
+        const label = i + 1 === per ? 'Final round' : `Round ${i + 1}`;
+        if (editable && !done) {
+          return `<li class="slot pick-slot ${gid ? '' : 'empty'}"><span class="slot-l">${label}</span>
+            <select class="slot-select" id="slot_${a + 1}_${i + 1}" data-setup="slot" data-act-no="${a + 1}" data-slot="${i + 1}" aria-label="${h(act.name)} ${label}">
+              <option value="">Choose a game…</option>${S.games.map((g) => `<option value="${g.id}" ${g.id === gid ? 'selected' : ''}>${h(g.name)}${APP_RUN[g.runBy] ? ' · app' : ''}</option>`).join('')}
+            </select></li>`;
+        }
+        return `<li class="slot ${state}"><span class="slot-l">${label}</span><span class="slot-g">${h(done?.gameName || gameName(gid) || '') || '<i class="fine">no game yet</i>'}</span><span class="fine">${done?.winnerTeamId ? `🏆 ${h(teamName(done.winnerTeamId))}` : state === 'live' ? h(done.phase) : ''}</span></li>`;
       });
-      return `<div class="act-plan"><h4>Act ${a + 1}</h4><ol class="slots">${rows.join('')}</ol></div>`;
+      const mech = editable
+        ? catalog.length
+          ? `<div class="mechs">${catalog.map(([k, m]) => `<label class="check" title="${h(m.desc)}"><input type="checkbox" data-setup="mech" data-act-no="${a + 1}" data-key="${h(k)}" ${act.mechanics.includes(k) ? 'checked' : ''} /> ${h(m.name)}</label>`).join('')}</div>`
+          : '<p class="fine">Act mechanics will show up here as they’re added.</p>'
+        : act.mechanics.length
+          ? `<p class="fine">⚙️ ${act.mechanics.map((k) => h(S.mechanicsCatalog?.[k]?.name || k)).join(', ')}</p>`
+          : '';
+      const title = editable ? `<input class="act-name" id="act_name_${a + 1}" data-setup="rename" data-act-no="${a + 1}" value="${h(act.name)}" maxlength="40" aria-label="Name of act ${a + 1}" />` : `<h4>${h(act.name)}</h4>`;
+      return `<div class="act-plan">${title}${mech}<ol class="slots">${rows.join('')}</ol></div>`;
     });
-    return `<section class="card"><h3>🎬 The night: ${plan.acts} acts × ${plan.perAct} rounds</h3><p class="fine">Games play in the order of the 🏁 Games tab. Change acts and rounds per act in ⚙️ Settings.</p><div class="night-plan">${acts.join('')}</div></section>`;
+    return `<section class="card"><h3>🎬 The night: ${night.acts.length} acts × ${per} rounds</h3>
+      <p class="fine">${editable ? 'Name each act, switch on its mechanics, and tap a round to choose its game.' : night.status === 'draft' ? 'Not confirmed yet: set it up in 🎬 Setup.' : 'Rounds follow this sequence. Change future rounds in 🎬 Setup.'}</p>
+      <div class="night-plan">${acts.join('')}</div></section>`;
+  }
+
+  // ---------- host: 🎬 Setup, where the night is created ----------
+  function aSetup() {
+    const st = S.settings;
+    const night = S.night || { acts: [], status: 'draft' };
+    const empty = night.acts.reduce((n, a) => n + a.rounds.filter((x) => !x || !S.games.some((g) => g.id === x)).length, 0);
+    const live = night.status === 'live';
+    return `
+      <section class="card setup-status ${live ? 'live' : ''}">
+        ${live
+          ? `<h3>✅ The night is created</h3><p class="fine">Confirmed ${time(night.confirmedAt)}. Rounds follow the sequence below; rounds not played yet can still change.</p>${btn('Reopen setup', 'reopenNight', {}, 'ghost sm', 'Reopen the setup? Played rounds stay as they are.')}`
+          : `<h3>Create the night</h3><p class="fine">1. Settings · 2. LeParty party · 3. Games · 4. The sequence · 5. Confirm.</p>`}
+      </section>
+      <section class="card">
+        <h3>1 · The night</h3>
+        <form data-admin="updateSettings" class="grid2">
+          <label>Party name<input id="su_name" name="partyName" maxlength="40" value="${h(st.partyName)}" /></label>
+          <label>Tagline<input id="su_tag" name="tagline" maxlength="80" value="${h(st.tagline)}" /></label>
+          <label>Acts<input id="su_acts" name="actsCount" type="number" min="1" max="10" value="${st.actsCount}" /></label>
+          <label>Rounds per act (the last is the final round)<input id="su_rpa" name="roundsPerAct" type="number" min="1" max="10" value="${st.roundsPerAct}" /></label>
+          <label>Max per block<input id="su_max" name="maxBlockSize" type="number" min="2" max="12" value="${st.maxBlockSize}" /></label>
+          <label>Starting credits per block<input id="su_start" name="startingBudget" type="number" min="0" max="1000" value="${st.startingBudget}" /></label>
+          <label>Seconds to pick players<input id="su_pick" name="pickSeconds" type="number" min="15" max="300" value="${st.pickSeconds}" /></label>
+          <label>Seconds at the bar<input id="su_serve" name="serveSeconds" type="number" min="10" max="120" value="${st.serveSeconds}" /></label>
+          <label>Trivia: seconds per question<input id="su_q" name="questionSeconds" type="number" min="5" max="120" value="${st.questionSeconds}" /></label>
+          <label>Is Jason lying?: seconds to vote<input id="su_v" name="voteSeconds" type="number" min="5" max="120" value="${st.voteSeconds}" /></label>
+          <label>Games a player sits out after playing<input id="su_cd" name="cooldownGames" type="number" min="0" max="5" value="${st.cooldownGames}" /></label>
+          <label>Streak credits (× drinks finished in a row)<input id="su_streak" name="streakCredits" type="number" min="0" max="100" value="${st.streakCredits}" /></label>
+          <label>Phones<select id="su_phones" name="phoneMode"><option value="team" ${st.phoneMode === 'team' ? 'selected' : ''}>One phone per block (scan the block card)</option><option value="guest" ${st.phoneMode === 'guest' ? 'selected' : ''}>Every guest on their own phone (snitch game on)</option></select></label>
+          <label>Spending<select id="su_spend" name="spendMode">${[['anyone', 'Straight away'], ['request', 'A block decision (seconds)'], ['captain', 'Shot Caller only']].map(([k, l]) => `<option value="${k}" ${st.spendMode === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+          <button class="btn span2">Save</button>
+        </form>
+      </section>
+      <h3 class="section-h">2 · Contestants from LeParty</h3>
+      ${lepartyCard()}
+      <h3 class="section-h">3 · Games</h3>
+      ${aGames()}
+      <h3 class="section-h">4 · The sequence</h3>
+      ${nightPlan(true)}
+      ${live ? '' : `<section class="card confirm-card"><h3>5 · Confirm</h3>
+        <p>${empty ? `⚠️ ${plural(empty, 'round')} still need${empty === 1 ? 's' : ''} a game.` : '✅ Every round has a game.'}${st.lepartyEventId ? ' Confirming also pulls the contestants in from LeParty.' : ''}</p>
+        <button class="btn big" data-act="confirm-night" ${empty ? 'disabled' : ''}>✅ Confirm and create the night</button></section>`}`;
   }
 
   function assignDrinksCard() {
@@ -2732,18 +2800,21 @@
     const lockup = inHolding().length + inSolitary().length;
     const pendingClaims = S.claims.filter((c) => c.status === 'pending').length;
     const tabs = [
+      ['setup', `🎬 Setup${S.night?.status === 'draft' ? ' <b class="badge">to do</b>' : ''}`],
       ['round', `🎲 Round${S.round && S.round.phase !== 'done' ? ` <b class="badge">${h(S.round.phase)}</b>` : ''}`],
       ['orders', `🧾 Orders${pending + incoming ? ` <b class="badge">${pending + incoming}</b>` : ''}`],
       ['money', '💰 Payouts'],
-      ['games', '🏁 Games'],
-      ['blocks', '🔐 Blocks'],
       ['lockup', `⚖️ Punish / Lockup${lockup ? ` <b class="badge grey">${lockup}</b>` : ''}`],
       ['shop', '🛒 Commissary'],
       ...(S.settings.phoneMode === 'team' ? [] : [['tasks', `🕵️ Sabotage${pendingClaims ? ` <b class="badge">${pendingClaims}</b>` : ''}`], ['mafia', '🐀 Snitches']]),
       ['clips', `🎥 Clips${S.clips.filter((c) => c.status === 'pending').length ? ` <b class="badge">${S.clips.filter((c) => c.status === 'pending').length}</b>` : ''}`],
       ['settings', '⚙️ Settings'],
     ];
-    const body = { round: aRound, orders: aOrders, money: aMoney, games: aGames, blocks: aBlocks, lockup: aLockup, tasks: aTasks, shop: aShop, mafia: aMafia, clips: aClips, settings: aSettings }[ui.atab] || aRound;
+    // Games live in Setup now and Blocks in Settings; old remembered tabs land there.
+    if (ui.atab === 'games') ui.atab = 'setup';
+    if (ui.atab === 'blocks') ui.atab = 'settings';
+    if (!tabs.some(([k]) => k === ui.atab)) ui.atab = S.night?.status === 'draft' ? 'setup' : 'round';
+    const body = { setup: aSetup, round: aRound, orders: aOrders, money: aMoney, lockup: aLockup, tasks: aTasks, shop: aShop, mafia: aMafia, clips: aClips, settings: aSettings }[ui.atab] || aRound;
     return `
       <header class="top admin-top">
         <div class="top-row">
@@ -2840,7 +2911,7 @@
   function aGames() {
     return `
       <section class="card">
-        <h3>Add a game / round</h3>
+        <h3>Add a game to the library</h3>
         <form data-admin="addGame" class="grid2">
           <label>Name<input id="g_name" name="name" maxlength="60" required placeholder="Flip Cup Prison Riot" /></label>
           <label>Description<input id="g_desc" name="desc" maxlength="200" placeholder="Best of 3. Winner +30." /></label>
@@ -2856,23 +2927,16 @@
         </form>
       </section>
       <section class="card">
-        <h3>Schedule</h3>
-        <p class="fine">Finishing a game pays out credits and counts as a round: Holding Cell and Solitary owe their penalty drinks, and solitary sentences tick down.</p>
+        <h3>Game library (${S.games.length})</h3>
+        <p class="fine">Put these into rounds in the sequence below. A game can be used in more than one round.</p>
         ${S.games.length ? `<ul class="glist">${S.games
-          .map((g, i) => `<li class="g-${g.status}">
-            <div class="g-h"><span class="chip">${i < (S.plan?.total || 12) ? h(slotLabel(i + 1)) : 'Spare'}</span> <b>${h(g.name)}</b> <span class="tag">${g.status.toUpperCase()}</span> <span class="fine">${APP_RUN[g.runBy] ? `${APP_RUN[g.runBy]} · run by the app${g.runBy === 'trivia' ? ` · ${plural(g.questions?.length || 0, 'question')}` : ''}` : g.playersNeeded ? `${plural(g.playersNeeded, 'player')} per block` : 'group game'}</span></div>
+          .map((g) => `<li class="g-${g.status}">
+            <div class="g-h">${usedIn(g.id).map((l) => `<span class="chip">${h(l)}</span>`).join(' ') || '<span class="chip muted">not in the sequence</span>'} <b>${h(g.name)}</b> <span class="tag">${g.status.toUpperCase()}</span> <span class="fine">${APP_RUN[g.runBy] ? `${APP_RUN[g.runBy]} · run by the app${g.runBy === 'trivia' ? ` · ${plural(g.questions?.length || 0, 'question')}` : ''}` : g.playersNeeded ? `${plural(g.playersNeeded, 'player')} per block` : 'group game'}</span></div>
             ${g.desc ? `<div class="fine">${h(g.desc)}</div>` : ''}
             ${g.rules ? `<div class="rules small">${h(g.rules)}</div>` : '<div class="fine">⚠️ No how-to-play rules yet.</div>'}
             ${g.holdingRule ? `<div class="fine">🕳️ ${h(g.holdingRule)}</div>` : ''}${g.solitaryRule ? `<div class="fine">🔒 ${h(g.solitaryRule)}</div>` : ''}${g.sabotage ? `<div class="fine">🐀 ${h(g.sabotage)}</div>` : ''}
             ${g.results ? `<div class="fine">Paid: ${Object.entries(g.results).map(([id, n]) => `${h(teamName(id))} ${n > 0 ? '+' : ''}${n}`).join(' · ') || 'nothing'}</div>` : ''}
-            <div class="row wrap">
-              ${g.status !== 'live' ? btn('▶ Go live', 'setGameStatus', { gameId: g.id, status: 'live' }, 'sm') : btn('⏸ Back to upcoming', 'setGameStatus', { gameId: g.id, status: 'upcoming' }, 'ghost sm')}
-              ${g.status !== 'done' ? `<button class="btn sm" data-act="finish-open" data-game-id="${g.id}">🏆 Finish & pay out</button>` : btn('Reopen', 'setGameStatus', { gameId: g.id, status: 'upcoming' }, 'ghost sm')}
-              ${btn('↑', 'moveGame', { gameId: g.id, dir: -1 }, 'ghost sm')}${btn('↓', 'moveGame', { gameId: g.id, dir: 1 }, 'ghost sm')}
-              ${btn('🗑', 'removeGame', { gameId: g.id }, 'ghost sm', `Delete ${g.name}?`)}
-            </div>
-            ${ui.finishing === g.id ? finishForm(g) : ''}
-            ${heatAdmin(g)}
+            <div class="row wrap">${btn('🗑 Delete', 'removeGame', { gameId: g.id }, 'ghost sm', `Delete ${g.name}? Rounds using it go back to empty.`)}</div>
             <details>
               <summary class="fine">✏️ Edit game & rules${g.status === 'live' ? ' (saving pops the new briefing up on every phone)' : ''}</summary>
               <form data-admin="updateGame" class="grid2">
@@ -2982,11 +3046,11 @@
     </section>`;
   }
 
-  function aBlocks() {
+  function aBlocks(showLeParty = true) {
     const waiting = inHolding().length;
     const team = S.settings.phoneMode === 'team';
     return `
-      ${lepartyCard()}
+      ${showLeParty ? lepartyCard() : ''}
       <section class="card">
         <h3>🚔 Add guests</h3>
         <form data-admin="addGuests" class="grid2">
@@ -3297,19 +3361,9 @@
   function aSettings() {
     const st = S.settings;
     return `
-      <section class="card">
-        <h3>🎬 Acts and rounds</h3>
-        <form data-admin="updateSettings" class="grid2">
-          <label>Acts<input id="s_acts" name="actsCount" type="number" min="1" max="10" value="${st.actsCount}" /></label>
-          <label>Rounds per act (the last is the final round)<input id="s_rpa" name="roundsPerAct" type="number" min="1" max="10" value="${st.roundsPerAct}" /></label>
-          <label>Seconds to pick players<input id="s_pick" name="pickSeconds" type="number" min="15" max="300" value="${st.pickSeconds}" /></label>
-          <label>Seconds at the bar<input id="s_serve" name="serveSeconds" type="number" min="10" max="120" value="${st.serveSeconds}" /></label>
-          <label>Games a player sits out after playing<input id="s_cd" name="cooldownGames" type="number" min="0" max="5" value="${st.cooldownGames}" /></label>
-          <label>Streak credits (× drinks finished in a row)<input id="s_streak" name="streakCredits" type="number" min="0" max="100" value="${st.streakCredits}" /></label>
-          <label class="span2">Phones<select id="s_phones" name="phoneMode"><option value="team" ${st.phoneMode === 'team' ? 'selected' : ''}>One phone per block (scan the block card)</option><option value="guest" ${st.phoneMode === 'guest' ? 'selected' : ''}>Every guest on their own phone (snitch game on)</option></select></label>
-          <button class="btn span2">Save</button>
-        </form>
-      </section>
+      <h3 class="section-h">🔐 Blocks</h3>
+      ${aBlocks(false)}
+      <h3 class="section-h">⚙️ Everything else</h3>
       <section class="card">
         <h3>📣 PA announcement</h3>
         <form data-admin="announce" class="row wrap"><input id="ann" name="text" maxlength="200" placeholder="Everyone to the yard for Flip Cup!" required /><button class="btn sm">Broadcast</button></form>
@@ -3415,6 +3469,16 @@
     senders: () => { ui.senders = !ui.senders; render(); },
     'feed-more': () => { ui.feedAll = !ui.feedAll; render(); },
     'board-open': () => { ui.board = true; render(); },
+    'confirm-night': async () => {
+      if (!confirm('Create the night with this sequence?')) return;
+      const res = await admin('confirmNight');
+      if (!res.ok) return;
+      const sy = res.result?.synced;
+      toast(sy?.error ? `Night created, but LeParty didn’t sync: ${sy.error}` : sy ? `🎬 Night created. ${plural((sy.changes || []).length, 'change')} from LeParty.` : '🎬 Night created.', sy?.error ? 'warn' : 'ok');
+      ui.atab = 'round';
+      LS.set('sss_atab', 'round');
+      render();
+    },
     answer: async (d) => {
       if (d.confirm && !confirm(d.confirm)) return;
       await act('answer', { value: d.value });
@@ -3601,6 +3665,19 @@
 
   document.addEventListener('change', (e) => {
     const el = e.target;
+    if (el.dataset.setup) {
+      const actNo = Number(el.dataset.actNo);
+      delete drafts[el.id];
+      // A focused control holds back re-renders; let go so the grid and the Confirm button update.
+      if (el.dataset.setup !== 'rename') el.blur();
+      if (el.dataset.setup === 'rename') admin('renameAct', { act: actNo, name: el.value });
+      if (el.dataset.setup === 'slot') admin('setSlot', { act: actNo, slot: Number(el.dataset.slot), gameId: el.value });
+      if (el.dataset.setup === 'mech') {
+        const boxes = [...document.querySelectorAll(`[data-setup="mech"][data-act-no="${actNo}"]`)];
+        admin('setActMechanics', { act: actNo, mechanics: boxes.filter((b) => b.checked).map((b) => b.dataset.key).join(',') });
+      }
+      return;
+    }
     if (el.dataset.pick && S?.round) {
       const form = el.closest('form');
       ui.picks = { round: S.round.number, ids: [...form.querySelectorAll('[data-pick]:checked')].map((x) => x.dataset.pick) };
