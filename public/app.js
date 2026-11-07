@@ -2501,6 +2501,7 @@
       main = barPanel(r);
     }
     return `
+      ${costumeCard()}
       ${S.winner ? `<section class="card"><h3>👑 ${h(teamName(S.winner.teamId))} has been crowned</h3><p class="fine">The TV is showing the winner.</p>${btn('Hide the winner screen', 'clearWinner', {}, 'ghost sm')}</section>` : ''}
       ${r ? `<section class="card round-head"><div class="eyebrow">${h(r.label)}</div><h2>${h(r.gameName)}</h2>${r.phase === 'done' ? '<p class="fine">Done.</p>' : phaseStrip(r)}</section>` : ''}
       ${main}
@@ -2508,7 +2509,6 @@
       ${S.penaltiesOwed?.length ? `<section class="card"><h3>⏰ Owed next round</h3><ul class="roster">${S.penaltiesOwed.map((x) => `<li>${h(teamName(x.teamId))}: ${x.qty}× ${h(x.drinkName)} <span class="fine">${h(x.reason)}</span></li>`).join('')}</ul></section>` : ''}
       ${(S.bounties || []).some((b) => b.status === 'active') ? `<section class="card"><h3>🎯 Bounties running</h3><ul class="roster">${S.bounties.filter((b) => b.status === 'active').map((b) => `<li>${h(teamName(b.teamId))}: ${b.kind === 'winner' ? 'Winner’s' : 'Open'} · ${b.sent}/${S.bountyRules?.target || 7} sent${b.stake != null ? ` · staked ${b.stake} for ${b.stake * (b.mult || 3)}` : ''} · last round ${b.deadlineRound}</li>`).join('')}</ul></section>` : ''}
       ${S.night?.status === 'draft' && !r ? '<section class="card"><h3>🎬 Set up the night first</h3><p class="fine">Choose the games for each act and confirm in Setup.</p><button class="btn" data-act="atab" data-tab="setup">Go to Setup</button></section>' : ''}
-      ${costumeCard()}
       ${standardsCard()}
       <p class="fine center">👑 When the last act’s final round finishes, the block with the most points is crowned automatically.</p>`;
   }
@@ -2517,7 +2517,7 @@
   function costumeCard() {
     const c = S.costume || { status: 'off' };
     const st = S.settings;
-    if (c.status === 'open') return `<section class="card"><h3>👗 Costume Parade: voting open · ${plural(c.votes, 'vote')}</h3><p class="fine">The TV shows the QR code. Everyone votes best and worst on their own phone (at ${h(location.host)}/vote).</p>${btn('🏁 Close voting and reveal', 'costumeClose', {}, 'big', `Close voting and reveal? Best costume’s block +${st.costumeBestPoints ?? 10} pts; worst costume’s block owes ${plural(st.costumeWorstShots ?? 1, 'shot')}.`)}</section>`;
+    if (c.status === 'open') return `<section class="card"><h3>👗 Costume Parade: voting open · ${plural(c.votes, 'vote')}</h3><div class="row wrap costume-host"><img class="qr" src="/qr.svg?url=${encodeURIComponent(`${location.origin}/vote`)}" alt="QR code to vote" width="160" height="160" /><p class="fine">The TV shows this QR code too. Everyone votes best and worst on their own phone at <b>${h(location.host)}/vote</b>.</p></div>${btn('🏁 Close voting and reveal', 'costumeClose', {}, 'big', `Close voting and reveal? Best costume’s block +${st.costumeBestPoints ?? 10} pts; worst costume’s block owes ${plural(st.costumeWorstShots ?? 1, 'shot')}.`)}</section>`;
     if (c.status === 'closed' && c.results) return `<section class="card"><h3>👗 Costume Parade results</h3>${costumeResults(c.results)}<p class="fine">Paid: best costume’s block +${st.costumeBestPoints ?? 10} pts; worst costume’s block owes ${plural(st.costumeWorstShots ?? 1, 'Spirit shot')} next drinks.</p>${btn('Take it off the TV', 'costumeHide', {}, '')}</section>`;
     return `<section class="card"><h3>👗 Costume Parade</h3><p class="fine">Get everyone to show off their costume, then open voting: a QR code fills the TV and everyone votes best and worst on their own phone. The best costume’s block gets +${st.costumeBestPoints ?? 10} points; the worst costume’s block owes ${plural(st.costumeWorstShots ?? 1, 'shot')}.</p>${btn('👗 Open costume voting', 'costumeOpen', {}, '', 'Put the costume vote QR code on the TV?')}</section>`;
   }
