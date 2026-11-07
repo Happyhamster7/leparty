@@ -84,7 +84,7 @@ The night is **4 acts × 3 rounds**: Act 1 · Round 1, Act 1 · Round 2, Act 1 �
 2. **Explain it out loud** while blocks pick. **Reveal now** auto-picks for any block that's dawdling.
 3. **Play the game,** then tap **Game's over: enter results.**
 4. **Results:** ranking and reward are separate. Set each block's **place** (1st unlocks the Winner's Bounty); its **reward** fills in with that place's prize ($44 / 36 / 30 / 25 / 21 / 18 / 15 / 11). Lower a reward to award less (0 pays nothing), then **Pay rewards and open the shop.** App-run games fill in the places for you and wait here, so you can check the rewards before paying.
-5. **Spending:** power-ups bought now (Reflect, Eye Spy, bounties) start next round; the Round tab shows who has Reflect lined up. Give blocks a minute or two to send drinks and buy items. Then **Close shop and start drinks.**
+5. **Spending:** the shop has a 90-second clock and closes itself; tap +30 / +60 seconds if people need longer.  power-ups bought now (Reflect, Eye Spy, bounties) start next round; the Round tab shows who has Reflect lined up. Give blocks a minute or two to send drinks and buy items. Then **Close shop and start drinks.**
 **Standings:** you see live points; the TV and blocks see them as of the last act's end (a block always sees its own live).
 
 **Pace:** the Round tab shows standard drinks sent against the 400 target and where the night is heading. Running hot: lower the prizes on Results or the income step in Setup.

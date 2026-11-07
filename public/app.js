@@ -1186,7 +1186,7 @@
       ${todos.length ? `<section class="card todo-card"><h3>📌 To do</h3><ul class="todos">${todos.join('')}</ul></section>` : ''}
       ${roundCard()}
       ${matchCard()}
-      ${shopTime ? `<h3 class="section-h">🛒 The shop is open</h3>${shopTab()}` : ''}
+      ${shopTime ? `<h3 class="section-h">🛒 The shop is open${S.round?.shopDeadline ? ` <span class="shop-clock">⏱ ${until(S.round.shopDeadline)}</span>` : ''}</h3>${shopTab()}` : ''}
       ${onBlock && (shopTime || between) ? blockExtras(myTeam) : ''}
       ${onBlock && between ? blockSummary(myTeam) : ''}
       ${me.status === 'holding' ? holdingRoster() : ''}
@@ -2040,6 +2040,7 @@
       const place = r.placings[me.teamId];
       body = `${place ? `<p>Your block came <b>${placeName(place)}</b> and won <b>${h(money(r.prizes[me.teamId] || 0))}</b>.</p>` : ''}
         ${r.winnerTeamId && r.winnerTeamId === me.teamId ? `<p class="win-note">🏅 You won this game: the Winner’s Bounty (pays ${S.settings.winnerMultiplier}× your stake) is unlocked under Power-ups${(myTeam?.points || 0) < S.settings.bountyMinStake ? `, but you need ${S.settings.bountyMinStake} points to stake. Points land when your drinks are served at the bar` : ''}.</p>` : ''}
+        ${r.shopDeadline ? `<div class="serve now"><div>⏱ The shop closes in</div><div class="big-cd">${until(r.shopDeadline)}</div></div>` : ''}
         <p><b>The shop is open${flat() ? ' below' : ''}.</b> Send drinks to other blocks to score points. Power-ups you buy now start next round.</p>
         ${flat() ? '' : '<button class="btn big" data-act="tab" data-tab="shop">🛒 Go to the Commissary</button>'}`;
     } else if (r.phase === 'drinks') {
@@ -2137,7 +2138,7 @@
       return `${head}${r.isGroup ? '<p class="tv-big">Everyone plays!</p>' : pickedList(r)}${cooldownLine(r)}`;
     }
     if (r.phase === 'results') return `${head}<p class="tv-big">Results coming up…</p>${r.isGroup ? '' : pickedList(r)}`;
-    if (r.phase === 'spending') return `${head}${placingsList(r)}<p class="tv-big">🛒 The shop is open. Send your drinks.</p>`;
+    if (r.phase === 'spending') return `${head}${placingsList(r)}<p class="tv-big">🛒 The shop is open. Send your drinks.</p>${r.shopDeadline ? `<div class="big-cd">${until(r.shopDeadline)}</div>` : ''}`;
     if (r.phase === 'drinks') return `${head}${tvBarGrid(r)}`;
     return `${head}${placingsList(r)}<p class="fine">${r.number >= (S.plan?.total || 12) ? 'That’s the night. The winner is about to be crowned.' : r.final ? `That’s the end of Act ${r.act}. Act ${r.act + 1} is next.` : 'Round over. Next round soon.'}</p>`;
   }
@@ -2228,7 +2229,8 @@
       const pending = S.orders.filter((o) => o.type === 'drink' && o.status === 'pending' && !o.queuedRound);
       const by = {};
       for (const o of pending) by[o.targetTeamId] = (by[o.targetTeamId] || 0) + (o.qty || 1);
-      main = `<section class="card"><h3>🛒 Shop’s open</h3>
+      main = `<section class="card"><h3>🛒 Shop’s open${r.shopDeadline ? ` · closes in ${until(r.shopDeadline)}` : ''}</h3>
+        ${r.shopDeadline ? `<p class="fine">When the clock runs out the shop closes and the bar queue starts by itself.</p><div class="row wrap">${btn('+30 seconds', 'extendShop', { seconds: 30 }, 'ghost sm')}${btn('+60 seconds', 'extendShop', { seconds: 60 }, 'ghost sm')}</div>` : `<div class="row wrap">${btn('⏱ Start a 90-second clock', 'extendShop', { seconds: 90 }, 'ghost sm')}</div>`}
         ${placingsList(r)}
         <p>Drinks ordered so far: ${Object.entries(by).map(([id, n]) => `${h(teamName(id))} ${n}`).join(' · ') || 'none yet'}</p>
         ${(S.reflects || []).filter((x) => x.round >= r.number).map((x) => `<p>🪞 ${h(teamName(x.teamId))} has Reflect for ${h(slotLabel(x.round))}${x.round === r.number ? ' (this round)' : ''}.</p>`).join('')}
@@ -2331,6 +2333,7 @@
           <label>Max per block<input id="su_max" name="maxBlockSize" type="number" min="2" max="12" value="${st.maxBlockSize}" /></label>
           <label>Starting ${h(money('').trim() || 'credits')} per block<input id="su_start" name="startingBudget" type="number" min="0" max="1000" value="${st.startingBudget}" /></label>
           <label>Seconds to pick players<input id="su_pick" name="pickSeconds" type="number" min="15" max="300" value="${st.pickSeconds}" /></label>
+          <label>Seconds the shop stays open (0 = you close it)<input id="su_shop" name="shopSeconds" type="number" min="0" max="600" value="${st.shopSeconds ?? 90}" /></label>
           <label>Seconds at the bar<input id="su_serve" name="serveSeconds" type="number" min="10" max="120" value="${st.serveSeconds}" /></label>
           <label>Trivia: seconds per question<input id="su_q" name="questionSeconds" type="number" min="5" max="120" value="${st.questionSeconds}" /></label>
           <label>Is Jason lying?: seconds to vote<input id="su_v" name="voteSeconds" type="number" min="5" max="120" value="${st.voteSeconds}" /></label>
@@ -2813,7 +2816,7 @@
     return `
       <section class="card">
         <h3>Quick payouts</h3>
-        <div class="money">${standings()
+        <div class="money">${[...S.teams].sort((x, y) => x.name.localeCompare(y.name, undefined, { numeric: true }))
           .map((t) => `<div class="money-t" style="--c:${h(t.color)}">
             <div class="money-h"><b>${h(t.name)}</b><span><b>${h(money(t.budget))}</b> · ${h(money(t.earned))} earned · <b>${plural(t.points || 0, 'pt')}</b></span></div>
             <div class="row wrap">${[1, 5, 10, 25].map((n) => btn(`+${n}`, 'adjustBudget', { teamId: t.id, amount: n }, 'sm')).join('')}${[-5, -10].map((n) => btn(`${n}`, 'adjustBudget', { teamId: t.id, amount: n }, 'ghost sm')).join('')}

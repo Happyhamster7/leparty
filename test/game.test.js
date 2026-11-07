@@ -1759,3 +1759,24 @@ test('a Burner Phone hides a block’s sends from when it’s bought to the end 
   assert.ok(rows.some((r) => r.from === 'anonymous'));
   assert.ok(rows.some((r) => r.from === a.id));
 });
+
+test('the shop has a 90-second clock: when it runs out the shop closes and drinks start; hosts can add time', () => {
+  const { g, a, b, players } = setup();
+  a.budget = 1000;
+  const r = playRound(g, a, b, players);
+  assert.equal(r.phase, 'spending');
+  assert.ok(Math.abs(r.shopDeadline - (Date.now() + 90000)) < 2000);
+  assert.equal(g.nextDeadline(), r.shopDeadline);
+  g.extendShop({ seconds: 30 });
+  assert.ok(Math.abs(r.shopDeadline - (Date.now() + 120000)) < 2000);
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 2 });
+  assert.equal(g.tick(r.shopDeadline - 1), false, 'not yet');
+  assert.equal(g.tick(r.shopDeadline + 1), true);
+  assert.equal(r.phase, 'drinks');
+  assert.equal(g.s.settings.shopOpen, false);
+  assert.throws(() => g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id }), /closed/i);
+  g.updateSettings({ shopSeconds: 0 });
+  finishDrinks(g);
+  const r2 = playRound(g, a, b, players);
+  assert.equal(r2.shopDeadline, null, '0 = no clock');
+});
