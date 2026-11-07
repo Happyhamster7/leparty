@@ -1100,7 +1100,7 @@ test('Winner’s Bounty rewards: bonus drinks land extra on the target; fewer dr
   assert.deepEqual([pour.qty, pour.adjust], [4, '+1 bonus, −2 shield']);
 });
 
-test('drink income: starts at 0 and grows $5 each round a block finishes in time; running out of time resets it', () => {
+test('drink income: starts at 0 and grows $4 each round a block finishes in time; running out of time resets it', () => {
   const { g, a, b, players } = setup();
   a.budget = b.budget = 1000;
   const roundWith = (qty) => {
@@ -1114,25 +1114,25 @@ test('drink income: starts at 0 and grows $5 each round a block finishes in time
   roundWith(2);
   let m = before();
   g.barDone({ teamId: a.id });
-  assert.equal(a.budget - m, 5);
+  assert.equal(a.budget - m, 4);
   roundWith(3);
   m = before();
   g.barDone({ teamId: a.id });
-  assert.equal(a.budget - m, 10, 'one step more, whatever the drink count');
+  assert.equal(a.budget - m, 8, 'one step more, whatever the drink count');
   roundWith(1);
   m = before();
   g.barDone({ teamId: a.id });
-  assert.equal(a.budget - m, 15);
+  assert.equal(a.budget - m, 12);
   roundWith(1);
   g.round.serves[0].timerEndsAt = Date.now() - 1;
   g.tick();
   assert.equal(a.drinkStream, 0);
-  assert.equal(g.round.serves[0].streamLost, 15);
+  assert.equal(g.round.serves[0].streamLost, 12);
   // Back to the start: the next finish pays one step again.
   roundWith(1);
   m = before();
   g.barDone({ teamId: a.id });
-  assert.equal(a.budget - m, 5);
+  assert.equal(a.budget - m, 4);
 });
 
 test('older saves move to the new money: prizes, starting cash, bounty prices and standards', () => {
@@ -1141,8 +1141,8 @@ test('older saves move to the new money: prizes, starting cash, bounty prices an
   old.s.economy = 1;
   for (const i of old.s.items) if (i.type === 'bounty') i.price = 50;
   const g = new Game(JSON.parse(JSON.stringify(old.s)));
-  assert.equal(g.s.settings.startingBudget, 40);
-  assert.deepEqual(g.s.settings.prizeMoney, [44, 36, 30, 25, 21, 18, 15, 11]);
+  assert.equal(g.s.settings.startingBudget, 32);
+  assert.deepEqual(g.s.settings.prizeMoney, [35, 29, 24, 20, 17, 14, 12, 9]);
   assert.equal(g.s.settings.streakCredits, undefined);
   assert.ok(g.s.items.filter((i) => i.type === 'bounty').every((i) => i.price === 0));
   assert.equal(g.s.items.find((i) => i.name === 'Wine').std, 1.5);
@@ -1847,7 +1847,7 @@ test('an older save’s Soju becomes Soju Shot, with a separate Soju Bottle', ()
   assert.equal(moved.s.items.find((i) => i.name === 'Soju Bottle').price, 42);
 });
 
-test('a Mystery Box can hit the rare $100 Jackpot, or a Pickpocket that takes half the cash of a block you pick', () => {
+test('a Mystery Box can hit the rare $80 Jackpot, or a Pickpocket that takes half the cash of a block you pick', () => {
   const { g, a, b, players } = setup();
   g.updateSettings({ roundsPerAct: 1 }); // round 2 is Act 2, when the Mystery Box opens
   a.budget = 1000;
@@ -1859,7 +1859,7 @@ test('a Mystery Box can hit the rare $100 Jackpot, or a Pickpocket that takes ha
   let cash = a.budget;
   const jp = openBox(g, players[0].id, [0.7]).mystery;
   assert.equal(jp.kind, 'jackpot');
-  assert.equal(a.budget - cash, 100 - 30, 'pays $100 on a $30 box');
+  assert.equal(a.budget - cash, 80 - 30, 'pays $80 on a $30 box');
   assert.match(g.s.feed[0].text, /JACKPOT/);
   // Pickpocket: rolled now, used whenever the block picks a target.
   const pp = openBox(g, players[0].id, [0.9]).mystery;
@@ -2094,4 +2094,21 @@ test('the Mystery Box stays off the shelf until Act 2, which opens with an annou
   assert.equal(g.tvView().flash.kind, 'mystery');
   assert.ok(g.s.feed.some((f) => f.text.includes('Mystery Box')));
   assert.ok(g.adminView().items.some((i) => i.type === 'mystery'), 'hosts always see it');
+});
+
+test('cash from every source is 20% lower, and a save on the previous defaults moves down', () => {
+  const g = new Game();
+  assert.equal(g.s.settings.startingBudget, 32);
+  assert.deepEqual(g.s.settings.prizeMoney, [35, 29, 24, 20, 17, 14, 12, 9]);
+  assert.equal(g.s.settings.streamStep, 4);
+  const old = structuredClone(g.s);
+  Object.assign(old.settings, { startingBudget: 40, prizeMoney: [44, 36, 30, 25, 21, 18, 15, 11], streamStep: 5 });
+  old.economy = 10;
+  const moved = new Game(old).s.settings;
+  assert.deepEqual([moved.startingBudget, moved.prizeMoney[0], moved.streamStep], [32, 35, 4]);
+  const custom = structuredClone(g.s);
+  Object.assign(custom.settings, { startingBudget: 60, prizeMoney: [100, 50], streamStep: 7 });
+  custom.economy = 10;
+  const kept = new Game(custom).s.settings;
+  assert.deepEqual([kept.startingBudget, kept.prizeMoney[0], kept.streamStep], [60, 100, 7], 'a host’s own numbers are left alone');
 });
