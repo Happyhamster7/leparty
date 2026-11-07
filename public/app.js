@@ -2328,10 +2328,9 @@
     const empty = night.acts.reduce((n, a) => n + a.rounds.filter((x) => !x || !S.games.some((g) => g.id === x)).length, 0);
     const live = night.status === 'live';
     return `
-      <section class="card setup-status ${live ? 'live' : ''}">
-        ${live
-          ? `<h3>✅ The night is created</h3><p class="fine">Confirmed ${time(night.confirmedAt)}. Rounds follow the sequence below; rounds not played yet can still change.</p>${btn('Reopen setup', 'reopenNight', {}, 'ghost sm', 'Reopen the setup? Played rounds stay as they are.')}`
-          : `<h3>Create the night</h3><p class="fine">1. Settings · 2. LeParty party · 3. Games · 4. The sequence · 5. Confirm.</p>`}
+      <section class="card setup-status">
+        <h3>${night.confirmedAt ? 'Editing the night' : 'Create the night'}</h3>
+        <p class="fine">1. Settings · 2. LeParty party · 3. Games · 4. The sequence · 5. Confirm.${(S.rounds || []).length ? ` ${plural(S.rounds.length, 'round')} already played stay locked.` : ''} This page goes away once you confirm.</p>
       </section>
       <section class="card">
         <h3>1 · The night</h3>
@@ -2788,12 +2787,13 @@
 
   // ---------- admin ----------
   function adminPage() {
+    // Until the night is created, the console is the setup page and nothing else.
+    if (S.night?.status === 'draft') return setupPage();
     const pending = S.orders.filter((o) => o.status === 'pending').length;
     const incoming = S.orders.filter((o) => o.status === 'incoming').length;
     const lockup = inHolding().length + inSolitary().length;
     const pendingClaims = S.claims.filter((c) => c.status === 'pending').length;
     const tabs = [
-      ['setup', `🎬 Setup${S.night?.status === 'draft' ? ' <b class="badge">to do</b>' : ''}`],
       ['round', `🎲 Round${S.round && S.round.phase !== 'done' ? ` <b class="badge">${h(S.round.phase)}</b>` : ''}`],
       ['orders', `🧾 Orders${pending + incoming ? ` <b class="badge">${pending + incoming}</b>` : ''}`],
       ['money', '💰 Payouts'],
@@ -2804,10 +2804,9 @@
       ['settings', '⚙️ Settings'],
     ];
     // Games live in Setup now and Blocks in Settings; old remembered tabs land there.
-    if (ui.atab === 'games') ui.atab = 'setup';
     if (ui.atab === 'blocks') ui.atab = 'settings';
-    if (!tabs.some(([k]) => k === ui.atab)) ui.atab = S.night?.status === 'draft' ? 'setup' : 'round';
-    const body = { setup: aSetup, round: aRound, orders: aOrders, money: aMoney, lockup: aLockup, tasks: aTasks, shop: aShop, mafia: aMafia, clips: aClips, settings: aSettings }[ui.atab] || aRound;
+    if (!tabs.some(([k]) => k === ui.atab)) ui.atab = 'round';
+    const body = { round: aRound, orders: aOrders, money: aMoney, lockup: aLockup, tasks: aTasks, shop: aShop, mafia: aMafia, clips: aClips, settings: aSettings }[ui.atab] || aRound;
     return `
       <header class="top admin-top">
         <div class="top-row">
@@ -2819,6 +2818,18 @@
       </header>
       ${phaseBanner()}
       <main class="content admin">${body()}</main>`;
+  }
+
+  // The first page a host sees: create the night, then it's gone.
+  function setupPage() {
+    return `
+      <header class="top admin-top setup-top">
+        <div class="top-row">
+          <div class="who"><div class="who-name">🎬 Create the night</div><div class="who-sub">${h(S.settings.partyName)} · ${S.hostRole === 'officer' ? 'Commissary Officer' : 'Warden'}</div></div>
+          <div class="row"><button class="btn ghost sm" data-act="logout">Log out</button></div>
+        </div>
+      </header>
+      <main class="content admin">${aSetup()}</main>`;
   }
 
   // Hosts flip the whole party from one act to the next.
@@ -3357,6 +3368,7 @@
       ${aBlocks(false)}
       <h3 class="section-h">🎬 Schedule</h3>
       ${nightPlan(false)}
+      <p>${btn('✏️ Edit the setup', 'reopenNight', {}, 'ghost sm', 'Go back to the setup page? Rounds already played stay as they are; confirm again when you’re done.')}</p>
       <h3 class="section-h">⚙️ Everything else</h3>
       <section class="card">
         <h3>📣 PA announcement</h3>

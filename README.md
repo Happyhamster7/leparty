@@ -88,13 +88,13 @@ Warp odds and pity are in Settings. Any shop item can be limited to one act in t
 
 ### Creating the night (🎬 Setup)
 
-The host console opens on **🎬 Setup** until the night is created:
+Until the night is created, the host console **is** the setup page, a separate first page with no tabs. It disappears once you confirm (⚙️ Settings → **Edit the setup** brings it back; played rounds stay locked):
 
 1. **The night**: name, tagline, how many acts and rounds per act, block size, starting credits, timers, cooldown, streak rate, phones and spending.
 2. **Contestants from LeParty**: pick the party to sync guests and blocks from (see below).
 3. **Games**: the game library. Add each game once, host-run or app-run (with trivia questions or a story count); a game can be used in several rounds.
 4. **The sequence**: one column per act. Name each act, switch on its mechanics, and tap a round to choose its game.
-5. **✅ Confirm and create the night**: needs a game in every round. It locks the setup in (rounds then follow the sequence, labelled by act name, e.g. "Booking Day · Final round") and pulls the contestants in from LeParty. Rounds not played yet can still change; **Reopen setup** goes back to editing.
+5. **✅ Confirm and create the night**: needs a game in every round. It locks the setup in (rounds then follow the sequence, labelled by act name, e.g. "Booking Day · Final round") and pulls the contestants in from LeParty. Rounds not played yet can still change through **Edit the setup**.
 
 Blocks (guests, block cards, build blocks) and the read-only schedule live in ⚙️ Settings. The shop opens and closes by itself (open in Spending, shut when drinks start), so the host bar has no shop button. **The night ends itself**: when the last act's final round finishes at the bar, the block with the most points (credits earned break a tie) is crowned on every screen.
 
