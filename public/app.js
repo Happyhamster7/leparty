@@ -1700,6 +1700,7 @@
   const briefingUnseen = () => {
     const g = liveGame();
     if (needsPick()) return false; // don't eat the pick clock; the rules are in the round card
+    if (S?.round?.phase === 'game' && S.round.play && !S.round.play.done) return false; // nor an app-run game's clock
     return !!g && !seenBriefs.has(briefKey(g));
   };
   // This phone's block still has to lock in players for the current round.
@@ -1763,7 +1764,7 @@
   const myIncoming = () => (S.orders || []).filter(isIncomingFor(S));
 
   function phaseBanner() {
-    const shut = S.settings.shopOpen === false && !(kind === 'player' && S.round) ? '<div class="phase shop-shut">🔒 COMMISSARY CLOSED</div>' : '';
+    const shut = S.settings.shopOpen === false && !((kind === 'player' || kind === 'tv') && S.round) ? '<div class="phase shop-shut">🔒 COMMISSARY CLOSED</div>' : '';
     return mafiaBanner(S.mafia) + shut;
   }
 
@@ -1944,6 +1945,104 @@
   }
   const SERVE_LABEL = { safe: 'Safe this round', queued: 'In line', serving: 'At the bar', done: 'Done', missed: 'Out of time' };
 
+  // ---------- app-run games: Cold War, Trivia, Is Jason lying? ----------
+  const APP_RUN = { coldwar: '🧊 Cold War', trivia: '❓ Trivia', lying: '🤥 Is Jason lying?' };
+  const LETTERS = 'ABCD';
+  const scoreList = (pl) => `<ol class="placings">${roundTeams()
+    .map((t) => [t, pl.scores?.[t.id] || 0])
+    .sort((a, b) => b[1] - a[1])
+    .map(([t, n]) => `<li style="--c:${h(t.color)}"><span class="rank">${n}</span><span class="b-n">${h(t.name)}</span><b>${plural(n, 'pt')}</b></li>`)
+    .join('')}</ol>`;
+  const lockedList = (ids, verb) => `<ul class="picks">${roundTeams().map((t) => `<li style="--c:${h(t.color)}">${chip(t)} <span>${ids.includes(t.id) ? `✅ ${verb}` : '…'}</span></li>`).join('')}</ul>`;
+
+  function coldWarResult(pl, mine) {
+    return `<ol class="placings cw">${pl.order
+      .map((id) => `<li style="--c:${h(team(id)?.color || '#888')}" class="${id === mine ? 'mine' : ''}"><span class="rank">${pl.bids[id].n}${pl.bids[id].auto ? '*' : ''}</span><span class="b-n">${h(teamName(id))}</span><b>${pl.drinks[id] ? `drinks ${pl.drinks[id]}` : 'safe'}</b></li>`)
+      .join('')}</ol>${Object.values(pl.bids).some((b) => b.auto) ? '<p class="fine">* didn’t pick in time, counted as 1.</p>' : ''}<p class="fine">The two lowest drink their own shots plus the two highest blocks’ shots. The shots join this round’s bar queue.</p>`;
+  }
+
+  function phonePlay(r, myTeam) {
+    const pl = r.play;
+    const mine = myTeam.id;
+    if (pl.kind === 'coldwar') {
+      if (pl.revealed) return `<p class="serve">${pl.drinks[mine] ? `🧊 Your block drinks <b>${pl.drinks[mine]}</b> at the bar.` : '🧊 Your block drinks nothing. Cold.'}</p>${coldWarResult(pl, mine)}`;
+      const bid = pl.bids[mine];
+      if (bid?.n) return `<p>Locked in: <b>${plural(bid.n, 'shot')}</b>. Waiting for the other blocks: ${until(pl.deadline)}.</p>`;
+      return `<p><b>How many shots will your block take?</b> Pick in secret. The two lowest drink their own plus the two highest blocks’ shots. ${until(pl.deadline)} left.</p>
+        <div class="num-grid">${Array.from({ length: pl.max }, (_, i) => i + 1).map((n) => `<button class="target" data-act="answer" data-value="${n}" data-confirm="Lock in ${n} shot${n === 1 ? '' : 's'}?">${n}</button>`).join('')}</div>`;
+    }
+    if (pl.kind === 'trivia') {
+      const q = pl.question;
+      const mineA = pl.answers?.[mine];
+      const head = `<p class="fine">Question ${Math.max(1, pl.qi + 1)} of ${pl.count} · your block has ${plural(pl.scores?.[mine] || 0, 'point')}</p>`;
+      if (!q || pl.state === 'ready') return `${head}<p class="serve">❓ Get ready: the first question is coming.</p>`;
+      const opts = q.options
+        .map((o, i) => {
+          const right = q.answer === i;
+          const cls = q.answer !== null ? (right ? 'right' : mineA?.choice === i ? 'wrong' : '') : mineA?.choice === i ? 'on' : '';
+          return `<button class="answer ${cls}" ${pl.state !== 'asking' || mineA ? 'disabled' : ''} data-act="answer" data-value="${i}"><b>${LETTERS[i]}</b> ${h(o)}</button>`;
+        })
+        .join('');
+      return `${head}<p class="q">${h(q.q)}</p><div class="answers">${opts}</div>
+        ${pl.state === 'asking' ? (mineA ? `<p class="fine">Answer locked. ${until(pl.deadline)} left for the others.</p>` : `<p class="fine">${until(pl.deadline)} left. First tap counts.</p>`) : `<p class="serve">${mineA && mineA.choice === q.answer ? '✅ Right!' : mineA ? '❌ Wrong.' : '⏰ No answer.'} Next question soon.</p>`}`;
+    }
+    const v = pl.votes?.[mine];
+    const head = `<p class="fine">Story ${Math.max(1, pl.n)} of ${pl.total} · your block has ${plural(pl.scores?.[mine] || 0, 'point')}</p>`;
+    if (pl.state === 'ready') return `${head}<p class="serve">🤥 Listen to the story, then vote here.</p>`;
+    if (pl.state === 'voting' && !v) return `${head}<p><b>Truth or lie?</b> ${until(pl.deadline)} left.</p><div class="answers two"><button class="answer" data-act="answer" data-value="truth">✅ Truth</button><button class="answer" data-act="answer" data-value="lie">🤥 Lie</button></div>`;
+    if (pl.state === 'voting' || pl.state === 'closed') return `${head}<p class="serve">${v ? `You voted <b>${v.choice === 'truth' ? 'Truth' : 'Lie'}</b>.` : 'Voting’s closed.'} Waiting for the truth…</p>`;
+    return `${head}<p class="serve">It was <b>${pl.truth === 'truth' ? 'the truth' : 'a lie'}</b>. ${v ? (v.choice === pl.truth ? '✅ You called it!' : '❌ Fooled you.') : '⏰ You didn’t vote.'}</p>`;
+  }
+
+  function tvPlay(r) {
+    const pl = r.play;
+    if (pl.kind === 'coldwar') {
+      if (pl.revealed) return `<p class="tv-big">🧊 The numbers are in</p>${coldWarResult(pl)}`;
+      return `<p class="tv-big">🧊 Every block picks its shots in secret: ${until(pl.deadline)}</p>${lockedList(Object.keys(pl.bids), 'locked in')}`;
+    }
+    if (pl.kind === 'trivia') {
+      const q = pl.question;
+      if (!q || pl.state === 'ready') return `<p class="tv-big">❓ ${plural(pl.count, 'question')}. Answer on your block’s phone.</p>${scoreList(pl)}`;
+      return `<p class="fine">Question ${pl.qi + 1} of ${pl.count}${pl.state === 'asking' ? ` · ${until(pl.deadline)}` : ''}</p><p class="tv-q">${h(q.q)}</p>
+        <div class="answers tv">${q.options.map((o, i) => `<div class="answer ${q.answer === i ? 'right' : ''}"><b>${LETTERS[i]}</b> ${h(o)}</div>`).join('')}</div>
+        ${pl.state === 'asking' ? `<p class="fine">${plural(pl.answered.length, 'block')} answered</p>` : `<p class="fine">Got it: ${roundTeams().filter((t) => pl.answers[t.id]?.choice === q.answer).map((t) => h(t.name)).join(', ') || 'nobody'}</p>${scoreList(pl)}`}`;
+    }
+    if (pl.state === 'ready') return `<p class="tv-big">🤥 ${`${pl.total} ${pl.total === 1 ? 'story' : 'stories'}`}. Truth or lie? Vote on your block’s phone.</p>${scoreList(pl)}`;
+    if (pl.state === 'voting') return `<p class="tv-big">🤥 Story ${pl.n}: truth or lie? ${until(pl.deadline)}</p>${lockedList(pl.voted, 'voted')}`;
+    if (pl.state === 'closed') return `<p class="tv-big">🤥 Story ${pl.n}: the votes are in…</p>${lockedList(pl.voted, 'voted')}`;
+    return `<p class="tv-big">🤥 Story ${pl.n}: it was ${pl.truth === 'truth' ? 'the TRUTH' : 'a LIE'}!</p><p class="fine">Called it: ${roundTeams().filter((t) => pl.votes[t.id]?.choice === pl.truth).map((t) => h(t.name)).join(', ') || 'nobody'}</p>${scoreList(pl)}`;
+  }
+
+  function hostPlay(r) {
+    const pl = r.play;
+    const teams = roundTeams();
+    const byHand = btn('Enter results by hand instead', 'toResults', {}, 'ghost sm', 'Stop the app game and enter placings yourself?');
+    const finish = btn('🏁 Finish: place the blocks and pay prizes', 'playFinish', {}, 'big', 'Finish this game, place the blocks by score and pay the prize money?');
+    if (pl.kind === 'coldwar') {
+      return `<section class="card"><h3>🧊 Cold War drinking</h3>
+        ${pl.revealed ? `${coldWarResult(pl)}${finish}` : `<p>Blocks are picking 1–${pl.max} shots in secret: ${until(pl.deadline)} left.</p>
+          <ul class="picks">${teams.map((t) => `<li style="--c:${h(t.color)}">${chip(t)} <span>${pl.bids[t.id] ? `✅ ${pl.bids[t.id].n}` : '…'}</span></li>`).join('')}</ul>
+          <div class="row wrap">${btn('Reveal now', 'playReveal', {}, '', 'Reveal now? Blocks that haven’t picked count as 1.')}</div>`}
+        <p class="fine">${byHand}</p></section>`;
+    }
+    if (pl.kind === 'trivia') {
+      const q = pl.question;
+      const more = pl.qi + 1 < pl.count;
+      return `<section class="card"><h3>❓ Trivia · ${pl.qi < 0 ? `${plural(pl.count, 'question')} ready` : `question ${pl.qi + 1} of ${pl.count}`}</h3>
+        ${q ? `<p class="q">${h(q.q)}</p><ol class="opts">${q.options.map((o, i) => `<li class="${q.answer === i ? 'right' : ''}">${LETTERS[i]}. ${h(o)}${q.answer === i ? ' ✓' : ''}</li>`).join('')}</ol>` : ''}
+        ${pl.state === 'asking' ? `<p>${plural(pl.answered.length, 'block')} of ${teams.length} answered · ${until(pl.deadline)} left</p>${btn('Reveal the answer now', 'playReveal', {}, '')}` : `<div class="row wrap">${more ? btn(pl.qi < 0 ? '▶ Ask the first question' : '▶ Next question', 'playNext', {}, 'big') : ''}${pl.qi >= 0 ? finish : ''}</div>`}
+        ${pl.qi >= 0 ? scoreList(pl) : ''}
+        <p class="fine">${byHand}</p></section>`;
+    }
+    const more = pl.n < pl.total;
+    return `<section class="card"><h3>🤥 Is Jason lying? · ${pl.n ? `story ${pl.n} of ${pl.total}` : `${`${pl.total} ${pl.total === 1 ? 'story' : 'stories'}`}`}</h3>
+      ${['voting', 'closed'].includes(pl.state) ? `<p>${pl.state === 'voting' ? `Voting: ${until(pl.deadline)} left · ` : 'Voting closed · '}${plural(pl.voted.length, 'block')} of ${teams.length} voted</p>
+        <div class="row wrap">${btn('✅ It was the TRUTH', 'playReveal', { truth: 'truth' }, 'big')}${btn('🤥 It was a LIE', 'playReveal', { truth: 'lie' }, 'big')}</div>`
+        : `<div class="row wrap">${more ? btn(pl.n ? `▶ Open the vote on story ${pl.n + 1}` : '▶ Open the vote on story 1', 'playNext', {}, 'big') : ''}${pl.n ? finish : ''}</div>`}
+      ${pl.n ? scoreList(pl) : ''}
+      <p class="fine">${byHand}</p></section>`;
+  }
+
   // ---------- phone: the round card on Now ----------
   function roundCard() {
     const r = S.round;
@@ -1952,7 +2051,9 @@
     const myTeam = team(me.teamId);
     const head = `<div class="eyebrow">${h(r.label)}${r.phase === 'done' ? ' · over' : ''}</div><h2>${h(r.gameName)}</h2>${r.phase === 'done' ? '' : phaseStrip(r)}`;
     let body = '';
-    if (r.phase === 'game') {
+    if (r.phase === 'game' && r.play) {
+      body = myTeam && me.status === 'block' ? phonePlay(r, myTeam) : '<p>The blocks are playing on their phones.</p>';
+    } else if (r.phase === 'game') {
       if (r.isGroup) body = '<p>Group game: everyone on every block plays.</p>';
       else if (r.revealedAt) body = `<p>Playing for ${myTeam ? h(myTeam.name) : 'each block'}: <b>${names(r.picks[me.teamId])}</b></p>${pickedList(r)}`;
       else if (!myTeam || me.status !== 'block') body = `<p>Blocks are picking ${plural(r.playersNeeded, 'player')} each. ${until(r.pickDeadline)} left.</p>`;
@@ -2061,6 +2162,7 @@
     const r = S.round;
     if (!r) return '';
     const head = `<div class="eyebrow">${h(r.label)}${r.final ? ' 🔥' : ''}</div><h2 class="tv-live">${h(r.gameName)}</h2>${r.phase === 'done' ? '' : phaseStrip(r)}`;
+    if (r.phase === 'game' && r.play) return `${head}${tvPlay(r)}`;
     if (r.phase === 'game') {
       if (!r.revealedAt) return `${head}<p class="tv-big">Blocks are picking their players: ${until(r.pickDeadline)}</p>
         <ul class="picks">${roundTeams().map((t) => `<li style="--c:${h(t.color)}">${chip(t)} <span>${r.picked.includes(t.id) ? '✅ locked in' : '…'}</span></li>`).join('')}</ul>${cooldownLine(r)}`;
@@ -2126,6 +2228,8 @@
         </form>
         <p class="fine">Blocks get ${S.settings.pickSeconds} seconds to pick players on their phones. The shop closes until results are in.</p>` : '<p>Add games in the 🏁 Games tab first, with how many players each block sends.</p>'}
       </section>`;
+    } else if (r.phase === 'game' && r.play) {
+      main = hostPlay(r);
     } else if (r.phase === 'game') {
       main = `<section class="card"><h3>Picks${r.revealedAt ? ' are in' : `: ${until(r.pickDeadline)} left`}</h3>
         <ul class="picks">${teams.map((t) => `<li style="--c:${h(t.color)}">${chip(t)} <span>${r.picks[t.id] ? names(r.picks[t.id]) : 'waiting…'}</span>${r.pickedBy[t.id] === 'auto' ? ' <small class="fine">auto</small>' : ''}</li>`).join('')}</ul>
@@ -2741,6 +2845,9 @@
           <label>Name<input id="g_name" name="name" maxlength="60" required placeholder="Flip Cup Prison Riot" /></label>
           <label>Description<input id="g_desc" name="desc" maxlength="200" placeholder="Best of 3. Winner +30." /></label>
           <label>Players per block (0 = group game, everyone plays)<input id="g_pn" name="playersNeeded" type="number" min="0" max="10" value="1" /></label>
+          <label>Run by<select id="g_rb" name="runBy">${[['host', '🧑‍⚖️ Hosts (you enter the results)'], ['coldwar', '🧊 App: Cold War drinking'], ['trivia', '❓ App: Trivia'], ['lying', '🤥 App: Is Jason lying?']].map(([k, l]) => `<option value="${k}" ${('host') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+          <label>Stories (Is Jason lying?)<input id="g_st" name="stories" type="number" min="1" max="20" value="${h(5)}" /></label>
+          <label class="span2">❓ Trivia questions, one per line: Question | answer | answer | answer | answer | right one (A–D)<textarea id="g_tq" name="questions" rows="4" placeholder="Capital of France? | Paris | Rome | Oslo | Madrid | A">${h('')}</textarea></label>
           <label class="span2">📋 How to play (shown on every phone when the game goes live)<textarea id="g_rules" name="rules" rows="5" maxlength="1200" placeholder="Each block lines up on one side of the table.&#10;Drink, then flip your cup from the edge.&#10;Next person goes when the cup lands upside down.&#10;First block to finish wins."></textarea></label>
           <label>🕳️ Extra rule for Holding Cell<input id="g_hold" name="holdingRule" maxlength="160" placeholder="Must flip with your off hand" /></label>
           <label>🔒 Extra rule for Solitary<input id="g_sol" name="solitaryRule" maxlength="160" placeholder="Drink a full cup every flip" /></label>
@@ -2753,7 +2860,7 @@
         <p class="fine">Finishing a game pays out credits and counts as a round: Holding Cell and Solitary owe their penalty drinks, and solitary sentences tick down.</p>
         ${S.games.length ? `<ul class="glist">${S.games
           .map((g, i) => `<li class="g-${g.status}">
-            <div class="g-h"><span class="chip">${i < (S.plan?.total || 12) ? h(slotLabel(i + 1)) : 'Spare'}</span> <b>${h(g.name)}</b> <span class="tag">${g.status.toUpperCase()}</span> <span class="fine">${g.playersNeeded ? `${plural(g.playersNeeded, 'player')} per block` : 'group game'}</span></div>
+            <div class="g-h"><span class="chip">${i < (S.plan?.total || 12) ? h(slotLabel(i + 1)) : 'Spare'}</span> <b>${h(g.name)}</b> <span class="tag">${g.status.toUpperCase()}</span> <span class="fine">${APP_RUN[g.runBy] ? `${APP_RUN[g.runBy]} · run by the app${g.runBy === 'trivia' ? ` · ${plural(g.questions?.length || 0, 'question')}` : ''}` : g.playersNeeded ? `${plural(g.playersNeeded, 'player')} per block` : 'group game'}</span></div>
             ${g.desc ? `<div class="fine">${h(g.desc)}</div>` : ''}
             ${g.rules ? `<div class="rules small">${h(g.rules)}</div>` : '<div class="fine">⚠️ No how-to-play rules yet.</div>'}
             ${g.holdingRule ? `<div class="fine">🕳️ ${h(g.holdingRule)}</div>` : ''}${g.solitaryRule ? `<div class="fine">🔒 ${h(g.solitaryRule)}</div>` : ''}${g.sabotage ? `<div class="fine">🐀 ${h(g.sabotage)}</div>` : ''}
@@ -2773,6 +2880,9 @@
                 <label>Name<input id="ge_${g.id}_name" name="name" value="${h(g.name)}" maxlength="60" /></label>
                 <label>Description<input id="ge_${g.id}_desc" name="desc" value="${h(g.desc)}" maxlength="200" /></label>
                 <label>Players per block (0 = group game)<input id="ge_${g.id}_pn" name="playersNeeded" type="number" min="0" max="10" value="${h(g.playersNeeded ?? 1)}" /></label>
+                <label>Run by<select id="ge_${g.id}_rb" name="runBy">${[['host', '🧑‍⚖️ Hosts (you enter the results)'], ['coldwar', '🧊 App: Cold War drinking'], ['trivia', '❓ App: Trivia'], ['lying', '🤥 App: Is Jason lying?']].map(([k, l]) => `<option value="${k}" ${(g.runBy || 'host') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+          <label>Stories (Is Jason lying?)<input id="ge_${g.id}_st" name="stories" type="number" min="1" max="20" value="${h(g.stories || 5)}" /></label>
+          <label class="span2">❓ Trivia questions, one per line: Question | answer | answer | answer | answer | right one (A–D)<textarea id="ge_${g.id}_tq" name="questions" rows="4" placeholder="Capital of France? | Paris | Rome | Oslo | Madrid | A">${h(g.questionsText || '')}</textarea></label>
                 <label class="span2">📋 How to play<textarea id="ge_${g.id}_rules" name="rules" rows="5" maxlength="1200">${h(g.rules)}</textarea></label>
                 <label>🕳️ Holding Cell rule<input id="ge_${g.id}_hold" name="holdingRule" value="${h(g.holdingRule)}" maxlength="160" /></label>
                 <label>🔒 Solitary rule<input id="ge_${g.id}_sol" name="solitaryRule" value="${h(g.solitaryRule)}" maxlength="160" /></label>
@@ -3261,7 +3371,7 @@
         <header class="tv-h">${hero(true)}${oneAct() ? '' : `<div class="act-tag">${curAct().emoji} Act ${curAct().numeral} · ${h(curAct().name)}</div>`}<h1 class="logo">${h(S.settings.partyName)}</h1><div class="tagline">${h(curAct().tagline)}</div></header>
         ${phaseBanner()}
         ${S.announcement ? `<div class="announce tv-ann"><span class="mega">📣</span><div class="announce-t">${h(S.announcement.text)}</div></div>` : ''}
-        <div class="tv-grid ${S.round?.phase === 'drinks' ? 'drinks' : ''}">
+        <div class="tv-grid ${S.round?.phase === 'drinks' || (S.round?.phase === 'game' && S.round.play) ? 'drinks' : ''}">
           <section class="card">
             <h2>🏆 Standings</h2><p class="fine">Blocks score points for every drink they send. Most points wins.</p>
             <ol class="tv-board">${rows.map((t, i) => `<li style="--c:${h(t.color)}"><span class="rank">${i + 1}</span><span class="b-n">${h(t.name)}${t.nickname || streakBits(t).length ? `<small>${[t.nickname && h(t.nickname), ...streakBits(t)].filter(Boolean).join(' · ')}</small>` : ''}</span><span class="tv-bar"><i style="width:${((t.points || 0) / max) * 100}%"></i></span><b>${t.points || 0}</b></li>`).join('') || '<p class="empty">No blocks yet</p>'}</ol>
@@ -3305,6 +3415,10 @@
     senders: () => { ui.senders = !ui.senders; render(); },
     'feed-more': () => { ui.feedAll = !ui.feedAll; render(); },
     'board-open': () => { ui.board = true; render(); },
+    answer: async (d) => {
+      if (d.confirm && !confirm(d.confirm)) return;
+      await act('answer', { value: d.value });
+    },
     'lp-events': async () => {
       const res = await admin('lepartyEvents');
       if (res.ok) {

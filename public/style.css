@@ -1597,3 +1597,23 @@ details.secret .mega { font-size: 40px; }
 .block-card { display: grid; grid-template-columns: 96px 1fr; gap: 10px; align-items: center; padding: 8px; border-left: 6px solid var(--c); background: var(--card2); border-radius: 8px; }
 .block-card .qr { width: 96px; height: 96px; background: #fff; }
 .block-card .code { font: 700 26px/1 ui-monospace, monospace; letter-spacing: 4px; margin: 4px 0; }
+
+/* ---------- app-run games ---------- */
+.num-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 8px 0; }
+.num-grid .target { padding: 10px 0; font-size: 20px; }
+.answers { display: grid; gap: 8px; margin: 8px 0; }
+.answers.two { grid-template-columns: 1fr 1fr; }
+.answers.tv { grid-template-columns: 1fr 1fr; }
+.answer { text-align: left; padding: 12px; font: 600 17px var(--body), sans-serif; border: 1.5px solid var(--line); border-radius: 10px; background: var(--card2); color: var(--text); cursor: pointer; }
+.answer b { margin-right: 6px; }
+.answer.on { border-color: var(--orange); }
+.answer.right { background: var(--green); color: #fff; border-color: var(--green); }
+.answer.wrong { background: var(--red); color: #fff; border-color: var(--red); }
+.answer:disabled { cursor: default; }
+.q, .tv-q { font-size: 20px; font-weight: 700; margin: 6px 0; }
+.tv-q { font-size: clamp(24px, 2.6vw, 40px); }
+.opts { padding-left: 20px; }
+.opts .right { font-weight: 800; color: var(--green); }
+.placings.cw li.mine { outline: 3px solid var(--orange); }
+.answers.tv { align-content: start; grid-auto-rows: min-content; }
+.answers.tv .answer { font-size: clamp(20px, 2vw, 32px); padding: 14px 18px; }

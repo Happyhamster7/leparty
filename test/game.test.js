@@ -1561,3 +1561,113 @@ test('blocks hold up to 10 by default, and saves on the old default of 5 move up
   custom.settings.maxBlockSize = 7;
   assert.equal(new Game(custom).s.settings.maxBlockSize, 7);
 });
+
+// ---------- app-run games ----------
+
+function appSetup(blocks = 4) {
+  const g = new Game();
+  g.s.settings.phoneMode = 'team';
+  g.addGuests({ names: Array.from({ length: blocks * 2 }, (_, i) => `G${i}`).join('\n') });
+  g.updateSettings({ maxBlockSize: 2 });
+  g.buildBlocks();
+  const teams = g.s.teams;
+  const phones = teams.map((t) => g.claimBlock({ code: t.joinCode }));
+  return { g, teams, phones };
+}
+
+test('Cold War: secret picks, revealed together; the two lowest drink theirs plus the two highest’s; places by number', () => {
+  const { g, teams, phones } = appSetup(5);
+  const game = g.addGame({ name: 'Cold War drinking', runBy: 'coldwar' });
+  assert.equal(game.playersNeeded, 0);
+  const r = g.startRound({ gameId: game.id });
+  assert.equal(r.play.kind, 'coldwar');
+  assert.throws(() => g.playAnswer(phones[0].id, { value: 16 }), /between 1 and 15/);
+  const picks = [15, 3, 9, 1, 12]; // A B C D E
+  picks.slice(0, 4).forEach((n, i) => g.playAnswer(phones[i].id, { value: n }));
+  // Others can't see the numbers before the reveal; your own block can.
+  assert.deepEqual(g.viewFor(phones[1].id).round.play.bids[teams[0].id], { locked: true });
+  assert.equal(g.viewFor(phones[0].id).round.play.bids[teams[0].id].n, 15);
+  g.playAnswer(phones[4].id, { value: 12 }); // the last block locks in: revealed at once
+  const pl = r.play;
+  assert.equal(pl.revealed, true);
+  // Order: A15, E12, C9, B3, D1. D (lowest) takes A's 15, B (second lowest) takes E's 12.
+  assert.deepEqual(pl.drinks, { [teams[0].id]: 0, [teams[4].id]: 0, [teams[2].id]: 9, [teams[1].id]: 3 + 12, [teams[3].id]: 1 + 15 });
+  const shots = g.s.orders.filter((o) => o.origin === 'game');
+  assert.deepEqual(shots.map((o) => [o.targetTeamId, o.qty]).sort(), [[teams[1].id, 15], [teams[2].id, 9], [teams[3].id, 16]].sort());
+  g.playFinish();
+  assert.equal(r.phase, 'spending');
+  assert.deepEqual(r.placings, { [teams[0].id]: 1, [teams[4].id]: 2, [teams[2].id]: 3, [teams[1].id]: 4, [teams[3].id]: 5 });
+  assert.equal(r.winnerTeamId, teams[0].id);
+  g.startDrinks(); // the Cold War shots are in the bar queue
+  assert.equal(g.round.serves.find((s) => s.teamId === teams[3].id).drinks, 16);
+});
+
+test('Cold War: blocks that don’t pick in time count as 1; two blocks means lowest takes the highest’s', () => {
+  const { g, teams, phones } = appSetup(2);
+  const r = g.startRound({ gameId: g.addGame({ name: 'CW', runBy: 'coldwar' }).id });
+  g.playAnswer(phones[0].id, { value: 6 });
+  r.play.deadline = Date.now() - 1;
+  g.tick();
+  assert.equal(r.play.bids[teams[1].id].auto, true);
+  assert.deepEqual(r.play.drinks, { [teams[0].id]: 0, [teams[1].id]: 1 + 6 });
+});
+
+test('Trivia: questions from the Games tab, answered on the phones, scored and placed by score then speed', () => {
+  const { g, teams, phones } = appSetup(3);
+  assert.throws(() => g.addGame({ name: 'Bad', runBy: 'trivia', questions: 'Just a question' }), /Trivia line 1/);
+  const game = g.addGame({ name: 'Trivia', runBy: 'trivia', questions: 'Capital of France? | Paris | Rome | Oslo | A\n2 + 2? | 3 | 4 | 2\nBiggest planet? | Mars | Jupiter | Venus | Earth | Jupiter' });
+  assert.deepEqual(game.questions.map((q) => q.answer), [0, 1, 1]);
+  const r = g.startRound({ gameId: game.id });
+  assert.throws(() => g.playAnswer(phones[0].id, { value: 0 }), /No question/);
+  g.playNext();
+  assert.equal(g.viewFor(phones[0].id).round.play.question.answer, null); // hidden while asking
+  g.playAnswer(phones[0].id, { value: 0 }); // A right
+  assert.throws(() => g.playAnswer(phones[0].id, { value: 1 }), /already answered/);
+  g.playAnswer(phones[1].id, { value: 2 }); // B wrong
+  g.playAnswer(phones[2].id, { value: 0 }); // C right; everyone in: revealed
+  assert.equal(r.play.state, 'revealed');
+  assert.equal(g.tvView().round.play.question.answer, 0);
+  g.playNext();
+  g.playAnswer(phones[1].id, { value: 1 }); // B right
+  r.play.deadline = Date.now() - 1; // time runs out for the others
+  g.tick();
+  g.playNext();
+  g.playAnswer(phones[2].id, { value: 1 }); // C right
+  assert.throws(() => g.playNext(), /Reveal this question/);
+  g.playFinish();
+  // C has 2 right answers, A and B one each.
+  assert.equal(r.placings[teams[2].id], 1);
+  assert.deepEqual([r.play.scores[teams[0].id], r.play.scores[teams[1].id], r.play.scores[teams[2].id]], [1, 1, 2]);
+  assert.equal(r.phase, 'spending');
+});
+
+test('Is Jason lying?: phones vote Truth or Lie, the host says which it was, right blocks score', () => {
+  const { g, teams, phones } = appSetup(3);
+  const r = g.startRound({ gameId: g.addGame({ name: 'Is Jason lying?', runBy: 'lying', stories: 2 }).id });
+  g.playNext();
+  g.playAnswer(phones[0].id, { value: 'lie' });
+  g.playAnswer(phones[1].id, { value: 'truth' });
+  assert.deepEqual(g.viewFor(phones[2].id).round.play.votes, {}); // others' votes are hidden
+  assert.throws(() => g.playNext(), /Say whether/);
+  assert.throws(() => g.playReveal({}), /truth or a lie/);
+  g.playReveal({ truth: 'lie' });
+  assert.equal(r.play.scores[teams[0].id], 1);
+  g.playNext();
+  g.playAnswer(phones[2].id, { value: 'truth' });
+  r.play.deadline = Date.now() - 1;
+  g.tick(); // voting closes; still waiting on the host
+  assert.equal(r.play.state, 'closed');
+  g.playReveal({ truth: 'truth' });
+  assert.throws(() => g.playNext(), /last story/);
+  g.playFinish();
+  assert.equal(r.phase, 'spending');
+  assert.equal(Object.keys(r.placings).length, 3);
+});
+
+test('an app-run game can still be finished by hand', () => {
+  const { g, teams } = appSetup(2);
+  const r = g.startRound({ gameId: g.addGame({ name: 'Trivia', runBy: 'trivia', questions: 'Q? | a | b | A' }).id });
+  g.toResults();
+  g.enterResults({ placings: { [teams[1].id]: 1, [teams[0].id]: 2 } });
+  assert.equal(r.winnerTeamId, teams[1].id);
+});

@@ -86,6 +86,16 @@ Augments (Act III): Windfall (+20 now), Rich Get Richer (+5 now and an interest 
 
 Warp odds and pity are in Settings. Any shop item can be limited to one act in the Commissary tab ("On the shelf during").
 
+### Host-run and app-run games
+
+Every game in 🏁 Games has a **Run by** setting:
+
+- **Hosts** (the default): the round goes to Results and a host enters placings and bonuses.
+- **The app**: the block phones play, the app scores it, places the blocks by score (ties go to whoever was faster), pays the normal prize money and moves straight to Spending. A host can always tap **Enter results by hand instead**. App-run games are played by the whole block on its phone, so there's no player picking. Three are built:
+  - **🧊 Cold War drinking**: every block phone secretly picks 1–15 shots before the pick timer ends (no pick counts as 1). When all are in, the numbers are revealed: the two lowest blocks drink their own shots plus the two highest blocks' shots (the lowest takes the highest's, the second lowest the second highest's), the two highest drink nothing, and anyone in between drinks their own. With 2 or 3 blocks it's one pair. Places go by number, highest first. The shots go straight into that round's bar queue.
+  - **❓ Trivia**: hosts type the questions on the game, one per line: `Question | answer | answer | answer | answer | right one (A–D)`. The host asks each question; it shows on the TV and every block phone with a countdown (Settings: 20 seconds). First tap counts. When every block has answered or time runs out, the answer is revealed and each block that got it right scores 1.
+  - **🤥 Is Jason lying?**: set the number of stories on the game. For each story the host opens the vote; block phones vote Truth or Lie before the timer (30 seconds) and the host taps what it really was. Each block that called it scores 1.
+
 ### Running the night on LeParty's check-in and draw
 
 LeParty (signup, RSVP, check-in at the door, the capacity-balanced draw) can feed this game directly:

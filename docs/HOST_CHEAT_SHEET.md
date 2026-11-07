@@ -74,6 +74,10 @@ The default lineup is **The Long Night**: I · Booking Day (Cell Tosses, soups a
 2. **🖨 Print block cards** (QR + 4-letter code per block) and hand one to each block. Never put a code on the TV.
 3. Each block scans its card on one phone. Latest scan wins; if a card leaks, tap **New code**.
 
+## Host-run vs app-run games
+
+In 🏁 Games, set **Run by** on each game. Host-run: you enter placings after the game. App-run (Cold War drinking, Trivia, Is Jason lying?): the block phones play and the app places the blocks and pays prizes when you tap **Finish**. For Trivia, type the questions on the game first (`Question | a | b | c | d | right letter`); for Is Jason lying?, set how many stories. During an app-run game the Round tab shows its controls: Reveal now (Cold War), Next question / Reveal (Trivia), Open the vote / It was the TRUTH / It was a LIE (Is Jason lying?). **Enter results by hand instead** is always there if something goes wrong.
+
 ## Every round (🎲 Round tab)
 
 The night is **4 acts × 3 rounds**: Act 1 · Round 1, Act 1 · Round 2, Act 1 · Final round, then Act 2, and so on. Put the 12 games in the 🏁 Games tab in the order you want to play them: the first three are Act 1. The Round tab shows the whole plan and pre-selects the next game.

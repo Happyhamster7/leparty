@@ -310,3 +310,15 @@ body[data-era='slammer'] .board-sheet { max-height: 88vh; }
 body[data-era='slammer'] .block-card { background: none; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-paper.png') 9 fill / 9px stretch; border-left: 9px solid var(--c); }
 body[data-era='slammer'] .block-card b { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 24px; }
 body[data-era='slammer'] .block-card .code { font-family: 'Jersey 10', monospace; font-size: 34px; color: var(--orange2); }
+body[data-era='slammer'] .num-grid .target { font-size: 28px; }
+body[data-era='slammer'] .answer { background: none; border-style: solid; border-width: 12px; border-image: url('/pixel/frame-btn-paper.png') 12 fill / 12px stretch; padding: 2px 6px; font-family: 'Pixelify Sans', monospace; }
+body[data-era='slammer'] .answer b { font-family: 'Jersey 10', monospace; font-size: 24px; font-weight: 400; color: var(--orange2); }
+body[data-era='slammer'] .answer.on { border-image-source: url('/pixel/frame-slot-active.png'); border-image-slice: 9 fill; }
+body[data-era='slammer'] .answer.right { border-image-source: url('/pixel/frame-btn-green.png'); color: var(--card); }
+body[data-era='slammer'] .answer.right b, body[data-era='slammer'] .answer.wrong b { color: var(--card); }
+body[data-era='slammer'] .answer.wrong { border-image-source: url('/pixel/frame-btn-red.png'); color: var(--card); }
+body[data-era='slammer'] .q, body[data-era='slammer'] .tv-q { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 28px; line-height: 1.1; }
+body[data-era='slammer'] .tv-q { font-size: clamp(32px, 3vw, 54px); }
+body[data-era='slammer'] .placings.cw li.mine { outline: none; border-left-width: 15px; }
+body[data-era='slammer'] .answers.tv .answer { font-size: clamp(20px, 2vw, 32px); padding: 4px 10px; }
+body[data-era='slammer'] .answers.tv .answer b { font-size: clamp(26px, 2.4vw, 40px); }
