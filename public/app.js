@@ -2145,7 +2145,7 @@
       return `${head}${r.isGroup ? '<p class="tv-big">Everyone plays!</p>' : pickedList(r)}${cooldownLine(r)}`;
     }
     if (r.phase === 'results') return `${head}<p class="tv-big">Results coming up…</p>${r.isGroup ? '' : pickedList(r)}`;
-    if (r.phase === 'spending') return `${head}${placingsList(r)}<p class="tv-big">🛒 The shop is open. Send your drinks.</p>${r.shopDeadline ? `<div class="big-cd">${until(r.shopDeadline)}</div>` : ''}`;
+    if (r.phase === 'spending') return `${head}<div class="tv-shop"><span class="tv-big">🛒 The shop is open</span>${r.shopDeadline ? `<span class="tv-shop-cd">closes in ${until(r.shopDeadline, 'big-cd')}</span>` : ''}</div>${placingsList(r)}`;
     if (r.phase === 'drinks') return `${head}${tvBarGrid(r)}`;
     return `${head}${placingsList(r)}<p class="fine">${r.number >= (S.plan?.total || 12) ? 'That’s the night. The winner is about to be crowned.' : r.final ? `That’s the end of Act ${r.act}. Act ${r.act + 1} is next.` : 'Round over. Next round soon.'}</p>`;
   }
@@ -2163,13 +2163,24 @@
   function tvBarGrid(r) {
     const clipFor = (teamId) => (S.clips || []).find((c) => c.teamId === teamId && c.status === 'live' && c.ts >= r.drinksStartedAt);
     const blocks = [...roundTeams(), ...(r.serves.some((s) => s.teamId === HOLDING) ? [{ id: HOLDING, name: 'Holding Cell', color: '#888888' }] : [])];
-    return `<div class="bar-grid">${blocks
+    // Fill the screen: up to 4 across (8 blocks = 4 × 2), tiles stretch to fill the card.
+    const n = blocks.length;
+    const cols = n <= 4 ? Math.max(1, n) : n <= 8 ? 4 : Math.ceil(n / 2);
+    return `<div class="bar-grid" style="--cols:${cols};--rows:${Math.ceil(n / cols)}">${blocks
       .map((t) => {
         const st = serveOf(r, t.id);
         const clip = clipFor(t.id);
-        return `<div class="bar-tile s-${st.state}" style="--c:${h(t.color)}">
+        const drinks = st.s ? `${plural(st.s.drinks, 'drink')}${st.s.neat ? ` · 🚫 ${st.s.neat} neat` : ''}` : '';
+        const big =
+          st.state === 'serving' ? `${until(st.s.timerEndsAt, 'tile-cd')}<small>${drinks}</small>`
+          : st.state === 'queued' ? `<span class="tile-big">${placeName(st.pos)}</span><small>in line · ${drinks}</small>`
+          : st.state === 'done' ? `<span class="tile-big">✅ +${h(money(st.s.reward))}</span><small>done in time</small>`
+          : st.state === 'missed' ? `<span class="tile-big">⏰</span><small>out of time${st.s.streamLost ? ` · income back to ${h(money(0))}` : ''}</small>`
+          : `<span class="tile-big">😎</span><small>${h(SERVE_LABEL[st.state] || '')}</small>`;
+        return `<div class="bar-tile s-${st.state}${clip ? ' has-clip' : ''}" style="--c:${h(t.color)}">
           ${clip ? `<video src="${h(clip.url)}" autoplay muted loop playsinline></video>` : ''}
-          <div class="bar-tile-t"><b>${h(t.name)}</b><span>${st.state === 'serving' ? until(st.s.timerEndsAt) : st.state === 'queued' ? `${placeName(st.pos)} in line · ${plural(st.s.drinks, 'drink')}${st.s.neat ? ` · 🚫 ${st.s.neat} neat` : ''}` : st.state === 'done' ? `Done · +${h(money(st.s.reward))}` : st.state === 'missed' && st.s.streamLost ? `Out of time · income back to ${h(money(0))}` : SERVE_LABEL[st.state]}</span></div>
+          <div class="bar-tile-main">${big}</div>
+          <div class="bar-tile-t"><b>${h(t.name)}</b></div>
         </div>`;
       })
       .join('')}</div>`;
@@ -3246,7 +3257,7 @@
         <header class="tv-h">${hero(true)}${oneAct() ? '' : `<div class="act-tag">${curAct().emoji} Act ${curAct().numeral} · ${h(curAct().name)}</div>`}<h1 class="logo">${h(S.settings.partyName)}</h1><div class="tagline">${h(curAct().tagline)}</div></header>
         ${phaseBanner()}
         ${S.announcement ? `<div class="announce tv-ann"><span class="mega">📣</span><div class="announce-t">${h(S.announcement.text)}</div></div>` : ''}
-        <div class="tv-grid ${S.round?.phase === 'drinks' || (S.round?.phase === 'game' && S.round.play) ? 'drinks' : ''}">
+        <div class="tv-grid ${S.round?.phase === 'drinks' || (S.round?.phase === 'game' && S.round.play) ? 'drinks' : ''} ${holding.length ? '' : 'no-holding'} ${S.settings.phoneMode === 'team' && S.round ? 'no-join' : ''}">
           <section class="card">
             <h2>🏆 Standings</h2><p class="fine">${h(pointsNote())} Most points wins.</p>
             <ol class="tv-board">${rows.map((t, i) => `<li style="--c:${h(t.color)}"><span class="rank">${i + 1}</span><span class="b-n">${h(t.name)}${t.nickname || streakBits(t).length ? `<small>${[t.nickname && h(t.nickname), ...streakBits(t)].filter(Boolean).join(' · ')}</small>` : ''}</span><span class="tv-bar"><i style="width:${((t.points || 0) / max) * 100}%"></i></span><b>${t.points || 0}</b></li>`).join('') || '<p class="empty">No blocks yet</p>'}</ol>

@@ -1544,9 +1544,16 @@ table.spy th, table.spy td { text-align: left; padding: 5px 6px; border-bottom: 
 /* During drinks the TV turns its right side into the bar wall: one tile per block. */
 .tv-grid.drinks .tv-feed, .tv-grid.drinks .tv-qr { display: none; }
 .tv-grid.drinks .tv-center { grid-column: 2 / span 2; grid-row: 1 / span 2; }
-.tv-grid.drinks .bar-grid { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
-.tv-grid.drinks .bar-tile { aspect-ratio: 16 / 10; }
-.tv-grid.drinks .bar-tile-t { font-size: clamp(16px, 1.4vw, 24px); }
+.tv-grid.drinks .tv-center { display: flex; flex-direction: column; min-height: 0; }
+.tv-grid.drinks .bar-grid { flex: 1; min-height: 0; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); grid-template-rows: repeat(var(--rows, 2), minmax(0, 1fr)); gap: 14px; }
+.tv-grid.drinks .bar-tile { aspect-ratio: auto; min-height: 0; flex-direction: column; align-items: stretch; justify-content: flex-end; }
+.tv-grid.drinks .bar-tile-t { font-size: clamp(16px, 1.5vw, 26px); justify-content: center; }
+.tv-grid.drinks .bar-tile-t b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-tile-main { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-align: center; padding: 6px; }
+.bar-tile-main small { font-size: clamp(14px, 1.5vw, 28px); font-weight: 600; opacity: 0.85; }
+.bar-tile-main .tile-big { font-size: clamp(26px, 3vw, 54px); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.bar-tile-main .tile-cd { font-size: clamp(40px, 5vw, 96px); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.bar-tile.has-clip .bar-tile-main { color: #fff; text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8); }
 .rewards { display: grid; gap: 8px; }
 .reward { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 12px; text-align: left; align-items: center; padding: 12px; background: var(--card2); border: 1.5px solid var(--line); border-radius: 10px; color: var(--text); font: inherit; cursor: pointer; }
 .reward .mega { grid-row: span 2; }
@@ -1638,3 +1645,24 @@ details.secret .mega { font-size: 40px; }
 
 /* Who's on a block, under its name in the buy sheet's target picker. */
 .target .t-who { display: block; font-size: 12px; font-weight: 500; opacity: 0.75; line-height: 1.25; margin-top: 2px; white-space: normal; text-align: left; }
+/* During drinks the standings take the whole left column (the Holding Cell card steps aside). */
+.tv-grid.drinks .tv-lockup { display: none; }
+.tv-grid.drinks > .card:first-child { grid-row: 1 / span 2; }
+/* Room for 8 blocks: the Holding Cell card only shows when someone's in it, and the "one phone per block"
+   join card only until the first round starts. The standings and the round panel take the freed height. */
+.tv-grid.no-holding .tv-lockup { display: none; }
+.tv-grid.no-holding > .card:first-child { grid-row: 1 / span 2; }
+.tv-grid.no-join .tv-qr { display: none; }
+.tv-grid.no-join .tv-center { grid-row: 1 / span 2; }
+/* TV: 8 placings in two columns, so the shop countdown below them stays on screen. */
+.tv-center .placings { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tv-center .placings li { min-width: 0; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; padding-left: 6px; padding-right: 6px; }
+.tv-shop { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; margin: 6px 0 4px; }
+.tv-shop-cd { font-weight: 700; font-size: clamp(16px, 1.4vw, 24px); }
+.tv-shop-cd .big-cd { font-size: clamp(30px, 3.2vw, 60px) !important; margin-left: 6px; }
+.tv-center .placings .b-n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tv-center .placings li { column-gap: 12px; }
+.tv-center .placings .rank { min-width: 2.2em; white-space: nowrap; }
+/* While the shop is open the placings stretch to fill the rest of the card. */
+.tv-center:has(.tv-shop) { display: flex; flex-direction: column; min-height: 0; }
+.tv-center:has(.tv-shop) .placings { flex: 1; min-height: 0; grid-auto-rows: minmax(0, 1fr); align-content: stretch; }

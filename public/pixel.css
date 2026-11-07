@@ -355,3 +355,19 @@ body[data-era='slammer'] .big-cd, body[data-era='slammer'] .cd.big-cd { font-siz
 body[data-era='slammer'] .tv-board b { font-size: clamp(20px, 2vw, 30px); }
 body[data-era='slammer'] .qty-n { min-width: 64px; padding: 0 4px; text-align: center; font-size: 28px; }
 body[data-era='slammer'] .qty-row { flex-wrap: wrap; }
+body[data-era='slammer'] .bar-tile-main { color: var(--text); font-family: 'Outfit', system-ui, sans-serif; }
+body[data-era='slammer'] .bar-tile-main .tile-cd { font-family: 'Outfit', system-ui, sans-serif; color: var(--orange2); }
+body[data-era='slammer'] .bar-tile.has-clip .bar-tile-main, body[data-era='slammer'] .bar-tile.has-clip .bar-tile-main .tile-cd { color: #fff; }
+body[data-era='slammer'] .tv-grid.drinks .bar-tile-t b { font-size: clamp(18px, 1.6vw, 28px); }
+
+/* TV standings: up to 8 blocks share the card's height, so all of them fit even on a 720p screen. */
+body[data-era='slammer'] .tv-grid > .card:first-child { display: flex; flex-direction: column; min-height: 0; }
+body[data-era='slammer'] .tv-board { flex: 1; min-height: 0; grid-auto-rows: minmax(0, 1fr); gap: clamp(4px, 0.9vh, 10px); }
+body[data-era='slammer'] .tv-board li { min-height: 0; padding-top: 0; padding-bottom: 0; font-size: clamp(14px, min(1.7vw, 3.1vh), 26px); }
+body[data-era='slammer'] .tv-board b { font-size: clamp(16px, min(2vw, 3.6vh), 30px); }
+body[data-era='slammer'] .tv-board .tv-bar { height: clamp(14px, 2.8vh, 30px); border-width: clamp(4px, 0.8vh, 9px); }
+body[data-era='slammer'] .tv-board li { border-width: clamp(3px, 0.8vh, 9px); }
+body[data-era='slammer'] .tv-center .placings li { border-width: clamp(4px, 0.8vh, 9px); }
+body[data-era='slammer'] .tv-center .placings .rank { font-size: clamp(16px, 1.5vw, 24px); }
+body[data-era='slammer'] .tv-center .placings b { font-size: clamp(16px, 1.5vw, 22px); }
+body[data-era='slammer'] .tv-center .placings .b-n { font-size: clamp(14px, 1.3vw, 20px); }
