@@ -281,7 +281,7 @@ body[data-era='slammer'] .eyebrow { font-size: 15px; }
 /* Small text reads best in a clean sans: block names, chips and phase steps use Outfit. */
 body[data-era='slammer'] .chip { font-family: 'Outfit', system-ui, sans-serif; font-weight: 600; font-size: 15px; line-height: 1.2; padding: 2px 8px; }
 body[data-era='slammer'] .phases li { font-family: 'Outfit', system-ui, sans-serif; font-size: 14px; }
-body[data-era='slammer'] .target, body[data-era='slammer'] .b-n, body[data-era='slammer'] .picks, body[data-era='slammer'] .queue, body[data-era='slammer'] .slot-g { font-family: 'Jersey 10', monospace; font-size: 20px; font-weight: 400; }
+body[data-era='slammer'] .target, body[data-era='slammer'] .b-n, body[data-era='slammer'] .picks, body[data-era='slammer'] .queue, body[data-era='slammer'] .slot-g { font-family: 'Outfit', system-ui, sans-serif; font-size: 17px; font-weight: 600; }
 body[data-era='slammer'] .top.slim { padding: 0 6px; padding-top: max(0px, env(safe-area-inset-top)); }
 body[data-era='slammer'] .top.slim .who-name { font-family: 'Jersey 10', monospace; font-size: 28px; color: var(--gold-light); text-shadow: 0 3px 0 var(--outline); }
 body[data-era='slammer'] .pill { background: none; border-style: solid; border-width: 12px; border-image: url('/pixel/frame-hud.png') 12 fill / 12px stretch; padding: 0 4px; font-family: 'Jersey 10', monospace; font-size: 26px; color: var(--text); }
@@ -330,7 +330,26 @@ body[data-era='slammer'] .mechs .check { font-size: 14px; }
 /* Readability: pixel fonts only for big headings and numbers; everything else in a clean sans. */
 body[data-era='slammer'] .btn { font-family: 'Outfit', system-ui, sans-serif; font-weight: 600; letter-spacing: 0; }
 body[data-era='slammer'] .phases li { font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-@media (max-width: 480px) { body[data-era='slammer'] .phases { gap: 2px; } body[data-era='slammer'] .phases li { font-size: 13px; padding: 0; text-overflow: clip; } body[data-era='slammer'] .phases li::before { content: none; } }
+/* Step names alone (no numbers) so they fit on phones and in the TV's narrow middle column. */
+body[data-era='slammer'] .phases li::before { content: none; }
+@media (max-width: 480px) { body[data-era='slammer'] .phases { gap: 2px; } body[data-era='slammer'] .phases li { font-size: 13px; padding: 0; text-overflow: clip; } }
+body[data-era='slammer'] .tv .phases li { font-size: 13px; padding: 0; text-overflow: clip; }
 body[data-era='slammer'] .phases li.on { font-weight: 700; }
 body[data-era='slammer'] .fine { font-weight: 400; }
 body[data-era='slammer'] input, body[data-era='slammer'] select, body[data-era='slammer'] textarea { font-family: 'Outfit', system-ui, sans-serif; font-weight: 500; }
+
+/* Numbers (points, money, places, timers, prices) in a bold clean sans with even-width digits. */
+body[data-era='slammer'] .pill, body[data-era='slammer'] .px-pts, body[data-era='slammer'] .credits-n,
+body[data-era='slammer'] .item-p, body[data-era='slammer'] .rank, body[data-era='slammer'] .b-s b,
+body[data-era='slammer'] .tv-board b, body[data-era='slammer'] .stats b, body[data-era='slammer'] .qty-n,
+body[data-era='slammer'] .qty-total b, body[data-era='slammer'] .big-cd, body[data-era='slammer'] .cd.big-cd,
+body[data-era='slammer'] .placings .rank, body[data-era='slammer'] .placings b, body[data-era='slammer'] .bar-tile-t b,
+body[data-era='slammer'] .pour li b, body[data-era='slammer'] .reward b, body[data-era='slammer'] .row-price b,
+body[data-era='slammer'] .block-card .code, body[data-era='slammer'] .answer b, body[data-era='slammer'] .drink-owed,
+body[data-era='slammer'] .board .rank {
+  font-family: 'Outfit', system-ui, sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 0; text-shadow: none;
+}
+body[data-era='slammer'] .pill { font-size: 18px; }
+body[data-era='slammer'] .px-pts { font-size: 18px; }
+body[data-era='slammer'] .big-cd, body[data-era='slammer'] .cd.big-cd { font-size: 46px; font-weight: 800; }
+body[data-era='slammer'] .tv-board b { font-size: clamp(20px, 2vw, 30px); }

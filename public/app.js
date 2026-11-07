@@ -2636,7 +2636,7 @@
       <section class="card">
         <h3>🏆 Block Standings</h3>
         ${rows.length ? `<ol class="board">${rows
-          .map((t, i) => `<li style="--c:${h(t.color)}" class="${t.id === S.me?.teamId ? 'mine' : ''}"><span class="rank">${i + 1}</span><span class="b-n">${h(t.name)}${nick(t)}<small>${t.motto ? `${h(t.motto)} · ` : ''}${plural(blockmates(t.id).length, 'inmate')}</small></span><span class="b-s"><b>${plural(t.points || 0, 'pt')}</b><small>${t.earned} earned · ${h(money(t.budget))} left${streakTag(t)}</small></span></li>`)
+          .map((t, i) => `<li style="--c:${h(t.color)}" class="${t.id === S.me?.teamId ? 'mine' : ''}"><span class="rank">${i + 1}</span><span class="b-n">${h(t.name)}${nick(t)}<small>${t.motto ? `${h(t.motto)} · ` : ''}${plural(blockmates(t.id).length, 'inmate')}</small></span><span class="b-s"><b>${plural(t.points || 0, 'pt')}</b><small>${h(money(t.earned))} earned · ${h(money(t.budget))} left${streakTag(t)}</small></span></li>`)
           .join('')}</ol>` : '<p class="empty">No blocks yet.</p>'}
       </section>
       <section class="card">
