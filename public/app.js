@@ -3286,7 +3286,10 @@
             ${people([...holding].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })))}
           </div>` : ''}
         </div>
-        ${S.teams.some((t) => !blockmates(t.id).length) ? `<div class="row wrap">${btn(`🧹 Remove empty blocks (${S.teams.filter((t) => !blockmates(t.id).length).length})`, 'removeEmptyTeams', {}, 'sm', 'Remove every block with nobody on it?')}</div>` : ''}
+        <div class="row wrap">
+          ${S.teams.some((t) => !blockmates(t.id).length) ? btn(`🧹 Remove empty blocks (${S.teams.filter((t) => !blockmates(t.id).length).length})`, 'removeEmptyTeams', {}, 'sm', 'Remove every block with nobody on it?') : ''}
+          ${S.players.some((p) => p.lepartyGone) ? btn(`🧹 Remove guests not checked in on LeParty (${S.players.filter((p) => p.lepartyGone).length})`, 'removeGoneGuests', {}, 'sm', `Remove ${S.players.filter((p) => p.lepartyGone).map((p) => p.name).join(', ')}? They’re not checked in on LeParty any more (test guests, or people who left).`) : ''}
+        </div>
         <p class="fine">👑 Shot Caller · ✍️ added here rather than from LeParty · move someone in ⚙️ Settings → their dropdown.</p>
       </section>`;
   }

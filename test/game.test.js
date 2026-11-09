@@ -2225,3 +2225,46 @@ test('Restart from round 1 keeps everyone and their blocks, and wipes everything
   assert.equal(g.s.night.status, 'live', 'the night is still set up');
   assert.equal(g.startRound().number, 1, 'the next round is round 1');
 });
+
+test('LeParty check-ins link to people added by hand when the names clearly match, instead of duplicating them', () => {
+  const g = new Game();
+  g.addGuests({ names: 'Ben Hee Song\nDonald23\nAlex Ly\nJames Cai\nJames Wang\nYui Sisopha' });
+  const blocks = [{ id: 'L1', name: 'Block A' }];
+  const guests = [
+    { id: 'g1', name: 'Ben', blockId: 'L1' }, // first name of a hand-added guest
+    { id: 'g2', name: 'Donald', blockId: 'L1' }, // same name once digits are ignored
+    { id: 'g3', name: 'Alex', blockId: null },
+    { id: 'g4', name: 'James', blockId: null }, // two Jameses here: too ambiguous to link
+    { id: 'g5', name: 'yui sisopha', blockId: null }, // case
+  ];
+  const out = g.applyRoster({ event: { id: 'e', name: 'Party' }, blocks, guests });
+  const names = g.s.players.map((p) => p.name).sort();
+  assert.deepEqual(names, ['Alex Ly', 'Ben Hee Song', 'Donald23', 'James', 'James Cai', 'James Wang', 'Yui Sisopha']);
+  const ben = g.s.players.find((p) => p.name === 'Ben Hee Song');
+  assert.equal(ben.lepartyId, 'g1');
+  assert.equal(g.team(ben.teamId).name, 'Block A', 'and follows LeParty’s block');
+  assert.ok(out.changes.some((c) => c.includes('Linked LeParty’s “Ben” to Ben Hee Song')));
+  // Next sync: nothing new
+  g.applyRoster({ event: { id: 'e', name: 'Party' }, blocks, guests });
+  assert.equal(g.s.players.length, 7);
+});
+
+test('a LeParty guest or block a host removes here stays removed on the next sync', () => {
+  const g = new Game();
+  const blocks = [{ id: 'L1', name: 'Block A' }, { id: 'L2', name: 'Block B' }];
+  const guests = [{ id: 'g1', name: 'Real Person', blockId: 'L1' }, { id: 'g2', name: 'Lucas Romano', blockId: 'L1' }];
+  g.applyRoster({ event: { id: 'e', name: 'Party' }, blocks, guests });
+  g.removePlayers({ playerIds: [g.s.players.find((p) => p.name === 'Lucas Romano').id] });
+  g.applyRoster({ event: { id: 'e', name: 'Party' }, blocks, guests });
+  assert.deepEqual(g.s.players.map((p) => p.name), ['Real Person'], 'not re-imported');
+  // A test guest from an old event shows as no longer checked in, and the cleanup removes them.
+  const g2 = new Game();
+  g2.applyRoster({ event: { id: 'test', name: 'Test' }, blocks, guests });
+  g2.applyRoster({ event: { id: 'real', name: 'Real' }, blocks, guests: [{ id: 'g1', name: 'Real Person', blockId: 'L1' }] });
+  assert.equal(g2.removeGoneGuests().removed, 1);
+  assert.deepEqual(g2.s.players.map((p) => p.name), ['Real Person']);
+  assert.throws(() => g2.removeGoneGuests(), /still checked in/);
+  // Fresh start is a new night: the list is cleared.
+  g.freshStart({ confirm: 'RESET' });
+  assert.deepEqual(g.s.lepartyIgnore, { guests: [], blocks: [] });
+});
