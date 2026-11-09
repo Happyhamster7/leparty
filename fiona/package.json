@@ -1,0 +1,25 @@
+{
+  "name": "fiona",
+  "version": "0.1.0",
+  "description": "A small pixel cat that lives at the bottom of your screen and follows your mouse.",
+  "main": "src/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable"
+  },
+  "dependencies": {
+    "koffi": "^2.9.0"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.fiona.desktopcat",
+    "productName": "Fiona",
+    "files": ["src/**/*", "package.json"],
+    "asarUnpack": ["node_modules/koffi/**"],
+    "win": { "target": "portable" }
+  }
+}
