@@ -9,9 +9,8 @@ const { app, BrowserWindow, Tray, Menu, nativeImage, screen, ipcMain, powerMonit
 const fs = require('fs');
 const path = require('path');
 const cursor = require('./cursor');
-const { palette, fish, hexToRgb } = require('./art');
 
-const STRIP_HEIGHT = 120; // px of screen Fiona lives in, incl. room for hearts and Zs
+const STRIP_HEIGHT = 170; // px of screen Fiona lives in, incl. room for hearts and Zs
 const POLL_MS = 16; // ~60 cursor samples a second
 
 let win = null;
@@ -19,6 +18,7 @@ let tray = null;
 let currentDisplayId = null;
 let hidden = false;
 let settings = { foodCursor: true };
+let fishImage = null; // rendered by the overlay page; see 'fish' below
 
 // ---- settings -----------------------------------------------------------
 
@@ -45,7 +45,7 @@ function saveSettings() {
 
 function setFoodCursor(on) {
   try {
-    if (on) cursor.apply(app.getPath('userData'));
+    if (on && fishImage) cursor.apply(app.getPath('userData'), fishImage);
     else cursor.restore();
   } catch (err) {
     console.error('Food cursor failed', err);
@@ -147,21 +147,28 @@ ipcMain.on('interactive', (_e, on) => {
   else win.setIgnoreMouseEvents(true, { forward: true });
 });
 
+// The page draws the fish (it has a canvas; we don't) and sends the
+// pixels here. It becomes both the system cursor and the tray icon.
+ipcMain.on('fish', (_e, img) => {
+  fishImage = { size: img.size, hotspot: img.hotspot, rgba: Buffer.from(img.rgba) };
+  if (settings.foodCursor) setFoodCursor(true);
+  if (tray) tray.setImage(trayIcon());
+});
+
 // ---- tray ---------------------------------------------------------------
 
 function trayIcon() {
-  // The fish, 1:1, as raw BGRA (Windows' native bitmap order).
-  const size = fish.grid.length;
-  const buf = Buffer.alloc(size * size * 4);
-  fish.grid.forEach((row, y) => {
-    [...row].forEach((ch, x) => {
-      const colour = palette[ch];
-      if (!colour) return;
-      const [r, g, b] = hexToRgb(colour);
-      buf.set([b, g, r, 255], (y * size + x) * 4);
-    });
-  });
-  return nativeImage.createFromBitmap(buf, { width: size, height: size });
+  if (!fishImage) return nativeImage.createEmpty();
+  // Raw BGRA is Windows' native bitmap order.
+  const { size, rgba } = fishImage;
+  const bgra = Buffer.alloc(rgba.length);
+  for (let i = 0; i < rgba.length; i += 4) {
+    bgra[i] = rgba[i + 2];
+    bgra[i + 1] = rgba[i + 1];
+    bgra[i + 2] = rgba[i];
+    bgra[i + 3] = rgba[i + 3];
+  }
+  return nativeImage.createFromBitmap(bgra, { width: size, height: size }).resize({ width: 16, height: 16, quality: 'best' });
 }
 
 function buildMenu() {
@@ -218,7 +225,7 @@ if (!app.requestSingleInstanceLock()) {
     createWindow();
     createTray();
     startCursorFeed();
-    if (settings.foodCursor) setFoodCursor(true);
+    // The fish cursor goes on once the page has sent its picture.
 
     // Monitors plugged/unplugged or taskbar moved: re-fit the strip.
     const refit = () => {

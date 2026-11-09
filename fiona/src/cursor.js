@@ -1,5 +1,6 @@
-// The food cursor: builds a Windows .cur file from the fish pixel art,
-// then swaps it in as the system cursor while Fiona is running.
+// The food cursor: builds a Windows .cur file from the fish image the
+// overlay page renders, then swaps it in as the system cursor while
+// Fiona is running.
 //
 // Windows only. Swapping is global — it changes the pointer in every
 // app, not just ours — so restore() must run on every way out. If the
@@ -8,9 +9,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const { palette, fish, hexToRgb } = require('./art');
-
-const SCALE = 2; // 16px art -> 32px cursor (the Windows default size)
 
 // Windows cursor ids we replace (OCR_* constants from winuser.h).
 const OCR_NORMAL = 32512; // the arrow
@@ -19,9 +17,11 @@ const SPI_SETCURSORS = 0x0057;
 
 // ---- .cur file ----------------------------------------------------------
 
-function buildCurFile() {
-  const src = fish.grid;
-  const size = src.length * SCALE;
+// `fish` is { size, hotspot: {x, y}, rgba } — straight RGBA pixels,
+// top-down, as canvas getImageData() returns them.
+function buildCurFile(fish) {
+  const { size, hotspot, rgba } = fish;
+  if (!(size > 0 && size < 256) || rgba.length !== size * size * 4) throw new Error('Bad fish image');
   const xorBytes = size * size * 4; // 32-bit BGRA
   const andRow = Math.ceil(size / 32) * 4; // 1bpp rows padded to 4 bytes
   const andBytes = andRow * size;
@@ -38,8 +38,8 @@ function buildCurFile() {
   buf.writeUInt8(size, o++);
   buf.writeUInt8(0, o++); // colour count
   buf.writeUInt8(0, o++); // reserved
-  buf.writeUInt16LE(fish.hotspot.x * SCALE, o); o += 2;
-  buf.writeUInt16LE(fish.hotspot.y * SCALE + SCALE / 2, o); o += 2;
+  buf.writeUInt16LE(hotspot.x, o); o += 2;
+  buf.writeUInt16LE(hotspot.y, o); o += 2;
   buf.writeUInt32LE(imageBytes, o); o += 4;
   buf.writeUInt32LE(22, o); o += 4; // image starts right after the header
   // BITMAPINFOHEADER
@@ -57,15 +57,14 @@ function buildCurFile() {
   for (let y = 0; y < size; y++) {
     const row = size - 1 - y; // bitmaps are stored bottom-up
     for (let x = 0; x < size; x++) {
-      const colour = palette[src[Math.floor(y / SCALE)][Math.floor(x / SCALE)]];
+      const s = (y * size + x) * 4;
       const p = xorStart + (row * size + x) * 4;
-      if (colour) {
-        const [r, g, b] = hexToRgb(colour);
-        buf[p] = b; buf[p + 1] = g; buf[p + 2] = r; buf[p + 3] = 255;
-      } else {
-        // Transparent: set the AND-mask bit too, for older cursor paths.
-        buf[andStart + row * andRow + (x >> 3)] |= 0x80 >> (x & 7);
-      }
+      buf[p] = rgba[s + 2]; // B
+      buf[p + 1] = rgba[s + 1]; // G
+      buf[p + 2] = rgba[s]; // R
+      buf[p + 3] = rgba[s + 3]; // A — soft edges stay soft
+      // Fully transparent: set the AND-mask bit too, for older cursor paths.
+      if (rgba[s + 3] === 0) buf[andStart + row * andRow + (x >> 3)] |= 0x80 >> (x & 7);
     }
   }
   return buf;
@@ -90,10 +89,10 @@ function loadUser32() {
   return user32;
 }
 
-function apply(dir) {
+function apply(dir, fish) {
   if (process.platform !== 'win32') return false;
   const file = path.join(dir, 'fiona-fish.cur');
-  fs.writeFileSync(file, buildCurFile());
+  fs.writeFileSync(file, buildCurFile(fish));
   const u = loadUser32();
   // SetSystemCursor takes ownership of (and destroys) the handle it's
   // given, so each cursor id needs its own freshly loaded copy.

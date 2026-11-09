@@ -1,6 +1,6 @@
 # Fiona
 
-A small pixel cat who lives along the bottom of your screen and follows
+A small animated cat who lives along the bottom of your screen and follows
 your mouse. While she's running, your cursor is a fish. Windows only.
 
 ## Run it
@@ -47,13 +47,30 @@ start with Windows, quit.
 | File | What it does |
 | --- | --- |
 | `src/main.js` | A transparent, always-on-top, click-through window, one strip tall, pinned to the bottom of the work area. Polls the global cursor about 60 times a second and sends it to the page. Tray menu. |
-| `src/renderer.js` | Fiona's state machine (sit, walk, run, eat, sleep, wake), animation and particles, drawn on a canvas. |
-| `src/art.js` | All the pixel art as text grids: one character is one pixel. Edit these to redraw her. |
-| `src/cursor.js` | Builds a real `.cur` file from the fish grid and swaps it in as the Windows system cursor (arrow and link hand) through `user32.dll`. |
+| `src/renderer.js` | Fiona's brain: the state machine (sit, walk, run, eat, sleep, wake), movement, eye and head tracking, particles. |
+| `src/cat.js` | Fiona's body: a vector rig drawn with canvas paths. Also draws the fish. |
+| `src/cursor.js` | Turns the rendered fish into a real `.cur` file and swaps it in as the Windows system cursor (arrow and link hand) through `user32.dll`. |
 | `src/preload.js` | The bridge between the page and the main process. |
 
 The window ignores the mouse everywhere except over Fiona herself, so
 clicks go straight through to whatever is underneath.
+
+### How she's animated
+
+There are no image files. Fiona is a small rig of joints (hip,
+shoulder, head, tail base), each with simple shapes on it: capsules for
+the body and legs, circles, ellipses, and triangles for ears. All of it
+is drawn every frame with canvas paths and one shared outline.
+
+- **Posture** is three key poses (stand, sit, lie) blended by two
+  numbers that ease toward their targets. Sitting down, lying down and
+  getting up are always smooth tweens, never cuts.
+- **Legs** use two-bone IK: each foot follows a walk cycle (a trot when
+  walking, a bound when running), and the knee works itself out.
+- **The tail** is a chain of eight springy segments with a swish, each
+  lagging the one before it, so it moves on its own.
+- **Eyes and head** track the cursor. She blinks at random and turns
+  around with a squash instead of snapping.
 
 ## The fish cursor
 
@@ -70,15 +87,12 @@ devices → Mouse → Additional mouse settings → Pointers** and click
 ## Tweaking
 
 Speeds, distances and timings are constants at the top of
-`src/renderer.js`. The size is `S` (screen pixels per art pixel,
-default 3). The strip height is `STRIP_HEIGHT` in `src/main.js`.
+`src/renderer.js`. Her size is `SIZE` there too. The strip height is
+`STRIP_HEIGHT` in `src/main.js`.
 
-To redraw her, edit the grids in `src/art.js`. Every row of a frame
-must be the same width. Check them with:
-
-```bash
-node -e "require('./src/art').checkArt()"
-```
+Her look lives in `src/cat.js`: colours in `COL` (swap the ginger for
+grey, black or calico), proportions in `POSE`, tail styles in `TAIL`.
 
 You can also preview her in a browser without Electron: open
-`src/index.html` and move the mouse over the page.
+`src/index.html` and move the mouse over the page. The fish becomes the
+page's cursor there too.
