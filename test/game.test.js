@@ -2268,3 +2268,46 @@ test('a LeParty guest or block a host removes here stays removed on the next syn
   g.freshStart({ confirm: 'RESET' });
   assert.deepEqual(g.s.lepartyIgnore, { guests: [], blocks: [] });
 });
+
+test('duplicates: block and game names stay unique; a double-tapped buy, Next at the bar and Next question each count once', () => {
+  const { g, a, b, players } = setup();
+  // Names
+  assert.equal(g.addTeam({ name: a.name }).name, `${a.name} (2)`);
+  g.addGame({ name: 'Flip Cup', playersNeeded: 0 });
+  assert.throws(() => g.addGame({ name: 'flip cup' }), /already a game called/);
+  // Buy sent twice with the same one-time ID
+  const one = g.s.games.find((x) => x.name === 'Flip Cup');
+  g.startRound({ gameId: one.id });
+  g.toResults();
+  g.enterResults({ placings: { [a.id]: 1, [b.id]: 2 } });
+  const spirit = itemOf(g, 'drink', (i) => i.name === 'Spirit');
+  const before = g.s.orders.length;
+  g.buy(players[0].id, { itemId: spirit.id, targetTeamId: b.id, nonce: 'tap-1' });
+  assert.equal(g.buy(players[0].id, { itemId: spirit.id, targetTeamId: b.id, nonce: 'tap-1' }).status, 'duplicate');
+  assert.equal(g.s.orders.length, before + 1);
+  g.buy(players[1].id, { itemId: spirit.id, targetTeamId: a.id, nonce: 'tap-2' });
+  // Bar: the same Next twice calls one block
+  g.startDrinks();
+  const first = g.round.serves.find((s) => !s.servedAt).teamId;
+  g.barNext({ teamId: first });
+  g.barNext({ teamId: first });
+  assert.equal(g.round.serves.filter((s) => s.servedAt).length, 1);
+});
+
+test('duplicates: the same Next question twice opens one question; LeParty blocks with one name, and a guest on two events', () => {
+  const { g, teams } = appSetup(2);
+  const game = g.addGame({ name: 'Quiz', runBy: 'trivia', questions: 'A? | 1 | 2 | 1\nB? | 1 | 2 | 2' });
+  const r = g.startRound({ gameId: game.id });
+  g.playNext({ n: 1 });
+  g.playReveal();
+  g.playNext({ n: 2 });
+  g.playNext({ n: 2 });
+  assert.equal(r.play.qi, 1);
+
+  const h = new Game();
+  const out = h.applyRoster({ event: { id: 'e1', name: 'Test' }, blocks: [{ id: 'L1', name: 'Block A' }, { id: 'L2', name: 'Block A' }], guests: [{ id: 'g1', name: 'Jordan', blockId: 'L1' }, { id: 'g2', name: 'Lucas', blockId: 'L2' }] });
+  assert.ok(out);
+  assert.deepEqual(h.s.teams.map((t) => t.name).sort(), ['Block A', 'Block A (2)']);
+  h.applyRoster({ event: { id: 'e2', name: 'Real' }, blocks: [], guests: [{ id: 'g9', name: 'Jordan', blockId: null }] });
+  assert.equal(h.s.players.filter((p) => p.name.startsWith('Jordan')).length, 1, 'Jordan isn’t duplicated when the event changes');
+});

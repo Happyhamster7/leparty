@@ -2229,7 +2229,7 @@
           ? `<p>Picking: ${until(pl.deadline)} left · ${plural(pl.picked.length, 'block')} of ${teams.length} picked</p>
             <ul class="picks">${teams.map((t) => `<li style="--c:${h(t.color)}">${chip(t)} <span>${pl.live?.[t.id] ? PD_WORD[pl.live[t.id].choice] : '…'}</span></li>`).join('')}</ul>
             ${btn('Reveal this turn now', 'playReveal', {}, '', 'Reveal now? Blocks that haven’t picked stay silent.')}`
-          : `${pl.n ? dilemmaTurn(pl, pl.n) : dilemmaRules()}<div class="row wrap">${more ? btn(pl.n ? `▶ Open turn ${pl.n + 1}` : '▶ Open turn 1', 'playNext', {}, 'big') : ''}${pl.n ? finish : ''}</div>`}
+          : `${pl.n ? dilemmaTurn(pl, pl.n) : dilemmaRules()}<div class="row wrap">${more ? btn(pl.n ? `▶ Open turn ${pl.n + 1}` : '▶ Open turn 1', 'playNext', { n: pl.n + 1 }, 'big') : ''}${pl.n ? finish : ''}</div>`}
         ${pl.n ? dilemmaScores(pl) : ''}
         <p class="fine">${byHand}</p></section>`;
     }
@@ -2247,7 +2247,7 @@
         ${pl.state === 'open'
           ? `<p>Play it now. ${until(pl.deadline)} left · guesses so far: ${teams.map((t) => `${h(t.name)} ${pl.tries?.[t.id] || 0}`).join(' · ')}</p>
             <div class="row wrap">${btn('Nobody got it', 'playReveal', {}, 'ghost', 'Close this opening with no winner?')}${teams.map((t) => btn(`Give it to ${h(t.name)}`, 'playReveal', { teamId: t.id }, 'ghost sm', `Give opening ${pl.i + 1} to ${t.name}?`)).join('')}</div>`
-          : `${pl.i >= 0 ? `<p class="serve">${pl.state === 'won' ? `✅ ${h(teamName(pl.winner))} got it first.` : '❌ Nobody got it.'}</p>` : ''}<div class="row wrap">${more ? btn(pl.i < 0 ? '▶ Play the first opening' : `▶ Play opening ${pl.i + 2}`, 'playNext', {}, 'big') : ''}${pl.i >= 0 ? finish : ''}</div>`}
+          : `${pl.i >= 0 ? `<p class="serve">${pl.state === 'won' ? `✅ ${h(teamName(pl.winner))} got it first.` : '❌ Nobody got it.'}</p>` : ''}<div class="row wrap">${more ? btn(pl.i < 0 ? '▶ Play the first opening' : `▶ Play opening ${pl.i + 2}`, 'playNext', { n: pl.i + 2 }, 'big') : ''}${pl.i >= 0 ? finish : ''}</div>`}
         ${pl.i >= 0 ? scoreList(pl) : ''}
         <p class="fine">${byHand}</p></section>`;
     }
@@ -2256,7 +2256,7 @@
       const more = pl.qi + 1 < pl.count;
       return `<section class="card"><h3>❓ ${h(r.gameName)} · ${pl.qi < 0 ? `${plural(pl.count, 'question')} ready` : `question ${pl.qi + 1} of ${pl.count}`}</h3>
         ${q ? `<p class="q">${h(q.q)}</p><ol class="opts">${q.options.map((o, i) => `<li class="${q.answer === i ? 'right' : ''}">${LETTERS[i]}. ${h(o)}${q.answer === i ? ' ✓' : ''}</li>`).join('')}</ol>` : ''}
-        ${pl.state === 'asking' ? `<p>${plural(pl.answered.length, 'block')} of ${teams.length} answered · ${until(pl.deadline)} left</p>${btn('Reveal the answer now', 'playReveal', {}, '')}` : `<div class="row wrap">${more ? btn(pl.qi < 0 ? '▶ Ask the first question' : '▶ Next question', 'playNext', {}, 'big') : ''}${pl.qi >= 0 ? finish : ''}</div>`}
+        ${pl.state === 'asking' ? `<p>${plural(pl.answered.length, 'block')} of ${teams.length} answered · ${until(pl.deadline)} left</p>${btn('Reveal the answer now', 'playReveal', {}, '')}` : `<div class="row wrap">${more ? btn(pl.qi < 0 ? '▶ Ask the first question' : '▶ Next question', 'playNext', { n: pl.qi + 2 }, 'big') : ''}${pl.qi >= 0 ? finish : ''}</div>`}
         ${pl.qi >= 0 ? scoreList(pl) : ''}
         <p class="fine">${byHand}</p></section>`;
     }
@@ -2264,7 +2264,7 @@
     return `<section class="card"><h3>🤥 Is Jason lying? · ${pl.n ? `story ${pl.n} of ${pl.total}` : `${`${pl.total} ${pl.total === 1 ? 'story' : 'stories'}`}`}</h3>
       ${['voting', 'closed'].includes(pl.state) ? `<p>${pl.state === 'voting' ? `Voting: ${until(pl.deadline)} left · ` : 'Voting closed · '}${plural(pl.voted.length, 'block')} of ${teams.length} voted</p>
         <div class="row wrap">${btn('✅ It was the TRUTH', 'playReveal', { truth: 'truth' }, 'big')}${btn('🤥 It was a LIE', 'playReveal', { truth: 'lie' }, 'big')}</div>`
-        : `<div class="row wrap">${more ? btn(pl.n ? `▶ Open the vote on story ${pl.n + 1}` : '▶ Open the vote on story 1', 'playNext', {}, 'big') : ''}${pl.n ? finish : ''}</div>`}
+        : `<div class="row wrap">${more ? btn(pl.n ? `▶ Open the vote on story ${pl.n + 1}` : '▶ Open the vote on story 1', 'playNext', { n: pl.n + 1 }, 'big') : ''}${pl.n ? finish : ''}</div>`}
       ${pl.n ? scoreList(pl) : ''}
       <p class="fine">${byHand}</p></section>`;
   }
@@ -2672,7 +2672,7 @@
       .join('')}</ul>`;
     return `<section class="card bar">
       <div class="row wrap bar-actions">
-        ${next ? btn(`Next: ${h(teamName(next.teamId))} ▶`, 'barNext', {}, 'big') : '<p class="fine">Everyone’s been served.</p>'}
+        ${next ? btn(`Next: ${h(teamName(next.teamId))} ▶`, 'barNext', { teamId: next.teamId }, 'big') : '<p class="fine">Everyone’s been served.</p>'}
         ${serving.length ? btn('↶ Back', 'barBack', {}, 'ghost') : ''}
         <button class="btn ghost sm" data-act="senders">${ui.senders ? 'Hide senders' : 'Show senders'}</button>
       </div>
@@ -3682,7 +3682,7 @@
       const res = await act('pickpocket', { targetTeamId: d.teamId });
       if (res.ok) splash('passed', '🫳 Got it!', `You lifted ${money(res.result.amount)} from ${teamName(d.teamId)}.`, 3600);
     },
-    'buy-open': (d) => { ui.sheet = { itemId: d.itemId, targetTeamId: null, targetPlayerId: null }; delete drafts.buy_note; render(); },
+    'buy-open': (d) => { ui.sheet = { itemId: d.itemId, targetTeamId: null, targetPlayerId: null, nonce: Math.random().toString(36).slice(2) + Date.now().toString(36) }; delete drafts.buy_note; render(); },
     'sheet-close': () => {
       if (ui.sheet) opened.delete(`buy:${ui.sheet.itemId}`);
       ui.sheet = null;
@@ -3694,9 +3694,10 @@
     'pick-player': (d) => { ui.sheet.targetPlayerId = d.playerId; render(); },
     'buy-confirm': async () => {
       const noteEl = document.getElementById('buy_note');
-      const { itemId, targetTeamId, targetPlayerId, qty, stake } = ui.sheet;
-      const res = await act('buy', { itemId, targetTeamId, targetPlayerId, qty: qty || 1, stake, note: noteEl ? noteEl.value : '' });
+      const { itemId, targetTeamId, targetPlayerId, qty, stake, nonce } = ui.sheet;
+      const res = await act('buy', { itemId, targetTeamId, targetPlayerId, qty: qty || 1, stake, nonce, note: noteEl ? noteEl.value : '' });
       if (!res.ok) return;
+      if (res.result?.status === 'duplicate') { opened.delete(`buy:${itemId}`); ui.sheet = null; render(); return; }
       const it = S.items.find((i) => i.id === itemId);
       const r = res.result || {};
       if (r.status === 'requested') toast('🛒 Sent to your block. Get them to second it (or ask the Shot Caller).', 'ok');
@@ -3767,12 +3768,17 @@
     },
   };
 
+  const busy = new Set();
   document.addEventListener('click', (e) => {
     const el = e.target.closest('[data-act]');
     if (!el || el.disabled) return;
     if (el.tagName === 'A') return;
     e.preventDefault();
-    ACTIONS[el.dataset.act]?.({ ...el.dataset }, el);
+    // A second tap on the same button while the first is still going through is ignored.
+    const key = JSON.stringify(el.dataset);
+    if (busy.has(key)) return;
+    const out = ACTIONS[el.dataset.act]?.({ ...el.dataset }, el);
+    if (out && typeof out.finally === 'function') { busy.add(key); out.finally(() => busy.delete(key)); }
   });
 
   document.addEventListener('input', (e) => {
@@ -3970,9 +3976,16 @@
     },
   };
 
-  document.addEventListener('submit', async (e) => {
+  document.addEventListener('submit', (e) => {
     const form = e.target;
     e.preventDefault();
+    const key = `form:${JSON.stringify(form.dataset)}`;
+    if (busy.has(key)) return;
+    busy.add(key);
+    Promise.resolve(onSubmit(form)).finally(() => busy.delete(key));
+  });
+
+  async function onSubmit(form) {
     const data = formData(form);
     if (form.dataset.form) return FORMS[form.dataset.form]?.(data, form);
     if (form.dataset.admin) {
@@ -4002,7 +4015,7 @@
         toast('Done ✔', 'ok');
       }
     }
-  });
+  }
 
   render();
   // A block card's QR code opens /?b=<token>: this device becomes that block's phone.
