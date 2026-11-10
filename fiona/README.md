@@ -1,7 +1,8 @@
 # Fiona
 
 A small animated cat who lives along the bottom of your screen and follows
-your mouse. While she's running, your cursor is a fish. Windows only.
+your mouse. She's drawn in a pastel kawaii style: big round head, blob
+body, stubby legs, sparkly eyes and blush. While she's running, your cursor is a fish. Windows only.
 
 ## Run it
 
@@ -32,9 +33,9 @@ The exe ends up in `dist/`.
 | --- | --- |
 | Move the mouse | Walks under it, or runs if it's far away |
 | Stop moving | Sits and looks up at it, blinking |
-| Bring the fish down to her | Eats it (crumbs, then hearts) |
+| Bring the fish down to her | Eats it with happy eyes (crumbs, then hearts) |
 | Hover over her | Shows her name |
-| Click her | Hearts |
+| Click her | Hearts and happy eyes |
 | Leave the mouse for 25 s | Curls up and sleeps |
 | Move the mouse while she sleeps | Startles awake |
 | Move to another monitor | Follows you, walking in from the side |
@@ -90,8 +91,9 @@ Speeds, distances and timings are constants at the top of
 `src/renderer.js`. Her size is `SIZE` there too. The strip height is
 `STRIP_HEIGHT` in `src/main.js`.
 
-Her look lives in `src/cat.js`: colours in `COL` (swap the ginger for
-grey, black or calico), proportions in `POSE`, tail styles in `TAIL`.
+Her look lives in `src/cat.js`: colours in `COL` (swap the peach for
+grey, lilac or mint), proportions in `POSE` and `HEAD_RX`/`HEAD_RY`,
+tail styles in `TAIL`.
 
 You can also preview her in a browser without Electron: open
 `src/index.html` and move the mouse over the page. The fish becomes the

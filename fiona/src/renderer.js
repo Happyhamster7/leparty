@@ -88,6 +88,7 @@
     nextBlink: 2,
     blinkUntil: 0,
     eatCooldown: 0,
+    happyUntil: 0, // ^ ^ eyes after being petted
     zTimer: 0,
     hovered: false,
   };
@@ -102,7 +103,7 @@
 
   // Head position on screen, from the rig's last solved pose.
   function headOnScreen() {
-    const p = rig.points ? rig.points.head : { x: 12, y: -58 };
+    const p = rig.points ? rig.points.head : { x: 7, y: -45 };
     return { x: cat.x + p.x * SIZE * cat.flip, y: H - GROUND + p.y * SIZE };
   }
 
@@ -113,7 +114,7 @@
   function hearts(n) {
     const h = headOnScreen();
     for (let i = 0; i < n; i++) {
-      spawn('heart', h.x + (Math.random() - 0.5) * 30, h.y - 18, (Math.random() - 0.5) * 30, -35 - Math.random() * 25, 1.6);
+      spawn('heart', h.x + (Math.random() - 0.5) * 30, h.y - 26, (Math.random() - 0.5) * 30, -35 - Math.random() * 25, 1.6);
     }
   }
 
@@ -146,6 +147,7 @@
   canvas.addEventListener('mousedown', () => {
     if (!cat.hovered) return;
     hearts(4);
+    cat.happyUntil = performance.now() / 1000 + 1.4;
     if (cat.state !== 'sleep') setState('sit');
   });
 
@@ -184,7 +186,7 @@
           setState('wake');
           rig.hop = 1;
           const h = headOnScreen();
-          spawn('bang', h.x, h.y - 34, 0, -12, 0.8);
+          spawn('bang', h.x, h.y - 40, 0, -12, 0.8);
         }
         break;
 
@@ -246,7 +248,7 @@
     const ly = (mouse.y - h.y) / 90;
     const s = cat.state;
     const sitting = s === 'sit' || s === 'wake' || s === 'eat';
-    rig.phase += moved / SIZE * (s === 'run' ? 0.075 : 0.12);
+    rig.phase += moved / SIZE * (s === 'run' ? 0.12 : 0.19); // short legs, quick steps
     stepCat(rig, dt, {
       sit: sitting ? 1 : 0,
       lie: s === 'sleep' ? 1 : 0,
@@ -257,6 +259,7 @@
       lookX: Math.max(-1, Math.min(1, lx)),
       lookY: Math.max(-1, Math.min(1, ly)),
       blink: s === 'sleep' || now < cat.blinkUntil ? 1 : 0,
+      happy: s !== 'sleep' && (s === 'eat' || now < cat.happyUntil) ? 1 : 0,
       mouth: s === 'eat' ? 0.5 + 0.5 * Math.sin(cat.stateTime * 14) : 0,
     });
 
@@ -282,20 +285,20 @@
     ctx.translate(p.x, p.y);
     ctx.scale(grow, grow);
     ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#3a2a20';
+    ctx.strokeStyle = '#9a6248';
     if (p.kind === 'heart') {
       ctx.beginPath();
       ctx.moveTo(0, 6);
       ctx.bezierCurveTo(-9, 0, -6, -7, 0, -3);
       ctx.bezierCurveTo(6, -7, 9, 0, 0, 6);
-      ctx.fillStyle = '#ec5a6e';
+      ctx.fillStyle = '#f78fa7';
       ctx.lineWidth = 1.6;
       ctx.fill();
       ctx.stroke();
     } else if (p.kind === 'crumb') {
       ctx.beginPath();
       ctx.arc(0, 0, 2, 0, Math.PI * 2);
-      ctx.fillStyle = '#7fb3e0';
+      ctx.fillStyle = '#a9d4f5';
       ctx.fill();
     } else {
       const text = p.kind === 'z' ? 'z' : '!';
@@ -337,10 +340,10 @@
       ctx.textAlign = 'center';
       ctx.lineJoin = 'round';
       ctx.lineWidth = 3;
-      ctx.strokeStyle = '#3a2a20';
+      ctx.strokeStyle = '#9a6248';
       ctx.fillStyle = '#fbf4ea';
-      ctx.strokeText('Fiona', h.x, h.y - 32);
-      ctx.fillText('Fiona', h.x, h.y - 32);
+      ctx.strokeText('Fiona', h.x, h.y - 38);
+      ctx.fillText('Fiona', h.x, h.y - 38);
     }
   }
 

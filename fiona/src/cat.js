@@ -1,4 +1,6 @@
-// Fiona's body: a small vector rig drawn with canvas paths.
+// Fiona's body: a small vector rig drawn with canvas paths, in a
+// pastel kawaii / chibi style — big round head, blob body, stubby
+// legs, big sparkly eyes, blush, soft brown outline.
 //
 // She's built from simple shapes (capsules, circles, ellipses, ear
 // triangles) placed on a handful of joints. Three key poses — stand,
@@ -14,18 +16,19 @@
 
 (function (root) {
   const COL = {
-    fur: '#eba35e',
-    furFar: '#cf8848',
-    stripe: '#c8743a',
-    white: '#fbf4ea',
-    whiteFar: '#e6d9c6',
-    outline: '#3a2a20',
-    nose: '#e98ea0',
-    earIn: '#f3b2aa',
-    iris: '#8cc152',
-    pupil: '#1d1a17',
+    fur: '#f8c898', // peach
+    furFar: '#eeb382',
+    stripe: '#f0a56e',
+    white: '#fff9f0', // cream
+    whiteFar: '#f3e6d6',
+    outline: '#9a6248', // soft brown, never black
+    nose: '#f28da2',
+    earIn: '#fbc6c4',
+    blush: '#f9a3b4',
+    eye: '#3a2733', // dark plum
+    eyeGlow: '#8f63b0',
   };
-  const OUT = 2.2; // outline thickness
+  const OUT = 1.8; // outline thickness
 
   // ---- small maths ------------------------------------------------------
 
@@ -58,10 +61,13 @@
 
   // ---- poses ------------------------------------------------------------
 
+  // Chibi proportions: the head is as big as the body, the legs are stubs.
+  const HEAD_RX = 21;
+  const HEAD_RY = 18;
   const POSE = {
-    stand: { hip: { x: -20, y: -30 }, shoulder: { x: 16, y: -33 }, head: { x: 30, y: -48 }, tail: { x: -30, y: -36 }, bodyR: 11.5, haunchR: 12, chestR: 12 },
-    sit: { hip: { x: -8, y: -15 }, shoulder: { x: 6, y: -38 }, head: { x: 11, y: -58 }, tail: { x: -18, y: -6 }, bodyR: 12, haunchR: 15, chestR: 11.5 },
-    lie: { hip: { x: -16, y: -13 }, shoulder: { x: 12, y: -13 }, head: { x: 27, y: -19 }, tail: { x: -29, y: -8 }, bodyR: 12.5, haunchR: 13, chestR: 12 },
+    stand: { hip: { x: -13, y: -21 }, shoulder: { x: 9, y: -22 }, head: { x: 19, y: -38 }, tail: { x: -24, y: -27 }, bodyR: 13, haunchR: 13.5, chestR: 13 },
+    sit: { hip: { x: -6, y: -16.5 }, shoulder: { x: 3, y: -27 }, head: { x: 7, y: -45 }, tail: { x: -19, y: -7 }, bodyR: 14, haunchR: 16.5, chestR: 13 },
+    lie: { hip: { x: -14, y: -13 }, shoulder: { x: 8, y: -13.5 }, head: { x: 21, y: -19 }, tail: { x: -26, y: -8 }, bodyR: 13, haunchR: 13.5, chestR: 13 },
   };
 
   // Tail shapes: absolute angle of the first segment, then how much each
@@ -69,14 +75,15 @@
   // -1.5 rad so blending between styles swings the tail round the back,
   // never through her body.
   const TAIL = {
-    walk: { base: -2.2, curl: 0.2, amp: 0.14, freq: 3 },
-    run: { base: -2.75, curl: 0.09, amp: 0.2, freq: 7 },
-    sit: { base: -3.75, curl: -0.33, amp: 0.07, freq: 1.4 },
-    eat: { base: -3.6, curl: -0.26, amp: 0.22, freq: 4.5 },
-    sleep: { base: -3.35, curl: -0.4, amp: 0.025, freq: 0.8 },
+    walk: { base: -2.1, curl: 0.16, amp: 0.16, freq: 4 },
+    run: { base: -2.6, curl: 0.1, amp: 0.2, freq: 8 },
+    sit: { base: -3.75, curl: -0.3, amp: 0.08, freq: 1.6 },
+    eat: { base: -3.5, curl: -0.2, amp: 0.25, freq: 5 },
+    sleep: { base: -3.35, curl: -0.36, amp: 0.025, freq: 0.8 },
   };
   const TAIL_N = 8;
-  const TAIL_SEG = 6;
+  const TAIL_SEG = 4.6;
+  const tailR = (i) => lerp(5, 4.2, i / (TAIL_N - 1)); // short and plump
 
   // ---- state ------------------------------------------------------------
 
@@ -84,7 +91,7 @@
     return {
       sit: 1, lie: 0, eat: 0, run: 0,
       tilt: 0, lookX: 0, lookY: 0,
-      blink: 0, mouth: 0, hop: 0, earTwitch: 0,
+      blink: 0, happy: 0, mouth: 0, hop: 0, earTwitch: 0,
       phase: 0, time: 0,
       tail: Array.from({ length: TAIL_N }, (_, i) => (i === 0 ? TAIL.sit.base : TAIL.sit.curl)),
       points: null, // last solved keypoints, for hit-testing
@@ -102,6 +109,7 @@
     c.lookX = approach(c.lookX, t.lookX, 12, dt);
     c.lookY = approach(c.lookY, t.lookY, 12, dt);
     c.blink = approach(c.blink, t.blink, 30, dt);
+    c.happy = approach(c.happy, t.happy || 0, 16, dt);
     c.mouth = approach(c.mouth, t.mouth, 20, dt);
     c.hop = approach(c.hop, 0, 7, dt);
     c.earTwitch = approach(c.earTwitch, 0, 9, dt);
@@ -127,43 +135,45 @@
       bodyR: blendN('bodyR'), haunchR: blendN('haunchR'), chestR: blendN('chestR'),
     };
 
+    // A bouncy little trot.
     const moving = (1 - s) * (1 - l);
     const ph = c.phase;
-    const bob = -Math.abs(Math.cos(ph)) * lerp(1.4, 2.8, c.run) * moving;
-    const pitch = Math.sin(ph) * 2.4 * c.run * moving;
+    const bob = -Math.abs(Math.cos(ph)) * lerp(2, 3.4, c.run) * moving;
+    const pitch = Math.sin(ph) * 1.8 * c.run * moving;
     P.hip = add(P.hip, 0, bob + pitch);
     P.shoulder = add(P.shoulder, 0, bob - pitch);
-    P.head = add(P.head, 0, bob * 0.6 - pitch * 0.8);
+    P.head = add(P.head, 0, bob * 0.7 - pitch * 0.8);
     P.tail = add(P.tail, 0, bob + pitch);
 
     // Eating: lean the head down and forward.
-    P.head = mix(P.head, add(POSE.sit.head, 10, 22 + Math.sin(c.time * 14) * 1.2 * c.eat), c.eat);
-    P.shoulder = add(P.shoulder, 3 * c.eat, 4 * c.eat);
+    P.head = mix(P.head, add(POSE.sit.head, 9, 21 + Math.sin(c.time * 14) * 1.2 * c.eat), c.eat);
+    P.shoulder = add(P.shoulder, 2 * c.eat, 3 * c.eat);
 
     // Breathing, stronger when lying down.
     const breath = 1 + 0.035 * Math.sin(c.time * 2.1) * (0.35 + 0.65 * l);
     P.bodyR *= breath;
     P.chestR *= breath;
+    P.haunchR *= breath;
 
     // Little hop when startled awake.
     const hop = -c.hop * 9;
     for (const k of ['hip', 'shoulder', 'head', 'tail']) P[k] = add(P[k], 0, hop);
 
     // Legs. Trot = diagonal pairs; run = bound (fronts together, backs together).
-    const stride = lerp(7, 12, c.run) * moving;
-    const lift = lerp(5, 8, c.run) * moving;
+    const stride = lerp(4.5, 7, c.run) * moving;
+    const lift = lerp(3.5, 5.5, c.run) * moving;
     const FOOT_Y = -3.5; // leg ends at the ankle; the paw sits below it
     const gait = (x, p) => ({ x: x + Math.sin(p) * stride, y: FOOT_Y - Math.max(0, Math.cos(p)) * lift + hop });
     const legDefs = [
-      { far: true, front: false, root: add(P.hip, 4, 3), stand: P.hip.x + 3, sit: P.hip.x + 16, p: ph + lerp(0, Math.PI + 0.4, c.run) },
-      { far: true, front: true, root: add(P.shoulder, 3, 4), stand: P.shoulder.x + 4, sit: P.shoulder.x + 9, p: ph + lerp(Math.PI, 0.4, c.run) },
-      { far: false, front: false, root: add(P.hip, 0, 4), stand: P.hip.x - 1, sit: P.hip.x + 13, p: ph + Math.PI },
-      { far: false, front: true, root: add(P.shoulder, 0, 5), stand: P.shoulder.x + 1, sit: P.shoulder.x + 5, p: ph },
+      { far: true, front: false, root: add(P.hip, 4, 5), stand: P.hip.x + 3, sit: P.hip.x + 15, p: ph + lerp(0, Math.PI + 0.4, c.run) },
+      { far: true, front: true, root: add(P.shoulder, 3, 5), stand: P.shoulder.x + 4, sit: P.shoulder.x + 9, p: ph + lerp(Math.PI, 0.4, c.run) },
+      { far: false, front: false, root: add(P.hip, 0, 6), stand: P.hip.x - 1, sit: P.hip.x + 12, p: ph + Math.PI },
+      { far: false, front: true, root: add(P.shoulder, 0, 6), stand: P.shoulder.x + 1, sit: P.shoulder.x + 5, p: ph },
     ];
     P.legs = legDefs.map((d) => {
       const foot = mix(gait(d.stand, d.p), { x: d.sit, y: FOOT_Y + hop }, s);
-      const l1 = d.front ? lerp(12, 15, s) : lerp(12, 13, s);
-      const l2 = d.front ? lerp(14, 16, s) : lerp(13, 14, s);
+      const l1 = d.front ? lerp(6, 9, s) : lerp(6, 7, s);
+      const l2 = d.front ? lerp(6.5, 10, s) : lerp(6.5, 8, s);
       const { knee, end } = ik(d.root, foot, l1, l2, d.front ? 1 : -1);
       return { far: d.far, root: d.root, knee, end };
     });
@@ -174,8 +184,7 @@
     let cur = P.tail;
     for (let i = 0; i < TAIL_N; i++) {
       ang += c.tail[i];
-      const r = lerp(4.6, 2.8, i / (TAIL_N - 1));
-      cur = { x: cur.x + Math.cos(ang) * TAIL_SEG, y: Math.min(cur.y + Math.sin(ang) * TAIL_SEG, -r) };
+      cur = { x: cur.x + Math.cos(ang) * TAIL_SEG, y: Math.min(cur.y + Math.sin(ang) * TAIL_SEG, -tailR(i)) };
       P.tailPts.push(cur);
     }
     return P;
@@ -199,8 +208,9 @@
       ctx.ellipse(sh.c.x, sh.c.y, sh.rx + grow, sh.ry + grow, sh.rot || 0, 0, Math.PI * 2);
       ctx.fill();
     } else if (sh.t === 'poly') {
+      // `round` fattens the stroke, which rounds the corners off.
       ctx.lineJoin = 'round';
-      ctx.lineWidth = 2 * grow + 2;
+      ctx.lineWidth = 2 * grow + (sh.round || 2);
       sh.pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
       ctx.closePath();
       ctx.fill();
@@ -242,7 +252,7 @@
   function drawCat(ctx, c) {
     const P = solve(c);
     c.points = P;
-    const tilt = c.tilt + 0.15 * c.lie + 0.35 * c.eat;
+    const tilt = c.tilt + 0.12 * c.lie + 0.25 * c.eat;
     const Hd = (x, y) => rotAround({ x: P.head.x + x, y: P.head.y + y }, P.head, tilt);
     const tw = c.earTwitch;
     const showLegs = c.lie < 0.55;
@@ -252,28 +262,24 @@
       { t: 'cap', a: P.hip, b: P.shoulder, r: P.bodyR, col: COL.fur },
       { t: 'circ', c: P.hip, r: P.haunchR, col: COL.fur },
       { t: 'circ', c: P.shoulder, r: P.chestR, col: COL.fur },
-      { t: 'cap', a: P.shoulder, b: mix(P.shoulder, P.head, 0.7), r: 8, col: COL.fur },
-      { t: 'poly', pts: [Hd(-12, -4), Hd(-3, -11), Hd(-10, -22)], col: COL.fur },
-      { t: 'poly', pts: [Hd(2, -11), Hd(12, -5), Hd(10 + tw * 3, -22 + tw * 2)], col: COL.fur },
-      { t: 'ell', c: P.head, rx: 15, ry: 13, rot: tilt, col: COL.fur },
-      { t: 'ell', c: Hd(5, 5), rx: 10, ry: 7, rot: tilt, col: COL.fur }, // cheeks
+      { t: 'cap', a: P.shoulder, b: mix(P.shoulder, P.head, 0.6), r: 9, col: COL.fur },
     ];
     const far = [];
     for (const leg of P.legs) {
+      if (!showLegs) break; // lying down she's a loaf: legs tucked away
       const list = leg.far ? far : near;
       const fur = leg.far ? COL.furFar : COL.fur;
-      const paw = leg.far ? COL.whiteFar : COL.white;
-      if (showLegs) {
-        list.push({ t: 'cap', a: leg.root, b: leg.knee, r: 4.6, col: fur });
-        list.push({ t: 'cap', a: leg.knee, b: leg.end, r: 3.8, col: fur });
-        list.push({ t: 'ell', c: add(leg.end, 1.6, 0.6), rx: 4.6, ry: 3, col: paw });
-      }
+      list.push({ t: 'cap', a: leg.root, b: leg.knee, r: 5, col: fur });
+      list.push({ t: 'cap', a: leg.knee, b: leg.end, r: 4.5, col: fur });
+      list.push({ t: 'ell', c: add(leg.end, 1.4, 0.4), rx: 5.2, ry: 3.2, col: leg.far ? COL.whiteFar : COL.white });
     }
-    if (!showLegs) {
-      // Lying down: just the front paws peeking out.
-      near.push({ t: 'ell', c: add(P.shoulder, 13, 9.5), rx: 5, ry: 3, col: COL.white });
-      far.push({ t: 'ell', c: add(P.shoulder, 8, 9), rx: 5, ry: 3, col: COL.whiteFar });
-    }
+    // Head last, so it sits over the body and front legs.
+    near.push(
+      { t: 'poly', round: 5, pts: [Hd(-15, -9), Hd(-6, -15), Hd(-13, -24)], col: COL.fur },
+      { t: 'poly', round: 5, pts: [Hd(5, -15), Hd(15, -9), Hd(14 + tw * 3, -24 + tw * 2)], col: COL.fur },
+      { t: 'ell', c: P.head, rx: HEAD_RX, ry: HEAD_RY, rot: tilt, col: COL.fur },
+      { t: 'ell', c: Hd(2, 7), rx: HEAD_RX + 2, ry: 12, rot: tilt, col: COL.fur } // mochi cheeks
+    );
 
     layer(ctx, near, () => {
       // Back stripes, perpendicular to the spine.
@@ -281,128 +287,152 @@
       const uy = P.shoulder.y - P.hip.y;
       const ul = Math.hypot(ux, uy) || 1;
       const n = { x: uy / ul, y: -ux / ul };
-      for (let i = 0; i < 4; i++) {
-        const t = 0.12 + 0.24 * i;
+      for (let i = 0; i < 3; i++) {
+        const t = 0.02 + 0.34 * i;
         const p = mix(P.hip, P.shoulder, t);
         const r = lerp(P.haunchR, P.chestR, t);
-        line(ctx, add(p, n.x * (r + 2), n.y * (r + 2)), add(p, n.x * (r - 6) - (ux / ul) * 2, n.y * (r - 6) - (uy / ul) * 2), 2.6, COL.stripe);
+        line(ctx, add(p, n.x * (r + 2), n.y * (r + 2)), add(p, n.x * (r - 6) - (ux / ul) * 2, n.y * (r - 6) - (uy / ul) * 2), 3, COL.stripe);
       }
-      // Head stripes.
-      line(ctx, Hd(-5, -12), Hd(-4, -6.5), 1.8, COL.stripe);
-      line(ctx, Hd(-1, -13), Hd(-0.5, -7.5), 1.8, COL.stripe);
-      line(ctx, Hd(3, -12.5), Hd(2.8, -7.5), 1.8, COL.stripe);
-      // White chest and muzzle.
+      // Cream belly.
       ctx.fillStyle = COL.white;
       ctx.beginPath();
-      ctx.ellipse(P.shoulder.x + P.chestR * 0.6, P.shoulder.y + 2, 6.5, 9.5, -0.2 * (1 - c.lie), 0, Math.PI * 2);
+      ctx.ellipse(P.shoulder.x + P.chestR * 0.5, P.shoulder.y + 5, 8.5, 11, -0.15 * (1 - c.lie), 0, Math.PI * 2);
       ctx.fill();
-      const m = Hd(6.5, 6);
+
+      // Re-fill the head so body details don't show through it.
+      shape(ctx, { t: 'ell', c: P.head, rx: HEAD_RX, ry: HEAD_RY, rot: tilt, col: COL.fur }, 0);
+      shape(ctx, { t: 'ell', c: Hd(2, 7), rx: HEAD_RX + 2, ry: 12, rot: tilt, col: COL.fur }, 0);
+      // A soft line under the chin, to separate head from body.
+      ctx.strokeStyle = COL.outline;
+      ctx.globalAlpha = 0.55;
+      ctx.lineWidth = 1.2;
       ctx.beginPath();
-      ctx.ellipse(m.x, m.y, 7.5, 5, tilt, 0, Math.PI * 2);
+      ctx.ellipse(Hd(2, 7).x, Hd(2, 7).y, HEAD_RX + 2.6, 12.6, tilt, 0.12 * Math.PI, 0.88 * Math.PI);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      // Forehead stripes.
+      line(ctx, Hd(-1, -18), Hd(-0.5, -12.5), 2.4, COL.stripe);
+      line(ctx, Hd(3.5, -18.5), Hd(3.5, -12), 2.4, COL.stripe);
+      line(ctx, Hd(8, -18), Hd(7.5, -12.5), 2.4, COL.stripe);
+      // Cream lower face.
+      ctx.fillStyle = COL.white;
+      ctx.beginPath();
+      ctx.ellipse(Hd(4, 11).x, Hd(4, 11).y, 13, 8, tilt, 0, Math.PI * 2);
       ctx.fill();
+      // Blush.
+      ctx.fillStyle = COL.blush;
+      ctx.globalAlpha = 0.75;
+      for (const [bx, by] of [[-12, 9.5], [19, 9.5]]) {
+        const b = Hd(bx, by);
+        ctx.beginPath();
+        ctx.ellipse(b.x, b.y, 4, 2.4, tilt, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
       // Inner ears.
-      ctx.fillStyle = COL.earIn;
+      ctx.fillStyle = ctx.strokeStyle = COL.earIn;
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = 2;
       for (const pts of [
-        [Hd(-10, -6), Hd(-5, -10), Hd(-9.5, -17)],
-        [Hd(4, -10), Hd(10, -6.5), Hd(9 + tw * 2.5, -17.5 + tw * 1.5)],
+        [Hd(-13, -11), Hd(-8.5, -14.5), Hd(-12.5, -20)],
+        [Hd(7.5, -14.5), Hd(13, -11), Hd(12.5 + tw * 2.5, -20 + tw * 1.5)],
       ]) {
         ctx.beginPath();
         pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
+        ctx.closePath();
         ctx.fill();
+        ctx.stroke();
       }
     });
 
     layerBehind(ctx, far);
 
-    // Tail, behind everything. Ringed every other segment near the tip.
+    // Tail, behind everything, with rings toward the tip.
     const tail = [];
     for (let i = 0; i < TAIL_N; i++) {
-      tail.push({
-        t: 'cap', a: P.tailPts[i], b: P.tailPts[i + 1],
-        r: lerp(4.6, 2.8, i / (TAIL_N - 1)),
-        col: i >= 3 && i % 2 === 1 ? COL.stripe : COL.fur,
-      });
+      tail.push({ t: 'cap', a: P.tailPts[i], b: P.tailPts[i + 1], r: tailR(i), col: i >= 2 && i % 2 === 0 ? COL.stripe : COL.fur });
     }
     layerBehind(ctx, tail);
 
     ctx.globalCompositeOperation = 'source-over';
-    drawFace(ctx, c, Hd);
+    drawFace(ctx, c, Hd, tilt);
   }
 
-  function drawFace(ctx, c, Hd) {
+  function drawFace(ctx, c, Hd, tilt) {
     const open = 1 - c.blink;
-    for (const [ex, ey] of [[-1, -2], [10, -2.5]]) {
-      const e = Hd(ex, ey);
-      if (open > 0.2) {
-        ctx.fillStyle = COL.iris;
-        ctx.strokeStyle = COL.outline;
-        ctx.lineWidth = 1;
+    ctx.lineCap = 'round';
+    // Big eyes, set low and wide apart.
+    for (const [ex, ey] of [[-5, 3], [13, 3]]) {
+      const e = Hd(ex + c.lookX * 1.3, ey + c.lookY * 1.1);
+      if (c.happy > 0.5) {
+        // Happy: ^ ^
+        ctx.strokeStyle = COL.eye;
+        ctx.lineWidth = 1.8;
         ctx.beginPath();
-        ctx.ellipse(e.x, e.y, 2.9, 3.4 * open, 0, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.arc(e.x, e.y + 2.5, 3.8, 1.15 * Math.PI, 1.85 * Math.PI);
         ctx.stroke();
-        ctx.fillStyle = COL.pupil;
+      } else if (open > 0.2) {
+        ctx.fillStyle = COL.eye;
         ctx.beginPath();
-        ctx.ellipse(e.x + c.lookX * 0.9, e.y + c.lookY * 1.1 * open, 1.3, 2.8 * open, 0, 0, Math.PI * 2);
+        ctx.ellipse(e.x, e.y, 4.3, 5.2 * open, tilt, 0, Math.PI * 2);
         ctx.fill();
+        // Coloured glow in the lower half, then the sparkles.
+        ctx.fillStyle = COL.eyeGlow;
+        ctx.globalAlpha = 0.8;
+        ctx.beginPath();
+        ctx.ellipse(e.x, e.y + 2.2 * open, 2.9, 2.2 * open, tilt, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
         ctx.fillStyle = '#fff';
         ctx.beginPath();
-        ctx.arc(e.x - 0.9 + c.lookX * 0.5, e.y - 1.3 * open, 0.9, 0, Math.PI * 2);
+        ctx.arc(e.x - 1.3 + c.lookX * 0.6, e.y - 2 * open + c.lookY * 0.4, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(e.x + 1.7 + c.lookX * 0.4, e.y + 2.3 * open, 0.9, 0, Math.PI * 2);
         ctx.fill();
       } else {
-        // Closed: a soft downward curve.
-        ctx.strokeStyle = COL.outline;
-        ctx.lineWidth = 1.3;
-        ctx.lineCap = 'round';
+        // Closed: a soft sleepy curve.
+        ctx.strokeStyle = COL.eye;
+        ctx.lineWidth = 1.6;
         ctx.beginPath();
-        ctx.arc(e.x, e.y - 1.2, 2.8, 0.2 * Math.PI, 0.8 * Math.PI);
+        ctx.arc(e.x, e.y - 1.5, 3.6, 0.18 * Math.PI, 0.82 * Math.PI);
         ctx.stroke();
       }
     }
 
-    // Nose and mouth.
-    const n1 = Hd(4.9, 1.6);
-    const n2 = Hd(7.7, 1.6);
-    const n3 = Hd(6.3, 3.4);
-    ctx.fillStyle = ctx.strokeStyle = COL.nose;
-    ctx.lineJoin = 'round';
-    ctx.lineWidth = 1;
+    // Tiny nose and "w" mouth, tucked between the eyes.
+    const n = Hd(4, 7);
+    ctx.fillStyle = COL.nose;
     ctx.beginPath();
-    ctx.moveTo(n1.x, n1.y);
-    ctx.lineTo(n2.x, n2.y);
-    ctx.lineTo(n3.x, n3.y);
-    ctx.closePath();
+    ctx.ellipse(n.x, n.y, 1.5, 1.05, tilt, 0, Math.PI * 2);
     ctx.fill();
-    ctx.stroke();
 
     ctx.strokeStyle = COL.outline;
-    ctx.lineWidth = 0.9;
-    ctx.lineCap = 'round';
-    const mid = Hd(6.3, 5);
+    ctx.lineWidth = 1.1;
+    const mid = Hd(4, 8.6);
+    const q = (x, y) => Hd(x, y);
     ctx.beginPath();
-    ctx.moveTo(n3.x, n3.y);
-    ctx.lineTo(mid.x, mid.y);
-    const l = Hd(4, 6);
-    const r = Hd(8.6, 6);
-    ctx.quadraticCurveTo(Hd(5, 6.6).x, Hd(5, 6.6).y, l.x, l.y);
-    ctx.moveTo(mid.x, mid.y);
-    ctx.quadraticCurveTo(Hd(7.6, 6.6).x, Hd(7.6, 6.6).y, r.x, r.y);
+    ctx.moveTo(q(1.2, 9.2).x, q(1.2, 9.2).y);
+    ctx.quadraticCurveTo(q(2.4, 11).x, q(2.4, 11).y, mid.x, mid.y);
+    ctx.quadraticCurveTo(q(5.6, 11).x, q(5.6, 11).y, q(6.8, 9.2).x, q(6.8, 9.2).y);
     ctx.stroke();
     if (c.mouth > 0.05) {
-      const m = Hd(6.3, 6.6);
-      ctx.fillStyle = '#7a3b3b';
+      const m = Hd(4, 10.6);
+      ctx.fillStyle = '#e07a8a';
       ctx.beginPath();
-      ctx.ellipse(m.x, m.y, 1.8, 1.6 * c.mouth, 0, 0, Math.PI * 2);
+      ctx.ellipse(m.x, m.y, 1.9, 1.7 * c.mouth, tilt, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // Whiskers.
-    ctx.strokeStyle = 'rgba(58, 42, 32, 0.55)';
-    ctx.lineWidth = 0.7;
+    // Two short whiskers a side.
+    ctx.strokeStyle = COL.outline;
+    ctx.globalAlpha = 0.6;
+    ctx.lineWidth = 0.9;
     ctx.beginPath();
     for (const [from, to] of [
-      [[1, 5], [-12, 2]], [[1, 6], [-12, 6]], [[1.5, 7], [-10.5, 10]],
-      [[11, 5], [23, 2.5]], [[11, 6], [23, 6.5]], [[10.5, 7], [21.5, 10]],
+      [[-19, 6], [-24.5, 4.8]], [[-19.5, 9.5], [-24.5, 10.2]], // shorter at the back, so they don't cross her body
+      [[23, 6], [31, 4]], [[23.5, 9.5], [31, 10.5]],
     ]) {
       const a = Hd(from[0], from[1]);
       const b = Hd(to[0], to[1]);
@@ -410,6 +440,7 @@
       ctx.lineTo(b.x, b.y);
     }
     ctx.stroke();
+    ctx.globalAlpha = 1;
   }
 
   // ---- the fish (cursor) ------------------------------------------------
@@ -425,10 +456,10 @@
     ctx.rotate(Math.PI / 4);
     ctx.lineJoin = 'round';
     ctx.lineWidth = 1.6;
-    ctx.strokeStyle = COL.outline;
+    ctx.strokeStyle = '#5b7fa6'; // a darker blue reads better than brown at cursor size
 
     // Tail fin.
-    ctx.fillStyle = '#5d93c4';
+    ctx.fillStyle = '#8fc0ea';
     ctx.beginPath();
     ctx.moveTo(7, 0);
     ctx.lineTo(14.5, -6);
@@ -438,33 +469,35 @@
     ctx.stroke();
 
     // Body, with a lighter belly.
-    ctx.fillStyle = '#7fb3e0';
+    ctx.fillStyle = '#a9d4f5';
     ctx.beginPath();
-    ctx.ellipse(-1.5, 0, 10.5, 6.2, 0, 0, Math.PI * 2);
+    ctx.ellipse(-1.5, 0, 10.5, 6.5, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.save();
     ctx.clip();
-    ctx.fillStyle = '#d4e8f6';
+    ctx.fillStyle = '#e6f3fc';
     ctx.beginPath();
     ctx.ellipse(-1.5, 4.5, 10, 4, 0, 0, Math.PI * 2);
     ctx.fill();
+    // Blush, to match Fiona.
+    ctx.fillStyle = COL.blush;
+    ctx.globalAlpha = 0.8;
+    ctx.beginPath();
+    ctx.ellipse(-5.5, 2.2, 2, 1.3, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
     ctx.beginPath();
-    ctx.ellipse(-1.5, 0, 10.5, 6.2, 0, 0, Math.PI * 2);
+    ctx.ellipse(-1.5, 0, 10.5, 6.5, 0, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Gill and eye.
-    ctx.lineWidth = 1;
+    // Eye.
+    ctx.fillStyle = COL.eye;
     ctx.beginPath();
-    ctx.arc(-3, 0, 4, -0.9, 0.9);
-    ctx.stroke();
+    ctx.arc(-7, -1.4, 1.7, 0, Math.PI * 2);
+    ctx.fill();
     ctx.fillStyle = '#fff';
     ctx.beginPath();
-    ctx.arc(-7, -1.6, 1.8, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = COL.pupil;
-    ctx.beginPath();
-    ctx.arc(-7.3, -1.6, 1, 0, Math.PI * 2);
+    ctx.arc(-7.5, -1.9, 0.7, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
