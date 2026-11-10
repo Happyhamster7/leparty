@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { db } from './supabase';
 import type { InviteContext, EventRow, PersonRow, ParticipantRow } from './types';
 
@@ -5,8 +6,11 @@ import type { InviteContext, EventRow, PersonRow, ParticipantRow } from './types
  * Load everything behind an invite token. Returns null for an unknown
  * token so the page can render a generic "not found" rather than
  * leaking whether the token ever existed.
+ *
+ * Cached per request: the invite layout and the page under it both
+ * call this, and should share one lookup.
  */
-export async function loadInvite(token: string): Promise<InviteContext | null> {
+export const loadInvite = cache(async (token: string): Promise<InviteContext | null> => {
   const supabase = db();
 
   const { data: participant } = await supabase
@@ -29,7 +33,7 @@ export async function loadInvite(token: string): Promise<InviteContext | null> {
     person: person as PersonRow,
     event: event as EventRow,
   };
-}
+});
 
 /**
  * Has this person been to a previous party?

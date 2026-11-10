@@ -1,13 +1,13 @@
 import Link from 'next/link';
 import { loadProfile } from '@/lib/profile';
-import { getTheme } from '@/lib/theme';
+import { sitePack } from '@/themes';
 import ProfileForm from './ProfileForm';
 
 export const dynamic = 'force-dynamic';
 
 export default async function SignupPage() {
   const person = await loadProfile();
-  const theme = getTheme(null);
+  const theme = sitePack().copy;
 
   return (
     <div className="shell">
@@ -28,6 +28,9 @@ export default async function SignupPage() {
           name={person?.display_name ?? ''}
           band={person?.capacity_band ?? null}
           editing={Boolean(person)}
+          nameLabel={theme.nameFieldLabel}
+          hostRef={theme.hostRef}
+          groups={theme.groupNounPlural.toLowerCase()}
         />
 
         {person ? (

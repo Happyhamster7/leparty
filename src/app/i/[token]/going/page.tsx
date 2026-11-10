@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { loadInvite } from '@/lib/invite';
 import { db, MUGSHOT_BUCKET } from '@/lib/supabase';
 import { initials } from '@/lib/types';
+import { themePack, type ThemePack } from '@/themes';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,18 +22,22 @@ type Occupant = {
   inmateNumber: number | null;
 };
 
-function Cell({ occupant }: { occupant: Occupant | null }) {
+function Bars() {
+  return (
+    <div className="cell__bars" aria-hidden="true">
+      <span />
+      <span />
+      <span />
+    </div>
+  );
+}
+
+function Cell({ occupant, roster }: { occupant: Occupant | null; roster: ThemePack['roster'] }) {
   if (!occupant) {
     return (
       <div className="cell cell--empty">
-        <div className="cell__tag">Vacant</div>
-        <div className="cell__frame">
-          <div className="cell__bars" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </div>
-        </div>
+        <div className="cell__tag">{roster.vacantLabel}</div>
+        <div className="cell__frame">{roster.bars ? <Bars /> : null}</div>
         <p className="cell__number">&mdash;</p>
       </div>
     );
@@ -50,11 +55,7 @@ function Cell({ occupant }: { occupant: Occupant | null }) {
         ) : (
           <span className="initials">{initials(occupant.name)}</span>
         )}
-        <div className="cell__bars" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </div>
+        {roster.bars ? <Bars /> : null}
       </div>
       <p className="cell__number">{occupant.inmateNumber ?? '—'}</p>
     </div>
@@ -109,6 +110,9 @@ export default async function GoingPage({ params }: { params: { token: string } 
     tiers.push(slots.slice(i, i + COLS));
   }
 
+  const pack = themePack(ctx.event.theme_key);
+  const roster = pack.roster;
+
   return (
     <div className="shell">
       <div className="topbar">
@@ -118,17 +122,21 @@ export default async function GoingPage({ params }: { params: { token: string } 
 
       <div className="body">
         <h1>Who&rsquo;s going</h1>
-        <p className="lede">Everyone booked in so far.</p>
+        <p className="lede">Everyone {pack.copy.bookedPhrase} so far.</p>
 
         <div className="cellblock" style={{ marginBottom: 20 }}>
           {tiers.map((tier, i) => (
             <div className="tier" key={i}>
-              <p className="tier__label">
-                {i === tiers.length - 1 ? 'Fresh meat' : `Level ${tiers.length - 1 - i}`}
-              </p>
+              {roster.rowLabel ? (
+                <p className="tier__label">
+                  {i === tiers.length - 1 && roster.newestRowLabel
+                    ? roster.newestRowLabel
+                    : `${roster.rowLabel} ${tiers.length - 1 - i}`}
+                </p>
+              ) : null}
               <div className="tier__row">
                 {tier.map((occupant, j) => (
-                  <Cell occupant={occupant} key={occupant ? occupant.name + j : `empty-${i}-${j}`} />
+                  <Cell occupant={occupant} roster={roster} key={occupant ? occupant.name + j : `empty-${i}-${j}`} />
                 ))}
               </div>
               {i < tiers.length - 1 ? <div className="tier__floor" aria-hidden="true" /> : null}

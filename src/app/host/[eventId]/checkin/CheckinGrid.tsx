@@ -16,9 +16,12 @@ export type GridPerson = {
 export default function CheckinGrid({
   eventId,
   people,
+  photo,
 }: {
   eventId: string;
   people: GridPerson[];
+  /** The theme's word for a photo, lower case: "mugshot". */
+  photo: string;
 }) {
   const [, startTransition] = useTransition();
   const [query, setQuery] = useState('');
@@ -50,7 +53,7 @@ export default function CheckinGrid({
         <div style={{ flex: '1 1 220px' }}>
           <h1>Find yourself</h1>
           <p style={{ margin: 0, color: 'var(--muted)' }}>
-            Tap your own mugshot. That&rsquo;s all check-in is.
+            Tap your own {photo}. That&rsquo;s all check-in is.
           </p>
         </div>
 

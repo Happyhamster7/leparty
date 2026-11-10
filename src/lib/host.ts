@@ -37,14 +37,3 @@ export const BLOCK_COLOURS = [
   '#7A5C00',
   '#3C3489',
 ];
-
-export const BLOCK_NAMES = [
-  'Block A',
-  'Block B',
-  'Block C',
-  'Block D',
-  'Block E',
-  'Block F',
-  'Block G',
-  'Block H',
-];

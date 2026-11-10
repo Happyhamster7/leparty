@@ -15,9 +15,14 @@ export default function DrawReview({
   eventId,
   people,
   blocks,
+  group,
+  groups,
 }: {
   eventId: string;
   people: Drawee[];
+  /** The theme's word for a group, lower case: "block", "cell blocks". */
+  group: string;
+  groups: string;
   blocks: { id: string; name: string; colour: string }[];
 }) {
   // If everyone already has a block (the draw already happened), show
@@ -116,11 +121,11 @@ export default function DrawReview({
           ? 'Evenly matched. Move people if you know something the numbers don’t — who came together, who should be kept apart.'
           : gap <= 2
             ? 'Close enough that nobody will notice. Adjust freely.'
-            : 'Worth a look: one block is carrying noticeably more than another. Reshuffle, or swap a high number for a low one.'}
+            : `Worth a look: one ${group} is carrying noticeably more than another. Reshuffle, or swap a high number for a low one.`}
       </p>
 
       <p className="small" style={{ marginBottom: 10 }}>
-        Drag the <span aria-hidden="true">⠿</span> handle onto another block to move someone, or
+        Drag the <span aria-hidden="true">⠿</span> handle onto another {group} to move someone, or
         use the dropdown.
       </p>
 
@@ -200,7 +205,7 @@ export default function DrawReview({
                         {m.name}
                       </span>
                       <select
-                        aria-label={`Move ${m.name} to another block`}
+                        aria-label={`Move ${m.name} to another ${group}`}
                         value={b.blockId}
                         onChange={(e) => move(m.participantId, e.target.value)}
                       >
@@ -245,8 +250,8 @@ export default function DrawReview({
       </div>
 
       <p className="small" style={{ marginTop: 14 }}>
-        Nothing is written until you confirm. Confirming assigns blocks, snapshots everyone&rsquo;s
-        capacity, marks the used blocks in play and takes you to the printable cards.
+        Nothing is written until you confirm. Confirming assigns {groups}, snapshots everyone&rsquo;s
+        capacity, marks the used {groups} in play and takes you to the printable cards.
       </p>
     </>
   );

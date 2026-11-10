@@ -17,17 +17,24 @@ export default function ProfileForm({
   name,
   band,
   editing,
+  nameLabel,
+  hostRef,
+  groups,
 }: {
   name: string;
   band: number | null;
   editing: boolean;
+  nameLabel: string;
+  /** Theme words for the privacy note: "the Warden", "cell blocks". */
+  hostRef: string;
+  groups: string;
 }) {
   const [state, formAction] = useFormState<FormState, FormData>(saveProfile, {});
 
   return (
     <form action={formAction}>
       <label className="field" htmlFor="display_name">
-        Name on your paperwork
+        {nameLabel}
       </label>
       <input
         id="display_name"
@@ -67,7 +74,7 @@ export default function ProfileForm({
       {state.error ? <p className="error" role="alert">{state.error}</p> : null}
 
       <p className="small" style={{ marginBottom: 22 }}>
-        Only the Warden sees this. It&rsquo;s used to even out the cell blocks, nothing else.
+        Only {hostRef} sees this. It&rsquo;s used to even out the {groups}, nothing else.
       </p>
 
       <Submit editing={editing} />

@@ -36,9 +36,14 @@ function Submit() {
 export default function BlocksForm({
   eventId,
   blocks,
+  groupNoun,
+  flavourLabel,
 }: {
   eventId: string;
   blocks: BlockEditRow[];
+  /** Theme words for the table headings: "Block", "The charge". */
+  groupNoun: string;
+  flavourLabel: string;
 }) {
   const action = saveBlocks.bind(null, eventId);
   const [state, formAction] = useFormState<HostState, FormData>(action, {});
@@ -51,9 +56,9 @@ export default function BlocksForm({
         <table className="list">
           <thead>
             <tr>
-              <th>Block</th>
+              <th>{groupNoun}</th>
               <th>Colour</th>
-              <th>The charge</th>
+              <th>{flavourLabel}</th>
               <th>Code</th>
               <th>In play</th>
             </tr>

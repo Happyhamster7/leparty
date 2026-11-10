@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { db } from '@/lib/supabase';
 import { isHost } from '@/lib/host';
-import { getTheme } from '@/lib/theme';
+import { getTheme } from '@/themes';
 import type { EventRow } from '@/lib/types';
 import EventForm from '../../EventForm';
 import { setEventStatus } from '../../actions';
@@ -46,7 +46,7 @@ export default async function EditEventPage({ params }: { params: { eventId: str
         <h2>Status</h2>
         <p className="small" style={{ marginBottom: 14 }}>
           Currently <strong>{ev.status}</strong>. Archiving keeps everything but hides the party
-          from the typed-code lookup, so an old block card can&rsquo;t open it.
+          from the typed-code lookup, so an old {theme.groupNoun.toLowerCase()} card can&rsquo;t open it.
         </p>
         <div className="btn-row">
           {ev.status === 'archived' ? (

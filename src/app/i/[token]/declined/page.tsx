@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { loadInvite } from '@/lib/invite';
-import { getTheme } from '@/lib/theme';
+import { getTheme } from '@/themes';
 import { setRsvp } from '../actions';
 
 export const dynamic = 'force-dynamic';
@@ -16,7 +16,7 @@ export default async function DeclinedPage({ params }: { params: { token: string
     <div className="shell">
       <div className="topbar">
         <span>{theme.intakeLabel.toUpperCase()}</span>
-        <span>RELEASED WITHOUT CHARGE</span>
+        <span>{theme.declinedNote.toUpperCase()}</span>
       </div>
 
       <div className="body">
@@ -32,8 +32,8 @@ export default async function DeclinedPage({ params }: { params: { token: string
           </button>
         </form>
         <p className="small" style={{ marginTop: 16 }}>
-          This link keeps working until the night, so you can switch back any time before the
-          blocks are drawn.
+          This link keeps working until the night, so you can switch back any time before the{' '}
+          {theme.groupNounPlural.toLowerCase()} are drawn.
         </p>
       </div>
     </div>

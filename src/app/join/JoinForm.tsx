@@ -3,22 +3,22 @@
 import { useFormState, useFormStatus } from 'react-dom';
 import { joinByCode, type JoinState } from './actions';
 
-function Submit() {
+function Submit({ group }: { group: string }) {
   const { pending } = useFormStatus();
   return (
     <button className="btn" type="submit" disabled={pending}>
-      {pending ? 'Checking…' : 'Enter the block'}
+      {pending ? 'Checking…' : `Enter the ${group}`}
     </button>
   );
 }
 
-export default function JoinForm() {
+export default function JoinForm({ group }: { group: string }) {
   const [state, formAction] = useFormState<JoinState, FormData>(joinByCode, {});
 
   return (
     <form action={formAction}>
       <label className="field" htmlFor="code">
-        Code on your block&rsquo;s card
+        Code on your {group}&rsquo;s card
       </label>
       <input
         id="code"
@@ -40,7 +40,7 @@ export default function JoinForm() {
         required
       />
       {state.error ? <p className="error" role="alert">{state.error}</p> : null}
-      <Submit />
+      <Submit group={group} />
     </form>
   );
 }

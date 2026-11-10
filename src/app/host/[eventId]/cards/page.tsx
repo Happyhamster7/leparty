@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import QRCode from 'qrcode';
 import { db, siteUrl } from '@/lib/supabase';
 import { isHost } from '@/lib/host';
-import { getTheme } from '@/lib/theme';
+import { getTheme } from '@/themes';
 import type { EventRow } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -110,7 +110,9 @@ export default async function CardsPage({
                 showRoster ? '1' : '0'
               }`}
             >
-              {showAll ? 'ONLY BLOCKS IN PLAY' : 'SHOW EVERY BLOCK'}
+              {showAll
+                ? `ONLY ${theme.groupNounPlural.toUpperCase()} IN PLAY`
+                : `SHOW EVERY ${theme.groupNoun.toUpperCase()}`}
             </Link>
             <Link
               className="btn btn--quiet btn--inline"
@@ -143,7 +145,7 @@ export default async function CardsPage({
 
                 <div className="card__body">
                   <p style={{ fontSize: 14, marginBottom: 16 }}>
-                    Scan to open your block&rsquo;s console. Anyone in {b.name} can scan it &mdash;
+                    Scan to open your {theme.groupNoun.toLowerCase()}&rsquo;s page. Anyone in {b.name} can scan it &mdash;
                     pass the phone around, or have two of you on it.
                   </p>
 
@@ -185,7 +187,7 @@ export default async function CardsPage({
 
                   {b.charge ? (
                     <div className="box box--dark" style={{ marginBottom: 12 }}>
-                      <p className="eyebrow">The charge</p>
+                      <p className="eyebrow">{theme.groupFlavourLabel}</p>
                       <p
                         style={{
                           margin: 0,
@@ -209,7 +211,7 @@ export default async function CardsPage({
 
         {shown.length === 0 ? (
           <div className="box box--quiet">
-            <p style={{ margin: 0 }}>No blocks on this party yet.</p>
+            <p style={{ margin: 0 }}>No {theme.groupNounPlural.toLowerCase()} on this party yet.</p>
           </div>
         ) : null}
       </div>

@@ -11,22 +11,25 @@ export type NeedsPhoto = {
 };
 
 /**
- * Who's here without a mugshot. Surfacing the list is the point: at a
+ * Who's here without a photo. Surfacing the list is the point: at a
  * door you want to know who to grab, not to hunt through a grid.
  */
 export default function DoorPhotos({
   eventId,
   people,
+  photo,
 }: {
   eventId: string;
   people: NeedsPhoto[];
+  /** The theme's word for a photo, lower case: "mugshot". */
+  photo: string;
 }) {
   const [open, setOpen] = useState<string | null>(null);
 
   if (people.length === 0) {
     return (
       <p className="small" style={{ margin: 0 }}>
-        Everyone who&rsquo;s arrived has a mugshot.
+        Everyone who&rsquo;s arrived has a {photo}.
       </p>
     );
   }

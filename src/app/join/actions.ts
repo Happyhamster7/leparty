@@ -37,7 +37,7 @@ export async function joinByCode(_prev: JoinState, formData: FormData): Promise<
     .eq('join_code', code)
     .maybeSingle();
 
-  if (!block) return { error: 'No block has that code. Check the card again.' };
+  if (!block) return { error: 'That code doesn’t match any card. Check it again.' };
 
   redirect(`/b/${block.join_token}`);
 }

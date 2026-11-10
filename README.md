@@ -1,15 +1,16 @@
-# LeParty — phase 1 (signup)
+# LeParty
 
 > `CLAUDE.md` holds the working context and the decisions behind the
-> code. `docs/schema.md` is the full schema and design reference,
-> including the phase-2 tables.
+> code. `docs/schema.md` is the schema reference, and
+> `docs/rework-plan.md` is the plan for themes and game modules.
 
-Guest signup and host console for themed parties. Phase 1 covers everything
-before the night: profiles, RSVP, potluck, mugshots, and the guest list.
+Run themed parties for large groups: profiles, RSVP, potluck, photos, the
+guest list, check-in at the door, a balanced draw into teams, and screens
+for the night. A party picks a theme (Prison, or Plain for none), which
+sets its words and colours. Games plug in on top; see "Games" below.
 
-The game itself — days, games, the drinks economy, the draw — is phase 2 and
-isn't here. The schema is laid out so phase 2 adds tables rather than
-changing these.
+The tables below use the Prison theme's words (mugshot, block, inmate).
+Under another theme the same screens say photo, team and guest.
 
 ## What's in it
 
@@ -45,9 +46,14 @@ changing these.
 | Block cards | `/host/<id>/cards` | Printable cards with real QR codes and join codes. |
 
 **On the night** (`/join` and `/b/<block-token>`): a block scans its card or
-types its code and lands on its own page. In phase 1 that page confirms the
-scan and shows the block its roster, sentence and commissary; the game
-arrives there in phase 2.
+types its code and lands on its own page, which claims that phone for the
+block (the latest scan wins) and shows its roster. A running game adds its
+own panel there.
+
+**Other screens**, each opened with its own unguessable link from the event
+page, so neither holds the host passcode: `/tv/<display-token>` is the
+public display (who's here, and the blocks once drawn), and
+`/bar/<bar-token>` is the bar's tablet.
 
 ## Setup
 
@@ -55,9 +61,11 @@ arrives there in phase 2.
 
 1. Create a project at [supabase.com](https://supabase.com). The free tier
    is plenty for one party.
-2. Open the SQL editor and run `supabase/migrations/0001_phase1.sql`. It
-   creates the tables, the inmate-number trigger, the `mugshots` storage
-   bucket, and turns on RLS with no policies.
+2. Open the SQL editor and run every file in `supabase/migrations/`, in
+   number order (`0001` to `0010`). Together they create the tables, the
+   inmate-number trigger and the `mugshots` storage bucket, and turn on RLS
+   with no policies. `0010` drops the retired game's tables, so on an
+   existing project read its header first.
 3. From **Project Settings → API**, copy the project URL and the
    **service_role** key.
 
@@ -73,6 +81,9 @@ cp .env.example .env.local   # then fill it in
 npm install
 npm run dev
 ```
+
+`npm test` runs the app's tests, `npm run test:legacy` runs the original
+Slammer engine's, and `npm run typecheck` checks types.
 
 Open <http://localhost:3000/host>, sign in with your `HOST_PASSCODE`, create
 a party, add yourself as a guest and click your own invite link to walk the
@@ -96,6 +107,7 @@ The camera needs HTTPS, which Vercel gives you. It also works on
 | `SUPABASE_SERVICE_ROLE_KEY` | Server-side only. |
 | `HOST_PASSCODE` | Gates `/host`. Anything you like. |
 | `NEXT_PUBLIC_SITE_URL` | No trailing slash. Used to build invite links. |
+| `SITE_THEME` | Optional. The theme for pages that belong to no party (home, signup, the party list): `plain` (default) or `jail`. |
 
 ## How a few things work
 
@@ -154,105 +166,14 @@ names, colours, tokens and join codes, all marked `in_play: false`. This is
 what lets you print the cards in advance: the draw only fills rosters, and
 unused blocks stay out of play.
 
-## Phase 2, now under way
+## Games
 
-Source of truth: `docs/halloween-game-design.md` (behaviour) and
-`docs/schema.md` (tables). It replaced an earlier jail-themed design
-(Days, sentence and commissary, substitutes, wildcards) — ignore any
-mention of those if you find it anywhere.
+The relational game that used to live here (rounds, orders, a bar queue,
+migrations `0006`–`0009`) has been retired. Games are becoming modules
+that plug into a party and take its theme; the first is Shifty Shen's
+Slammer, whose original app sits in `legacy/sss` while it is ported.
+The plan, the decisions and the current phase are in
+`docs/rework-plan.md`.
 
-Tables are in `supabase/migrations/0006_phase2_game.sql`: `acts`,
-`games`, `rounds`, `round_players`, `game_results`, `drink_types`,
-`drink_orders`, `items`, `item_uses`, `penalties`, `serves`, `clips`,
-`ledger_entries`.
-
-Built so far: the game phase loop — the host starts a round from
-`/host/<eventId>/game`, team phones get the player-pick prompt (with
-cooldown players greyed out), and picks auto-resolve and reveal once
-the one-minute deadline passes or every team has submitted. Results
-entry is built too: the host enters each block's placing (and score,
-for score-type games) plus any bonus money, which pays prize money
-and bonuses into the ledger and moves the round to spending.
-
-Spending is built: team phones place secret drink orders
-(bundle/bottle pricing applied automatically, money charged on order)
-and can buy Eye Spy, Reflect, Open Bounty or Winner's Bounty from the
-shop. Bus ticket and Lock-up are dropped, not deferred — see
-`src/lib/catalogue.ts`. The host sees every order and purchase this
-round and closes the shop to move on to drinks.
-
-**Bounties** (`supabase/migrations/0008_bounty_tracking.sql` and
-`0009_admin_and_finish.sql` — run both before using them) simplify the
-design doc's undecided per-Act rotation into one fixed rule: send 5
-drinks of any type within 3 rounds of buying one. Open Bounty pays
-100 flat money on hit. Winner's Bounty (only the round's 1st-place
-team can buy it) grants the design doc's permanent reward option
-instead: +1 point on every drink sent for the rest of the night,
-stacking per win, tracked on `blocks.bonus_points_per_drink` and
-applied in `markServed` — no reward-choice menu, this is just what
-Winner's Bounty does. Miss the window either way and you owe 3 shots
-of Spirit next round, via the same missed-timer penalty mechanism,
-now carrying its own qty/drink type instead of always defaulting to
-1 shot of the cheapest drink. Only one bounty (either kind) can be
-active per team at a time, tracked in the `bounties` table and
-resolved when the deadline round's shop closes.
-
-Drinks is built too, minus filming: starting drinks
-(`/host/<eventId>/game`) resolves Reflect and any carried-over
-penalty shots, then builds the queue fewest-drinks-first. The
-cafeteria iPad (`/host/<eventId>/game/bar`) shows the current team's
-order with Next and Mark done; Next starts their 30-second timer and
-pays points to whoever scores for each drink (the sender, or the
-Reflect-player). Missing the 30 seconds without the host marking it
-done auto-resolves on the next page load — same lazy-check pattern as
-the pick deadline — and writes an extra-shot penalty for next round.
-The round auto-completes once every team's finished.
-
-The bar's Back button undoes the most recent Next if that team's
-still mid-drink: flips their drink_orders back from served, and
-reverses the points it just awarded with a compensating ledger entry
-(never deletes the original row).
-
-The bar also has its own "Show senders" toggle on the current team's
-order — hidden by default, resets to hidden every time a new team is
-called up, independent of whether teams generally see senders
-elsewhere (that broader policy isn't built anywhere yet).
-
-The public display (`/host/<eventId>/game/screen`) is built: phase,
-round, leaderboard, cooldown list, picks once revealed, and — during
-drinks — a grid of every team's status (safe, queued, drinking now,
-done), with the team's clip looping muted in place of the status text
-once one's uploaded. It polls itself every 5 seconds, since it's the
-one view nobody's standing at to reload. It shares the host passcode,
-like the bar: the design doc's "one laptop drives all the public
-screens" means only the host's own browser ever opens this URL.
-
-The filming/video pipeline is built too: once a team's "up" at the
-bar, their phone gets a file input (`accept="video/*" capture`) that
-uploads straight to Supabase Storage with a one-time signed URL — the
-clip never passes through a Vercel function, which can't accept
-bodies that large — with a progress percentage and a Retry button on
-failure. The public screen plays the most recent uploaded clip for
-each team's current or just-finished serve.
-
-**Admin tools** (`/host/<eventId>/game/admin`, linked from Game
-control) are built: a manual balance adjustment (money or points,
-either direction, with an optional free-text note — `ledger_entries`
-got a `note` column for this) for the "the host can adjust any
-balance manually, and the reason is logged" rule; assigning a drink
-straight into the current round's queue as an `origin = 'admin'`
-order, same as a team's own order, but only before that round's
-queue is actually built; and reissuing a team's QR/join code if it
-leaks, which also signs out whatever phone currently holds that team.
-
-**Night-end and winner confirmation** are built
-(`/host/<eventId>/game/finish`, linked from Game control once no
-round's actively in the game phase): final points standings, the
-host picks (or accepts the top scorer) and confirms a winner, which
-stamps `events.ended_at`/`winner_block_id` and takes over the public
-screen with a "Team X wins" headline. Starting another round is
-blocked once a winner's confirmed.
-
-Decided: highest score wins, generated from drinks sent; senders are
-shown to every team by default; item pricing is a flat value per item
-(numbers still TBD).
+Until the port lands, a party runs with a theme and no game: signup,
+check-in, the draw, cards, the team page and the TV all work.

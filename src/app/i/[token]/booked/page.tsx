@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { loadInvite } from '@/lib/invite';
-import { getTheme } from '@/lib/theme';
+import { getTheme } from '@/themes';
 import { db, MUGSHOT_BUCKET } from '@/lib/supabase';
 import { initials, POTLUCK_CATEGORIES } from '@/lib/types';
 
@@ -90,7 +90,7 @@ export default async function BookedPage({ params }: { params: { token: string }
               {theme.attendeeIdLabel.toUpperCase()} {participant.inmate_number ?? '----'}
             </p>
             <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-soft)' }}>
-              Charge and cell block assigned on the night.
+              Your {theme.groupNoun.toLowerCase()} is assigned on the night.
             </p>
           </div>
         </div>
@@ -135,7 +135,7 @@ export default async function BookedPage({ params }: { params: { token: string }
 
         <div className="btn-row" style={{ marginTop: 10 }}>
           <Link className="btn btn--ghost" style={{ flex: 1 }} href={`/i/${token}/mugshot`}>
-            Retake mugshot
+            Retake {theme.photoNoun.toLowerCase()}
           </Link>
           <Link className="btn btn--ghost" style={{ flex: 1 }} href={`/i/${token}/potluck`}>
             Change what I&rsquo;m bringing
