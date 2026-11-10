@@ -1,6 +1,6 @@
 // Fiona's body: a small vector rig drawn with canvas paths, in a
-// pastel kawaii / chibi style — big round head, blob body, stubby
-// legs, big sparkly eyes, blush, soft brown outline.
+// pastel kawaii / chibi style — a white cat with a big round head,
+// blob body, stubby legs, big sparkly eyes, blush, soft brown outline.
 //
 // She's built from simple shapes (capsules, circles, ellipses, ear
 // triangles) placed on a handful of joints. Three key poses — stand,
@@ -16,11 +16,11 @@
 
 (function (root) {
   const COL = {
-    fur: '#f8c898', // peach
-    furFar: '#eeb382',
-    stripe: '#f0a56e',
-    white: '#fff9f0', // cream
-    whiteFar: '#f3e6d6',
+    fur: '#fffaf5', // warm white
+    furFar: '#efe5dc', // far-side legs, slightly shaded
+    stripe: '#f4e9df', // markings: barely-there cream, just enough to give her shape
+    white: '#ffffff',
+    whiteFar: '#f1e8df',
     outline: '#9a6248', // soft brown, never black
     nose: '#f28da2',
     earIn: '#fbc6c4',
@@ -62,12 +62,12 @@
   // ---- poses ------------------------------------------------------------
 
   // Chibi proportions: the head is as big as the body, the legs are stubs.
-  const HEAD_RX = 21;
-  const HEAD_RY = 18;
+  const HEAD_RX = 22;
+  const HEAD_RY = 20;
   const POSE = {
-    stand: { hip: { x: -13, y: -21 }, shoulder: { x: 9, y: -22 }, head: { x: 19, y: -38 }, tail: { x: -24, y: -27 }, bodyR: 13, haunchR: 13.5, chestR: 13 },
-    sit: { hip: { x: -6, y: -16.5 }, shoulder: { x: 3, y: -27 }, head: { x: 7, y: -45 }, tail: { x: -19, y: -7 }, bodyR: 14, haunchR: 16.5, chestR: 13 },
-    lie: { hip: { x: -14, y: -13 }, shoulder: { x: 8, y: -13.5 }, head: { x: 21, y: -19 }, tail: { x: -26, y: -8 }, bodyR: 13, haunchR: 13.5, chestR: 13 },
+    stand: { hip: { x: -12, y: -22 }, shoulder: { x: 8, y: -23 }, head: { x: 18, y: -40 }, tail: { x: -25, y: -28 }, bodyR: 15, haunchR: 15, chestR: 14.5 },
+    sit: { hip: { x: -5, y: -18.5 }, shoulder: { x: 3, y: -28 }, head: { x: 7, y: -47 }, tail: { x: -21, y: -8 }, bodyR: 15.5, haunchR: 18.5, chestR: 14.5 },
+    lie: { hip: { x: -14, y: -15 }, shoulder: { x: 8, y: -15 }, head: { x: 21, y: -20.5 }, tail: { x: -27, y: -9 }, bodyR: 14.5, haunchR: 15, chestR: 14.5 },
   };
 
   // Tail shapes: absolute angle of the first segment, then how much each
@@ -146,7 +146,7 @@
     P.tail = add(P.tail, 0, bob + pitch);
 
     // Eating: lean the head down and forward.
-    P.head = mix(P.head, add(POSE.sit.head, 9, 21 + Math.sin(c.time * 14) * 1.2 * c.eat), c.eat);
+    P.head = mix(P.head, add(POSE.sit.head, 9, 22 + Math.sin(c.time * 14) * 1.2 * c.eat), c.eat);
     P.shoulder = add(P.shoulder, 2 * c.eat, 3 * c.eat);
 
     // Breathing, stronger when lying down.
@@ -275,10 +275,10 @@
     }
     // Head last, so it sits over the body and front legs.
     near.push(
-      { t: 'poly', round: 5, pts: [Hd(-15, -9), Hd(-6, -15), Hd(-13, -24)], col: COL.fur },
-      { t: 'poly', round: 5, pts: [Hd(5, -15), Hd(15, -9), Hd(14 + tw * 3, -24 + tw * 2)], col: COL.fur },
+      { t: 'poly', round: 5, pts: [Hd(-15.5, -10.5), Hd(-6, -17), Hd(-13.5, -26)], col: COL.fur },
+      { t: 'poly', round: 5, pts: [Hd(5, -17), Hd(15.5, -10.5), Hd(14.5 + tw * 3, -26 + tw * 2)], col: COL.fur },
       { t: 'ell', c: P.head, rx: HEAD_RX, ry: HEAD_RY, rot: tilt, col: COL.fur },
-      { t: 'ell', c: Hd(2, 7), rx: HEAD_RX + 2, ry: 12, rot: tilt, col: COL.fur } // mochi cheeks
+      { t: 'ell', c: Hd(2, 7), rx: HEAD_RX + 2, ry: 13.5, rot: tilt, col: COL.fur } // mochi cheeks
     );
 
     layer(ctx, near, () => {
@@ -301,20 +301,20 @@
 
       // Re-fill the head so body details don't show through it.
       shape(ctx, { t: 'ell', c: P.head, rx: HEAD_RX, ry: HEAD_RY, rot: tilt, col: COL.fur }, 0);
-      shape(ctx, { t: 'ell', c: Hd(2, 7), rx: HEAD_RX + 2, ry: 12, rot: tilt, col: COL.fur }, 0);
+      shape(ctx, { t: 'ell', c: Hd(2, 7), rx: HEAD_RX + 2, ry: 13.5, rot: tilt, col: COL.fur }, 0);
       // A soft line under the chin, to separate head from body.
       ctx.strokeStyle = COL.outline;
       ctx.globalAlpha = 0.55;
       ctx.lineWidth = 1.2;
       ctx.beginPath();
-      ctx.ellipse(Hd(2, 7).x, Hd(2, 7).y, HEAD_RX + 2.6, 12.6, tilt, 0.12 * Math.PI, 0.88 * Math.PI);
+      ctx.ellipse(Hd(2, 7).x, Hd(2, 7).y, HEAD_RX + 2.6, 14.1, tilt, 0.12 * Math.PI, 0.88 * Math.PI);
       ctx.stroke();
       ctx.globalAlpha = 1;
 
       // Forehead stripes.
-      line(ctx, Hd(-1, -18), Hd(-0.5, -12.5), 2.4, COL.stripe);
-      line(ctx, Hd(3.5, -18.5), Hd(3.5, -12), 2.4, COL.stripe);
-      line(ctx, Hd(8, -18), Hd(7.5, -12.5), 2.4, COL.stripe);
+      line(ctx, Hd(-1, -20), Hd(-0.5, -14.5), 2.4, COL.stripe);
+      line(ctx, Hd(3.5, -20.5), Hd(3.5, -14), 2.4, COL.stripe);
+      line(ctx, Hd(8, -20), Hd(7.5, -14.5), 2.4, COL.stripe);
       // Cream lower face.
       ctx.fillStyle = COL.white;
       ctx.beginPath();
@@ -335,8 +335,8 @@
       ctx.lineJoin = 'round';
       ctx.lineWidth = 2;
       for (const pts of [
-        [Hd(-13, -11), Hd(-8.5, -14.5), Hd(-12.5, -20)],
-        [Hd(7.5, -14.5), Hd(13, -11), Hd(12.5 + tw * 2.5, -20 + tw * 1.5)],
+        [Hd(-13.5, -12.5), Hd(-8.5, -16.5), Hd(-13, -22)],
+        [Hd(7.5, -16.5), Hd(13.5, -12.5), Hd(13 + tw * 2.5, -22 + tw * 1.5)],
       ]) {
         ctx.beginPath();
         pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));

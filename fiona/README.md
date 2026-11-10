@@ -1,7 +1,7 @@
 # Fiona
 
 A small animated cat who lives along the bottom of your screen and follows
-your mouse. She's drawn in a pastel kawaii style: big round head, blob
+your mouse. She's a white cat drawn in a pastel kawaii style: big round head, blob
 body, stubby legs, sparkly eyes and blush. While she's running, your cursor is a fish. Windows only.
 
 ## Run it
@@ -91,8 +91,8 @@ Speeds, distances and timings are constants at the top of
 `src/renderer.js`. Her size is `SIZE` there too. The strip height is
 `STRIP_HEIGHT` in `src/main.js`.
 
-Her look lives in `src/cat.js`: colours in `COL` (swap the peach for
-grey, lilac or mint), proportions in `POSE` and `HEAD_RX`/`HEAD_RY`,
+Her look lives in `src/cat.js`: colours in `COL` (swap the white for
+peach, grey or lilac), proportions in `POSE` and `HEAD_RX`/`HEAD_RY`,
 tail styles in `TAIL`.
 
 You can also preview her in a browser without Electron: open
