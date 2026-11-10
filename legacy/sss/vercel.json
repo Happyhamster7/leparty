@@ -1,0 +1,27 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "outputDirectory": "public",
+  "rewrites": [
+    {
+      "source": "/tv",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/warden",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/officer",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/vote",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/qr.svg",
+      "destination": "/api/qr"
+    }
+  ]
+}
