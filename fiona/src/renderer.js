@@ -113,6 +113,9 @@
 
   function hearts(n) {
     const h = headOnScreen();
+    for (let i = 0; i < 3; i++) {
+      spawn('spark', h.x + (Math.random() - 0.5) * 80, h.y - 10 - Math.random() * 40, 0, -6, 0.9 + Math.random() * 0.5);
+    }
     for (let i = 0; i < n; i++) {
       spawn('heart', h.x + (Math.random() - 0.5) * 30, h.y - 26, (Math.random() - 0.5) * 30, -35 - Math.random() * 25, 1.6);
     }
@@ -197,7 +200,7 @@
       case 'eat':
         if (Math.random() < dt * 7) {
           const h = headOnScreen();
-          spawn('crumb', h.x + cat.flip * 10, h.y + 8, (Math.random() - 0.3) * 60 * cat.flip, -40 - Math.random() * 30, 0.9);
+          spawn('crumb', h.x + cat.flip * 6, h.y + 13, (Math.random() - 0.3) * 60 * cat.flip, -40 - Math.random() * 30, 0.9);
         }
         if (cat.stateTime > EAT_TIME) {
           hearts(3);
@@ -293,6 +296,20 @@
       ctx.bezierCurveTo(6, -7, 9, 0, 0, 6);
       ctx.fillStyle = '#f78fa7';
       ctx.lineWidth = 1.6;
+      ctx.fill();
+      ctx.stroke();
+    } else if (p.kind === 'spark') {
+      // Four-point twinkle.
+      const r = 5 * (0.6 + 0.4 * Math.sin(p.age * 12));
+      ctx.beginPath();
+      for (let i = 0; i < 8; i++) {
+        const a = (i * Math.PI) / 4;
+        const d = i % 2 ? r * 0.3 : r;
+        ctx.lineTo(Math.cos(a) * d, Math.sin(a) * d);
+      }
+      ctx.closePath();
+      ctx.fillStyle = '#fff3c4';
+      ctx.lineWidth = 1;
       ctx.fill();
       ctx.stroke();
     } else if (p.kind === 'crumb') {

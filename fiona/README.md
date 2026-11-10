@@ -61,7 +61,10 @@ clicks go straight through to whatever is underneath.
 There are no image files. Fiona is a small rig of joints (hip,
 shoulder, head, tail base), each with simple shapes on it: capsules for
 the body and legs, circles, ellipses, and triangles for ears. All of it
-is drawn every frame with canvas paths and one shared outline.
+is drawn every frame with canvas paths and one shared outline. Detail
+is layered on top, clipped to her silhouette: gradient shading, fur
+markings, blush, ear and chest fluff, toes, and eyes with a gradient
+iris, lashes and sparkles.
 
 - **Posture** is three key poses (stand, sit, lie) blended by two
   numbers that ease toward their targets. Sitting down, lying down and
