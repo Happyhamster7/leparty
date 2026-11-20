@@ -201,14 +201,16 @@ link.
 ## Games
 
 A game is a module under `src/modules/<key>`, registered in
-`src/modules/index.ts`. The first, Shifty Shen's Slammer, has its
-rules ported and tested (`src/modules/sss/engine`), and the core can
-run it: `src/lib/sessions` stores a game's state, applies actions and
-serves each viewer its view through `/api/sessions/<id>/state` and
-`/action`. A host can add the game to a party from the event page.
-**It has no screens yet**, so it still can't be played: that is phase
-5 of `docs/rework-plan.md`, which also records every decision already
-made — don't re-decide those here. The deployed SSS (branch
+`src/modules/index.ts` (rules) and `src/modules/ui.tsx` (screens). The
+first, Shifty Shen's Slammer, is playable: a host adds it to a party
+from the event page and runs it at `/host/<eventId>/game`; the team
+phones (`/b/<token>`), the bar (`/bar/<token>`) and the TV
+(`/tv/<token>`) each show its screen for their seat. Rules are in
+`src/modules/sss/engine`, screens in `src/modules/sss/ui`, and
+`src/lib/sessions` stores the state and serves each viewer its view.
+What's left of phase 5 (costume poll, clips, the pixel look, shelf
+editing) is in `docs/rework-plan.md`, which also records every
+decision already made — don't re-decide those here. The deployed SSS (branch
 `sss-points`) still runs on its own; `legacy/sss` is that app,
 read-only, kept as the behaviour spec.
 
@@ -232,5 +234,8 @@ Rules for the game layer, learned from the two apps it replaces:
   "Serve the next block" double-fires; "serve block X" doesn't.
 - **A team's phone acts for the team that sent the action**, taken from
   who is signed in, never from an argument.
+- **Screens draw what the engine gives them.** What a seat may know is
+  decided in `engine/views.ts`, on the server. A screen never filters
+  out a secret itself, because the data would already be in the page.
 - **A game never touches a Vercel function with a video.** Phones get a
   signed upload URL and PUT straight to storage.

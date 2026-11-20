@@ -4,6 +4,10 @@ import { eventForScreen } from '@/lib/screens';
 import { themePack } from '@/themes';
 import ThemeStyle from '@/themes/ThemeStyle';
 import AutoRefresh from '@/components/AutoRefresh';
+import { sessions } from '@/lib/sessions/server';
+import { GAME_UI } from '@/modules/ui';
+import { GameScreen } from '@/modules/sss/ui/common';
+import { wordsFor } from '@/modules/sss/voice';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +31,8 @@ export default async function TvPage({ params }: { params: { token: string } }) 
   ]);
 
   const pack = themePack(ev.theme_key);
+  const game = await sessions.store.activeForEvent(ev.id);
+  const ui = game ? GAME_UI[game.moduleKey] : null;
   const theme = pack.copy;
 
   const here = ((arrived ?? []) as unknown as { block_id: string | null; people: { display_name: string } | null }[])
@@ -42,6 +48,24 @@ export default async function TvPage({ params }: { params: { token: string } }) 
         .sort((a, z) => a.localeCompare(z)),
     }))
     .filter((b) => b.names.length > 0);
+
+  if (game && ui) {
+    return (
+      <>
+        <ThemeStyle pack={pack} />
+        <AutoRefresh seconds={15} />
+        <div className="tv tv--game">
+          <div className="tv__head">
+            <h1>{ev.theme_title || ev.name}</h1>
+            <p className="mono">{here.length} HERE</p>
+          </div>
+          <GameScreen sessionId={game.id} headers={{ 'x-screen-token': params.token }} words={wordsFor(pack)} everyMs={1000}>
+            <ui.Display />
+          </GameScreen>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

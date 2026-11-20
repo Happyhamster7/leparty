@@ -294,10 +294,15 @@ export default async function EventPage({ params }: { params: { eventId: string 
         {game ? (
           <div className="box box--quiet" style={{ marginBottom: 24 }}>
             <p style={{ margin: '0 0 10px' }}>
-              <strong>{moduleFor(game.moduleKey)?.name ?? game.moduleKey}</strong> is set up for this
-              party. Its screens for the host, the bar, the TV and the team phones are still being
-              built, so there is nothing to run yet.
+              <strong>{moduleFor(game.moduleKey)?.name ?? game.moduleKey}</strong> is running for this
+              party. The bar and the TV use the links above; each {theme.groupNoun.toLowerCase()}&rsquo;s
+              phone uses its card.
             </p>
+            <div className="btn-row" style={{ marginBottom: 12 }}>
+              <Link className="btn btn--inline" href={`/host/${params.eventId}/game`}>
+                Run the game
+              </Link>
+            </div>
             <form action={endGame.bind(null, params.eventId, game.id)}>
               <button className="btn btn--quiet btn--inline" type="submit">
                 END THIS GAME

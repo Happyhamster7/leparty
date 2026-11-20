@@ -70,7 +70,7 @@ GameSession 1─* GameAction (append-only log)
 | 2 | **Core and themes.** Theme packs (Prison, Plain); no prison words outside the Prison pack; TV and bar links; the old relational game and the roster API removed. | Done |
 | 3 | **Engine port.** `legacy/sss/lib/game.js` becomes a TypeScript reducer in `src/modules/sss`, keyed on participant and block ids, theme-neutral (structured feed events, not finished English), with the ledger, and without the cut mechanics. | Done |
 | 4 | **Sessions and API.** `game_sessions`, `game_actions`, one atomic apply function, polling endpoints. | Done |
-| 5 | **Screens in React.** Host, team phone, bar and TV against the new API; costume poll and clips as core features. | Next |
+| 5 | **Screens in React.** Host, team phone, bar and TV against the new API; costume poll and clips as core features. | Game screens done. Poll, clips and the pixel look still to do |
 | 6 | **Rehearsal and shutdown.** A simulated night with 50 clients, then turn off the SSS Vercel project, Upstash and the Blob store. | |
 
 There is no playable game between phases 2 and 5. The old SSS
@@ -164,6 +164,43 @@ game, and a full round through the two endpoints as host, bar, TV and
 two teams, including a simultaneous double tap on Buy and ten writes at
 once. Not covered by that run: photo upload, and any game screen (none
 exist yet).
+
+## The game's screens, as built (phase 5, first part)
+
+A full night is playable. Each seat has one screen, in
+`src/modules/sss/ui`, and each core page looks its game up in
+`src/modules/ui.tsx`:
+
+| Seat | Page | Screen |
+| --- | --- | --- |
+| Host | `/host/<eventId>/game` (linked from the event page) | `Host.tsx`: the round in front of you, standings, rulings, and the night's setup |
+| Team phone | `/b/<join-token>` | `Team.tsx`: pick players, answer an app-run game, the shop, your place at the bar |
+| Bar | `/bar/<bar-token>` | `Bar.tsx`: the queue only (`BarQueue.tsx`, shared with the host) |
+| TV | `/tv/<display-token>` | `Display.tsx`: the round, standings as published, the feed |
+
+- `GameScreen` (`ui/common.tsx`) holds the live connection
+  (`useSession`), the party's words and names, and the one place a
+  refusal is shown. A screen reads everything through `useGame()`.
+- Phones poll every 2 seconds and the TV every second; a countdown
+  ticks in the browser from the server's deadline.
+- Every button that sends an action is disabled until it has answered,
+  and each send carries its own id.
+- The engine decides what each seat may know; the screens draw what
+  they are given and hide nothing themselves.
+- The look is the existing paper-and-ink components. The pixel kit is
+  not wired in yet.
+
+Played end to end against the real database through these screens,
+with a host, three phones, the bar and the TV in separate browsers:
+a picked-player round, the shop (including an anonymous send), the
+bar (call up, clock, done, couldn't finish), Cold War and Trivia on
+the phones, a fine, a refusal shown in the party's words, and a second
+phone taking a team over.
+
+Not built yet: editing the shelf (prices, what's on it) from the host
+screen, the costume poll, clips, sounds, and the remaining four
+app-run games have screens but were not driven in that run (Two-Thirds,
+Prisoner's Dilemma, Name the opening, Truth or lie).
 
 ## Reference points
 

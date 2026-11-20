@@ -126,8 +126,8 @@ function base(e: Engine, viewer: Viewer) {
       };
     }),
     items: host ? s.items : s.items.filter((i) => e.itemLive(i)),
-    // The library holds the answers. Only the host gets them; everyone else gets how many there are.
-    games: host ? s.games : s.games.map(({ questions, questionsText, openings, openingsText, ...g }) => ({ ...g, questionCount: questions.length, openingCount: openings.length })),
+    // The library holds the answers, so this is how many there are, not what they are. The host's view adds the full library.
+    games: s.games.map(({ questions, questionsText, openings, openingsText, ...g }) => ({ ...g, questionCount: questions.length, openingCount: openings.length })),
     rounds: s.rounds.map((r) => ({ number: r.number, act: r.act, inAct: r.inAct, final: r.final, actName: e.slotOf(r.number).actName, gameName: r.gameName, phase: r.phase, winnerTeamId: r.winnerTeamId, placings: r.placings, prizes: r.prizes })),
     plan: { acts: s.settings.actsCount, perAct: s.settings.roundsPerAct, total: e.totalRounds() },
     night: s.night,
@@ -147,6 +147,7 @@ export function hostView(state: State, roster: Roster, now: number) {
   const e = reader(state, roster, now);
   return {
     ...base(e, { role: 'host' }),
+    games: e.s.games,
     standards: { sent: e.standardsSent(), target: state.settings.targetStandards, rounds: e.totalRounds(), played: state.rounds.filter((r) => r.phase === 'done').length },
     orders: e.s.orders.slice(0, 200),
     bounties: e.s.bounties,

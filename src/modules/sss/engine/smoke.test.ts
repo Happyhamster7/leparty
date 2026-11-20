@@ -77,9 +77,8 @@ test('a fine on points keeps its reason in the ledger, and how much a team lost 
   n.host('startDrinks');
   n.bar('barNext', { teamId: 'T2' });
   n.bar('barFail', { teamId: 'T2' });
-  const serveFor = (v: { rounds: unknown }, view: ReturnType<typeof n.tv>) => view.round!.serves[0].pointsLost;
-  assert.equal(serveFor(n.e(), n.e()), 4);
-  assert.equal(serveFor(n.seenBy('T2'), n.seenBy('T2')), 4);
-  assert.equal(serveFor(n.seenBy('T1'), n.seenBy('T1')), null);
-  assert.equal(serveFor(n.tv(), n.tv()), null);
+  assert.equal(n.e().round!.serves[0].pointsLost, 4);
+  assert.equal(n.seenBy('T2').round!.serves[0].pointsLost, 4);
+  assert.equal(n.seenBy('T1').round!.serves[0].pointsLost, null);
+  assert.equal(n.tv().round!.serves[0].pointsLost, null);
 });
