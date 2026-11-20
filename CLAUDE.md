@@ -35,7 +35,7 @@ the code.
 `npm run test:legacy` (the original SSS engine's 130 tests). CI
 (`.github/workflows/ci.yml`) runs all of them.
 
-Migrations are in `supabase/migrations/`, numbered `0001`–`0010`, run in order against the Supabase SQL editor.
+Migrations are in `supabase/migrations/`, numbered `0001`–`0011`, run in order against the Supabase SQL editor.
 Each new one must actually be run before its feature works — nothing
 auto-applies them. If `npm run build` hangs right after the
 `Next.js 14.2.35` banner with no further output, it's not your code:
@@ -198,12 +198,15 @@ link.
 
 ## Games
 
-A game is a module under `src/modules/<key>`. The first, Shifty Shen's
-Slammer, has its rules ported (`src/modules/sss/engine`) and tested,
-but **nothing serves them yet**: there is no session table, API or
-screen, so no game is playable from this codebase. That is phases 4
-and 5 of `docs/rework-plan.md`, which also records every decision
-already made — don't re-decide those here. The deployed SSS (branch
+A game is a module under `src/modules/<key>`, registered in
+`src/modules/index.ts`. The first, Shifty Shen's Slammer, has its
+rules ported and tested (`src/modules/sss/engine`), and the core can
+run it: `src/lib/sessions` stores a game's state, applies actions and
+serves each viewer its view through `/api/sessions/<id>/state` and
+`/action`. A host can add the game to a party from the event page.
+**It has no screens yet**, so it still can't be played: that is phase
+5 of `docs/rework-plan.md`, which also records every decision already
+made — don't re-decide those here. The deployed SSS (branch
 `sss-points`) still runs on its own; `legacy/sss` is that app,
 read-only, kept as the behaviour spec.
 
@@ -217,6 +220,9 @@ Rules for the game layer, learned from the two apps it replaces:
   code and parameters; `messages.ts` holds the words, written against a
   `Voice` built from the party's theme. `messages.test.ts` fails if the
   Plain theme ever says a prison word.
+- **`src/lib/sessions` is the only code that writes a session**, and
+  it never trusts a role or team id from the browser: `viewer.ts`
+  works out who is asking from the cookie or token.
 - **Anything that must happen once goes through one atomic step** (a
   SQL function, or the session's compare-and-set). The retired game
   checked then wrote, so a double-tap could pay points twice.

@@ -12,7 +12,7 @@ import type { Play, Roster, State } from './types';
  *
  * Views carry ids, not names: the screen joins names from the roster.
  */
-type Viewer = { role: 'host' } | { role: 'display' } | { role: 'team'; teamId: string };
+type Viewer = { role: 'host' } | { role: 'bar' } | { role: 'display' } | { role: 'team'; teamId: string };
 
 function playView(pl: Play, host: boolean, mine: string | null) {
   const base = { kind: pl.kind, deadline: pl.deadline, done: !!pl.done };
@@ -93,8 +93,8 @@ function roundView(e: Engine, viewer: Viewer) {
         // A tenth of a team's points would give away its hidden score.
         pointsLost: host || mine === s.teamId ? s.pointsLost : null,
         neat: orders.filter((o) => o.noChaser).reduce((n, o) => n + o.qty, 0),
-        // Only the bar sees what to pour and who sent it.
-        ...(host
+        // Only the bar and the host see what to pour and who sent it.
+        ...(host || viewer.role === 'bar'
           ? { awards: s.awards, breakdown: orders.map((o) => ({ itemId: o.itemId, name: o.name, emoji: o.emoji, qty: o.qty, noChaser: !!o.noChaser, origin: o.origin, fromTeamId: o.fromTeamId, hidden: !!o.hidden, reflected: !!o.reflected, note: o.note })) }
           : {}),
       };
@@ -153,6 +153,11 @@ export function hostView(state: State, roster: Roster, now: number) {
     reflects: e.s.reflects,
     played: Object.fromEntries(roster.members.map((m) => [m.id, e.gamesPlayed(m.id)])),
   };
+}
+
+/** The bar's tablet: what the room sees, plus what to pour for each team and who sent it. */
+export function barView(state: State, roster: Roster, now: number) {
+  return base(reader(state, roster, now), { role: 'bar' });
 }
 
 export function displayView(state: State, roster: Roster, now: number) {

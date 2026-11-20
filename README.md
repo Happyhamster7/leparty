@@ -62,7 +62,7 @@ public display (who's here, and the blocks once drawn), and
 1. Create a project at [supabase.com](https://supabase.com). The free tier
    is plenty for one party.
 2. Open the SQL editor and run every file in `supabase/migrations/`, in
-   number order (`0001` to `0010`). Together they create the tables, the
+   number order (`0001` to `0011`). Together they create the tables, the
    inmate-number trigger and the `mugshots` storage bucket, and turn on RLS
    with no policies. `0010` drops the retired game's tables, so on an
    existing project read its header first.

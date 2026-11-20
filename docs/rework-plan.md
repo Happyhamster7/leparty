@@ -69,8 +69,8 @@ GameSession 1─* GameAction (append-only log)
 | 1 | **Archive and foundations.** SSS in the repo as `legacy/sss` with its history; a test runner; CI. | Done |
 | 2 | **Core and themes.** Theme packs (Prison, Plain); no prison words outside the Prison pack; TV and bar links; the old relational game and the roster API removed. | Done |
 | 3 | **Engine port.** `legacy/sss/lib/game.js` becomes a TypeScript reducer in `src/modules/sss`, keyed on participant and block ids, theme-neutral (structured feed events, not finished English), with the ledger, and without the cut mechanics. | Done |
-| 4 | **Sessions and API.** `game_sessions`, `game_actions`, one atomic apply function, polling endpoints. | Next |
-| 5 | **Screens in React.** Host, team phone, bar and TV against the new API; costume poll and clips as core features. | |
+| 4 | **Sessions and API.** `game_sessions`, `game_actions`, one atomic apply function, polling endpoints. | Done |
+| 5 | **Screens in React.** Host, team phone, bar and TV against the new API; costume poll and clips as core features. | Next |
 | 6 | **Rehearsal and shutdown.** A simulated night with 50 clients, then turn off the SSS Vercel project, Upstash and the Blob store. | |
 
 There is no playable game between phases 2 and 5. The old SSS
@@ -126,6 +126,40 @@ and the sends that completed it, Burner Phone or not.
 An order a host cancels (or marks delivered by hand) after the bar
 queue is built leaves the queue: the team's count drops, and a team
 with nothing left drops out of line.
+
+## Sessions and the API, as built (phase 4)
+
+| Piece | Where |
+| --- | --- |
+| Tables and the atomic save | `supabase/migrations/0011_game_sessions.sql`; documented in `docs/schema.md` |
+| What a module is, to the core | `src/modules/types.ts`; the registry is `src/modules/index.ts` |
+| Start, dispatch, read | `src/lib/sessions/sessions.ts` |
+| Storage | `store.ts` (the contract), `supabaseStore.ts` (Postgres), `memoryStore.ts` (tests) |
+| Who is here | `src/lib/sessions/roster.ts`: every block, and everyone checked in |
+| Who is asking | `src/lib/sessions/viewer.ts` |
+| Endpoints | `GET /api/sessions/<id>/state?v=<version>` and `POST /api/sessions/<id>/action` |
+| Adding a game to a party | The Games section of `/host/<eventId>` (`gameActions.ts`) |
+
+- **Writes are optimistic.** An action is applied to the state as read
+  and saved naming the version it read. A stale save is refused and the
+  action is applied again to the fresh state, up to 12 times.
+- **A tap carries an id** (`id` in the POST body). A repeat returns the
+  first answer and changes nothing, whether it arrives later or at the
+  same instant.
+- **Polling moves the clock.** There is no cron. A read that finds
+  `next_deadline_at` in the past settles it before answering, and logs
+  it as a `tick` by `system`.
+- **The caller's role is worked out on the server**: the host cookie;
+  `x-screen-token` for the bar and the TV; `x-team-token` plus the
+  device cookie for a team's phone, which must be the device that last
+  scanned the card. The TV can read and never act.
+- **A rule saying no** is a 200 with `ok: false`, a `code` and `params`;
+  the screen turns it into words with `messages.ts`.
+
+Not yet exercised against the real database from the app: the session
+layer is tested through `memoryStore`, and the SQL function was tested
+directly in Postgres, but `supabaseStore` and the two routes have not
+been called end to end. Phase 5's first screen will do that.
 
 ## Reference points
 

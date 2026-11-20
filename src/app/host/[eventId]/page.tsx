@@ -8,6 +8,9 @@ import { formatHeldOn, POTLUCK_CATEGORIES, type EventRow } from '@/lib/types';
 import BlocksForm, { type BlockEditRow } from './BlocksForm';
 import CopyLink from './CopyLink';
 import CopyAll from './CopyAll';
+import { MODULES, moduleFor } from '@/modules';
+import { sessions } from '@/lib/sessions/server';
+import { startGame, endGame } from './gameActions';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,6 +43,7 @@ export default async function EventPage({ params }: { params: { eventId: string 
   if (!event) notFound();
   const ev = event as EventRow;
   const theme = getTheme(ev.theme_key);
+  const game = await sessions.store.activeForEvent(params.eventId);
 
   const [{ data: participants }, { data: blocks }, tally, { data: allParts }] =
     await Promise.all([
@@ -283,6 +287,38 @@ export default async function EventPage({ params }: { params: { eventId: string 
             <p style={{ margin: 0 }}>
               Nobody on the list yet. Add names above, then copy every link out in one go.
             </p>
+          </div>
+        )}
+
+        <h2>Games</h2>
+        {game ? (
+          <div className="box box--quiet" style={{ marginBottom: 24 }}>
+            <p style={{ margin: '0 0 10px' }}>
+              <strong>{moduleFor(game.moduleKey)?.name ?? game.moduleKey}</strong> is set up for this
+              party. Its screens for the host, the bar, the TV and the team phones are still being
+              built, so there is nothing to run yet.
+            </p>
+            <form action={endGame.bind(null, params.eventId, game.id)}>
+              <button className="btn btn--quiet btn--inline" type="submit">
+                END THIS GAME
+              </button>
+            </form>
+          </div>
+        ) : (
+          <div style={{ marginBottom: 24 }}>
+            <p className="small" style={{ marginBottom: 14 }}>
+              A party works with no game at all. Add one to run it on the night; it uses this
+              party&rsquo;s {theme.groupNounPlural.toLowerCase()} and takes its words from the theme.
+            </p>
+            <div className="btn-row">
+              {Object.values(MODULES).map((m) => (
+                <form key={m.key} action={startGame.bind(null, params.eventId, m.key)}>
+                  <button className="btn btn--quiet btn--inline" type="submit">
+                    ADD {m.name.toUpperCase()}
+                  </button>
+                </form>
+              ))}
+            </div>
           </div>
         )}
 

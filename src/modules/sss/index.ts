@@ -1,0 +1,24 @@
+import type { GameModule } from '../types';
+import { GameError, SCHEMA_VERSION, init, migrate, nextDeadline, reduce, tick } from './engine/index';
+import { barView, displayView, hostView, teamView } from './engine/views';
+import type { State } from './engine/types';
+
+/** Shifty Shen's Slammer, as the core sees it. */
+export const sss: GameModule = {
+  key: 'sss',
+  name: 'Shifty Shen’s Slammer',
+  schemaVersion: SCHEMA_VERSION,
+  init: (ctx) => init(ctx),
+  migrate,
+  reduce: (state, action, ctx) => reduce(state as State, action, ctx),
+  tick: (state, ctx) => tick(state as State, ctx),
+  nextDeadline: (state, roster) => nextDeadline(state as State, roster),
+  view(state, roster, now, viewer) {
+    const s = state as State;
+    if (viewer.role === 'host') return hostView(s, roster, now);
+    if (viewer.role === 'bar') return barView(s, roster, now);
+    if (viewer.role === 'team') return teamView(s, roster, now, viewer.teamId);
+    return displayView(s, roster, now);
+  },
+  ruleError: (err) => (err instanceof GameError ? { code: err.code, params: err.params } : null),
+};
