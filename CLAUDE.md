@@ -182,15 +182,17 @@ Built: self-service signup (`/signup`, `/parties`), party signup
 the TV (`/tv/<display-token>`) and a bar page that waits for a game
 (`/bar/<bar-token>`). Two themes: Prison (`jail`) and Plain.
 
-Verified by driving it in a real browser against Postgres, before the
-rework: migration applies, inmate-number trigger works, photos
-downscale and upload, balancer hits spread 0–1 across realistic
-headcounts, QR codes scan. Since the rework: all ten migrations apply
-to a fresh Postgres 16, and the pages that need no database render
-under both site themes. The database-backed pages have been
-typechecked and built but **not yet re-driven in a browser** since the
-theme changes — do that against a real Supabase project before relying
-on them.
+Verified by driving it in a real browser against the real Supabase
+project, with a throwaway party, after the theme and session work:
+host sign-in, creating a party, guest signup and joining, the invite
+pages, door registration (six in a row, none lost), the draw, cards,
+the TV and bar links (each refused the other's token), team phones
+with latest scan wins, switching a party between Prison and Plain, and
+a full game round through `/api/sessions` as host, bar, TV and two
+teams, with a simultaneous double tap charged once and ten concurrent
+writes all landing. All eleven migrations apply to a fresh Postgres
+16. **Not re-driven since the rework:** photo capture and upload, and
+QR scanning on a real phone.
 
 Not done in the core: clone a party, shareable potluck page, CSV
 export, reminders (needs an email/SMS provider), reissuing a TV or bar

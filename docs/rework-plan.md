@@ -156,10 +156,14 @@ with nothing left drops out of line.
 - **A rule saying no** is a 200 with `ok: false`, a `code` and `params`;
   the screen turns it into words with `messages.ts`.
 
-Not yet exercised against the real database from the app: the session
-layer is tested through `memoryStore`, and the SQL function was tested
-directly in Postgres, but `supabaseStore` and the two routes have not
-been called end to end. Phase 5's first screen will do that.
+Checked end to end against the real Supabase project with a throwaway
+party (then deleted): a host creating a party, a guest signing up and
+joining, door registration, the draw, cards, the TV and bar links, team
+phones with latest-scan-wins, switching the party's theme, adding the
+game, and a full round through the two endpoints as host, bar, TV and
+two teams, including a simultaneous double tap on Buy and ten writes at
+once. Not covered by that run: photo upload, and any game screen (none
+exist yet).
 
 ## Reference points
 

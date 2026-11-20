@@ -1278,6 +1278,8 @@ table.list td.tight {
 .tv__head .mono {
   margin: 0;
   font-size: clamp(14px, 1.6vw, 30px);
+  /* The default mono colour is for paper; on the TV's dark ground it vanishes. */
+  color: var(--paper);
 }
 
 .tv__groups {
