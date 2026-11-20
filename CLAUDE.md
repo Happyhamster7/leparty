@@ -19,10 +19,13 @@ both updated when the schema or behaviour changes.
 for the intent behind the round loop.
 
 **Visual direction: pixel art (Stardew Valley-inspired)** for the
-Prison theme. Reference: `docs/pixel-ui-reference.md`. The sprite kit
-SSS built from it is in `legacy/sss/public/pixel/` and `pixel.css`; it
-becomes Prison theme assets when the screens are rebuilt (phase 5).
-Nothing in `src` is wired to it yet.
+Prison theme, and it is wired in: the pack's `skin` names
+`public/themes/prison/skin.css`, which dresses the app's ordinary
+components in the sprite kit beside it. Reference:
+`docs/pixel-ui-reference.md`. The skin adds no components and no
+behaviour; a page must still work without it, which is what the Plain
+theme shows. Style a new component in `globals.css` first, then give
+it a frame in the skin.
 
 ## Stack
 
@@ -172,6 +175,8 @@ too.
   reads as data, IBM Plex Sans for body.
 - Adding a theme: write a pack in `src/themes`, register it in
   `index.ts`. `themes.test.ts` fails if it leaves a word or token out.
+  A pack may also bring a `skin` (a stylesheet under `public/themes`),
+  `sounds` for the TV's cues, and `gameWords`.
 
 ## State of play
 
@@ -211,9 +216,9 @@ phones (`/b/<token>`), the bar (`/bar/<token>`) and the TV
 (`/tv/<token>`) each show its screen for their seat. Rules are in
 `src/modules/sss/engine`, screens in `src/modules/sss/ui`, and
 `src/lib/sessions` stores the state and serves each viewer its view.
-What's left of phase 5 (sounds, the pixel look) is in
-`docs/rework-plan.md`, which also records every
-decision already made — don't re-decide those here. The deployed SSS (branch
+Phases 1 to 5 of `docs/rework-plan.md` are done; phase 6 (a
+rehearsal under load, then shutting the old SSS down) is next. That
+doc records every decision already made — don't re-decide those here. The deployed SSS (branch
 `sss-points`) still runs on its own; `legacy/sss` is that app,
 read-only, kept as the behaviour spec.
 

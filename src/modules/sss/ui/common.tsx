@@ -5,6 +5,7 @@ import { useSession, type Sent } from '@/lib/sessions/useSession';
 import type { Roster } from '@/modules/types';
 import { roundLabel, sayError, sayFeed, type Voice } from '../messages';
 import { voiceFromWords, type Words } from '../voice';
+import type { SoundSet } from '@/lib/sounds';
 
 type Game<V> = {
   view: V;
@@ -18,6 +19,8 @@ type Game<V> = {
   teamColour: (id: string) => string;
   person: (id: string) => string;
   membersOf: (teamId: string) => Roster['members'];
+  /** The theme's sound cues, on screens that make sound. */
+  sounds?: SoundSet;
 };
 
 const Ctx = createContext<Game<unknown> | null>(null);
@@ -37,12 +40,14 @@ export function GameScreen({
   headers,
   words,
   everyMs,
+  sounds,
   children,
 }: {
   sessionId: string;
   headers: Record<string, string>;
   words: Words;
   everyMs?: number;
+  sounds?: SoundSet;
   children: React.ReactNode;
 }) {
   const { data, status, send: rawSend } = useSession<unknown>(sessionId, headers, everyMs);
@@ -87,7 +92,7 @@ export function GameScreen({
   if (!game) return <p className="small">Connecting…</p>;
 
   return (
-    <Ctx.Provider value={{ ...game, busy: busy > 0 }}>
+    <Ctx.Provider value={{ ...game, busy: busy > 0, sounds }}>
       {status === 'offline' ? <div className="notice">Connection lost. Retrying…</div> : null}
       {refusal ? (
         <div className="notice g-refusal" role="alert" onClick={() => setRefusal(null)}>

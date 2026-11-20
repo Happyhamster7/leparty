@@ -29,6 +29,17 @@ export type ThemePack = {
     rowLabel: string | null;
   };
   /**
+   * A stylesheet (and the fonts it needs) that dresses the app's
+   * ordinary components in this theme's art. Served from `public/`.
+   * Screen only: printed cards stay plain.
+   */
+  skin?: { href: string; fonts?: string };
+  /**
+   * This theme's own versions of the TV's sound cues. Optional, and
+   * any cue left out plays the default. See `src/lib/sounds.ts`.
+   */
+  sounds?: import('../lib/sounds').SoundSet;
+  /**
    * What this theme calls things only games talk about. Optional: a
    * game falls back to its own neutral word for anything left out.
    */

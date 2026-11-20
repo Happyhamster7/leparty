@@ -70,8 +70,8 @@ GameSession 1─* GameAction (append-only log)
 | 2 | **Core and themes.** Theme packs (Prison, Plain); no prison words outside the Prison pack; TV and bar links; the old relational game and the roster API removed. | Done |
 | 3 | **Engine port.** `legacy/sss/lib/game.js` becomes a TypeScript reducer in `src/modules/sss`, keyed on participant and block ids, theme-neutral (structured feed events, not finished English), with the ledger, and without the cut mechanics. | Done |
 | 4 | **Sessions and API.** `game_sessions`, `game_actions`, one atomic apply function, polling endpoints. | Done |
-| 5 | **Screens in React.** Host, team phone, bar and TV against the new API; costume poll and clips as core features. | Game screens, the costume vote, shelf editing and clips done. Sounds and the pixel look still to do |
-| 6 | **Rehearsal and shutdown.** A simulated night with 50 clients, then turn off the SSS Vercel project, Upstash and the Blob store. | |
+| 5 | **Screens in React.** Host, team phone, bar and TV against the new API; costume poll and clips as core features. | Done |
+| 6 | **Rehearsal and shutdown.** A simulated night with 50 clients, then turn off the SSS Vercel project, Upstash and the Blob store. | Next |
 
 There is no playable game between phases 2 and 5. The old SSS
 deployment (branch `sss-points`) is untouched and still works until
@@ -216,7 +216,22 @@ goes from the phone straight to the private `clips` bucket through a
 signed link, and the newest clips loop muted in a corner of the TV. A
 host can take a clip off the TV from the event page; the file is kept.
 
-Not built yet: sounds, and the pixel look.
+**The pixel look** is the Prison theme's skin: a stylesheet and sprite
+kit in `public/themes/prison`, named by the pack's `skin` and loaded by
+`ThemeStyle` on every Prison party's pages (screens only, so printed
+cards stay plain). It dresses the ordinary components in the kit's
+nine-slice frames and adds no components or behaviour: without it every
+page still works in plain paper and ink, which is what Plain shows. The
+pack's colour tokens are the kit's palette.
+
+**Sounds** are cues the TV plays, made in the browser with no audio
+files (`src/lib/sounds.ts`). The game says which moments play which
+cue (`CUES` in `ui/Display.tsx`); the theme says what each cue sounds
+like (`pack.sounds`; Prison's are square-wave). The TV is silent until
+someone taps "Turn sound on", because browsers require a touch first.
+
+The whole night was replayed against the real database under the skin
+as a regression check.
 
 ## Reference points
 

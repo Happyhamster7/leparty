@@ -1,11 +1,58 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import { Countdown, Feed, RoundHead, Standings, TeamChip, useGame } from './common';
+import { playCue, soundOn, unlockSound, type Cue } from '@/lib/sounds';
 import { PlayPublic } from './Plays';
 import { fill, sayFeed } from '../messages';
 import type { displayView } from '../engine/views';
 
 type View = ReturnType<typeof displayView>;
+
+/** Which moments of the game make a sound on the TV. What each cue sounds like is the theme's. */
+const CUES: Record<string, Cue> = {
+  'round.started': 'start',
+  'picks.revealed': 'reveal',
+  'coldwar.revealed': 'reveal',
+  'twothirds.revealed': 'reveal',
+  'dilemma.turn': 'reveal',
+  'lying.revealed': 'reveal',
+  'anime.named': 'reveal',
+  'results.entered': 'open',
+  'drinks.started': 'drinks',
+  'bar.called': 'drinks',
+  'bar.timeUp': 'alarm',
+  'bar.failed': 'alarm',
+  'bounty.missed': 'alarm',
+  'pickpocket.done': 'alarm',
+  'bounty.hit': 'win',
+  'mystery.jackpot': 'win',
+  'winner.crowned': 'win',
+};
+
+/** Plays a cue for each new line of the feed. Silent until someone taps to turn sound on. */
+function Sounds({ feed }: { feed: { id: string; kind: string }[] }) {
+  const { sounds } = useGame();
+  const [on, setOn] = useState(false);
+  const seen = useRef<string | null>(null);
+  useEffect(() => setOn(soundOn()), []);
+  useEffect(() => {
+    const newest = feed[0]?.id ?? null;
+    // The first look only notes where the feed is: joining mid-game shouldn't replay the night.
+    if (seen.current !== null && newest !== seen.current) {
+      const fresh = feed.slice(0, Math.max(0, feed.findIndex((f) => f.id === seen.current)) || 1);
+      const cue = fresh.map((f) => CUES[f.kind]).find(Boolean);
+      if (cue) playCue(cue, sounds);
+    }
+    seen.current = newest;
+  }, [feed, sounds]);
+  if (on) return null;
+  return (
+    <button type="button" className="btn btn--quiet btn--inline g-sound" onClick={async () => setOn(await unlockSound())}>
+      TURN SOUND ON
+    </button>
+  );
+}
 
 /** The TV: what the whole room may know, big enough to read from the back. */
 export default function Display() {
@@ -89,6 +136,7 @@ export default function Display() {
       </div>
 
       <div className="g-tv__side">
+        <Sounds feed={view.feed} />
         <Standings teams={view.teams} showMoney={false} pointsAsOf={view.pointsAsOf} />
         <Feed feed={view.feed} limit={7} />
       </div>

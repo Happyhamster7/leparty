@@ -1753,3 +1753,8 @@ table.list td.tight {
   max-height: 220px;
   background: #000;
 }
+
+.g-sound {
+  float: right;
+  margin: 0 0 8px 8px;
+}

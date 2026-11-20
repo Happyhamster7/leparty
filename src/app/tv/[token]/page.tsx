@@ -108,7 +108,7 @@ export default async function TvPage({ params }: { params: { token: string } }) 
             <h1>{ev.theme_title || ev.name}</h1>
             <p className="mono">{here.length} HERE</p>
           </div>
-          <GameScreen sessionId={game.id} headers={{ 'x-screen-token': params.token }} words={wordsFor(pack)} everyMs={1000}>
+          <GameScreen sessionId={game.id} headers={{ 'x-screen-token': params.token }} words={wordsFor(pack)} everyMs={1000} sounds={pack.sounds}>
             <ui.Display />
           </GameScreen>
           {reel.length ? <ClipReel clips={reel} /> : null}

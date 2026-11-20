@@ -1,0 +1,417 @@
+/*
+ * The Prison theme's pixel-art skin. Loaded only on a Prison party's
+ * pages, after globals.css, and only on screens (not print).
+ *
+ * It dresses the app's ordinary components (.shell, .btn, .box, inputs,
+ * the game's .g-* pieces) in the kit's nine-slice frames. It adds no
+ * components and no behaviour: take this file away and every page
+ * still works, in plain paper and ink.
+ *
+ * One art pixel is three screen pixels, so every frame width here is a
+ * multiple of 3. Sprites are in ./pixel (see docs/pixel-ui-reference.md).
+ */
+
+:root {
+  --display: 'Jersey 10', 'Oswald', sans-serif;
+  --px-outline: #3b1d12;
+  --px-gold: #ffe27a;
+  --px-cream: #fff6c8;
+  --px-green: #4f9e3a;
+  --px-red: #c9402f;
+}
+
+html,
+body {
+  background: #4a2e1c url('pixel/floor.png') repeat;
+  background-size: 144px 144px;
+}
+
+* {
+  border-radius: 0 !important;
+  image-rendering: pixelated;
+}
+
+img,
+video,
+svg {
+  image-rendering: auto;
+}
+
+/* ---------- type: Jersey 10 for titles and numbers ---------- */
+
+h1,
+h2,
+h3,
+.huge,
+.stat .value,
+.stamp {
+  font-family: var(--display);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+h1,
+.huge {
+  font-size: 44px;
+  line-height: 0.95;
+}
+
+h2 {
+  font-size: 32px;
+  line-height: 1;
+}
+
+h3 {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.eyebrow,
+label.field {
+  color: var(--rust-dark);
+}
+
+/* ---------- the page: a wooden window with parchment inside ---------- */
+
+.shell {
+  background: none;
+  border-style: solid;
+  border-width: 18px;
+  border-image: url('pixel/frame-wood.png') 18 fill / 18px stretch;
+  min-height: calc(100vh - 24px);
+  margin: 12px auto;
+}
+
+.topbar {
+  background: none !important;
+  border-style: solid;
+  border-width: 12px;
+  border-image: url('pixel/frame-plank.png') 12 fill / 12px stretch;
+  color: var(--px-cream);
+  padding: 2px 10px;
+  font-size: 12px;
+}
+
+.topbar a,
+.topbar button {
+  color: var(--px-gold);
+}
+
+.rule {
+  border: 0;
+  border-top: 3px solid var(--line);
+}
+
+/* ---------- buttons ---------- */
+
+.btn {
+  background: none;
+  border-style: solid;
+  border-width: 12px;
+  border-image: url('pixel/frame-btn.png') 12 fill / 12px stretch;
+  box-shadow: none;
+  color: var(--px-cream);
+  text-shadow: 0 3px 0 var(--px-outline);
+  padding: 3px 12px;
+  min-height: 48px;
+  transition: transform 0.05s;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: none;
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(3px);
+  border-image-source: url('pixel/frame-btn-down.png');
+}
+
+.btn--quiet,
+.btn--ghost,
+.copy-link {
+  border-image-source: url('pixel/frame-btn-paper.png');
+  color: var(--ink);
+  text-shadow: none;
+}
+
+.btn--quiet:active:not(:disabled),
+.btn--ghost:active:not(:disabled) {
+  border-image-source: url('pixel/frame-btn-paper-down.png');
+}
+
+.g-big {
+  border-image-source: url('pixel/frame-btn-green.png');
+  min-height: 60px;
+}
+
+.g-big:active:not(:disabled) {
+  border-image-source: url('pixel/frame-btn-green-down.png');
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  filter: grayscale(0.5);
+}
+
+.copy-link {
+  background: none;
+  border-style: solid;
+  border-width: 9px;
+  border-image: url('pixel/frame-btn-paper.png') 12 fill / 9px stretch;
+  padding: 0 6px;
+}
+
+/* ---------- inputs: recessed slots ---------- */
+
+input:not([type='checkbox']):not([type='radio']):not([type='color']):not([type='file']),
+select,
+textarea {
+  background: none;
+  border-style: solid;
+  border-width: 9px;
+  border-image: url('pixel/frame-slot.png') 9 fill / 9px stretch;
+  color: var(--ink);
+  padding: 4px 8px;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-image-source: url('pixel/frame-slot-active.png');
+  outline: none;
+}
+
+::placeholder {
+  color: #a8784a;
+}
+
+/* ---------- panels ---------- */
+
+.box,
+.g-fold,
+.notice {
+  background: none;
+  border-style: solid;
+  border-width: 9px;
+  border-image: url('pixel/frame-paper.png') 9 fill / 9px stretch;
+}
+
+.notice {
+  border-image-source: url('pixel/frame-tooltip.png');
+  border-left-width: 9px;
+}
+
+.box--dark {
+  border-width: 12px;
+  border-image: url('pixel/frame-plank.png') 12 fill / 12px stretch;
+  color: var(--px-cream);
+}
+
+.box--dark .eyebrow,
+.box--dark .small,
+.box--dark h2 {
+  color: var(--px-gold);
+}
+
+.box--dark .mono {
+  color: var(--px-cream);
+}
+
+a {
+  color: var(--rust-dark);
+}
+
+.box--dark .g-reveal li {
+  border-bottom-color: #6e3416;
+}
+
+.stat {
+  background: none;
+  border-style: solid;
+  border-width: 12px;
+  border-image: url('pixel/frame-hud.png') 12 fill / 12px stretch;
+  padding: 4px 10px;
+}
+
+.stat .value {
+  font-size: 40px;
+  line-height: 1;
+}
+
+.g-fold[open] > summary {
+  border-bottom: 3px solid var(--line);
+}
+
+table.list th {
+  color: var(--rust-dark);
+}
+
+.stamp {
+  color: var(--px-red);
+  border-color: var(--px-red);
+}
+
+/* ---------- the game's pieces ---------- */
+
+.g-item,
+.g-person {
+  background: none;
+  border-style: solid;
+  border-width: 12px;
+  border-image: url('pixel/frame-card.png') 12 fill / 12px stretch;
+  padding: 2px 6px;
+}
+
+.g-item.on,
+.g-person.on {
+  background: none;
+  border-width: 15px;
+  border-image: url('pixel/frame-card-active.png') 15 fill / 15px stretch;
+  margin: -3px;
+}
+
+.g-person.v-best {
+  background: none;
+}
+
+.g-person.v-worst {
+  background: none;
+  border-image-source: url('pixel/frame-btn-red.png');
+  border-image-slice: 12 fill;
+  border-width: 12px;
+  margin: 0;
+  color: var(--px-cream);
+}
+
+.g-person.v-worst .small {
+  color: var(--px-cream);
+}
+
+.g-phases span {
+  border: 9px solid transparent;
+  border-image: url('pixel/frame-tab-idle.png') 9 fill / 9px stretch;
+  padding: 0 3px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+
+.g-phases span.on {
+  background: none;
+  border-image-source: url('pixel/frame-tab.png');
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* A team's name, framed in its own colour (the colour comes from the element). */
+.g-chip {
+  background: var(--px-cream);
+  border-style: solid;
+  border-width: 3px 3px 3px 9px;
+  padding: 2px 9px 2px 6px;
+}
+
+.g-clock {
+  background: var(--px-outline);
+  color: var(--px-gold);
+  font-family: var(--display);
+  font-size: 1.25em;
+  padding: 0 9px;
+}
+
+.g-clock--low {
+  background: var(--px-red);
+  color: var(--px-cream);
+}
+
+.g-tag {
+  background: var(--px-red);
+  color: var(--px-cream);
+  outline: 3px solid var(--px-outline);
+}
+
+.g-options li {
+  background: none;
+  border-style: solid;
+  border-width: 9px;
+  border-image: url('pixel/frame-paper.png') 9 fill / 9px stretch;
+}
+
+.g-options li.right {
+  outline: none;
+  border-width: 12px;
+  border-image: url('pixel/frame-btn-green.png') 12 fill / 12px stretch;
+  color: var(--px-cream);
+}
+
+.g-flash {
+  background: none;
+  border-style: solid;
+  border-width: 12px;
+  border-image: url('pixel/frame-btn-red.png') 12 fill / 12px stretch;
+  color: var(--px-cream);
+  text-shadow: 0 3px 0 var(--px-outline);
+}
+
+/* ---------- the TV: the yard floor, with wooden boards on it ---------- */
+
+.tv,
+.tv--game {
+  background: none;
+  color: var(--ink);
+}
+
+.tv__head h1,
+.tv--game .tv__head h1 {
+  font-family: var(--display);
+  color: var(--px-gold);
+  text-shadow: 3px 0 0 var(--px-outline), -3px 0 0 var(--px-outline), 0 3px 0 var(--px-outline), 0 -3px 0 var(--px-outline);
+}
+
+.tv__head .mono,
+.tv--game .tv__head .mono {
+  color: var(--px-cream);
+}
+
+.tv__wait {
+  color: var(--px-cream);
+}
+
+.tv__group,
+.g-tv__main,
+.g-tv__side,
+.tv-poll > div:not(.tv-poll__qr) {
+  background: none;
+  border-style: solid;
+  border-width: 18px;
+  border-image: url('pixel/frame-wood.png') 18 fill / 18px stretch;
+  padding: 1.2vh 1vw;
+}
+
+.tv__group {
+  border-top-color: transparent;
+}
+
+.g-tv__headline,
+.tv-poll__winner {
+  font-family: var(--display);
+  letter-spacing: 0.02em;
+}
+
+.tv-poll .tv__wait {
+  color: var(--ink);
+}
+
+.tv-poll__qr {
+  outline: 6px solid var(--px-outline);
+}
+
+.reel {
+  background: none;
+  border-style: solid;
+  border-width: 18px;
+  border-image: url('pixel/frame-wood.png') 18 fill / 18px stretch;
+  box-shadow: none;
+  color: var(--ink);
+}

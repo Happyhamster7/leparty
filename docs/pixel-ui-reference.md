@@ -13,6 +13,16 @@ The kit's own intro says the art is drawn by `scripts/pixel-sprites.py`.
 reference; generating the actual sprite assets is separate, unstarted
 work.
 
+## Status
+
+Implemented as the Prison theme's skin: `public/themes/prison/skin.css`
+with the sprites in `public/themes/prison/pixel/` (the kit SSS drew,
+copied from `legacy/sss/public/pixel`). Titles and numbers are Jersey
+10; body text stays IBM Plex Sans, which SSS found more readable than
+Pixelify Sans at a party. Icons from `icons.png` are not used yet.
+The decisions below were made before that work and still hold, except
+the deferral, which has ended.
+
 ## Implementation decisions
 
 Settled before any `src/` work starts:
