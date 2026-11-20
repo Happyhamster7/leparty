@@ -372,3 +372,41 @@ test('the host can do everything the bar can; a team’s phone can’t touch the
   n.host('barDone', { teamId: 'T2' });
   assert.equal(round(n).phase, 'done');
 });
+
+test('cancelling an order after the queue is built shrinks that team’s serve, and a team left with nothing drops out of line', () => {
+  const n = night();
+  n.toSpending({ T1: 1, T2: 2, T3: 3 });
+  const a = n.team('T1', 'buy', { itemId: 'spirit', targetTeamId: 'T2', qty: 2 })!.orderId as string;
+  const b = n.team('T1', 'buy', { itemId: 'soju-shot', targetTeamId: 'T2', qty: 1 })!.orderId as string;
+  const c = n.team('T2', 'buy', { itemId: 'soju-shot', targetTeamId: 'T3', qty: 1 })!.orderId as string;
+  n.host('startDrinks');
+  const serve = (id: string) => n.state.rounds[0].serves.find((x) => x.teamId === id);
+  assert.equal(serve('T2')!.drinks, 3);
+
+  const before = n.money('T1');
+  n.host('resolveOrder', { orderId: a, action: 'cancel' });
+  n.host('resolveOrder', { orderId: a, action: 'cancel' }); // a double tap refunds once
+  assert.equal(n.money('T1'), before + 30);
+  assert.deepEqual([serve('T2')!.drinks, serve('T2')!.orderIds], [1, [b]]);
+
+  n.host('resolveOrder', { orderId: b, action: 'cancel' });
+  assert.equal(serve('T2'), undefined, 'nothing left to drink, so no place in line');
+  assert.equal(n.refused(() => n.bar('barNext', { teamId: 'T2' })), 'bar.noServe');
+  const t2 = n.money('T2');
+
+  n.bar('barNext', { teamId: 'T3' });
+  assert.equal(n.refused(() => n.host('resolveOrder', { orderId: c, action: 'cancel' })), 'order.closed', 'a team already called up keeps its drinks');
+  n.bar('barDone', { teamId: 'T3' });
+  assert.equal(n.state.rounds[0].phase, 'done');
+  assert.equal(n.money('T2'), t2, 'no drink income for a team that was never served');
+  assert.equal(n.state.penalties.length, 0);
+});
+
+test('cancelling the only order in the queue ends the round', () => {
+  const n = night();
+  n.toSpending({ T1: 1, T2: 2, T3: 3 });
+  const a = n.team('T1', 'buy', { itemId: 'wine', targetTeamId: 'T2', qty: 1 })!.orderId as string;
+  n.host('startDrinks');
+  n.host('resolveOrder', { orderId: a, action: 'cancel' });
+  assert.equal(n.state.rounds[0].phase, 'done');
+});

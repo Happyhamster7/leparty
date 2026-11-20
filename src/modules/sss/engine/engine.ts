@@ -609,6 +609,24 @@ export class Engine {
       o.status = 'cancelled';
       this.log('order.cancelled', { name: o.name, emoji: o.emoji, qty: o.qty, teamId: o.origin ? null : o.fromTeamId });
     } else fail('action.unknown');
+    this.unqueue(o);
+  }
+
+  /**
+   * An order settled by hand leaves the bar queue: its team's count
+   * drops, and a team with nothing left drops out of line, owed no
+   * drink income and risking no penalty for drinks that aren't there.
+   * Only a team not yet called up can hold a waiting order.
+   */
+  private unqueue(o: Order) {
+    const r = this.round;
+    if (!r || r.phase !== 'drinks') return;
+    const s = r.serves.find((x) => !x.servedAt && x.orderIds.includes(o.id));
+    if (!s) return;
+    s.orderIds = s.orderIds.filter((id) => id !== o.id);
+    s.drinks -= o.qty;
+    if (!s.orderIds.length) r.serves = r.serves.filter((x) => x !== s);
+    this.checkRoundDone();
   }
 
   /** Host: drop drinks straight into the next queue. They score nobody. */
