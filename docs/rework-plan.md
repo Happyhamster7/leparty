@@ -70,7 +70,7 @@ GameSession 1─* GameAction (append-only log)
 | 2 | **Core and themes.** Theme packs (Prison, Plain); no prison words outside the Prison pack; TV and bar links; the old relational game and the roster API removed. | Done |
 | 3 | **Engine port.** `legacy/sss/lib/game.js` becomes a TypeScript reducer in `src/modules/sss`, keyed on participant and block ids, theme-neutral (structured feed events, not finished English), with the ledger, and without the cut mechanics. | Done |
 | 4 | **Sessions and API.** `game_sessions`, `game_actions`, one atomic apply function, polling endpoints. | Done |
-| 5 | **Screens in React.** Host, team phone, bar and TV against the new API; costume poll and clips as core features. | Game screens, the costume vote and shelf editing done. Clips, sounds and the pixel look still to do |
+| 5 | **Screens in React.** Host, team phone, bar and TV against the new API; costume poll and clips as core features. | Game screens, the costume vote, shelf editing and clips done. Sounds and the pixel look still to do |
 | 6 | **Rehearsal and shutdown.** A simulated night with 50 clients, then turn off the SSS Vercel project, Upstash and the Blob store. | |
 
 There is no playable game between phases 2 and 5. The old SSS
@@ -210,7 +210,13 @@ fixes the result, shows it on the TV, and tells a running game what it
 is worth: in Slammer, 10 points to the best costume's team and a shot
 in the next queue for the worst's.
 
-Not built yet: clips, sounds, and the pixel look.
+**Clips** are a core feature too (`src/lib/clips`, migration `0013`).
+A team's phone has a Film a clip button on its card page; the video
+goes from the phone straight to the private `clips` bucket through a
+signed link, and the newest clips loop muted in a corner of the TV. A
+host can take a clip off the TV from the event page; the file is kept.
+
+Not built yet: sounds, and the pixel look.
 
 ## Reference points
 

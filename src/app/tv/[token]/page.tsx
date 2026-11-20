@@ -11,6 +11,8 @@ import { wordsFor } from '@/modules/sss/voice';
 import QRCode from 'qrcode';
 import { showingPoll } from '@/lib/polls/polls';
 import { siteUrl } from '@/lib/supabase';
+import { listClips } from '@/lib/clips/clips';
+import ClipReel from '@/components/ClipReel';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,6 +54,8 @@ export default async function TvPage({ params }: { params: { token: string } }) 
     }))
     .filter((b) => b.names.length > 0);
 
+  const teamName = (id: string | null) => ((blocks ?? []) as { id: string; name: string }[]).find((b) => b.id === id)?.name ?? '';
+  const reel = (await listClips(ev.id)).filter((c) => c.url).map((c) => ({ id: c.id, url: c.url as string, team: teamName(c.blockId), caption: c.caption }));
   const poll = await showingPoll(ev.id);
   if (poll) {
     const name = (id: string | null) => ((blocks ?? []) as { id: string; name: string }[]).find((b) => b.id === id)?.name ?? '';
@@ -107,6 +111,7 @@ export default async function TvPage({ params }: { params: { token: string } }) 
           <GameScreen sessionId={game.id} headers={{ 'x-screen-token': params.token }} words={wordsFor(pack)} everyMs={1000}>
             <ui.Display />
           </GameScreen>
+          {reel.length ? <ClipReel clips={reel} /> : null}
         </div>
       </>
     );
@@ -138,6 +143,7 @@ export default async function TvPage({ params }: { params: { token: string } }) 
             {theme.groupNounPlural} are drawn once everyone has arrived.
           </p>
         )}
+        {reel.length ? <ClipReel clips={reel} /> : null}
       </div>
     </>
   );

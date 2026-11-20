@@ -13,6 +13,8 @@ import { sessions } from '@/lib/sessions/server';
 import { startGame, endGame } from './gameActions';
 import { liveTally, showingPoll } from '@/lib/polls/polls';
 import { closeCostumeVote, hideCostumeVote, openCostumeVote } from './pollActions';
+import { listClips } from '@/lib/clips/clips';
+import { hideClip } from './clipActions';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,6 +49,7 @@ export default async function EventPage({ params }: { params: { eventId: string 
   const theme = getTheme(ev.theme_key);
   const game = await sessions.store.activeForEvent(params.eventId);
   const poll = await showingPoll(params.eventId);
+  const clips = await listClips(params.eventId, { liveOnly: false, limit: 30 });
   const count = poll?.status === 'open' ? await liveTally(poll) : poll?.results ?? null;
 
   const [{ data: participants }, { data: blocks }, tally, { data: allParts }] =
@@ -384,6 +387,30 @@ export default async function EventPage({ params }: { params: { eventId: string 
               </button>
             </form>
           </div>
+        )}
+
+        <h2>Clips</h2>
+        {clips.length ? (
+          <div className="clip-grid" style={{ marginBottom: 24 }}>
+            {clips.map((c) => (
+              <div key={c.id} className="box box--quiet">
+                {c.url ? <video src={c.url} controls preload="metadata" muted playsInline /> : null}
+                <p className="small" style={{ margin: '6px 0' }}>
+                  {blockRows.find((b) => b.id === c.blockId)?.name ?? 'Unknown'}
+                  {c.caption ? ` — ${c.caption}` : ''} {c.status === 'hidden' ? '(off the TV)' : ''}
+                </p>
+                <form action={hideClip.bind(null, params.eventId, c.id, c.status !== 'hidden')}>
+                  <button className="btn btn--quiet btn--inline" type="submit">
+                    {c.status === 'hidden' ? 'PUT BACK ON THE TV' : 'TAKE OFF THE TV'}
+                  </button>
+                </form>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="small" style={{ marginBottom: 24 }}>
+            None yet. Each {theme.groupNoun.toLowerCase()}&rsquo;s phone has a Film a clip button; clips loop on the TV, muted.
+          </p>
         )}
 
         <h2>{theme.groupNounPlural}</h2>

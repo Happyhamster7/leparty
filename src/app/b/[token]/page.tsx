@@ -3,6 +3,7 @@ import { db } from '@/lib/supabase';
 import { themePack } from '@/themes';
 import ThemeStyle from '@/themes/ThemeStyle';
 import ClaimOnLoad from './ClaimOnLoad';
+import FilmClip from './FilmClip';
 import { sessions } from '@/lib/sessions/server';
 import { GAME_UI } from '@/modules/ui';
 import { GameScreen } from '@/modules/sss/ui/common';
@@ -94,6 +95,8 @@ export default async function BlockPage({ params }: { params: { token: string } 
               closes.
             </div>
           )}
+
+          <FilmClip token={params.token} />
 
           <p className="small">
             Keep this page open. Anyone else in {block.name} can scan the same card, and the latest

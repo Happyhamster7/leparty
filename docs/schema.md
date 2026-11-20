@@ -313,6 +313,31 @@ twice awards once.
 
 ---
 
+## Clips
+
+Added by migration `0013`. Short videos a team films on its phone, for
+the TV. A core feature: it works with or without a game.
+
+### clips
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | uuid | PK |
+| event_id | uuid | FK events |
+| block_id | uuid | FK blocks: the team whose phone filmed it |
+| storage_path | text | Path in the private `clips` bucket: `<event>/<block>/<name>` |
+| content_type | text | |
+| caption | text | Optional, 80 characters |
+| status | text | pending (a link was issued, upload not confirmed), live (on the TV), hidden (taken off by a host; the file is kept) |
+
+The video never passes through the app's server. The phone asks for a
+signed upload link, PUTs the file to storage itself, then says it's
+done; the clip goes live only if the file is really there. The bucket
+is private, takes video only, up to 50 MB; the TV plays clips through
+signed links that last an hour.
+
+---
+
 ## Implementation notes (phase 1, built)
 
 **The invite link is a participant token, not a person token.**
