@@ -59,7 +59,8 @@ export const FEED = {
   'nochaser.bought': (p, v) => `${p.teamId ? v.team(p.teamId) : 'Someone'} bought No Chasers: every drink they send this round is taken neat.`,
   'ghost.bought': () => 'Someone bought a Burner Phone. Their drinks this round are anonymous.',
   'bounty.placed': (p, v) => `${v.team(p.teamId)} put out ${p.bounty === 'winner' ? 'a Winner’s' : 'an Open'} Bounty: ${p.target} drinks in ${plural(p.rounds, 'round')}, starting round ${p.startRound}. How much they staked is secret.`,
-  'bounty.hit': (p, v) => `${v.team(p.teamId)} hit their ${p.bounty === 'winner' ? 'Winner’s' : 'Open'} Bounty. The payout shows at the end of the act.`,
+  'bounty.hit': (p, v) =>
+    `${v.team(p.teamId)} hit their ${p.bounty === 'winner' ? 'Winner’s' : 'Open'} Bounty${p.sends?.length ? ` with ${(p.sends as P[]).map((o) => `${drinks(o)} to ${v.team(o.toTeamId)}`).join(', ')}` : ''}. The payout shows at the end of the act.`,
   'bounty.missed': (p, v) => `${v.team(p.teamId)} missed their bounty, lost their stake and the same again. ${plural(p.qty, 'shot')} next round.`,
   'mystery.arrived': (p, v) => `New in ${v.shop}: the Mystery Box (${v.money(p.price)}). A Reflect, free drinks for someone, a ${v.money(p.jackpot)} jackpot or a Pickpocket.`,
   'mystery.jackpot': (p, v) => `${v.team(p.teamId)} opened a Mystery Box and hit the jackpot: +${v.money(p.amount)}.`,

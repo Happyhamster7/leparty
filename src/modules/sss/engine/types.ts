@@ -197,6 +197,8 @@ export type Bounty = {
   startRound: number;
   deadlineRound: number;
   sent: number;
+  /** The sends that counted toward it, announced when it's hit. */
+  orderIds: string[];
   status: 'active' | 'hit' | 'missed';
   ts: number;
   paid?: number;

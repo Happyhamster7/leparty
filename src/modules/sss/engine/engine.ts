@@ -482,7 +482,7 @@ export class Engine {
       if (live && t.noChaserRound === live.number) order.noChaser = true;
       this.s.orders.unshift(order);
       this.log('drink.sent', { fromTeamId: order.hidden ? null : teamId, toTeamId: target, itemId: item.id, name: item.name, emoji: item.emoji, qty: order.qty });
-      this.countBounty(teamId, order.qty);
+      this.countBounty(teamId, order);
       return { orderId: order.id, status: order.status };
     }
 
@@ -511,7 +511,7 @@ export class Engine {
       const start = this.nextTurn();
       const kind = item.bounty || 'open';
       const mult = kind === 'winner' ? this.s.settings.winnerMultiplier : this.s.settings.bountyMultiplier;
-      const b: Bounty = { id: this.id('b'), teamId, kind, stake: staked, mult, startRound: start, deadlineRound: start + BOUNTY.rounds - 1, sent: 0, status: 'active', ts: this.now };
+      const b: Bounty = { id: this.id('b'), teamId, kind, stake: staked, mult, startRound: start, deadlineRound: start + BOUNTY.rounds - 1, sent: 0, orderIds: [], status: 'active', ts: this.now };
       // The stake leaves the score now and comes back multiplied if the bounty is hit.
       this.entry(teamId, 'points', -staked, 'stake', { ref: b.id });
       this.s.bounties.push(b);
@@ -1138,16 +1138,19 @@ export class Engine {
   }
 
   /** Every drink a team sends counts toward its bounty, the moment it's sent. */
-  private countBounty(teamId: string, qty: number) {
+  private countBounty(teamId: string, order: Order) {
     const b = this.activeBounty(teamId);
     const r = this.round;
     if (!b || !r || r.phase === 'done' || r.number < b.startRound) return;
-    b.sent += qty;
+    b.sent += order.qty;
+    b.orderIds.push(order.id);
     if (b.sent < BOUNTY.target) return;
     b.status = 'hit';
     b.paid = b.stake * b.mult;
     this.entry(teamId, 'points', b.paid, 'bounty.won', { ref: b.id });
-    this.log('bounty.hit', { teamId, bounty: b.kind });
+    // Hitting a bounty is public, and so is how: the sends that did it are named, Burner Phone or not.
+    const sends = b.orderIds.map((id) => this.order(id)).filter((o): o is Order => !!o).map((o) => ({ toTeamId: o.targetTeamId, name: o.name, emoji: o.emoji, qty: o.qty }));
+    this.log('bounty.hit', { teamId, bounty: b.kind, sends });
   }
 
   /** A bounty past its last round when the shop closes is missed: the stake is gone, the same again comes off, and shots are owed. */

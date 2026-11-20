@@ -120,10 +120,11 @@ Tested by 116 engine tests: 55 ported from the legacy suite by a
 separate pass (as an independent check that the port is faithful) and
 the rest new. The other 62 legacy tests cover what was cut.
 
+Decided since: a bounty being hit is announced with the team's name
+and the sends that completed it, Burner Phone or not.
+
 Known and carried over from the legacy engine, not yet decided:
 
-- A bounty being hit is announced with the team's name, so it can undo
-  a Burner Phone for the send that hit it.
 - Cancelling an order after the bar queue is built doesn't shrink that
   team's serve: it is still called up, and still paid drink income.
 

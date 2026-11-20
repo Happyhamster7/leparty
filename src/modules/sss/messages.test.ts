@@ -20,6 +20,7 @@ const SAMPLE = {
   reward: 4, next: 8, pct: 10, streamLost: 4, points: 9, n: 1, answer: 'Naruto', truth: 'truth', right: 2,
   average: 50, closest: 'T1', closestPick: 33, furthest: 'T2', furthestDrinks: 2,
   pairs: [{ a: 'T1', b: 'house', ca: 'silent', cb: 'snitch' }], bids: [{ teamId: 'T1', n: 3 }], drinkers: [{ teamId: 'T2', drinks: 4 }],
+  sends: [{ toTeamId: 'T2', name: 'Spirit', emoji: '🥃', qty: 5 }],
   line: 2, letters: 'A–D', max: 10, min: 5, has: 3, key: 'k', count: 2, phase: 'game', round: 1,
 };
 
@@ -70,6 +71,20 @@ test('a played night’s feed renders: every line the engine really wrote has a 
     assert.ok(text.trim() && !BROKEN.test(text), `${f.kind}: ${text}`);
   }
   assert.equal(sayFeed('nope', {}, plain), '', 'an unknown kind from a newer engine renders as nothing');
+});
+
+test('hitting a bounty names the sends that did it, even ones made on a Burner Phone', () => {
+  const n = night();
+  n.host('adjustPoints', { teamId: 'T1', amount: 30 });
+  n.host('adjustMoney', { teamId: 'T1', amount: 300 });
+  n.team('T1', 'buy', { itemId: 'open-bounty', stake: 10 });
+  n.toSpending({ T1: 1, T2: 2, T3: 3 });
+  n.team('T1', 'buy', { itemId: 'burner-phone' });
+  n.team('T1', 'buy', { itemId: 'spirit', targetTeamId: 'T2', qty: 5 });
+  n.team('T1', 'buy', { itemId: 'soju-shot', targetTeamId: 'T3', qty: 2 });
+  const hit = n.state.feed.find((f) => f.kind === 'bounty.hit')!;
+  assert.equal(sayFeed(hit.kind, hit.params, plain), 'Team-T1 hit their Open Bounty with 5× 🥃 Spirit to Team-T2, 2× 🍶 Soju Shot to Team-T3. The payout shows at the end of the act.');
+  assert.equal(n.points('T1'), 30 - 10 + 50);
 });
 
 test('round labels and host-written text take the host’s act names and the theme’s words', () => {
