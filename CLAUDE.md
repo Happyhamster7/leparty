@@ -198,19 +198,31 @@ link.
 
 ## Games
 
-No game is playable from this codebase right now. `legacy/sss` is the
-original Shifty Shen's Slammer app, read-only, kept as the behaviour
-spec for the port; the deployed SSS (branch `sss-points`) still works
-on its own. What's next, and every decision already made, is in
-`docs/rework-plan.md` — don't re-decide those here.
+A game is a module under `src/modules/<key>`. The first, Shifty Shen's
+Slammer, has its rules ported (`src/modules/sss/engine`) and tested,
+but **nothing serves them yet**: there is no session table, API or
+screen, so no game is playable from this codebase. That is phases 4
+and 5 of `docs/rework-plan.md`, which also records every decision
+already made — don't re-decide those here. The deployed SSS (branch
+`sss-points`) still runs on its own; `legacy/sss` is that app,
+read-only, kept as the behaviour spec.
 
-Three rules for whoever builds the game layer, learned from the two
-apps it replaces:
+Rules for the game layer, learned from the two apps it replaces:
 
+- **The engine is pure.** `reduce(state, action, ctx)` reads no clock,
+  no dice and no database; time, randomness, the roster and the sender
+  come in through `ctx`. Keep it that way: it is what makes the 100-odd
+  engine tests possible and a night replayable.
+- **The engine never names a theme or writes a sentence.** It emits a
+  code and parameters; `messages.ts` holds the words, written against a
+  `Voice` built from the party's theme. `messages.test.ts` fails if the
+  Plain theme ever says a prison word.
 - **Anything that must happen once goes through one atomic step** (a
   SQL function, or the session's compare-and-set). The retired game
   checked then wrote, so a double-tap could pay points twice.
 - **Actions carry a client-generated id and name their target.**
   "Serve the next block" double-fires; "serve block X" doesn't.
+- **A team's phone acts for the team that sent the action**, taken from
+  who is signed in, never from an argument.
 - **A game never touches a Vercel function with a video.** Phones get a
   signed upload URL and PUT straight to storage.

@@ -28,6 +28,14 @@ export type ThemePack = {
     /** Prefix for older rows, numbered from 1: "Level". */
     rowLabel: string | null;
   };
+  /**
+   * What this theme calls things only games talk about. Optional: a
+   * game falls back to its own neutral word for anything left out.
+   */
+  gameWords?: {
+    /** Where teams spend: "the commissary". Lower case, with its article. */
+    shop?: string;
+  };
   /** Default name for the nth group (0-based) when an event is created. */
   groupName: (index: number) => string;
 };

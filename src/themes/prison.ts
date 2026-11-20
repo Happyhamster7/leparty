@@ -40,6 +40,7 @@ export const PRISON: ThemePack = {
     '--rust-dark': '#7a2d11',
   },
   roster: { bars: true, vacantLabel: 'Vacant', newestRowLabel: 'Fresh meat', rowLabel: 'Level' },
+  gameWords: { shop: 'the commissary' },
   groupName: (i) => `Block ${letter(i)}`,
 };
 

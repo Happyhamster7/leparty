@@ -52,7 +52,7 @@ GameSession 1─* GameAction (append-only log)
 | Balances | Derived from a ledger inside the session document; a wrong ruling is a compensating entry. |
 | Phones | The team phone plays. Guest phones vote and film. SSS's every-guest-plays mode is dropped. |
 | SSS act lineups (GTA, Genshin, TFT, Among Us, Long Night) | Not ported. They imitate other companies' games and use a personal-use-only font. Acts stay as a grouping of rounds, with the mechanics hook. |
-| Retired SSS mechanics | Only host-assigned drinks come across. Holding Cell drinks, bail, deflect, punishments and sentences, supplies, gifts, heats, Shot Callers and request-and-second spending are cut. |
+| Retired SSS mechanics | Only host-assigned drinks come across. Holding Cell drinks, bail, deflect, punishments and sentences, supplies, gifts, heats, Shot Callers and request-and-second spending are cut. So are the Winner's Bounty perks (bonus drinks, fewer drinks, +1 point per drink): no SSS screen could ever switch them on. |
 | Roles | One host passcode. The TV and the bar each open with their own link (`events.display_token`, `events.bar_token`). |
 | Live updates | Polling. Revisit only if a rehearsal shows the lag hurts timed games. |
 | Clips | Supabase Storage, private bucket, signed URLs, capped at 50 MB. |
@@ -68,14 +68,53 @@ GameSession 1─* GameAction (append-only log)
 | --- | --- | --- |
 | 1 | **Archive and foundations.** SSS in the repo as `legacy/sss` with its history; a test runner; CI. | Done |
 | 2 | **Core and themes.** Theme packs (Prison, Plain); no prison words outside the Prison pack; TV and bar links; the old relational game and the roster API removed. | Done |
-| 3 | **Engine port.** `legacy/sss/lib/game.js` becomes a TypeScript reducer in `src/modules/sss`, keyed on participant and block ids, theme-neutral (structured feed events, not finished English), with the ledger, and without the cut mechanics. | Next |
-| 4 | **Sessions and API.** `game_sessions`, `game_actions`, one atomic apply function, polling endpoints. | |
+| 3 | **Engine port.** `legacy/sss/lib/game.js` becomes a TypeScript reducer in `src/modules/sss`, keyed on participant and block ids, theme-neutral (structured feed events, not finished English), with the ledger, and without the cut mechanics. | Done |
+| 4 | **Sessions and API.** `game_sessions`, `game_actions`, one atomic apply function, polling endpoints. | Next |
 | 5 | **Screens in React.** Host, team phone, bar and TV against the new API; costume poll and clips as core features. | |
 | 6 | **Rehearsal and shutdown.** A simulated night with 50 clients, then turn off the SSS Vercel project, Upstash and the Blob store. | |
 
 There is no playable game between phases 2 and 5. The old SSS
 deployment (branch `sss-points`) is untouched and still works until
 phase 6.
+
+## The engine, as built (phase 3)
+
+`src/modules/sss/engine` is the rules and nothing else: no database, no
+HTTP, no React, no clock and no dice of its own.
+
+| File | What it holds |
+| --- | --- |
+| `types.ts` | The session document (`State`) and everything that goes in and out. |
+| `index.ts` | `init`, `reduce`, `tick`, `nextDeadline`, and the table of actions with who may send each. |
+| `engine.ts` | The rules, as one class that wraps a state for a single call. |
+| `views.ts` | `hostView`, `displayView`, `teamView`: what each screen may know. Secrets are left out here. |
+| `catalogue.ts` | The default shelf, settings, starter games and constants. |
+| `text.ts` | Parsing host-typed trivia and openings; forgiving answer matching. |
+| `../messages.ts` | The words for every feed line and error, written against a `Voice`. |
+| `../voice.ts` | Builds a `Voice` from a theme pack and tonight's names. |
+
+How it differs from the legacy engine, on purpose:
+
+- **`reduce(state, action, ctx)` is pure.** It clones, settles any
+  deadline that has passed, checks the sender's role, applies one
+  action and returns the new state. A refused action throws
+  `GameError` and changes nothing. Time and randomness come in through
+  `ctx`, so a night can be replayed from its action log.
+- **Who is playing comes from the roster in `ctx`**, on every call. A
+  team is a `blocks.id`, a player a `participants.id`. A team's account
+  opens (with the starting budget) the first time it appears with
+  someone on it; a member marked `away` is not picked or counted.
+- **Balances are sums over `state.ledger`.** Points can't be taken below
+  zero: the entry written is what was actually taken.
+- **No finished English.** The feed is `{kind, params}` and errors are a
+  code and params; `messages.ts` has a template for each, and the
+  compiler refuses a kind or code without one. Host-written text (item
+  descriptions, game rules) may use `{group}` and `{groups}`.
+- **Bar actions name their team**, and repeating one is harmless.
+  `barNext` only accepts the team that is next in line.
+- **A team's phone acts for the team that sent the action**, never for
+  a team named in the arguments.
+- **Ids are minted from a counter in the state**, not from random bytes.
 
 ## Reference points
 
