@@ -74,7 +74,8 @@ const blank = (): State => ({
   schemaVersion: SCHEMA_VERSION,
   seq: 0,
   settings: defaultSettings(),
-  shopOpen: false,
+  // Open before the first round, as it is between rounds; a round closes it until Spending.
+  shopOpen: true,
   teams: {},
   items: defaultItems(),
   games: [],

@@ -54,3 +54,32 @@ test('reduce is pure: the state passed in is never changed', () => {
   assert.equal(JSON.stringify(kept), before);
   assert.notEqual(n.state, kept);
 });
+
+test('the answers to trivia and openings reach the host only, never a phone or the TV', () => {
+  const n = night();
+  n.host('updateGame', { gameId: n.gameId('Trivia'), questions: 'Capital of France? | Paris | Rome | A' });
+  n.host('updateGame', { gameId: n.gameId('Anime opening guessing'), openings: 'Opening 1 | Zzyzx Road Saga' });
+  assert.match(JSON.stringify(n.e().games), /Zzyzx Road Saga/);
+  for (const view of [n.tv(), n.seenBy('T1')]) {
+    const text = JSON.stringify(view);
+    assert.ok(!text.includes('Zzyzx Road Saga') && !text.includes('Capital of France'), 'answers leaked');
+    assert.equal((view.games.find((g) => g.name === 'Trivia') as { questionCount: number }).questionCount, 1);
+  }
+});
+
+test('a fine on points keeps its reason in the ledger, and how much a team lost at the bar stays between it and the host', () => {
+  const n = night();
+  n.host('adjustPoints', { teamId: 'T2', amount: 40 });
+  n.host('adjustPoints', { teamId: 'T2', amount: -5, reason: 'heckling' });
+  assert.equal(n.state.ledger.at(-1)!.note, 'heckling');
+  n.toSpending({ T1: 1, T2: 2, T3: 3 });
+  n.team('T1', 'buy', { itemId: 'soju-shot', targetTeamId: 'T2', qty: 1 });
+  n.host('startDrinks');
+  n.bar('barNext', { teamId: 'T2' });
+  n.bar('barFail', { teamId: 'T2' });
+  const serveFor = (v: { rounds: unknown }, view: ReturnType<typeof n.tv>) => view.round!.serves[0].pointsLost;
+  assert.equal(serveFor(n.e(), n.e()), 4);
+  assert.equal(serveFor(n.seenBy('T2'), n.seenBy('T2')), 4);
+  assert.equal(serveFor(n.seenBy('T1'), n.seenBy('T1')), null);
+  assert.equal(serveFor(n.tv(), n.tv()), null);
+});

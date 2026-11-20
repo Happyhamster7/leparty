@@ -89,7 +89,9 @@ function roundView(e: Engine, viewer: Viewer) {
       const orders = s.orderIds.map((id) => e.order(id)).filter((o) => !!o);
       return {
         teamId: s.teamId, drinks: s.drinks, servedAt: s.servedAt, timerEndsAt: s.timerEndsAt, finishedAt: s.finishedAt, missed: s.missed,
-        failed: s.failed, reward: s.reward, streamLost: s.streamLost, pointsLost: s.pointsLost,
+        failed: s.failed, reward: s.reward, streamLost: s.streamLost,
+        // A tenth of a team's points would give away its hidden score.
+        pointsLost: host || mine === s.teamId ? s.pointsLost : null,
         neat: orders.filter((o) => o.noChaser).reduce((n, o) => n + o.qty, 0),
         // Only the bar sees what to pour and who sent it.
         ...(host
@@ -124,7 +126,8 @@ function base(e: Engine, viewer: Viewer) {
       };
     }),
     items: host ? s.items : s.items.filter((i) => e.itemLive(i)),
-    games: s.games,
+    // The library holds the answers. Only the host gets them; everyone else gets how many there are.
+    games: host ? s.games : s.games.map(({ questions, questionsText, openings, openingsText, ...g }) => ({ ...g, questionCount: questions.length, openingCount: openings.length })),
     rounds: s.rounds.map((r) => ({ number: r.number, act: r.act, inAct: r.inAct, final: r.final, actName: e.slotOf(r.number).actName, gameName: r.gameName, phase: r.phase, winnerTeamId: r.winnerTeamId, placings: r.placings, prizes: r.prizes })),
     plan: { acts: s.settings.actsCount, perAct: s.settings.roundsPerAct, total: e.totalRounds() },
     night: s.night,

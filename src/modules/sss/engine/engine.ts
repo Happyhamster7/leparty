@@ -199,9 +199,9 @@ export class Engine {
   }
 
   /** Take points away, but never below zero. Returns what was actually taken. */
-  takePoints(teamId: string, amount: number, why: LedgerWhy, ref?: string): number {
+  takePoints(teamId: string, amount: number, why: LedgerWhy, ref?: string, note?: string): number {
     const lost = Math.min(Math.max(0, this.points(teamId)), Math.max(0, amount));
-    this.entry(teamId, 'points', -lost, why, { ref });
+    this.entry(teamId, 'points', -lost, why, { ref, note });
     return lost;
   }
 
@@ -247,7 +247,7 @@ export class Engine {
     if (!amt) fail('amount.zero');
     const note = cleanText(reason, 80);
     if (amt > 0) this.entry(t, 'points', amt, 'host', { note });
-    else this.takePoints(t, -amt, 'host');
+    else this.takePoints(t, -amt, 'host', undefined, note);
     this.log(amt > 0 ? 'points.given' : 'points.taken', { teamId: t, note });
   }
 
@@ -638,7 +638,8 @@ export class Engine {
       return {
         id: a?.id || this.id('a'),
         name: a?.name || '',
-        mechanics: (a?.mechanics || []).filter((k) => MECHANICS[k]),
+        // Kept even if this process doesn't know the key: dropping it here would silently save the loss.
+        mechanics: a?.mechanics || [],
         rounds: Array.from({ length: per }, (_, j) => a?.rounds[j] ?? null),
       };
     });
@@ -969,7 +970,8 @@ export class Engine {
     const s = this.serveOf(r, teamId);
     if (!s.servedAt) return;
     if (s.finishedAt) fail('bar.finished');
-    if ([...r.serves].reverse().find((x) => x.servedAt) !== s) fail('bar.notLast');
+    // The last team called up that is still drinking. A team that finished after it doesn't block the undo.
+    if ([...r.serves].reverse().find((x) => x.servedAt && !x.finishedAt) !== s) fail('bar.notLast');
     for (const a of s.awards) this.takePoints(a.teamId, a.points, 'serve.undone', s.teamId);
     for (const id of s.orderIds) {
       const o = this.order(id);

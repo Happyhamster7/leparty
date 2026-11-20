@@ -116,6 +116,17 @@ How it differs from the legacy engine, on purpose:
   a team named in the arguments.
 - **Ids are minted from a counter in the state**, not from random bytes.
 
+Tested by 116 engine tests: 55 ported from the legacy suite by a
+separate pass (as an independent check that the port is faithful) and
+the rest new. The other 62 legacy tests cover what was cut.
+
+Known and carried over from the legacy engine, not yet decided:
+
+- A bounty being hit is announced with the team's name, so it can undo
+  a Burner Phone for the send that hit it.
+- Cancelling an order after the bar queue is built doesn't shrink that
+  team's serve: it is still called up, and still paid drink income.
+
 ## Reference points
 
 - `legacy/sss/` is `sss-points` at `7b4062f`, read-only. Its rules are
