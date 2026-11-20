@@ -1650,3 +1650,65 @@ table.list td.tight {
     grid-template-columns: 1fr;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* The costume vote                                                    */
+/* ------------------------------------------------------------------ */
+
+.g-person.v-best {
+  border-color: #146b4a;
+  background: #dcefe6;
+}
+
+.g-person.v-worst {
+  border-color: var(--rust);
+  background: var(--fill);
+}
+
+.tv-poll {
+  display: grid;
+  grid-template-columns: minmax(240px, 58vh) 1fr;
+  gap: 4vw;
+  align-items: center;
+  margin-top: 4vh;
+}
+
+.tv-poll--results {
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+}
+
+.tv-poll__qr {
+  background: #fff;
+  padding: 2vh;
+  line-height: 0;
+}
+
+.tv-poll__qr svg {
+  width: 100%;
+  height: auto;
+}
+
+.tv-poll__winner {
+  font-family: var(--display);
+  font-size: clamp(30px, 4vw, 80px);
+  line-height: 1.1;
+  margin: 0 0 1.5vh;
+  text-transform: uppercase;
+}
+
+.tv-poll__runner {
+  font-size: clamp(18px, 2.2vw, 42px);
+  margin: 0 0 1vh;
+}
+
+.tv-poll .small {
+  font-size: 0.5em;
+  color: var(--muted);
+}
+
+/* The vote count beside a name: smaller than the name, but readable from the back. */
+.tv-poll .mono {
+  font-size: 0.6em;
+  color: var(--rust);
+}

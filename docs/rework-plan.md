@@ -70,7 +70,7 @@ GameSession 1─* GameAction (append-only log)
 | 2 | **Core and themes.** Theme packs (Prison, Plain); no prison words outside the Prison pack; TV and bar links; the old relational game and the roster API removed. | Done |
 | 3 | **Engine port.** `legacy/sss/lib/game.js` becomes a TypeScript reducer in `src/modules/sss`, keyed on participant and block ids, theme-neutral (structured feed events, not finished English), with the ledger, and without the cut mechanics. | Done |
 | 4 | **Sessions and API.** `game_sessions`, `game_actions`, one atomic apply function, polling endpoints. | Done |
-| 5 | **Screens in React.** Host, team phone, bar and TV against the new API; costume poll and clips as core features. | Game screens done. Poll, clips and the pixel look still to do |
+| 5 | **Screens in React.** Host, team phone, bar and TV against the new API; costume poll and clips as core features. | Game screens, the costume vote and shelf editing done. Clips, sounds and the pixel look still to do |
 | 6 | **Rehearsal and shutdown.** A simulated night with 50 clients, then turn off the SSS Vercel project, Upstash and the Blob store. | |
 
 There is no playable game between phases 2 and 5. The old SSS
@@ -197,10 +197,20 @@ bar (call up, clock, done, couldn't finish), Cold War and Trivia on
 the phones, a fine, a refusal shown in the party's words, and a second
 phone taking a team over.
 
-Not built yet: editing the shelf (prices, what's on it) from the host
-screen, the costume poll, clips, sounds, and the remaining four
-app-run games have screens but were not driven in that run (Two-Thirds,
-Prisoner's Dilemma, Name the opening, Truth or lie).
+A second run drove the other four phone games (Two-Thirds, Prisoner's
+Dilemma, Name the opening, Truth or lie), shelf editing, and the
+costume vote.
+
+**The costume vote** is a core feature, not part of any game
+(`src/lib/polls`, migration `0012`, documented in `docs/schema.md`).
+The host opens it from the event page; the TV shows a code; each phone
+votes at `/vote/<pollId>` with no sign-in, up to three best and three
+worst, one vote per phone and changeable until it closes. Closing
+fixes the result, shows it on the TV, and tells a running game what it
+is worth: in Slammer, 10 points to the best costume's team and a shot
+in the next queue for the worst's.
+
+Not built yet: clips, sounds, and the pixel look.
 
 ## Reference points
 

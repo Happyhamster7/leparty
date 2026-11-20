@@ -37,6 +37,11 @@ export interface GameModule {
   nextDeadline(state: unknown, roster: Roster): number | null;
   /** What this viewer may know. Secrets are left out here, never on the client. */
   view(state: unknown, roster: Roster, now: number, viewer: Viewer): unknown;
+  /**
+   * What the costume vote's result is worth in this game, as actions
+   * for the host to have sent. Optional: a game may ignore the vote.
+   */
+  costumeAwards?(result: { bestTeamId: string | null; worstTeamId: string | null }): ModuleAction[];
   /** If `err` is one of this module's rule refusals, its code and parameters. */
   ruleError(err: unknown): { code: string; params: Record<string, unknown> } | null;
 }

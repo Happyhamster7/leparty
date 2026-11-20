@@ -35,7 +35,7 @@ the code.
 `npm run test:legacy` (the original SSS engine's 130 tests). CI
 (`.github/workflows/ci.yml`) runs all of them.
 
-Migrations are in `supabase/migrations/`, numbered `0001`–`0011`, run in order against the Supabase SQL editor.
+Migrations are in `supabase/migrations/`, numbered `0001`–`0012`, run in order against the Supabase SQL editor.
 Each new one must actually be run before its feature works — nothing
 auto-applies them. If `npm run build` hangs right after the
 `Next.js 14.2.35` banner with no further output, it's not your code:
@@ -179,8 +179,10 @@ Built: self-service signup (`/signup`, `/parties`), party signup
 (invite, identity, mugshot, potluck, booked, declined), host console
 (parties, create, edit, event, guest edit, check-in, draw, cards),
 `/join` and `/b/<token>` (claims the team phone; latest scan wins),
-the TV (`/tv/<display-token>`) and a bar page that waits for a game
-(`/bar/<bar-token>`). Two themes: Prison (`jail`) and Plain.
+the TV (`/tv/<display-token>`), the bar (`/bar/<bar-token>`), and the
+costume vote (opened from the event page; guests vote at
+`/vote/<pollId>`; see `src/lib/polls`). Two themes: Prison (`jail`)
+and Plain.
 
 Verified by driving it in a real browser against the real Supabase
 project, with a throwaway party, after the theme and session work:
@@ -208,8 +210,8 @@ phones (`/b/<token>`), the bar (`/bar/<token>`) and the TV
 (`/tv/<token>`) each show its screen for their seat. Rules are in
 `src/modules/sss/engine`, screens in `src/modules/sss/ui`, and
 `src/lib/sessions` stores the state and serves each viewer its view.
-What's left of phase 5 (costume poll, clips, the pixel look, shelf
-editing) is in `docs/rework-plan.md`, which also records every
+What's left of phase 5 (clips, sounds, the pixel look) is in
+`docs/rework-plan.md`, which also records every
 decision already made — don't re-decide those here. The deployed SSS (branch
 `sss-points`) still runs on its own; `legacy/sss` is that app,
 read-only, kept as the behaviour spec.

@@ -454,6 +454,9 @@ function Setup() {
       {editing ? <GameEditor key={editing} gameId={editing} onClose={() => setEditing(null)} /> : null}
       <AddGame />
 
+      <h3>The shelf</h3>
+      <Shelf />
+
       <h3>Start over</h3>
       <Do type="restart" quiet confirm="Wipe everything that has happened and go back to round 1? The games and the order of play are kept.">
         RESTART FROM ROUND 1
@@ -557,5 +560,59 @@ function AddGame() {
         Add, then edit it
       </button>
     </form>
+  );
+}
+
+/** Prices, points and what's on the shelf. Each row saves on its own. */
+function Shelf() {
+  const { view, send, busy, v } = useGame<View>();
+  return (
+    <>
+      <p className="small">
+        A drink scores its points for the {v.group} that sent it when it’s served. Bundle prices (5 or 10 at once) are fixed. Untick an item to take it off the
+        shelf.
+      </p>
+      <table className="list">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Price</th>
+            <th>Points</th>
+            <th>On the shelf</th>
+            <th />
+          </tr>
+        </thead>
+        <tbody>
+          {view.items.map((it) => (
+            <tr key={`${it.id}-${it.price}-${it.points}-${it.active}`}>
+              <td>
+                {it.emoji} {it.name}
+              </td>
+              <td>
+                {it.type === 'bounty' ? <span className="small">staked in points</span> : <input form={`sh-${it.id}`} name="price" type="number" min={0} defaultValue={it.price} aria-label={`Price of ${it.name}`} style={{ width: 90 }} />}
+              </td>
+              <td>{it.type === 'drink' ? <input form={`sh-${it.id}`} name="points" type="number" min={0} max={50} defaultValue={it.points} aria-label={`Points for ${it.name}`} style={{ width: 80 }} /> : null}</td>
+              <td>
+                <input form={`sh-${it.id}`} name="active" type="checkbox" defaultChecked={it.active} aria-label={`${it.name} on the shelf`} />
+              </td>
+              <td>
+                <form
+                  id={`sh-${it.id}`}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const d = new FormData(e.currentTarget);
+                    send('updateItem', { itemId: it.id, ...(d.has('price') ? { price: d.get('price') } : {}), ...(d.has('points') ? { points: d.get('points') } : {}), active: d.get('active') === 'on' });
+                  }}
+                >
+                  <button className="btn btn--quiet btn--inline" type="submit" disabled={busy}>
+                    SAVE
+                  </button>
+                </form>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
   );
 }

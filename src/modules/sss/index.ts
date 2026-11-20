@@ -20,5 +20,10 @@ export const sss: GameModule = {
     if (viewer.role === 'team') return teamView(s, roster, now, viewer.teamId);
     return displayView(s, roster, now);
   },
+  // The best costume's team scores; the worst costume's team owes a shot in the next queue.
+  costumeAwards: ({ bestTeamId, worstTeamId }) => [
+    ...(bestTeamId ? [{ type: 'adjustPoints', args: { teamId: bestTeamId, amount: 10, reason: 'the best costume' } }] : []),
+    ...(worstTeamId ? [{ type: 'assignDrinks', args: { teamId: worstTeamId, itemId: 'spirit', qty: 1, reason: 'the worst costume' } }] : []),
+  ],
   ruleError: (err) => (err instanceof GameError ? { code: err.code, params: err.params } : null),
 };

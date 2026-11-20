@@ -11,6 +11,8 @@ import CopyAll from './CopyAll';
 import { MODULES, moduleFor } from '@/modules';
 import { sessions } from '@/lib/sessions/server';
 import { startGame, endGame } from './gameActions';
+import { liveTally, showingPoll } from '@/lib/polls/polls';
+import { closeCostumeVote, hideCostumeVote, openCostumeVote } from './pollActions';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,6 +46,8 @@ export default async function EventPage({ params }: { params: { eventId: string 
   const ev = event as EventRow;
   const theme = getTheme(ev.theme_key);
   const game = await sessions.store.activeForEvent(params.eventId);
+  const poll = await showingPoll(params.eventId);
+  const count = poll?.status === 'open' ? await liveTally(poll) : poll?.results ?? null;
 
   const [{ data: participants }, { data: blocks }, tally, { data: allParts }] =
     await Promise.all([
@@ -324,6 +328,61 @@ export default async function EventPage({ params }: { params: { eventId: string 
                 </form>
               ))}
             </div>
+          </div>
+        )}
+
+        <h2>Costume vote</h2>
+        {!poll ? (
+          <div style={{ marginBottom: 24 }}>
+            <p className="small" style={{ marginBottom: 14 }}>
+              Puts a code on the TV. Everyone scans it and picks their three best and three worst costumes on their
+              own phone, one vote per phone.{game ? ' When you close it, the best costume’s ' + theme.groupNoun.toLowerCase() + ' scores 10 points and the worst owes a shot.' : ''}
+            </p>
+            <form action={openCostumeVote.bind(null, params.eventId)}>
+              <button className="btn btn--quiet btn--inline" type="submit">
+                OPEN THE COSTUME VOTE
+              </button>
+            </form>
+          </div>
+        ) : (
+          <div className="box box--quiet" style={{ marginBottom: 24 }}>
+            <p style={{ margin: '0 0 10px' }}>
+              {poll.status === 'open' ? (
+                <>
+                  <strong>Voting is open</strong> and the code is on the TV. {count?.voters ?? 0} voted so far.{' '}
+                  <CopyLink url={`${base}/vote/${poll.id}`} label="COPY VOTE LINK" />
+                </>
+              ) : (
+                <>
+                  <strong>Voting is closed</strong> and the results are on the TV. {count?.voters ?? 0} voted.
+                </>
+              )}
+            </p>
+            {count && (count.best.length || count.worst.length) ? (
+              <div className="grid-2" style={{ marginBottom: 12 }}>
+                {(['best', 'worst'] as const).map((k) => (
+                  <div key={k}>
+                    <p className="eyebrow">{k === 'best' ? 'Best' : 'Worst'}</p>
+                    {count[k].slice(0, 5).map((c) => (
+                      <div key={c.id} style={{ fontSize: 14 }}>
+                        <span className="mono">{c.votes}</span> {c.name}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {poll.results?.awards?.some((a) => a.includes(':')) ? (
+              <p className="small">
+                The game couldn&rsquo;t take part of the result ({poll.results.awards.filter((a) => a.includes(':')).join(', ')}). Award it by hand
+                from the game&rsquo;s rulings.
+              </p>
+            ) : null}
+            <form action={(poll.status === 'open' ? closeCostumeVote : hideCostumeVote).bind(null, params.eventId, poll.id)}>
+              <button className="btn btn--inline" type="submit">
+                {poll.status === 'open' ? 'Close voting and show the results' : 'Take it off the TV'}
+              </button>
+            </form>
           </div>
         )}
 

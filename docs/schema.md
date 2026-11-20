@@ -276,6 +276,43 @@ call it.
 
 ---
 
+## Polls
+
+Added by migration `0012`. A room-wide vote that works with or without
+a game. The first kind is the costume vote.
+
+### polls
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | uuid | PK. Also the vote link: `/vote/<id>` |
+| event_id | uuid | FK events |
+| kind | text | costume |
+| status | text | open (taking votes, code on the TV), closed (results on the TV), hidden (over). One open-or-closed poll per event, by a partial unique index |
+| picks | int | How many each phone may pick for best, and for worst. Default 3 |
+| results | jsonb | Fixed when the poll closes: ranked best and worst with vote counts, how many voted, and what the game was told |
+| opened_at, closed_at | timestamptz | |
+
+### poll_votes
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| poll_id | uuid | FK polls |
+| voter_id | text | The phone's device cookie. PK with `poll_id`: one vote per phone, and voting again replaces it |
+| best | uuid[] | `participants.id` |
+| worst | uuid[] | `participants.id` |
+
+A vote is one row per phone, written with an upsert, so everyone voting
+at once contends for nothing. Votes are deliberately not in a game's
+session document, where they would all fight over one row.
+
+When a poll closes while a game is running, the game's module is asked
+what the result is worth (`GameModule.costumeAwards`) and those actions
+are sent as the host, each with an id built from the poll's, so closing
+twice awards once.
+
+---
+
 ## Implementation notes (phase 1, built)
 
 **The invite link is a participant token, not a person token.**
