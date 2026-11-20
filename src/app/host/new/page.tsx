@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { isHost } from '@/lib/host';
+import { sitePack } from '@/themes';
 import EventForm from '../EventForm';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +12,7 @@ export default function NewEventPage() {
   return (
     <div className="shell shell--wide">
       <div className="topbar">
-        <span>WARDEN&rsquo;S CONSOLE</span>
+        <span>{sitePack().copy.hostConsoleLabel.toUpperCase()}</span>
         <Link href="/host">BACK</Link>
       </div>
 

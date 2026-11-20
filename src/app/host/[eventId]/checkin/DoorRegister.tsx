@@ -15,7 +15,7 @@ function Submit() {
   );
 }
 
-export default function DoorRegister({ eventId }: { eventId: string }) {
+export default function DoorRegister({ eventId, group }: { eventId: string; group: string }) {
   const action = doorRegister.bind(null, eventId);
   const [state, formAction] = useFormState<HostState, FormData>(action, {});
   const [open, setOpen] = useState(false);
@@ -94,8 +94,8 @@ export default function DoorRegister({ eventId }: { eventId: string }) {
         ) : null}
       </form>
       <p className="small" style={{ margin: '12px 0 0' }}>
-        Three fields on purpose. They&rsquo;re booked in and marked present straight away; if the
-        draw has already run they drop into the lightest block.
+        Three fields on purpose. They&rsquo;re added and marked present straight away; if the
+        draw has already run they drop into the lightest {group}.
       </p>
     </div>
   );

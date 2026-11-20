@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { loadInvite } from '@/lib/invite';
-import { getTheme } from '@/lib/theme';
+import { getTheme } from '@/themes';
 import { potluckTally, potluckItems } from '@/lib/potluck';
 import PotluckForm from './PotluckForm';
 

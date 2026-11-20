@@ -10,9 +10,8 @@ import {
   isHost,
   joinCode,
   BLOCK_COLOURS,
-  BLOCK_NAMES,
 } from '@/lib/host';
-import { seedCatalogue } from '@/lib/catalogue';
+import { getTheme, themePack } from '@/themes';
 import type { PotluckCategory } from '@/lib/types';
 
 export type HostState = {
@@ -85,19 +84,19 @@ export async function createEvent(_prev: HostState, formData: FormData): Promise
 
   if (error || !event) return { error: 'Could not create the event. Check your Supabase keys.' };
 
-  await supabase.from('blocks').insert(makeBlocks(event.id, 0, blockCount));
-  await seedCatalogue(supabase, event.id);
+  await supabase.from('blocks').insert(makeBlocks(event.id, fields.theme_key, 0, blockCount));
 
   revalidatePath('/host');
   redirect(`/host/${event.id}`);
 }
 
-function makeBlocks(eventId: string, from: number, to: number) {
+function makeBlocks(eventId: string, themeKey: string, from: number, to: number) {
+  const pack = themePack(themeKey);
   return Array.from({ length: Math.max(0, to - from) }, (_, i) => {
     const index = from + i;
     return {
       event_id: eventId,
-      name: BLOCK_NAMES[index] ?? `Block ${index + 1}`,
+      name: pack.groupName(index),
       colour: BLOCK_COLOURS[index % BLOCK_COLOURS.length],
       join_code: joinCode(),
     };
@@ -145,7 +144,7 @@ export async function updateEvent(
   const current = blocks ?? [];
 
   if (blockCount > current.length) {
-    await supabase.from('blocks').insert(makeBlocks(eventId, current.length, blockCount));
+    await supabase.from('blocks').insert(makeBlocks(eventId, fields.theme_key, current.length, blockCount));
   } else if (blockCount < current.length) {
     const { data: occupied } = await supabase
       .from('participants')
@@ -167,7 +166,7 @@ export async function updateEvent(
     if (kept > blockCount) {
       revalidatePath(`/host/${eventId}`);
       return {
-        notice: `Saved, but ${kept} blocks remain — the extras have people in them or are in play. Clear the draw first if you really want fewer.`,
+        notice: `Saved, but ${kept} ${getTheme(fields.theme_key).groupNounPlural.toLowerCase()} remain — the extras have people in them or are in play. Clear the draw first if you really want fewer.`,
       };
     }
   }

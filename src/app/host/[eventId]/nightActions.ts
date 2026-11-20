@@ -144,7 +144,7 @@ export async function doorRegister(
   if (partError) return { error: 'Could not add them to this party.' };
 
   revalidatePath(`/host/${eventId}/checkin`);
-  return { notice: `${name} booked in.`, added: name };
+  return { notice: `${name} added and checked in.`, added: name };
 }
 
 export async function closeCheckIn(eventId: string) {

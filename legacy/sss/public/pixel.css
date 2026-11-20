@@ -1,0 +1,375 @@
+/* Pixel skin for the one-look lineup (act "slammer"), after the LeParty pixel kit.
+   Frames and icons are the kit's original sprites in public/pixel/ (drawn by
+   scripts/pixel-sprites.py on the skins-trial branch). One art pixel = 3 CSS px. */
+
+body[data-era='slammer'] {
+  --bg: #4a2e1c;
+  --concrete: #6e3416;
+  --card: #fff6c8;
+  --card2: #fde6b2;
+  --line: #dcab68;
+  --text: #3b1d12;
+  --muted: #7a4a26;
+  --orange: #a3521f;
+  --orange2: #8a2222;
+  --yellow: #f2b72c;
+  --red: #c9402f;
+  --green: #4f9e3a;
+  --teal: #24477e;
+  --purple: #6e3416;
+  --cash: #4f9e3a;
+  --night: #24477e;
+  --sunset: #a3521f;
+  --on-accent: #fff6c8;
+  --divider: #f2cd8a;
+  --tint: #f2cd8a;
+  --card-line: #dcab68;
+  --card-top: #fff6c8;
+  --input: #fde6b2;
+  --sky: #4a2e1c;
+  --radius: 0px;
+  --stencil: 'Jersey 10', 'Outfit', system-ui, sans-serif;
+  --script: 'Jersey 10', monospace;
+  --type: 'Outfit', system-ui, sans-serif;
+  --body: 'Pixelify Sans';
+  --ui: 'Pixelify Sans';
+  --gold-light: #ffe27a;
+  --outline: #3b1d12;
+  color-scheme: light;
+  background: #4a2e1c url('/pixel/floor.png') repeat;
+  color: var(--text);
+  font: 16px/1.45 'Outfit', system-ui, sans-serif;
+  image-rendering: pixelated;
+  -webkit-font-smoothing: antialiased;
+  cursor: url('/pixel/cursor.png') 0 0, auto;
+}
+body[data-era='slammer'] a, body[data-era='slammer'] button, body[data-era='slammer'] label, body[data-era='slammer'] summary, body[data-era='slammer'] select { cursor: url('/pixel/cursor.png') 0 0, pointer; }
+body[data-era='slammer'] * { border-radius: 0 !important; box-shadow: none !important; text-shadow: none; backdrop-filter: none !important; }
+body[data-era='slammer'][data-phase='night'] { background: #2a1a10 url('/pixel/floor.png') repeat; }
+
+/* type */
+body[data-era='slammer'] h1, body[data-era='slammer'] h2, body[data-era='slammer'] h3 { font-family: 'Jersey 10', monospace; font-weight: 400; letter-spacing: 0.01em; text-transform: none; }
+body[data-era='slammer'] h2 { font-size: 30px; line-height: 1; }
+body[data-era='slammer'] h3 { font-size: 24px; line-height: 1; }
+body[data-era='slammer'] a { color: var(--orange2); }
+body[data-era='slammer'] .fine, body[data-era='slammer'] small { color: var(--muted); }
+body[data-era='slammer'] .eyebrow { font-family: 'Outfit', system-ui, sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 0.02em; text-transform: none; color: var(--orange2); }
+body[data-era='slammer'] .section-h { font-family: 'Jersey 10', monospace; font-size: 26px; color: var(--gold-light); text-shadow: 3px 0 0 var(--outline), -3px 0 0 var(--outline), 0 3px 0 var(--outline), 0 -3px 0 var(--outline); }
+body[data-era='slammer'] .logo {
+  font-family: 'Jersey 10', monospace; text-transform: none; letter-spacing: 0.01em; background: none; -webkit-background-clip: border-box; background-clip: border-box;
+  color: var(--gold-light);
+  text-shadow: 3px 0 0 var(--outline), -3px 0 0 var(--outline), 0 3px 0 var(--outline), 0 -3px 0 var(--outline), 3px 3px 0 var(--outline), -3px 3px 0 var(--outline), 3px -3px 0 var(--outline), -3px -3px 0 var(--outline), 0 9px 0 var(--outline);
+  filter: none;
+}
+body[data-era='slammer'] .tagline { font-family: 'Outfit', system-ui, sans-serif; color: var(--card); text-shadow: 0 3px 0 var(--outline); }
+body[data-era='slammer'] .hero { display: none; }
+body[data-era='slammer'] .landing-inner { padding-top: 36px; }
+body[data-era='slammer'] .stamp { color: var(--red); border: 3px solid var(--red); background: var(--card2); text-shadow: none; font-family: 'Jersey 10', monospace; font-size: 24px; }
+
+/* windows: wood frame, parchment inside */
+body[data-era='slammer'] .card, body[data-era='slammer'] .sheet, body[data-era='slammer'] .booking {
+  background: none; border-style: solid; border-width: 18px;
+  border-image: url('/pixel/frame-wood.png') 18 fill / 18px stretch;
+  padding: 6px; color: var(--text);
+  filter: drop-shadow(0 6px 0 rgba(20, 10, 5, 0.55));
+}
+body[data-era='slammer'] .card .card { border-width: 9px; border-image: url('/pixel/frame-paper.png') 9 fill / 9px stretch; filter: none; }
+body[data-era='slammer'] .sheet { max-width: 620px; padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); }
+body[data-era='slammer'] .sheet-bg { background: rgba(30, 15, 8, 0.6); }
+
+/* buttons */
+body[data-era='slammer'] .btn {
+  background: none; border-style: solid; border-width: 12px; border-image: url('/pixel/frame-btn.png') 12 fill / 12px stretch;
+  color: var(--card); font: 600 15px 'Outfit', system-ui, sans-serif; text-transform: none; letter-spacing: 0.02em;
+  text-shadow: 0 3px 0 var(--outline); padding: 0 6px; min-height: 42px; filter: none; transition: transform 0.05s;
+}
+body[data-era='slammer'] .btn:hover { transform: translateY(-3px); filter: none; }
+body[data-era='slammer'] .btn:active { transform: translateY(3px); border-image-source: url('/pixel/frame-btn-down.png'); }
+body[data-era='slammer'] .btn.ghost { border-image-source: url('/pixel/frame-btn-paper.png'); color: var(--text); text-shadow: none; }
+body[data-era='slammer'] .btn.ghost:active { border-image-source: url('/pixel/frame-btn-paper-down.png'); }
+body[data-era='slammer'] .btn.danger { border-image-source: url('/pixel/frame-btn-red.png'); color: var(--card); }
+body[data-era='slammer'] .btn.big { border-image-source: url('/pixel/frame-btn-green.png'); font-size: 18px; min-height: 54px; }
+body[data-era='slammer'] .btn.big:active { border-image-source: url('/pixel/frame-btn-green-down.png'); }
+body[data-era='slammer'] .btn.sm { font-size: 14px; min-height: 36px; padding: 0 3px; }
+body[data-era='slammer'] .btn.xs { font-size: 13px; min-height: 30px; border-width: 9px; padding: 0 2px; }
+body[data-era='slammer'] .btn:disabled { opacity: 0.55; filter: grayscale(0.4); transform: none; }
+
+/* inputs: recessed slots */
+body[data-era='slammer'] input:not([type='checkbox']):not([type='color']), body[data-era='slammer'] select, body[data-era='slammer'] textarea {
+  background: none; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-slot.png') 9 fill / 9px stretch;
+  color: var(--text); font: 16px 'Outfit', system-ui, sans-serif; padding: 3px 6px;
+}
+body[data-era='slammer'] input:focus, body[data-era='slammer'] select:focus, body[data-era='slammer'] textarea:focus { border-image-source: url('/pixel/frame-slot-active.png'); outline: none; }
+body[data-era='slammer'] input::placeholder, body[data-era='slammer'] textarea::placeholder { color: #a8784a; }
+body[data-era='slammer'] label { color: var(--text); font-weight: 500; }
+
+/* top bar: a plank */
+body[data-era='slammer'] .top {
+  background: none; border-style: solid; border-width: 12px; border-image: url('/pixel/frame-plank.png') 12 fill / 12px stretch;
+  color: var(--card); padding: 3px 6px; padding-top: max(3px, env(safe-area-inset-top));
+}
+body[data-era='slammer'] .top .who-name { font-family: 'Jersey 10', monospace; font-size: 26px; color: var(--gold-light); text-shadow: 0 3px 0 var(--outline); }
+body[data-era='slammer'] .top .who-sub, body[data-era='slammer'] .top .fine { color: var(--card); }
+body[data-era='slammer'] .credits, body[data-era='slammer'] .px-pts {
+  border-style: solid; border-width: 12px; border-image: url('/pixel/frame-hud.png') 12 fill / 12px stretch; padding: 0 6px; text-align: right;
+}
+body[data-era='slammer'] .credits-n { font-family: 'Jersey 10', monospace; color: var(--text); -webkit-text-stroke: 0; text-shadow: none; font-size: 28px; }
+body[data-era='slammer'] .credits-l { color: var(--muted); font-size: 12px; text-transform: none; }
+body[data-era='slammer'] .hud { gap: 6px; align-items: stretch; }
+body[data-era='slammer'] .px-pts { display: flex; align-items: center; gap: 6px; font-family: 'Jersey 10', monospace; font-size: 24px; color: var(--text); }
+body[data-era='slammer'] .px-ico { display: inline-block; width: 24px; height: 24px; background: url('/pixel/icons.png') 0 0 / 744px 24px; image-rendering: pixelated; flex: none; }
+body[data-era='slammer'] .px-ico--star { background-position: -24px 0; }
+
+/* bottom tabs: a hud strip with slots */
+body[data-era='slammer'] .tabs {
+  background: none; border-style: solid; border-width: 12px 12px 6px; border-image: url('/pixel/frame-hud.png') 12 fill / 12px 12px 6px stretch;
+  padding-bottom: env(safe-area-inset-bottom); gap: 3px;
+}
+body[data-era='slammer'] .tabs button { color: var(--muted); font-family: 'Outfit', system-ui, sans-serif; border: 9px solid transparent; padding: 2px 0; }
+body[data-era='slammer'] .tabs button span { font-size: 11px; font-weight: 600; text-transform: none; letter-spacing: 0; }
+body[data-era='slammer'] .tabs button.on { border-image: url('/pixel/frame-slot-active.png') 9 fill / 9px stretch; color: var(--text); }
+body[data-era='slammer'] .tabs button.on span { color: var(--text); text-shadow: none; }
+body[data-era='slammer'] .tabs button.on::before { display: none; }
+body[data-era='slammer'] .dot { border: 2px solid var(--outline); }
+
+/* banners */
+body[data-era='slammer'] .phase {
+  background: none; border-style: solid; border-width: 12px; border-image: url('/pixel/frame-plank.png') 12 fill / 12px stretch;
+  color: var(--gold-light); font-family: 'Jersey 10', monospace; font-size: 22px; letter-spacing: 0.04em; padding: 0 6px; text-shadow: 0 3px 0 var(--outline); animation: none;
+}
+body[data-era='slammer'] .phase.shop-shut, body[data-era='slammer'] .phase.vote { border-image-source: url('/pixel/frame-btn-red.png'); color: var(--card); }
+body[data-era='slammer'] .announce, body[data-era='slammer'] .toast, body[data-era='slammer'] .drinkcard, body[data-era='slammer'] .dealercard {
+  background: none; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-tooltip.png') 9 fill / 9px stretch;
+  color: var(--text); padding: 6px;
+}
+body[data-era='slammer'] .announce .fine, body[data-era='slammer'] .drinkcard .fine { color: var(--muted); }
+body[data-era='slammer'] .drink-n { color: var(--red); }
+body[data-era='slammer'] .toast { border-left-width: 9px; }
+body[data-era='slammer'] .warnbox { background: var(--tint); border: 3px solid var(--red); color: var(--orange2); }
+body[data-era='slammer'] .incoming {
+  background: none; border-style: solid; border-width: 12px; border-image: url('/pixel/frame-btn-red.png') 12 fill / 12px stretch;
+  color: var(--card); padding: 6px; animation: px-blink 1.6s steps(1) infinite;
+}
+body[data-era='slammer'] .incoming .fine, body[data-era='slammer'] .incoming small { color: var(--card); }
+body[data-era='slammer'] .incoming-h { color: var(--gold-light); font-family: 'Jersey 10', monospace; font-size: 24px; text-shadow: 0 3px 0 var(--outline); }
+@keyframes px-blink { 50% { filter: brightness(1.15); } }
+
+/* chips and tags */
+body[data-era='slammer'] .chip { background: var(--card2); border: 3px solid var(--line); color: var(--text); font-weight: 600; }
+body[data-era='slammer'] .tag, body[data-era='slammer'] .badge { border-radius: 0; font-family: 'Outfit', system-ui, sans-serif; }
+
+/* shop items: landscape cards that ring gold */
+body[data-era='slammer'] .items { gap: 6px; }
+body[data-era='slammer'] .item {
+  background: none; border-style: solid; border-width: 12px; border-image: url('/pixel/frame-card.png') 12 fill / 12px stretch;
+  color: var(--text); padding: 3px;
+}
+body[data-era='slammer'] .item:hover:not(:disabled), body[data-era='slammer'] .item:focus-visible { border-width: 15px; border-image: url('/pixel/frame-card-active.png') 15 fill / 15px stretch; margin: -3px; outline: none; }
+body[data-era='slammer'] .item-n { font-family: 'Jersey 10', monospace; font-size: 22px; font-weight: 400; }
+body[data-era='slammer'] .item-p { font-family: 'Jersey 10', monospace; font-size: 20px; color: var(--orange2); }
+body[data-era='slammer'] .item-r { color: var(--yellow); }
+body[data-era='slammer'] .target { background: none; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-btn-paper.png') 12 fill / 9px stretch; color: var(--text); }
+body[data-era='slammer'] .target.on { border-image: url('/pixel/frame-slot-active.png') 9 fill / 9px stretch; font-weight: 700; }
+
+/* lists, boards and the rest */
+body[data-era='slammer'] .board li, body[data-era='slammer'] .tv-board li, body[data-era='slammer'] .roster li, body[data-era='slammer'] .stats div, body[data-era='slammer'] .stash-i, body[data-era='slammer'] .vote, body[data-era='slammer'] .money-t {
+  background: none; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-paper.png') 9 fill / 9px stretch;
+  border-left: 9px solid var(--c, var(--line));
+}
+body[data-era='slammer'] .stats div, body[data-era='slammer'] .stash-i, body[data-era='slammer'] .vote { border-left-color: transparent; }
+body[data-era='slammer'] .rank { font-family: 'Jersey 10', monospace; color: var(--muted); }
+body[data-era='slammer'] .board li:first-child .rank, body[data-era='slammer'] .tv-board li:first-child .rank { color: var(--orange2); }
+body[data-era='slammer'] .b-s b, body[data-era='slammer'] .tv-board b, body[data-era='slammer'] .stats b { font-family: 'Jersey 10', monospace; font-weight: 400; color: var(--orange2); }
+body[data-era='slammer'] .tv-bar { background: none; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-bar.png') 9 fill / 9px stretch; height: 30px; }
+body[data-era='slammer'] .tv-bar i { background: var(--c); }
+body[data-era='slammer'] .feed li, body[data-era='slammer'] .todo, body[data-era='slammer'] .order, body[data-era='slammer'] .schedule li, body[data-era='slammer'] .glist li, body[data-era='slammer'] .tlist li, body[data-era='slammer'] .ilist li { border-bottom-color: var(--divider); }
+body[data-era='slammer'] .feed .f-ts { color: var(--muted); }
+body[data-era='slammer'] .feed .k-punish .f-t { color: var(--orange2); }
+body[data-era='slammer'] .vote.on { border-image-source: url('/pixel/frame-slot-active.png'); }
+body[data-era='slammer'] .vote .bar { background: var(--tint); }
+body[data-era='slammer'] .mug-card, body[data-era='slammer'] .role-card, body[data-era='slammer'] .classified, body[data-era='slammer'] .task-card, body[data-era='slammer'] .lockup, body[data-era='slammer'] .match, body[data-era='slammer'] .rules { background: var(--card2); border-color: var(--line); color: var(--text); }
+body[data-era='slammer'] .rules { border-left: 6px solid var(--orange); }
+body[data-era='slammer'] .offline { background: var(--red); color: var(--card); }
+
+/* host console */
+body[data-era='slammer'] .admin-top { background: none; border-style: solid; border-width: 12px; border-image: url('/pixel/frame-plank.png') 12 fill / 12px stretch; }
+body[data-era='slammer'] .admin-top .who-name { font-family: 'Jersey 10', monospace; font-size: 30px; color: var(--gold-light); text-shadow: 0 3px 0 var(--outline); }
+body[data-era='slammer'] .admin-top .who-sub { color: var(--card); }
+body[data-era='slammer'] .act-switch { background: none; border-style: solid; border-width: 12px; border-image: url('/pixel/frame-hud.png') 12 fill / 12px stretch; padding: 0 6px; }
+body[data-era='slammer'] .act-switch b { font-family: 'Jersey 10', monospace; font-size: 24px; font-weight: 400; }
+body[data-era='slammer'] .atabs { gap: 3px; border-bottom: 0; }
+body[data-era='slammer'] .atabs button {
+  border-style: solid; border-width: 12px 12px 0; border-image: url('/pixel/frame-tab-idle.png') 12 12 0 fill / 12px 12px 0 stretch;
+  color: var(--card); font-family: 'Outfit', system-ui, sans-serif; font-weight: 600; padding: 3px 6px;
+}
+body[data-era='slammer'] .atabs button.on { border-image-source: url('/pixel/frame-tab.png'); color: var(--text); }
+body[data-era='slammer'] .atabs .badge { background: var(--red); color: var(--card); }
+
+/* TV */
+body[data-era='slammer'] .tv-h { padding-top: 12px; }
+body[data-era='slammer'] .tv-h .logo { font-size: clamp(54px, 6vw, 96px); }
+body[data-era='slammer'] .tv-grid .card { margin: 0; }
+body[data-era='slammer'] .tv-grid h2 { font-size: clamp(30px, 2.6vw, 44px); }
+body[data-era='slammer'] .tv-live { color: var(--orange2) !important; }
+body[data-era='slammer'] .tv-night { color: var(--teal); font-family: 'Jersey 10', monospace; }
+body[data-era='slammer'] .tv-names span { background: var(--card2); border: 3px solid var(--line); }
+body[data-era='slammer'] .tv-sound { background: none; border-style: solid; border-width: 12px; border-image: url('/pixel/frame-btn-paper.png') 12 fill / 12px stretch; color: var(--text); font-family: 'Outfit', system-ui, sans-serif; }
+body[data-era='slammer'] .qr { image-rendering: pixelated; }
+body[data-era='slammer'] .splash-t { font-family: 'Jersey 10', monospace; color: var(--gold-light); text-shadow: 3px 3px 0 var(--outline), -3px -3px 0 var(--outline), 3px -3px 0 var(--outline), -3px 3px 0 var(--outline); }
+
+/* contrast fixes */
+body[data-era='slammer'] h1, body[data-era='slammer'] h2, body[data-era='slammer'] h3 { color: var(--text); }
+body[data-era='slammer'] .logo, body[data-era='slammer'] .section-h { color: var(--gold-light); }
+body[data-era='slammer'] .top h1, body[data-era='slammer'] .top h2 { color: var(--gold-light); }
+body[data-era='slammer'] .feed .k-announce .f-t, body[data-era='slammer'] .feed .k-mafia .f-t { color: var(--orange2); }
+body[data-era='slammer'] .btn { color: var(--text); text-shadow: none; }
+body[data-era='slammer'] .btn.big, body[data-era='slammer'] .btn.danger { color: var(--card); text-shadow: 0 1px 0 var(--outline); font-weight: 600; letter-spacing: 0.01em; }
+body[data-era='slammer'] .act-switch { color: var(--text); }
+body[data-era='slammer'] .act-switch .eyebrow { color: var(--orange2); }
+body[data-era='slammer'] .landing .fine, body[data-era='slammer'] .landing .fine a { color: var(--gold-light); text-shadow: 0 3px 0 var(--outline); }
+body[data-era='slammer'] .landing .card .fine { color: var(--muted); text-shadow: none; }
+body[data-era='slammer'] .landing-inner { padding-top: 48px; }
+body[data-era='slammer'] .content { padding-bottom: 120px; }
+body[data-era='slammer'] .sheet .tagline, body[data-era='slammer'] .card .tagline { color: var(--muted); text-shadow: none; font-size: 17px; }
+body[data-era='slammer'] .qty-n { font-family: 'Jersey 10', monospace; font-size: 34px; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-slot.png') 9 fill / 9px stretch; padding: 0 6px; line-height: 1; }
+body[data-era='slammer'] .qty-total { background: none; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-tooltip.png') 9 fill / 9px stretch; padding: 3px 6px; }
+body[data-era='slammer'] .qty-total b { font-family: 'Jersey 10', monospace; font-size: 22px; font-weight: 400; color: var(--orange2); }
+body[data-era='slammer'] .item-deal { color: var(--muted); font-size: 12px; }
+
+/* The act shells scroll inside their own frame and lock the page; this layout scrolls the page itself. */
+body[data-era='slammer'][data-kind='player'] { overflow: visible; overflow-x: hidden; }
+
+/* ---------- rounds, in kit components ---------- */
+body[data-era='slammer'] .phases li { background: none; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-slot.png') 9 fill / 9px stretch; padding: 0 2px; color: var(--muted); font-family: 'Outfit', system-ui, sans-serif; }
+body[data-era='slammer'] .phases li.on { border-image-source: url('/pixel/frame-slot-active.png'); color: var(--text); }
+body[data-era='slammer'] .big-cd, body[data-era='slammer'] .cd.big-cd { font-family: 'Jersey 10', monospace; font-size: 54px; color: var(--orange2); }
+body[data-era='slammer'] .cd.low { color: var(--red); }
+body[data-era='slammer'] .tv-big { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: clamp(26px, 2.6vw, 42px); color: var(--text); }
+body[data-era='slammer'] .pick { background: none; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-btn-paper.png') 12 fill / 9px stretch; padding: 2px 4px; }
+body[data-era='slammer'] .pick.on { border-image: url('/pixel/frame-slot-active.png') 9 fill / 9px stretch; }
+body[data-era='slammer'] .pick.off { border-image: url('/pixel/frame-slot-locked.png') 9 fill / 9px stretch; opacity: 0.75; }
+body[data-era='slammer'] .pick input { accent-color: var(--green); }
+body[data-era='slammer'] .placings li, body[data-era='slammer'] .bar-now { background: none; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-paper.png') 9 fill / 9px stretch; border-left: 9px solid var(--c); }
+body[data-era='slammer'] .placings .rank { font-family: 'Jersey 10', monospace; font-size: 24px; }
+body[data-era='slammer'] .placings b { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 22px; color: var(--green); }
+body[data-era='slammer'] .bar-tile { border-style: solid; border-width: 12px; border-image: url('/pixel/frame-card.png') 12 fill / 12px stretch; background: color-mix(in srgb, var(--c) 30%, var(--card2)); }
+body[data-era='slammer'] .bar-tile.s-serving { outline: none; border-width: 15px; border-image: url('/pixel/frame-card-active.png') 15 fill / 15px stretch; }
+body[data-era='slammer'] .bar-tile-t { background: rgba(59, 29, 18, 0.82); color: var(--card); font-family: 'Outfit', system-ui, sans-serif; }
+body[data-era='slammer'] .bar-tile-t b { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 22px; color: var(--gold-light); }
+body[data-era='slammer'] .winner { background: #4a2e1c url('/pixel/floor.png') repeat; }
+body[data-era='slammer'] .winner-in { border-style: solid; border-width: 18px; border-image: url('/pixel/frame-wood.png') 18 fill / 18px stretch; padding: 24px 48px; }
+body[data-era='slammer'] .winner-in .logo { color: var(--gold-light); }
+body[data-era='slammer'] .meter { background: none; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-bar.png') 9 fill / 9px stretch; height: 30px; }
+body[data-era='slammer'] .meter i { background: var(--green); }
+body[data-era='slammer'] table.spy th { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 20px; color: var(--orange2); }
+body[data-era='slammer'] .pour li b { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 26px; }
+body[data-era='slammer'] .bar-now-h b { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 30px; }
+body[data-era='slammer'] .win-note { color: var(--orange2); }
+body[data-era='slammer'] .reward { background: none; border-style: solid; border-width: 12px; border-image: url('/pixel/frame-card.png') 12 fill / 12px stretch; padding: 3px; }
+body[data-era='slammer'] .reward:hover { border-width: 15px; border-image: url('/pixel/frame-card-active.png') 15 fill / 15px stretch; margin: -3px; }
+body[data-era='slammer'] .reward b { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 24px; }
+body[data-era='slammer'] .reward-pick { animation: px-blink 1.6s steps(1) infinite; }
+body[data-era='slammer'] .act-plan h4 { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 26px; color: var(--orange2); }
+body[data-era='slammer'] .slot { background: none; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-paper.png') 9 fill / 9px stretch; padding: 0 3px; }
+body[data-era='slammer'] .slot.live { outline: none; border-image: url('/pixel/frame-slot-active.png') 9 fill / 9px stretch; }
+body[data-era='slammer'] .slot.done { border-image: url('/pixel/frame-slot-locked.png') 9 fill / 9px stretch; opacity: 0.85; }
+
+/* ---------- phone clean-up, kit style ---------- */
+body[data-era='slammer'] { font-size: 16px; }
+body[data-era='slammer'] .fine, body[data-era='slammer'] small { font-size: 14px; }
+body[data-era='slammer'] .eyebrow { font-size: 15px; }
+/* Small text reads best in a clean sans: block names, chips and phase steps use Outfit. */
+body[data-era='slammer'] .chip { font-family: 'Outfit', system-ui, sans-serif; font-weight: 600; font-size: 15px; line-height: 1.2; padding: 2px 8px; }
+body[data-era='slammer'] .phases li { font-family: 'Outfit', system-ui, sans-serif; font-size: 14px; }
+body[data-era='slammer'] .target, body[data-era='slammer'] .b-n, body[data-era='slammer'] .picks, body[data-era='slammer'] .queue, body[data-era='slammer'] .slot-g { font-family: 'Outfit', system-ui, sans-serif; font-size: 17px; font-weight: 600; }
+body[data-era='slammer'] .top.slim { padding: 0 6px; padding-top: max(0px, env(safe-area-inset-top)); }
+body[data-era='slammer'] .top.slim .who-name { font-family: 'Jersey 10', monospace; font-size: 28px; color: var(--gold-light); text-shadow: 0 3px 0 var(--outline); }
+body[data-era='slammer'] .pill { background: none; border-style: solid; border-width: 12px; border-image: url('/pixel/frame-hud.png') 12 fill / 12px stretch; padding: 0 4px; font-family: 'Jersey 10', monospace; font-size: 26px; color: var(--text); }
+body[data-era='slammer'] .pill.pts { color: var(--orange2); }
+body[data-era='slammer'] .pill.cr { color: var(--green); }
+body[data-era='slammer'] .shop-cats button { background: none; border-style: solid; border-width: 12px 12px 0; border-image: url('/pixel/frame-tab-idle.png') 12 12 0 fill / 12px 12px 0 stretch; color: var(--card); font-family: 'Outfit', system-ui, sans-serif; padding: 2px 4px; }
+body[data-era='slammer'] .shop-cats button.on { border-image-source: url('/pixel/frame-tab.png'); color: var(--text); }
+body[data-era='slammer'] .shop-cats { gap: 2px; padding: 0 16px; }
+body[data-era='slammer'] .shop-list { margin-top: 0; }
+body[data-era='slammer'] .item.shop-row { padding: 0 4px; }
+body[data-era='slammer'] .item.shop-row:hover:not(:disabled) { margin: -3px; }
+body[data-era='slammer'] .shop-row .item-n { font-family: 'Jersey 10', monospace; font-size: 24px; font-weight: 400; line-height: 1; }
+body[data-era='slammer'] .shop-row .item-d { font-size: 13.5px; }
+body[data-era='slammer'] .row-price b { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 24px; color: var(--orange2); }
+body[data-era='slammer'] details.fold > summary { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 24px; }
+body[data-era='slammer'] details.howto { margin-top: 8px; }
+body[data-era='slammer'] details.howto > summary, body[data-era='slammer'] details.note-fold > summary { color: var(--orange2); }
+body[data-era='slammer'] .incoming { padding: 2px 6px; }
+body[data-era='slammer'] .incoming-h { font-size: 20px; }
+body[data-era='slammer'] .incoming-b { margin: 2px 0 6px; }
+body[data-era='slammer'] .content.flat { padding-bottom: 40px; }
+body[data-era='slammer'] .board-btn { color: var(--text); font-size: 22px; padding: 0 2px; }
+body[data-era='slammer'] .board-btn:active { border-image-source: url('/pixel/frame-slot-active.png'); }
+body[data-era='slammer'] .mates { font-family: 'Jersey 10', monospace; font-size: 20px; font-weight: 400; }
+body[data-era='slammer'] .board-sheet { max-height: 88vh; }
+body[data-era='slammer'] .block-card { background: none; border-style: solid; border-width: 9px; border-image: url('/pixel/frame-paper.png') 9 fill / 9px stretch; border-left: 9px solid var(--c); }
+body[data-era='slammer'] .block-card b { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 24px; }
+body[data-era='slammer'] .block-card .code { font-family: 'Jersey 10', monospace; font-size: 34px; color: var(--orange2); }
+body[data-era='slammer'] .num-grid .target { font-size: 28px; }
+body[data-era='slammer'] .answer { background: none; border-style: solid; border-width: 12px; border-image: url('/pixel/frame-btn-paper.png') 12 fill / 12px stretch; padding: 2px 6px; font-family: 'Outfit', system-ui, sans-serif; }
+body[data-era='slammer'] .answer b { font-family: 'Jersey 10', monospace; font-size: 24px; font-weight: 400; color: var(--orange2); }
+body[data-era='slammer'] .answer.on { border-image-source: url('/pixel/frame-slot-active.png'); border-image-slice: 9 fill; }
+body[data-era='slammer'] .answer.right { border-image-source: url('/pixel/frame-btn-green.png'); color: var(--card); }
+body[data-era='slammer'] .answer.right b, body[data-era='slammer'] .answer.wrong b { color: var(--card); }
+body[data-era='slammer'] .answer.wrong { border-image-source: url('/pixel/frame-btn-red.png'); color: var(--card); }
+body[data-era='slammer'] .q, body[data-era='slammer'] .tv-q { font-family: 'Jersey 10', monospace; font-weight: 400; font-size: 28px; line-height: 1.1; }
+body[data-era='slammer'] .tv-q { font-size: clamp(32px, 3vw, 54px); }
+body[data-era='slammer'] .placings.cw li.mine { outline: none; border-left-width: 15px; }
+body[data-era='slammer'] .answers.tv .answer { font-size: clamp(20px, 2vw, 32px); padding: 4px 10px; }
+body[data-era='slammer'] .answers.tv .answer b { font-size: clamp(26px, 2.4vw, 40px); }
+body[data-era='slammer'] .act-name { font-family: 'Jersey 10', monospace; font-size: 26px; color: var(--orange2); padding: 0 6px; border-width: 9px; }
+body[data-era='slammer'] .slot-select { border-width: 6px; padding: 0 2px; font-size: 14px; background-color: transparent; }
+body[data-era='slammer'] .slot.empty { outline: none; border-image-source: url('/pixel/frame-slot-locked.png'); }
+body[data-era='slammer'] .mechs .check { font-size: 14px; }
+
+/* Readability: pixel fonts only for big headings and numbers; everything else in a clean sans. */
+body[data-era='slammer'] .btn { font-family: 'Outfit', system-ui, sans-serif; font-weight: 600; letter-spacing: 0; }
+body[data-era='slammer'] .phases li { font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Step names alone (no numbers) so they fit on phones and in the TV's narrow middle column. */
+body[data-era='slammer'] .phases li::before { content: none; }
+@media (max-width: 480px) { body[data-era='slammer'] .phases { gap: 2px; } body[data-era='slammer'] .phases li { font-size: 13px; padding: 0; text-overflow: clip; } }
+body[data-era='slammer'] .tv .phases li { font-size: 13px; padding: 0; text-overflow: clip; }
+body[data-era='slammer'] .phases li.on { font-weight: 700; }
+body[data-era='slammer'] .fine { font-weight: 400; }
+body[data-era='slammer'] input, body[data-era='slammer'] select, body[data-era='slammer'] textarea { font-family: 'Outfit', system-ui, sans-serif; font-weight: 500; }
+
+/* Numbers (points, money, places, timers, prices) in a bold clean sans with even-width digits. */
+body[data-era='slammer'] .pill, body[data-era='slammer'] .px-pts, body[data-era='slammer'] .credits-n,
+body[data-era='slammer'] .item-p, body[data-era='slammer'] .rank, body[data-era='slammer'] .b-s b,
+body[data-era='slammer'] .tv-board b, body[data-era='slammer'] .stats b, body[data-era='slammer'] .qty-n,
+body[data-era='slammer'] .qty-total b, body[data-era='slammer'] .big-cd, body[data-era='slammer'] .cd.big-cd,
+body[data-era='slammer'] .placings .rank, body[data-era='slammer'] .placings b, body[data-era='slammer'] .bar-tile-t b,
+body[data-era='slammer'] .pour li b, body[data-era='slammer'] .reward b, body[data-era='slammer'] .row-price b,
+body[data-era='slammer'] .block-card .code, body[data-era='slammer'] .answer b, body[data-era='slammer'] .drink-owed,
+body[data-era='slammer'] .board .rank {
+  font-family: 'Outfit', system-ui, sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 0; text-shadow: none;
+}
+body[data-era='slammer'] .pill { font-size: 18px; }
+body[data-era='slammer'] .px-pts { font-size: 18px; }
+body[data-era='slammer'] .big-cd, body[data-era='slammer'] .cd.big-cd { font-size: 46px; font-weight: 800; }
+body[data-era='slammer'] .tv-board b { font-size: clamp(20px, 2vw, 30px); }
+body[data-era='slammer'] .qty-n { min-width: 64px; padding: 0 4px; text-align: center; font-size: 28px; }
+body[data-era='slammer'] .qty-row { flex-wrap: wrap; }
+body[data-era='slammer'] .bar-tile-main { color: var(--text); font-family: 'Outfit', system-ui, sans-serif; }
+body[data-era='slammer'] .bar-tile-main .tile-cd { font-family: 'Outfit', system-ui, sans-serif; color: var(--orange2); }
+body[data-era='slammer'] .bar-tile.has-clip .bar-tile-main, body[data-era='slammer'] .bar-tile.has-clip .bar-tile-main .tile-cd { color: #fff; }
+body[data-era='slammer'] .tv-grid.drinks .bar-tile-t b { font-size: clamp(18px, 1.6vw, 28px); }
+
+/* TV standings: up to 8 blocks share the card's height, so all of them fit even on a 720p screen. */
+body[data-era='slammer'] .tv-grid > .card:first-child { display: flex; flex-direction: column; min-height: 0; }
+body[data-era='slammer'] .tv-board { flex: 1; min-height: 0; grid-auto-rows: minmax(0, 1fr); gap: clamp(4px, 0.9vh, 10px); }
+body[data-era='slammer'] .tv-board li { min-height: 0; padding-top: 0; padding-bottom: 0; font-size: clamp(14px, min(1.7vw, 3.1vh), 26px); }
+body[data-era='slammer'] .tv-board b { font-size: clamp(16px, min(2vw, 3.6vh), 30px); }
+body[data-era='slammer'] .tv-board .tv-bar { height: clamp(14px, 2.8vh, 30px); border-width: clamp(4px, 0.8vh, 9px); }
+body[data-era='slammer'] .tv-board li { border-width: clamp(3px, 0.8vh, 9px); }
+body[data-era='slammer'] .tv-center .placings li { border-width: clamp(4px, 0.8vh, 9px); }
+body[data-era='slammer'] .tv-center .placings .rank { font-size: clamp(16px, 1.5vw, 24px); }
+body[data-era='slammer'] .tv-center .placings b { font-size: clamp(16px, 1.5vw, 22px); }
+body[data-era='slammer'] .tv-center .placings .b-n { font-size: clamp(14px, 1.3vw, 20px); }
+body[data-era='slammer'] .tv-cam-top .eyebrow { color: #ffd27a; font-size: 0.9em; }
+body[data-era='slammer'] .tv-camera-btn { border: 1px solid #fff4; border-radius: 999px; }

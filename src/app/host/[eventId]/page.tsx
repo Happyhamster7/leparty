@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { db, siteUrl } from '@/lib/supabase';
 import { isHost } from '@/lib/host';
-import { getTheme } from '@/lib/theme';
+import { getTheme } from '@/themes';
 import { potluckTally } from '@/lib/potluck';
 import { formatHeldOn, POTLUCK_CATEGORIES, type EventRow } from '@/lib/types';
 import BlocksForm, { type BlockEditRow } from './BlocksForm';
@@ -123,15 +123,18 @@ export default async function EventPage({ params }: { params: { eventId: string 
             THE DRAW
           </Link>
           <Link className="btn btn--quiet btn--inline" href={`/host/${params.eventId}/cards`}>
-            BLOCK CARDS
-          </Link>
-          <Link className="btn btn--quiet btn--inline" href={`/host/${params.eventId}/game`}>
-            GAME CONTROL
+            {theme.groupNoun.toUpperCase()} CARDS
           </Link>
           <Link className="btn btn--quiet btn--inline" href={`/host/${params.eventId}/edit`}>
             EDIT PARTY
           </Link>
         </div>
+
+        <p className="small" style={{ marginTop: -12, marginBottom: 24 }}>
+          Screens that aren&rsquo;t yours open with their own link, not your passcode:{' '}
+          <CopyLink url={`${base}/tv/${ev.display_token}`} label="COPY TV LINK" />{' '}
+          <CopyLink url={`${base}/bar/${ev.bar_token}`} label="COPY BAR LINK" />
+        </p>
 
         <div className="stat-row">
           <div className="stat">
@@ -151,11 +154,11 @@ export default async function EventPage({ params }: { params: { eventId: string 
             <p className="value">{complete}</p>
           </div>
           <div className="stat">
-            <p className="label">Mugshots</p>
+            <p className="label">{theme.photoNounPlural}</p>
             <p className="value">{photos}</p>
           </div>
           <div className="stat">
-            <p className="label">Capacity / block</p>
+            <p className="label">Capacity / {theme.groupNoun.toLowerCase()}</p>
             <p className="value">{perBlock.toFixed(1)}</p>
           </div>
         </div>
@@ -289,7 +292,12 @@ export default async function EventPage({ params }: { params: { eventId: string 
           fills rosters.
         </p>
 
-        <BlocksForm eventId={params.eventId} blocks={blockRows} />
+        <BlocksForm
+          eventId={params.eventId}
+          blocks={blockRows}
+          groupNoun={theme.groupNoun}
+          flavourLabel={theme.groupFlavourLabel}
+        />
       </div>
     </div>
   );

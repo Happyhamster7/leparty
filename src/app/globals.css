@@ -1246,3 +1246,67 @@ table.list td.tight {
     font-size: 42px;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* TV — read from across a room                                        */
+/* ------------------------------------------------------------------ */
+
+.tv {
+  min-height: 100vh;
+  padding: 3vh 3vw;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.tv__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2vw;
+  margin-bottom: 3vh;
+}
+
+.tv__head h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(36px, 5vw, 96px);
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--paper);
+}
+
+.tv__head .mono {
+  margin: 0;
+  font-size: clamp(14px, 1.6vw, 30px);
+}
+
+.tv__groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(22vw, 1fr));
+  gap: 2vh 1.5vw;
+}
+
+.tv__group {
+  background: var(--card);
+  color: var(--ink);
+  border-top: 1.2vh solid var(--rust);
+  padding: 1.6vh 1.2vw;
+}
+
+.tv__group h2 {
+  margin: 0 0 1vh;
+  font-family: var(--display);
+  font-size: clamp(20px, 2.4vw, 46px);
+  text-transform: uppercase;
+}
+
+.tv__group p {
+  margin: 0;
+  font-size: clamp(14px, 1.5vw, 28px);
+  line-height: 1.35;
+}
+
+.tv__wait {
+  font-size: clamp(18px, 2.4vw, 44px);
+  max-width: 24em;
+}

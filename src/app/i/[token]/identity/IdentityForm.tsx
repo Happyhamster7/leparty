@@ -17,10 +17,17 @@ export default function IdentityForm({
   token,
   name,
   band,
+  nameLabel,
+  hostRef,
+  groups,
 }: {
   token: string;
   name: string;
   band: number | null;
+  nameLabel: string;
+  /** Theme words for the privacy note: "the Warden", "cell blocks". */
+  hostRef: string;
+  groups: string;
 }) {
   const action = saveIdentity.bind(null, token);
   const [state, formAction] = useFormState<FormState, FormData>(action, {});
@@ -28,7 +35,7 @@ export default function IdentityForm({
   return (
     <form action={formAction}>
       <label className="field" htmlFor="display_name">
-        Name on your paperwork
+        {nameLabel}
       </label>
       <input
         id="display_name"
@@ -62,7 +69,7 @@ export default function IdentityForm({
       {state.error ? <p className="error" role="alert">{state.error}</p> : null}
 
       <p className="small" style={{ marginBottom: 22 }}>
-        Only the Warden sees this. It&rsquo;s used to even out the cell blocks, nothing else.
+        Only {hostRef} sees this. It&rsquo;s used to even out the {groups}, nothing else.
       </p>
 
       <Submit />

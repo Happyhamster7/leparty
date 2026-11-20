@@ -3,35 +3,39 @@
 Read this before changing anything. It carries the decisions behind the
 code, which the code itself doesn't explain.
 
-An app for running themed parties with games, teams, and a drinks
-economy. Phase 1 (signup and intake) is built. Phase 2 (the game) is
-built end to end — Game, Results, Spending, Drinks, night-end — with
-a handful of items deliberately cut, not deferred. See "Phase 2 — the
-game" below for exactly what, and "Phase 2 decisions" for everything
-decided along the way that the design doc doesn't say.
+An app for running themed parties for large groups. A host sets up a
+party, picks a **theme** (the look and the words) and, optionally,
+**games** that plug into it. The core is built: signup, intake,
+check-in, the draw into blocks, cards, the team page, the TV. Games are
+mid-rework: the old relational game is gone and Shifty Shen's Slammer is
+being ported in as the first game module.
 
-**Phase 2 source of truth: `docs/halloween-game-design.md`.** It
-replaced an earlier design (Days, sentence and commissary, substitutes,
-wildcards) — if you find traces of that anywhere, the design doc wins.
-Tables for both phases: `docs/schema.md`. Keep both updated when the
-schema or behaviour changes — they're the references this file
-summarises.
+**The plan of record is `docs/rework-plan.md`**: why, the target shape,
+every decision, and which phase is next. Read it before working on
+themes, game modules or `legacy/sss`. Tables: `docs/schema.md`. Keep
+both updated when the schema or behaviour changes.
 
-**Visual direction: pixel art (Stardew Valley-inspired), permanent,**
-bound to the jail theme. Reference: `docs/pixel-ui-reference.md`
-(palette, type, sprite-sheet format, contrast rules). Was deferred
-until Phase 2 was functionally complete — it now is, so this is
-unblocked whenever someone wants to pick it up. Nothing's been wired
-from it yet.
+`docs/halloween-game-design.md` is no longer a build spec. It's kept
+for the intent behind the round loop.
+
+**Visual direction: pixel art (Stardew Valley-inspired)** for the
+Prison theme. Reference: `docs/pixel-ui-reference.md`. The sprite kit
+SSS built from it is in `legacy/sss/public/pixel/` and `pixel.css`; it
+becomes Prison theme assets when the screens are rebuilt (phase 5).
+Nothing in `src` is wired to it yet.
 
 ## Stack
 
 Next.js 14 App Router (TypeScript), Supabase (Postgres + Storage),
-plain CSS in `src/app/globals.css`. No Tailwind, no component library,
-no test framework yet.
+plain CSS in `src/app/globals.css`. No Tailwind, no component library.
+Tests are `node:test`, run through `tsx`, in `*.test.ts` files next to
+the code.
 
-`npm run dev` · `npm run build` · migrations in `supabase/migrations/`,
-numbered `0001`–`0009`, run in order against the Supabase SQL editor.
+`npm run dev` · `npm run build` · `npm test` · `npm run typecheck` ·
+`npm run test:legacy` (the original SSS engine's 130 tests). CI
+(`.github/workflows/ci.yml`) runs all of them.
+
+Migrations are in `supabase/migrations/`, numbered `0001`–`0010`, run in order against the Supabase SQL editor.
 Each new one must actually be run before its feature works — nothing
 auto-applies them. If `npm run build` hangs right after the
 `Next.js 14.2.35` banner with no further output, it's not your code:
@@ -39,7 +43,7 @@ kill stray `node.exe` processes (Windows doesn't always clean these up
 from a killed `next dev`/`next build`) and retry.
 
 Env: `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
-`HOST_PASSCODE`, `NEXT_PUBLIC_SITE_URL`.
+`HOST_PASSCODE`, `NEXT_PUBLIC_SITE_URL`, and optionally `SITE_THEME`.
 
 ## Decisions that are load-bearing
 
@@ -49,12 +53,31 @@ browser-side Supabase client, and never prefix the service key with
 `NEXT_PUBLIC_`. This is simpler than writing policies for an app with
 no accounts, and fails safe.
 
-**No auth, two cookies.** A guest's whole identity is their browser's
-`leparty_profile` cookie, which carries `people.profile_token` — set at
+**Theme and game are separate, and stay that way.** A theme pack
+(`src/themes`) owns every themed word and colour; nothing outside the
+Prison pack may say Warden, inmate, mugshot or cell block. Pages read
+words with `getTheme(event.theme_key)` and pass plain strings to client
+components. Pages that belong to no party (home, `/signup`, `/join`,
+the party list) use `sitePack()`, which is Plain unless `SITE_THEME`
+says otherwise. A game module must run under any theme, and a theme
+must work with no game. Database names (`blocks`, `inmate_number`,
+`charge`) are internal and were not renamed.
+
+**One source of truth for people and groups.** `participants` and
+`blocks` are the only record of who is here and which group they are
+in. A game refers to them by id. It never creates, copies or syncs
+people or groups — that is exactly what produced duplicate guests and
+duplicate teams at the live event.
+
+**No auth, two cookies and three links.** A guest's whole identity is
+their browser's `leparty_profile` cookie, which carries `people.profile_token` — set at
 `/signup`, the one link the host hands out for everything. A specific
 party invite carries `participants.invite_token` the same way. The
-host console is a passcode in an httpOnly cookie. Right for a private
-party, wrong for anything else.
+host console is a passcode in an httpOnly cookie. A block's card
+carries `blocks.join_token`; the TV and the bar each open with their
+own token (`events.display_token`, `events.bar_token`, see
+`src/lib/screens.ts`) so neither ever holds the host passcode. Right
+for a private party, wrong for anything else.
 
 **`people` persists across parties; everything else is per-event.**
 `people` holds only display name, capacity band and a token. Name and
@@ -90,7 +113,7 @@ exist with names, colours, tokens and join codes before anyone RSVPs,
 so cards can be printed in advance. The draw only fills rosters and
 sets `in_play`.
 
-**Balances are never stored** (phase 2). Money, points and stars are
+**Balances are never stored.** A game's money and points are
 `sum(delta)` over an append-only ledger, so a wrong ruling is one
 compensating row rather than a guess.
 
@@ -138,131 +161,56 @@ too.
   deliberate, so the Reshuffle button actually does something. The
   balance guarantee comes from capacity sums, not from who specifically
   fills a slot, so this doesn't weaken it.
-- Copy is plain and direct, sentence case, no exclamation marks. The
-  jail theme lives in content, not in the component names.
-- Design tokens are CSS custom properties in `globals.css`. Paper
-  `--paper`, ink `--ink`, one rust accent `--rust`. Oswald for display,
-  IBM Plex Mono for anything that reads as data, IBM Plex Sans for body.
+- Copy is plain and direct, sentence case, no exclamation marks.
+  Themed words come from the theme pack, never from a component.
+- Design tokens are CSS custom properties in `globals.css`: `--paper`,
+  `--ink`, one accent `--rust` (named for Prison's colour; under Plain
+  it's blue). A theme pack overrides them, and `ThemeStyle` writes them
+  into the page: the root layout for the site theme, then a party's
+  layout (`host/[eventId]`, `i/[token]`) or page (`b/`, `tv/`, `bar/`)
+  for its own. Oswald for display, IBM Plex Mono for anything that
+  reads as data, IBM Plex Sans for body.
+- Adding a theme: write a pack in `src/themes`, register it in
+  `index.ts`. `themes.test.ts` fails if it leaves a word or token out.
 
 ## State of play
 
 Built: self-service signup (`/signup`, `/parties`), party signup
 (invite, identity, mugshot, potluck, booked, declined), host console
 (parties, create, edit, event, guest edit, check-in, draw, cards),
-`/join` and `/b/<token>`.
+`/join` and `/b/<token>` (claims the team phone; latest scan wins),
+the TV (`/tv/<display-token>`) and a bar page that waits for a game
+(`/bar/<bar-token>`). Two themes: Prison (`jail`) and Plain.
 
-Verified by driving it in a real browser against Postgres: migration
-applies, inmate-number trigger works, photos downscale and upload,
-balancer hits spread 0–1 across realistic headcounts, QR codes scan.
+Verified by driving it in a real browser against Postgres, before the
+rework: migration applies, inmate-number trigger works, photos
+downscale and upload, balancer hits spread 0–1 across realistic
+headcounts, QR codes scan. Since the rework: all ten migrations apply
+to a fresh Postgres 16, and the pages that need no database render
+under both site themes. The database-backed pages have been
+typechecked and built but **not yet re-driven in a browser** since the
+theme changes — do that against a real Supabase project before relying
+on them.
 
-Not done in phase 1: clone a party, shareable potluck page, CSV export,
-reminders (needs an email/SMS provider).
+Not done in the core: clone a party, shareable potluck page, CSV
+export, reminders (needs an email/SMS provider), reissuing a TV or bar
+link.
 
-## Phase 2 — the game, built end to end
+## Games
 
-Full spec: `docs/halloween-game-design.md`. The round flow as it
-actually runs: **Game** (teams pick players on the team phone within a
-minute; picks revealed at once) → **Results** (host enters placings;
-prize money paid) → **Spending** (teams secretly buy items and send
-drinks to other teams, which costs money) → **Drinks** (queue built
-fewest drinks first, ties random; each team drinks at the bar with 30
-seconds on the clock, filmed on the team phone; missing the 30 seconds
-is an extra shot next round; auto-advances when every team is done) →
-auto-complete, then either the next round or the host ends the night.
+No game is playable from this codebase right now. `legacy/sss` is the
+original Shifty Shen's Slammer app, read-only, kept as the behaviour
+spec for the port; the deployed SSS (branch `sss-points`) still works
+on its own. What's next, and every decision already made, is in
+`docs/rework-plan.md` — don't re-decide those here.
 
-Routes, all under `/host/<eventId>/game/` unless noted:
+Three rules for whoever builds the game layer, learned from the two
+apps it replaces:
 
-| Route | What it's for |
-| --- | --- |
-| (index) | Round control: start a round, advance to results, close the shop, start drinks, link to end the night |
-| `bar` | The cafeteria iPad: Next, Back (undo the last Next), Mark done, the "Show senders" toggle |
-| `screen` | The public display — polls itself every 5s, nobody's standing at it to reload |
-| `admin` | Manual balance adjustment, assign a drink straight into the current round's queue, reissue a leaked QR code |
-| `finish` | Final standings, confirm the winner |
-| `/b/<token>` | The team phone: picks, spending (orders + shop), drinks status, film/upload |
-
-Cut, not deferred: Bus ticket, Lock-up, the holding cell, "on the bus".
-Not built: stars (nothing awards that ledger kind), the public
-sender-shown-by-default policy for teams generally (the bar's own
-toggle is separate and is built), patching an already-built drinks
-queue (admin assignment only works before `drinks_started_at` is set).
-
-## Phase 2 decisions
-
-The design doc leaves plenty open on purpose — these are the calls
-actually made building it, which the doc and the code don't say on
-their own.
-
-**Phones write intents, not state.** Team phones write `drink_orders`
-and `item_uses`. One server-side function, idempotent on `round_id`
-(`buildDrinksQueue`, `src/lib/drinks.ts`), builds the drinks queue when
-the host starts drinks: resolve Reflect → fold in carried-over
-penalties → count per team → build `serves`.
-
-**One team phone, latest scan wins.** Scanning a block's QR makes that
-device the team phone and signs the previous one out. The host
-reissues `join_token`/`join_code` from `/host/<eventId>/game/admin` if
-a card leaks — that also clears the block's claimed device.
-`blocks.captain_participant_id` is unused — there are no captains.
-
-**Live updates are polling, not a browser database client.** The
-public screen polls itself every 5s (`AutoRefresh.tsx`) — a deliberate
-reduction from the doc's "about once a second," since nobody's
-operating that view and 5s is plenty for a TV. Every other view is
-driven by someone acting on it (a host pressing a button, a team
-submitting a form), which naturally refetches, so nothing else polls.
-Timers store a start/end time on the server; no live countdown is
-rendered client-side anywhere yet.
-
-**Videos are not converted, and never touch a Vercel function.** The
-team phone requests a signed upload URL from the server, then PUTs the
-file straight to Supabase Storage itself with a raw `fetch`/XHR — no
-Supabase client in the browser, matching the service-role-only rule.
-Clips play as recorded (HEVC), so the display laptop must be a Mac.
-
-**Bundle pricing and points are recomputed at serve time, never
-stored.** `drink_orders` has no cost/points column. `priceOrder()`
-(`src/lib/drinkPricing.ts`) runs both when an order is charged and
-again in `markServed` when points are paid out, from the same `qty`
-each time — so `qty` is the only thing that has to stay true.
-
-**Reflect resolves at queue-build, not at purchase.** Buying it just
-records the purchase and charges for it. `buildDrinksQueue` is what
-actually flips a targeted order's `target_block_id` back to the
-sender and sets `scores_for_block_id` to the reflector.
-
-**Bounties simplify the design doc's draft, on purpose.** One fixed
-target — 5 of any drink type, counted when sent (not served), within
-3 rounds of purchase — instead of a per-Act rotation that has nothing
-real to rotate against yet (every round is still Act 1). Winner's
-Bounty's reward *is* the permanent +1-point-per-drink bonus
-(`blocks.bonus_points_per_drink`), not a choice among three options.
-See `src/lib/bounty.ts`.
-
-**Penalties carry their own qty/drink type now.** Originally always
-"1 shot of the cheapest drink" for a missed timer. Generalized
-(migration `0009`) so a failed bounty can owe something different (3
-shots of Spirit) through the exact same next-round-carryover
-mechanism, instead of a second code path.
-
-**A wrong ruling is a compensating ledger entry, never a delete.** The
-bar's Back button and the admin's manual adjustment both follow
-"Balances are never stored" above — they insert the opposite entry,
-they don't touch the original row.
-
-**The bar, the public screen, the admin page and the finish page all
-share the host passcode.** No new auth surface for any of them —
-"bartender" and "admin" just mean the host, on a different screen.
-
-## Open decisions
-
-Tracked in `docs/halloween-game-design.md`, section 11. Still
-genuinely open: how much a star is worth (nothing awards the `stars`
-ledger kind at all yet); how many Acts a night runs, and whether it
-ends on a set round or a set time (every round still lands in a single
-Act 1); other penalty kinds beyond missed-time and failed-bounty.
-Resolved by what got built, not by a doc edit: drink types/points/
-costs, prize money and item pricing (placeholder curves — see
-`src/lib/economy.ts`, `src/lib/catalogue.ts`), the bounty target and
-reward, and whether the host presses Next or only the bartender
-(same role in this build, no separate check exists).
+- **Anything that must happen once goes through one atomic step** (a
+  SQL function, or the session's compare-and-set). The retired game
+  checked then wrote, so a double-tap could pay points twice.
+- **Actions carry a client-generated id and name their target.**
+  "Serve the next block" double-fires; "serve block X" doesn't.
+- **A game never touches a Vercel function with a video.** Phones get a
+  signed upload URL and PUT straight to storage.

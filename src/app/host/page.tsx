@@ -2,17 +2,19 @@ import Link from 'next/link';
 import { db } from '@/lib/supabase';
 import { isHost } from '@/lib/host';
 import { formatHeldOn } from '@/lib/types';
+import { sitePack } from '@/themes';
 import LoginForm from './LoginForm';
 import { logout } from './actions';
 
 export const dynamic = 'force-dynamic';
 
 export default async function HostHome() {
+  const consoleLabel = sitePack().copy.hostConsoleLabel.toUpperCase();
   if (!isHost()) {
     return (
       <div className="shell">
         <div className="topbar">
-          <span>WARDEN&rsquo;S CONSOLE</span>
+          <span>{consoleLabel}</span>
           <span>LOCKED</span>
         </div>
         <div className="body">
@@ -32,7 +34,7 @@ export default async function HostHome() {
   return (
     <div className="shell shell--wide">
       <div className="topbar">
-        <span>WARDEN&rsquo;S CONSOLE</span>
+        <span>{consoleLabel}</span>
         <form action={logout}>
           <button
             type="submit"
@@ -52,7 +54,7 @@ export default async function HostHome() {
 
       <div className="body">
         <h1>Parties</h1>
-        <p className="lede">Each one keeps its own guests, blocks and potluck. People carry over.</p>
+        <p className="lede">Each one keeps its own guests, teams and potluck. People carry over.</p>
 
         <Link className="btn btn--inline" href="/host/new" style={{ marginBottom: 28 }}>
           New party

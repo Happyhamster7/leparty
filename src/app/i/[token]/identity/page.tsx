@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { loadInvite } from '@/lib/invite';
-import { getTheme } from '@/lib/theme';
+import { getTheme } from '@/themes';
 import IdentityForm from './IdentityForm';
 
 export const dynamic = 'force-dynamic';
@@ -26,6 +26,9 @@ export default async function IdentityPage({ params }: { params: { token: string
           token={params.token}
           name={ctx.person.display_name || ''}
           band={ctx.person.capacity_band}
+          nameLabel={theme.nameFieldLabel}
+          hostRef={theme.hostRef}
+          groups={theme.groupNounPlural.toLowerCase()}
         />
 
         <div className="btn-row" style={{ marginTop: 14 }}>

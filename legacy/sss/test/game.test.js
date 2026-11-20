@@ -1,0 +1,2227 @@
+const test = require('node:test');
+// These suites cover guests booking in on their own phones; team-phone tests switch the mode themselves.
+process.env.PHONE_MODE = 'guest';
+const assert = require('node:assert/strict');
+const { Game, GameError, HOLDING } = require('../lib/game');
+
+// n players split across 2 blocks (alternating), budgets topped up.
+function setup(n = 6) {
+  const g = new Game();
+  // Supplies and the stash are off the shelf tonight, but their mechanics still work if a host re-shelves them.
+  for (const i of g.s.items) if (['supply', 'deflect', 'bail', 'warp'].includes(i.type)) i.active = true;
+  g.seedTeams({ count: 2 });
+  const [a, b] = g.s.teams;
+  const players = [];
+  for (let i = 0; i < n; i++) {
+    const p = g.join(`P${i}`);
+    g.updatePlayer({ playerId: p.id, teamId: i % 2 ? b.id : a.id });
+    players.push(p);
+  }
+  a.budget = 200;
+  b.budget = 200;
+  g.updateSettings({ spendMode: 'anyone', actSet: 'arcade' }); // request mode has its own tests; act tests use the Game Night lineup
+  return { g, a, b, players };
+}
+const itemOf = (g, type, pred = () => true) => g.s.items.find((i) => i.type === type && pred(i));
+// Drinks score when served; hand-deliver every pending drink order.
+const serveAll = (g) => g.s.orders.filter((o) => o.type === 'drink' && o.status === 'pending').forEach((o) => g.resolveOrder({ orderId: o.id, action: 'done', by: 'warden' }));
+// Player claims a task and a host signs off on it.
+const complete = (g, p, by = 'warden') => {
+  g.reportTask(p.id, { result: 'done' });
+  const c = g.s.claims.find((x) => x.playerId === p.id && x.status === 'pending');
+  g.approveTask({ claimId: c.id, by });
+  return c;
+};
+
+test('join puts new arrivals in the Holding Cell', () => {
+  const g = new Game();
+  const p = g.join('Shen');
+  assert.match(p.inmateNo, /^\d{5}$/);
+  assert.equal(g.status(p), 'holding');
+  assert.throws(() => g.join('shen'), GameError);
+  assert.throws(() => g.join('   '), GameError);
+});
+
+test('buildBlocks makes Block A/B/... of at most maxBlockSize', () => {
+  const g = new Game();
+  g.updateSettings({ maxBlockSize: 5 });
+  for (let i = 0; i < 14; i++) g.join(`P${i}`);
+  g.buildBlocks();
+  assert.equal(g.s.teams.length, 3);
+  assert.deepEqual(g.s.teams.map((t) => t.name), ['Block A', 'Block B', 'Block C']);
+  const sizes = g.s.teams.map((t) => g.members(t.id).length).sort();
+  assert.deepEqual(sizes, [4, 5, 5]);
+  assert.equal(g.holding().length, 0);
+  // Late arrival stays in holding until placed.
+  const late = g.join('Late');
+  assert.equal(g.status(late), 'holding');
+});
+
+test('payouts add to budget and earned; fines never go below zero', () => {
+  const { g, a } = setup(2);
+  const start = a.budget;
+  g.adjustBudget({ teamId: a.id, amount: 10, reason: 'flip cup' });
+  assert.equal(a.budget, start + 10);
+  assert.equal(a.earned, 10);
+  g.adjustBudget({ teamId: a.id, amount: -1000 });
+  assert.equal(a.budget, 0);
+});
+
+test('finishing a game pays out and applies round penalties', () => {
+  const { g, a, b, players } = setup(4);
+  const late = g.join('Late');
+  const game = g.addGame({ name: 'Beer Pong', holdingRule: 'off hand only' });
+  g.finishGame({ gameId: game.id, results: { [a.id]: '30', [b.id]: 10 } });
+  assert.equal(game.status, 'done');
+  assert.equal(a.earned, 30);
+  assert.equal(late.drinksOwed, g.s.settings.holdingDrinks);
+  assert.equal(players[0].drinksOwed, 0, 'blocks owe nothing');
+  assert.equal(players[1].drinksOwed, 0);
+  g.drank(late.id);
+  assert.equal(late.drinksOwed, 0);
+  assert.throws(() => g.drank(late.id), /paid up/);
+});
+
+test('holding cell inmates cannot shop, and there is no solitary any more', () => {
+  const { g, players } = setup(2);
+  const late = g.join('Late');
+  assert.throws(() => g.buy(late.id, { itemId: itemOf(g, 'supply').id }), /Holding Cell/);
+  assert.equal(g.sendToSolitary, undefined);
+  assert.throws(() => g.assignPunishment({ target: 'solitary', drinks: 1 }));
+  // An old save with someone serving time: they're just back on their block.
+  const old = new Game(JSON.parse(JSON.stringify({ ...g.s, players: g.s.players.map((p, i) => (i ? p : { ...p, solitary: { rounds: 2, reason: 'x' } })) })));
+  assert.equal(old.s.players[0].solitary, undefined);
+  assert.equal(old.status(old.s.players[0]), 'block');
+  assert.equal(old.s.settings.solitaryDrinks, undefined);
+});
+
+test('buying a supply deducts budget and queues an order', () => {
+  const { g, a, players } = setup(2);
+  const item = itemOf(g, 'supply');
+  const o = g.buy(players[0].id, { itemId: item.id, note: 'vodka soda' });
+  assert.equal(o.status, 'pending');
+  assert.equal(a.budget, 200 - item.price);
+});
+
+test('cannot overspend or gift yourself; captain-only spending; stock', () => {
+  const { g, a, players } = setup(2);
+  assert.throws(() => g.buy(players[0].id, { itemId: itemOf(g, 'drink', (i) => i.name === 'Soju Shot').id, targetTeamId: a.id }), /different block/);
+  a.budget = 0;
+  assert.throws(() => g.buy(players[0].id, { itemId: itemOf(g, 'supply').id }), /Not enough cash/);
+  a.budget = 100;
+  g.updateSettings({ spendMode: 'captain' });
+  assert.throws(() => g.buy(players[0].id, { itemId: itemOf(g, 'supply').id }), /Shot Caller/);
+  g.updatePlayer({ playerId: players[0].id, isCaptain: true });
+  const item = itemOf(g, 'supply');
+  g.updateItem({ itemId: item.id, stock: 1 });
+  g.buy(players[0].id, { itemId: item.id });
+  assert.throws(() => g.buy(players[0].id, { itemId: item.id }), /Sold out/);
+});
+
+test('punishment: deflect bounces it back, accept enforces drain and drinks', () => {
+  const { g, a, b, players } = setup(4);
+  const [pa, pb] = players;
+  g.buy(pb.id, { itemId: itemOf(g, 'deflect').id });
+  assert.equal(b.inventory.deflect, 1);
+  g.updateItem({ itemId: itemOf(g, 'punishment', (i) => i.drain === 15).id, drinks: 1 });
+  const shakedown = itemOf(g, 'punishment', (i) => i.drain === 15);
+  const o = g.buy(pa.id, { itemId: shakedown.id, targetTeamId: b.id });
+  assert.equal(o.status, 'incoming');
+  assert.throws(() => g.respondPunishment(pa.id, { orderId: o.id, choice: 'accept' }), /not aimed/);
+  g.respondPunishment(pb.id, { orderId: o.id, choice: 'deflect' });
+  assert.equal(o.targetTeamId, a.id);
+  assert.throws(() => g.respondPunishment(pa.id, { orderId: o.id, choice: 'deflect' }), /no deflect/);
+  const before = a.budget;
+  g.respondPunishment(pa.id, { orderId: o.id, choice: 'accept' });
+  assert.equal(o.status, 'pending');
+  assert.equal(a.budget, before - 15);
+  for (const m of g.members(a.id)) assert.equal(m.drinksOwed, 1);
+  // Refund goes to whoever originally paid.
+  const o2 = g.buy(pa.id, { itemId: shakedown.id, targetTeamId: b.id });
+  const aBefore = a.budget;
+  g.resolveOrder({ orderId: o2.id, action: 'cancel' });
+  assert.equal(a.budget, aBefore + shakedown.price);
+});
+
+test('punishing the Holding Cell lands immediately with no deflect', () => {
+  const { g, players } = setup(2);
+  const late1 = g.join('Late1');
+  const late2 = g.join('Late2');
+  const shot = itemOf(g, 'punishment', (i) => i.drinks === 1);
+  const o = g.buy(players[0].id, { itemId: shot.id, targetTeamId: HOLDING });
+  assert.equal(o.status, 'pending');
+  assert.equal(late1.drinksOwed, 1);
+  assert.equal(late2.drinksOwed, 1);
+  assert.equal(players[0].drinksOwed, 0);
+  const gift = g.buy(players[0].id, { itemId: itemOf(g, 'drink', (i) => i.name === 'Soju Shot').id, targetTeamId: HOLDING });
+  assert.equal(gift.status, 'pending');
+});
+
+test('bail moves a holding inmate onto the buying block, respecting max size', () => {
+  const { g, a, players } = setup(4); // 2 per block
+  const late = g.join('Late');
+  const bail = itemOf(g, 'bail');
+  g.buy(players[0].id, { itemId: bail.id, targetPlayerId: late.id });
+  assert.equal(late.teamId, a.id);
+  assert.throws(() => g.buy(players[0].id, { itemId: bail.id, targetPlayerId: late.id }), /isn’t waiting/);
+  g.updateSettings({ maxBlockSize: 3 });
+  const late2 = g.join('Late2');
+  assert.throws(() => g.buy(players[0].id, { itemId: bail.id, targetPlayerId: late2.id }), /full/);
+});
+
+test('player views hide other blocks’ stash and tokens', () => {
+  const { g, players } = setup(6);
+  const v = g.viewFor(players[0].id);
+  const theirs = v.teams.find((t) => t.id !== players[0].teamId);
+  assert.equal(theirs.inventory, null);
+  assert.ok(!JSON.stringify(v).includes(players[1].token));
+  assert.ok(!JSON.stringify(g.adminView()).includes(players[1].token));
+});
+
+test('loads an older saved state without crashing', () => {
+  const old = { settings: { partyName: 'Old' }, players: [{ id: 'x', token: 't', name: 'A', inmateNo: '1', role: 'guard', status: 'solitary' }], teams: [{ id: 't1', name: 'T', budget: 5, earned: 0 }], mafia: { phase: 'day' } };
+  const g = new Game(old);
+  assert.equal(g.s.players[0].role, undefined, 'the snitch game is gone');
+  assert.equal(g.s.players[0].drinksOwed, 0);
+  assert.equal(g.s.mafia, undefined);
+  g.viewFor('x');
+  g.adminView();
+});
+
+test('editing a game bumps the briefing version', () => {
+  const { g } = setup(2);
+  const game = g.addGame({ name: 'Beer Pong', rules: 'Two cups.' });
+  g.setGameStatus({ gameId: game.id, status: 'live' });
+  g.updateGame({ gameId: game.id, rules: 'Two cups.' });
+  assert.equal(game.rulesVersion, 1, 'no change, no new pop-up');
+  g.updateGame({ gameId: game.id, rules: 'Three cups.' });
+  assert.equal(game.rulesVersion, 2);
+  assert.match(g.s.feed[0].text, /Rules updated/);
+});
+
+test('host tokens carry a role; payouts name the host', () => {
+  const { g, a } = setup(2);
+  const t1 = g.newHostToken('warden');
+  const t2 = g.newHostToken('officer');
+  assert.equal(g.hostRole(t1), 'warden');
+  assert.equal(g.hostRole(t2), 'officer');
+  assert.equal(g.hostRole('nope'), null);
+  g.adjustBudget({ teamId: a.id, amount: 10, reason: 'flip cup', by: 'officer' });
+  assert.match(g.s.feed[0].text, /^The Commissary Officer paid/);
+  const old = new Game({ adminTokens: ['legacy'] });
+  assert.equal(old.hostRole('legacy'), 'warden');
+});
+
+test('request mode: a blockmate proposes, two seconds (or the Shot Caller) make it happen', () => {
+  const { g, a, players } = setup(8); // A = P0, P2, P4, P6
+  g.updateSettings({ spendMode: 'request', requestSeconds: 2 });
+  const [p0, , p2, , p4, , p6] = players;
+  const item = itemOf(g, 'supply');
+  const start = a.budget;
+  const r = g.buy(p0.id, { itemId: item.id, note: 'vodka soda' });
+  assert.equal(r.status, 'requested');
+  assert.equal(a.budget, start, 'nothing spent yet');
+  const req = a.requests[0];
+  assert.throws(() => g.secondRequest(p0.id, { requestId: req.id }), /own request/);
+  assert.equal(g.secondRequest(p2.id, { requestId: req.id }).status, 'seconded');
+  assert.throws(() => g.secondRequest(p2.id, { requestId: req.id }), /already/);
+  const done = g.secondRequest(p4.id, { requestId: req.id });
+  assert.equal(done.status, 'pending');
+  assert.equal(done.buyerName, 'P0', 'credited to whoever asked');
+  assert.equal(a.budget, start - item.price);
+  assert.equal(a.requests.length, 0);
+  // Shot Caller approves alone and buys directly.
+  g.updatePlayer({ playerId: p6.id, isCaptain: true });
+  g.buy(p0.id, { itemId: item.id });
+  assert.throws(() => g.approveRequest(p2.id, { requestId: a.requests[0].id }), /Shot Caller/);
+  g.approveRequest(p6.id, { requestId: a.requests[0].id });
+  assert.equal(a.requests.length, 0);
+  assert.notEqual(g.buy(p6.id, { itemId: item.id }).status, 'requested');
+  // Dropping: only the asker or the Shot Caller.
+  g.buy(p0.id, { itemId: item.id });
+  assert.throws(() => g.dropRequest(p2.id, { requestId: a.requests[0].id }), /Only whoever asked/);
+  g.dropRequest(p0.id, { requestId: a.requests[0].id });
+  assert.equal(a.requests.length, 0);
+});
+
+test('requests stay inside the block and are re-checked when they go through', () => {
+  const { g, a, players } = setup(6);
+  g.updateSettings({ spendMode: 'request', requestSeconds: 1 });
+  const item = itemOf(g, 'supply');
+  g.buy(players[0].id, { itemId: item.id });
+  const req = a.requests[0];
+  assert.equal(g.viewFor(players[1].id).teams.find((t) => t.id === a.id).requests, null, 'other blocks cannot see it');
+  assert.equal(g.viewFor(players[2].id).teams.find((t) => t.id === a.id).requests.length, 1);
+  a.budget = 0;
+  assert.throws(() => g.secondRequest(players[2].id, { requestId: req.id }), /Not enough cash/);
+});
+
+test('a block of one buys directly even in request mode', () => {
+  const { g, a, players } = setup(2);
+  g.updateSettings({ spendMode: 'request' });
+  assert.equal(g.buy(players[0].id, { itemId: itemOf(g, 'supply').id }).status, 'pending');
+  assert.ok(a);
+});
+
+test('Shot Caller renames the block; others cannot once there is a Shot Caller', () => {
+  const { g, a, players } = setup(4);
+  g.renameBlock(players[0].id, { nickname: 'The Shawshank Redeemers', motto: 'Get busy drinking' });
+  assert.equal(a.nickname, 'The Shawshank Redeemers');
+  g.updatePlayer({ playerId: players[2].id, isCaptain: true });
+  assert.throws(() => g.renameBlock(players[0].id, { nickname: 'Nope' }), /Shot Caller/);
+  g.renameBlock(players[2].id, { nickname: 'Cell Mates', motto: '' });
+  assert.equal(a.nickname, 'Cell Mates');
+  assert.equal(g.viewFor(players[1].id).teams.find((t) => t.id === a.id).nickname, 'Cell Mates');
+});
+
+test('heats: pairs with no block left alone, paid per heat, totals on the game', () => {
+  const g = new Game();
+  g.updateSettings({ maxBlockSize: 5 });
+  for (let i = 0; i < 15; i++) g.join(`P${i}`);
+  g.buildBlocks(); // 3 blocks of 5
+  g.seedTeams({ count: 2 });
+  for (const t of g.s.teams.slice(3)) g.updatePlayer({ playerId: g.join(`X${t.id}`).id, teamId: t.id });
+  const game = g.addGame({ name: 'Beer Pong' });
+  g.makeHeats({ gameId: game.id, size: 2 });
+  assert.deepEqual(game.heats.map((h) => h.teamIds.length).sort(), [2, 3], '5 blocks → a pair and a three-way');
+  const [h1, h2] = game.heats;
+  g.startHeat({ gameId: game.id, heatId: h1.id });
+  assert.equal(game.status, 'live');
+  assert.equal(h1.status, 'live');
+  assert.throws(() => g.makeHeats({ gameId: game.id, size: 2 }), /already started/);
+  const winner = h1.teamIds[0];
+  const outsider = h2.teamIds[0];
+  g.finishHeat({ gameId: game.id, heatId: h1.id, results: { [winner]: 30, [outsider]: 99 } });
+  assert.equal(g.team(winner).earned, 30);
+  assert.equal(g.team(outsider).earned, 0, 'only blocks in the heat get paid');
+  assert.throws(() => g.finishHeat({ gameId: game.id, heatId: h1.id, results: {} }), /already/);
+  g.startHeat({ gameId: game.id, heatId: h2.id });
+  g.finishHeat({ gameId: game.id, heatId: h2.id, results: { [outsider]: 20 } });
+  g.finishGame({ gameId: game.id, results: { [winner]: 5 } });
+  assert.deepEqual(game.results, { [winner]: 35, [outsider]: 20 });
+  assert.equal(g.team(winner).earned, 35);
+});
+
+test('custom heats need two real blocks', () => {
+  const { g, a, b } = setup(4);
+  const game = g.addGame({ name: 'Final' });
+  assert.throws(() => g.addHeat({ gameId: game.id, teamIds: [a.id] }), /at least 2/);
+  g.addHeat({ gameId: game.id, teamIds: `${a.id},${b.id}` });
+  assert.equal(game.heats.length, 1);
+  g.removeHeat({ gameId: game.id, heatId: game.heats[0].id });
+  assert.equal(game.heats.length, 0);
+});
+
+test('bookings roll up into one feed line', () => {
+  const g = new Game();
+  for (let i = 0; i < 6; i++) g.join(`Guest${i}`);
+  const joins = g.s.feed.filter((f) => f.kind === 'join');
+  assert.equal(joins.length, 1);
+  assert.match(joins[0].text, /Guest5, Guest4, Guest3, Guest2 and 2 more\. 6 inmates/);
+});
+
+test('old captain-only saves become captain spend mode', () => {
+  const g = new Game({ settings: { captainOnlySpending: true } });
+  assert.equal(g.s.settings.spendMode, 'captain');
+  assert.equal(g.s.settings.captainOnlySpending, undefined);
+});
+
+test('hosts sentence anyone: a player, a block, the Holding Cell or everyone', () => {
+  const { g, a, players } = setup(6);
+  const late = g.join('Late');
+  g.assignPunishment({ target: `player:${players[1].id}`, drinks: 2, reason: 'cheating', by: 'officer' });
+  assert.equal(players[1].drinksOwed, 2);
+  assert.match(g.s.feed[0].text, /^The Commissary Officer sentenced P1: 2 drinks for cheating\./);
+  g.assignPunishment({ target: `team:${a.id}`, text: '10 push-ups', by: 'warden' });
+  for (const m of g.members(a.id)) assert.equal(m.sentences[0].text, '10 push-ups');
+  assert.equal(players[1].sentences.length, 0, 'other blocks untouched');
+  g.assignPunishment({ target: 'holding', drinks: 1, text: 'Sing', by: 'warden' });
+  assert.equal(late.drinksOwed, 1);
+  g.assignPunishment({ target: 'all', drinks: 1, by: 'warden' });
+  assert.equal(late.drinksOwed, 2);
+  assert.equal(players[0].drinksOwed, 1);
+  assert.throws(() => g.assignPunishment({ target: 'all' }), /drinks, a punishment/);
+  const sid = players[0].sentences[0].id;
+  g.completeSentence(players[0].id, { sentenceId: sid });
+  assert.equal(players[0].sentences[0].status, 'done');
+  assert.throws(() => g.completeSentence(players[0].id, { sentenceId: sid }), /Already/);
+  assert.equal(g.viewFor(players[0].id).me.sentences[0].status, 'done');
+  assert.equal(g.viewFor(players[1].id).players.find((p) => p.id === players[0].id).sentences, undefined, 'others only see a count');
+});
+
+test('dare-style commissary punishments land on the victims’ to-do lists', () => {
+  const { g, b, players } = setup(4);
+  const drills = itemOf(g, 'punishment', (i) => i.name === 'Yard Drills');
+  const o = g.buy(players[0].id, { itemId: drills.id, targetTeamId: b.id, note: 'get moving' });
+  g.respondPunishment(players[1].id, { orderId: o.id, choice: 'accept' });
+  for (const m of g.members(b.id)) {
+    assert.match(m.sentences[0].text, /Yard Drills/);
+    assert.equal(m.sentences[0].from, g.s.teams[0].name);
+  }
+  const shot = itemOf(g, 'punishment', (i) => i.drinks === 1);
+  const o2 = g.buy(players[0].id, { itemId: shot.id, targetTeamId: b.id });
+  g.respondPunishment(players[1].id, { orderId: o2.id, choice: 'accept' });
+  assert.equal(players[1].sentences.length, 1, 'drink punishments go on the drink tab, not the to-do list twice');
+});
+
+test('removing inmates cleans up their requests', () => {
+  const { g, a, players } = setup(6); // A = P0, P2, P4
+  g.updateSettings({ spendMode: 'request', requestSeconds: 2 });
+  g.buy(players[2].id, { itemId: itemOf(g, 'supply').id });
+  g.secondRequest(players[0].id, { requestId: a.requests[0].id });
+  g.removePlayers({ playerIds: [players[2].id, players[4].id] });
+  assert.equal(g.s.players.length, 4);
+  assert.equal(a.requests.length, 0, 'their request is gone');
+  assert.equal(g.viewFor(players[2].id), null, 'their phone no longer has a view');
+  assert.throws(() => g.removePlayers({ playerIds: ['nope'] }), /at least one/);
+});
+
+test('fresh start wipes the night but keeps the setup', () => {
+  const { g, players } = setup(4);
+  const game = g.addGame({ name: 'Flip Cup', rules: 'Flip it.' });
+  g.makeHeats({ gameId: game.id, size: 2 });
+  g.finishGame({ gameId: game.id, results: {} });
+  const host = g.newHostToken('warden');
+  g.updateSettings({ partyName: 'Shen 30' });
+  assert.throws(() => g.freshStart({ confirm: 'yes' }), /RESET/);
+  g.freshStart({ confirm: 'reset' });
+  assert.equal(g.s.players.length, 0);
+  assert.equal(g.s.teams.length, 0);
+  assert.equal(g.s.orders.length, 0);
+  assert.equal(g.s.feed.length, 1);
+  assert.equal(game.status, 'upcoming');
+  assert.equal(game.rules, 'Flip it.');
+  assert.deepEqual(game.heats, []);
+  assert.equal(g.s.settings.partyName, 'Shen 30');
+  assert.equal(g.hostRole(host), 'warden', 'hosts stay logged in');
+  assert.ok(g.s.items.length > 0);
+  assert.ok(players);
+});
+
+test('hosts flip through the four acts; act-only items follow the act', () => {
+  const { g, a, players } = setup(4);
+  const visible = () => g.viewFor(players[0].id).items.map((i) => i.name);
+  assert.equal(g.act.id, 'gta');
+  assert.ok(visible().includes('Stick-Up'));
+  assert.ok(!visible().includes('Intertwined Fate'));
+  g.setAct({ index: 1 });
+  assert.equal(g.act.id, 'genshin');
+  assert.ok(visible().includes('Intertwined Fate'));
+  assert.ok(!visible().includes('Stick-Up'));
+  const stickUp = itemOf(g, 'punishment', (i) => i.steal);
+  assert.throws(() => g.buy(players[0].id, { itemId: stickUp.id, targetTeamId: g.s.teams[1].id }), /off the shelf/);
+  assert.throws(() => g.setAct({ index: 9 }), /No such act/);
+  g.freshStart({ confirm: 'RESET' });
+  assert.equal(g.s.act, 0);
+  assert.ok(a);
+});
+
+test('old saves get the act-only items stocked once', () => {
+  const s = new Game().s;
+  s.items = s.items.filter((i) => !i.act);
+  delete s.actItems;
+  delete s.act;
+  const g = new Game(s);
+  assert.equal(g.s.act, 0);
+  assert.equal(g.s.items.filter((i) => i.act).length, 2);
+  assert.equal(new Game(g.s).s.items.filter((i) => i.act).length, 2);
+});
+
+test('GTA: a Stick-Up moves cash from the victim to the robbers, or back if deflected', () => {
+  const { g, a, b, players } = setup(4);
+  const stickUp = itemOf(g, 'punishment', (i) => i.steal);
+  const o = g.buy(players[0].id, { itemId: stickUp.id, targetTeamId: b.id });
+  g.respondPunishment(players[1].id, { orderId: o.id, choice: 'accept' });
+  assert.equal(b.budget, 190);
+  assert.equal(a.budget, 200 - stickUp.price + 10);
+  b.inventory.deflect = 1;
+  const o2 = g.buy(players[0].id, { itemId: stickUp.id, targetTeamId: b.id });
+  g.respondPunishment(players[1].id, { orderId: o2.id, choice: 'deflect' });
+  g.respondPunishment(players[0].id, { orderId: o2.id, choice: 'accept' });
+  assert.equal(b.budget, 200);
+  assert.equal(a.budget, 200 - 2 * stickUp.price);
+});
+
+test('Genshin: wishes roll prizes and pity guarantees a 5-star', () => {
+  const { g, a, players } = setup(4);
+  g.setAct({ index: 1 });
+  g.updateSettings({ warp5: 0, warp4: 0, warpPity: 3 });
+  const warp = itemOf(g, 'warp');
+  const pulls = [1, 2, 3].map(() => g.buy(players[0].id, { itemId: warp.id }).warp);
+  assert.deepEqual(pulls.map((w) => w.stars), [3, 3, 5]);
+  assert.equal(a.pity, 0);
+  assert.equal(g.viewFor(players[0].id).teams.find((t) => t.id === a.id).pity, 0);
+  assert.equal(g.viewFor(players[1].id).teams.find((t) => t.id === a.id).pity, null, 'other blocks can’t see your pity');
+  g.updateSettings({ warp5: 100 });
+  const before = { budget: a.budget, deflect: a.inventory.deflect };
+  const w = g.buy(players[0].id, { itemId: warp.id }).warp;
+  assert.equal(w.stars, 5);
+  const gained = a.budget - (before.budget - warp.price) + (a.inventory.deflect - before.deflect);
+  assert.ok(gained > 0, 'a 5-star always pays something');
+});
+
+test('TFT: augments, streak gold, interest and the Hustler discount', () => {
+  const { g, a, b, players } = setup(4);
+  g.updatePlayer({ playerId: players[0].id, isCaptain: true });
+  assert.throws(() => g.pickAugment(players[0].id, { augmentId: a.augmentOffer[0] }), /Act III/);
+  g.setAct({ index: 2 });
+  assert.equal(a.augmentOffer.length, 3);
+  a.augmentOffer = ['hustler', 'windfall', 'crown'];
+  assert.throws(() => g.pickAugment(players[2].id, { augmentId: 'hustler' }), /Shot Caller/);
+  assert.throws(() => g.pickAugment(players[0].id, { augmentId: 'hunt' }), /on offer/);
+  g.pickAugment(players[0].id, { augmentId: 'hustler' });
+  assert.throws(() => g.pickAugment(players[0].id, { augmentId: 'windfall' }), /already picked/);
+  const red = g.s.items.find((i) => i.name === 'Red Bull');
+  const before = a.budget;
+  g.buy(players[0].id, { itemId: red.id });
+  assert.equal(before - a.budget, Math.ceil(red.price * 0.75));
+
+  const game = g.addGame({ name: 'Pong' });
+  for (let i = 0; i < 3; i++) {
+    g.addHeat({ gameId: game.id, teamIds: [a.id, b.id] });
+    const h = game.heats[game.heats.length - 1];
+    g.finishHeat({ gameId: game.id, heatId: h.id, results: { [a.id]: 10 } });
+  }
+  assert.equal(a.streak, 3);
+  assert.equal(b.streak, -3);
+  a.budget = 47;
+  b.budget = 200;
+  g.finishGame({ gameId: game.id, results: {}, penalties: false });
+  assert.equal(a.budget, 51, 'interest is 1 per 10, so 4');
+  assert.equal(b.budget, 205, 'interest caps at 5');
+});
+
+test('Genshin: Wish ×10 charges ten and rolls ten, also through a block request', () => {
+  const { g, a, players } = setup(4);
+  g.setAct({ index: 1 });
+  const fate = itemOf(g, 'warp');
+  const before = a.budget;
+  const o = g.buy(players[0].id, { itemId: fate.id, count: 10 });
+  assert.equal(o.warps.length, 10);
+  assert.equal(o.name, 'Intertwined Fate ×10');
+  assert.ok(a.budget >= before - 10 * fate.price);
+  assert.equal(o.warp.stars, Math.max(...o.warps.map((w) => w.stars)));
+  a.budget = 5;
+  assert.throws(() => g.buy(players[0].id, { itemId: fate.id, count: 10 }), /Not enough/);
+  a.budget = 500;
+  g.updateSettings({ spendMode: 'request' });
+  const r = g.buy(players[0].id, { itemId: fate.id, count: 10 });
+  assert.equal(r.status, 'requested');
+  const req = a.requests[0];
+  assert.equal(req.price, 10 * fate.price);
+  const done = g.secondRequest(players[2].id, { requestId: req.id });
+  assert.equal(done.warps.length, 10);
+});
+
+test('saves from the Honkai act move to Genshin', () => {
+  const s = new Game().s;
+  const fate = s.items.find((i) => i.type === 'warp');
+  Object.assign(fate, { act: 'honkai', name: 'Warp' });
+  const g = new Game(s);
+  assert.equal(fate.act, 'genshin');
+  assert.equal(fate.name, 'Intertwined Fate');
+  assert.equal(g.s.items.filter((i) => i.act).length, 2);
+});
+
+test('Genshin: Daily Commissions pay the party, Adventure EXP ranks you up, resonance pays extra', () => {
+  const { g, a, players } = setup(4);
+  const [p0, , p2] = players;
+  assert.throws(() => g.completeCommission(p0.id, { commissionId: 'x' }), /Act II/);
+  g.setAct({ index: 1 });
+  assert.equal(p0.commissions.length, 4);
+  const late = g.join('Latecomer');
+  assert.equal(late.commissions.length, 4, 'anyone joining mid-act gets commissions too');
+  p0.vision = 'Pyro';
+  p2.vision = 'Hydro';
+  const before = a.budget;
+  const r = g.completeCommission(p0.id, { commissionId: p0.commissions[0].id });
+  assert.equal(r.primos, 2);
+  assert.equal(a.budget, before + 2);
+  assert.throws(() => g.completeCommission(p0.id, { commissionId: p0.commissions[0].id }), /Already/);
+  p2.vision = 'Pyro';
+  assert.equal(g.completeCommission(p0.id, { commissionId: p0.commissions[1].id }).primos, 3, 'Pyro resonance adds 1');
+  g.completeCommission(p0.id, { commissionId: p0.commissions[2].id });
+  const last = g.completeCommission(p0.id, { commissionId: p0.commissions[3].id });
+  assert.ok(last.all);
+  assert.equal(p0.adventureExp, 4 * 100 + 250);
+  assert.equal(last.rank, 4);
+  assert.equal(g.viewFor(p0.id).me.commissions.length, 4);
+  assert.ok(g.viewFor(p2.id).players.find((x) => x.id === p0.id).vision);
+  assert.equal(g.viewFor(p2.id).players.find((x) => x.id === p0.id).commissions, undefined, 'commissions stay private');
+});
+
+test('every inmate has a stable Vision, even from old saves', () => {
+  const s = new Game().s;
+  s.players.push({ id: 'abc123', name: 'Old', token: 't', inmateNo: '12345', sentences: [] });
+  const v1 = new Game(s).s.players[0].vision;
+  const v2 = new Game(JSON.parse(JSON.stringify(s))).s.players[0].vision;
+  assert.equal(v1, v2);
+});
+
+test('the TV intro replays on act changes and on demand; intro links must be https', () => {
+  const g = new Game();
+  g.s.settings.actSet = 'longnight';
+  assert.equal(g.s.introAt, 0);
+  g.setAct({ index: 1 });
+  const first = g.s.introAt;
+  assert.ok(first > 0);
+  g.s.introAt = 1;
+  g.playIntro();
+  assert.ok(g.s.introAt > 1);
+  assert.equal(g.tvView().introAt, g.s.introAt);
+  g.updateSettings({ introVideo_gta: 'https://example.com/gta.mp4' });
+  assert.equal(g.s.settings.introVideos.gta, 'https://example.com/gta.mp4');
+  assert.throws(() => g.updateSettings({ introVideo_tft: 'javascript:alert(1)' }), /https/);
+  g.updateSettings({ introVideo_gta: '' });
+  assert.equal(g.s.settings.introVideos.gta, '');
+});
+
+test('Shot Cam: block members send clips; hosts can require approval, hide and remove them', () => {
+  const { g, a, b, players } = setup(4);
+  const holding = g.join('Late');
+  assert.throws(() => g.canClip(holding.id), /on a block/);
+  const r = g.addClip(players[0].id, { url: '/clips/one.mp4', type: 'video/mp4', caption: 'Bottoms up' });
+  assert.equal(r.status, 'live');
+  assert.throws(() => g.canClip(players[0].id), /Wait a few seconds/);
+  assert.equal(g.tvView().clips.length, 1);
+  assert.equal(g.tvView().clips[0].playerId, undefined, 'the TV never gets player ids');
+  g.updateSettings({ clipsNeedApproval: true });
+  const r2 = g.addClip(players[1].id, { url: '/clips/two.mp4', type: 'video/webm' });
+  assert.equal(r2.status, 'pending');
+  assert.equal(g.tvView().clips.length, 1, 'pending clips stay off the TV');
+  assert.equal(g.viewFor(players[1].id).clips.length, 2, 'your block sees its own pending clip');
+  assert.equal(g.viewFor(players[0].id).clips.length, 1, 'other blocks do not');
+  g.reviewClip({ clipId: r2.clipId, action: 'live' });
+  assert.equal(g.tvView().clips.length, 2);
+  g.reviewClip({ clipId: r.clipId, action: 'hidden' });
+  assert.equal(g.tvView().clips.length, 1);
+  assert.deepEqual(g.reviewClip({ clipId: r2.clipId, action: 'remove' }).deleteFiles, ['/clips/two.mp4']);
+  g.updateSettings({ clipsEnabled: false });
+  assert.throws(() => g.canClip(players[2].id), /switched off/);
+  assert.deepEqual(g.freshStart({ confirm: 'RESET' }).deleteFiles, ['/clips/one.mp4']);
+  assert.equal(g.s.clips.length, 0);
+  assert.ok(a && b);
+});
+
+test('The Long Night: each act renames its engine', () => {
+  const g = new Game();
+  for (const i of g.s.items) if (i.type === 'warp') i.active = true; // off the shelf tonight; the act still renames it
+  g.s.settings.actSet = 'longnight';
+  g.seedTeams({ count: 2 });
+  const [a, b] = g.s.teams;
+  const players = [0, 1, 2, 3].map((i) => {
+    const p = g.join(`L${i}`);
+    g.updatePlayer({ playerId: p.id, teamId: i % 2 ? b.id : a.id });
+    return p;
+  });
+  a.budget = b.budget = 500;
+  g.updateSettings({ spendMode: 'anyone' });
+  assert.equal(g.act.id, 'booking');
+  assert.equal(g.act.engine, 'gta');
+  // Booking Day: the Stick-Up is a Cell Toss, priced and stocked as before.
+  const shelf = g.viewFor(players[0].id).items;
+  const shake = shelf.find((i) => i.name === 'Cell Toss');
+  assert.ok(shake && !shelf.some((i) => i.name === 'Stick-Up'));
+  const o = g.buy(players[0].id, { itemId: shake.id, targetTeamId: b.id });
+  assert.equal(o.name, 'Cell Toss');
+  assert.match(g.s.feed[0].text, /Cell Toss/);
+  assert.equal(g.adminView().items.find((i) => i.id === shake.id).name, 'Stick-Up', 'hosts edit the real item');
+
+  // Arkham: Joker's Wild draws use the Joker's prizes; riddles and patrons replace commissions and Visions.
+  g.setAct({ index: 1 });
+  assert.equal(g.act.id, 'arkham');
+  const draw = g.viewFor(players[0].id).items.find((i) => i.type === 'warp');
+  assert.equal(draw.name, 'Joker’s Wild');
+  const w = g.buy(players[0].id, { itemId: draw.id }).warp;
+  const jokers = Object.values(g.act.prizes).flat().map((x) => x.name);
+  assert.ok(jokers.includes(w.name));
+  assert.ok(g.act.commissions.includes(players[0].commissions[0].text));
+  assert.equal(g.viewFor(players[0].id).visions.Pyro.label, 'Joker');
+
+  // The Heist: augments are heist roles.
+  g.setAct({ index: 2 });
+  g.updatePlayer({ playerId: players[0].id, isCaptain: true });
+  a.augmentOffer = ['windfall', 'rich', 'hunt'];
+  g.pickAugment(players[0].id, { augmentId: 'windfall' });
+  assert.match(g.s.feed[0].text, /Berlin heist role/);
+  assert.equal(g.viewFor(players[0].id).augments.windfall.name, 'Berlin');
+  const game = g.addGame({ name: 'Cups' });
+  g.finishGame({ gameId: game.id, results: {}, penalties: false });
+  assert.ok(g.s.feed.some((f) => /printing press ran/.test(f.text)));
+
+  // Switching to Game Night keeps the act number but changes the act.
+  g.updateSettings({ actSet: 'arcade' });
+  assert.equal(g.act.id, 'tft');
+  assert.throws(() => g.updateSettings({ actSet: 'nope' }), /lineup/);
+});
+
+// ---------- points: +1 per drink sent ----------
+
+test('drinks cost and score per the menu; bundles are cheaper and score more', () => {
+  const { g, a, b, players } = setup();
+  a.budget = 1000;
+  const drink = (name) => itemOf(g, 'drink', (i) => i.name === name);
+  const send = (name, qty) => g.buy(players[0].id, { itemId: drink(name).id, targetTeamId: b.id, qty });
+  const step = (fn) => { const c = a.budget; const o = fn(); return { cost: c - a.budget, points: o.points, o }; };
+  assert.deepEqual((({ cost, points }) => ({ cost, points }))(step(() => send('Spirit', 1))), { cost: 15, points: 3 });
+  assert.deepEqual((({ cost, points }) => ({ cost, points }))(step(() => send('Spirit', 3))), { cost: 45, points: 9 });
+  const five = step(() => send('Spirit', 5));
+  assert.deepEqual([five.cost, five.points, five.o.qty, five.o.name], [60, 17, 5, '5× Spirit']);
+  assert.deepEqual((({ cost, points }) => ({ cost, points }))(step(() => send('Mystery Spirit', 10))), { cost: 105, points: 35 });
+  assert.deepEqual((({ cost, points }) => ({ cost, points }))(step(() => send('Mystery Cocktail', 5))), { cost: 72, points: 22 });
+  assert.deepEqual((({ cost, points }) => ({ cost, points }))(step(() => send('Mystery Cocktail', 10))), { cost: 126, points: 46 });
+  const bottle = step(() => send('Soju Bottle', 1));
+  assert.deepEqual([bottle.cost, bottle.points, bottle.o.name, bottle.o.qty], [42, 9, 'Soju Bottle', 1], 'a bottle is one bottle at the bar, not 8 shots');
+  assert.deepEqual((({ cost, points }) => ({ cost, points }))(step(() => send('Wine', 5))), { cost: 125, points: 20 });
+  assert.equal(a.points, 0); // nothing scores until the drinks are served
+  serveAll(g);
+  assert.equal(a.points, 3 + 9 + 17 + 35 + 22 + 46 + 9 + 20);
+  assert.equal(b.points, 0);
+  // Drinks go to the block as one order for the bar; nobody gets a personal tab.
+  assert.equal(five.o.status, 'done');
+  assert.ok(g.members(b.id).every((m) => m.drinksOwed === 0));
+});
+
+test('drink orders need 1 to 10 drinks and enough credits', () => {
+  const { g, a, b, players } = setup();
+  const spirit = itemOf(g, 'drink', (i) => i.name === 'Spirit');
+  assert.throws(() => g.buy(players[0].id, { itemId: spirit.id, targetTeamId: b.id, qty: 0 }), /between 1 and 10/);
+  assert.throws(() => g.buy(players[0].id, { itemId: spirit.id, targetTeamId: b.id, qty: 11 }), /between 1 and 10/);
+  a.budget = 59;
+  assert.throws(() => g.buy(players[0].id, { itemId: spirit.id, targetTeamId: b.id, qty: 5 }), /Not enough/);
+  assert.equal(g.buy(players[0].id, { itemId: spirit.id, targetTeamId: b.id }).qty, 1); // quantity defaults to 1
+});
+
+test('a block request keeps its quantity, and scores the bundle once it goes through', () => {
+  const { g, a, b, players } = setup();
+  g.updateSettings({ spendMode: 'request' });
+  const spirit = itemOf(g, 'drink', (i) => i.name === 'Spirit');
+  const { requestId } = g.buy(players[0].id, { itemId: spirit.id, targetTeamId: b.id, qty: 5 });
+  assert.equal(a.requests[0].price, 60);
+  assert.equal(a.requests[0].name, '5× Spirit');
+  g.secondRequest(players[2].id, { requestId });
+  g.secondRequest(players[4].id, { requestId });
+  assert.equal(a.budget, 140);
+  serveAll(g);
+  assert.equal(a.points, 17);
+});
+
+test('old saves get the drink menu and lose the two one-size drink gifts', () => {
+  const g = new Game();
+  const old = structuredClone(g.s);
+  delete old.drinkMenu;
+  old.items = old.items.filter((i) => i.type !== 'drink');
+  old.items.push({ id: 'r', emoji: '🍺', name: 'Send a Round', desc: '', price: 15, type: 'gift', stock: null, active: true, drain: 0, drinks: 0, steal: false, act: null });
+  const g2 = new Game(old);
+  assert.deepEqual(g2.s.items.filter((i) => i.type === 'drink').map((i) => i.name), ['Spirit', 'Mystery Spirit', 'Soju Shot', 'Soju Bottle', 'Wine', 'Mystery Cocktail']);
+  assert.equal(g2.s.items.find((i) => i.name === 'Send a Round').active, false);
+  assert.equal(new Game(structuredClone(g2.s)).s.items.filter((i) => i.type === 'drink').length, 6); // only once
+});
+
+test('penalty-drink punishments score a point; drink-free ones and supplies do not', () => {
+  const { g, a, b, players } = setup();
+  g.buy(players[0].id, { itemId: itemOf(g, 'punishment', (i) => i.drinks > 0).id, targetTeamId: b.id });
+  assert.equal(a.points, 1);
+  g.buy(players[0].id, { itemId: itemOf(g, 'punishment', (i) => !i.drinks && !i.drain).id, targetTeamId: b.id });
+  g.buy(players[0].id, { itemId: itemOf(g, 'supply').id });
+  g.buy(players[0].id, { itemId: itemOf(g, 'deflect').id });
+  assert.equal(a.points, 1);
+});
+
+test('drinks sent to the Holding Cell score too', () => {
+  const { g, a, players } = setup();
+  g.join('Late');
+  g.buy(players[0].id, { itemId: itemOf(g, 'drink', (i) => i.name === 'Soju Shot').id, targetTeamId: HOLDING });
+  serveAll(g);
+  assert.equal(a.points, 1);
+});
+
+test('a deflected drink still scores for the block that paid for it', () => {
+  const { g, a, b, players } = setup();
+  b.inventory.deflect = 1;
+  const o = g.buy(players[0].id, { itemId: itemOf(g, 'punishment', (i) => i.drinks > 0).id, targetTeamId: b.id });
+  g.respondPunishment(players[1].id, { orderId: o.id, choice: 'deflect' });
+  assert.equal(a.points, 1);
+  assert.equal(b.points, 0);
+});
+
+test('a purchase request only scores once it goes through', () => {
+  const { g, a, b, players } = setup();
+  g.updateSettings({ spendMode: 'request' });
+  const { requestId } = g.buy(players[0].id, { itemId: itemOf(g, 'drink', (i) => i.name === 'Soju Shot').id, targetTeamId: b.id });
+  assert.equal(a.points, 0);
+  g.secondRequest(players[2].id, { requestId });
+  g.secondRequest(players[4].id, { requestId });
+  serveAll(g);
+  assert.equal(a.points, 1);
+});
+
+test('cancelling a sent drink refunds the credits and takes the point back', () => {
+  const { g, a, b, players } = setup();
+  const gift = itemOf(g, 'drink', (i) => i.name === 'Soju Shot');
+  const o = g.buy(players[0].id, { itemId: gift.id, targetTeamId: b.id });
+  g.resolveOrder({ orderId: o.id, action: 'cancel', by: 'warden' });
+  assert.equal(a.budget, 200);
+  assert.equal(a.points, 0);
+});
+
+test('hosts can correct points, never below zero', () => {
+  const { g, a } = setup();
+  g.adjustPoints({ teamId: a.id, amount: 3, reason: 'bar mix-up', by: 'officer' });
+  assert.equal(a.points, 3);
+  g.adjustPoints({ teamId: a.id, amount: -10, by: 'warden' });
+  assert.equal(a.points, 0);
+  assert.throws(() => g.adjustPoints({ teamId: a.id, amount: 0 }), GameError);
+});
+
+test('points go public at the end of each act; your own block and the hosts see them live', () => {
+  const { g, a, b, players } = setup();
+  g.buy(players[0].id, { itemId: itemOf(g, 'drink', (i) => i.name === 'Soju Shot').id, targetTeamId: b.id });
+  serveAll(g);
+  assert.equal(a.points, 1);
+  assert.equal(g.viewFor(players[0].id).teams.find((t) => t.id === a.id).points, 1, 'A sees its own score live');
+  assert.equal(g.adminView().teams.find((t) => t.id === a.id).points, 1, 'hosts see it live');
+  assert.equal(g.tvView().teams.find((t) => t.id === a.id).points, 0, 'the TV waits for the act to end');
+  assert.equal(g.viewFor(players[1].id).teams.find((t) => t.id === a.id).points, 0, 'so does block B');
+  g.revealPoints('Act 1');
+  assert.equal(g.tvView().teams.find((t) => t.id === a.id).points, 1);
+  assert.equal(g.viewFor(players[1].id).teams.find((t) => t.id === a.id).points, 1);
+  assert.equal(g.tvView().pointsAsOf, 'Act 1');
+  a.points += 5; // more points mid-act stay private
+  assert.equal(g.tvView().teams.find((t) => t.id === a.id).points, 1);
+  const old = structuredClone(g.s);
+  for (const t of old.teams) delete t.points;
+  assert.equal(new Game(old).s.teams[0].points, 0);
+});
+
+// ---------- shop open / closed ----------
+
+test('closing the shop blocks buying and requests until it reopens', () => {
+  const { g, a, b, players } = setup();
+  const gift = itemOf(g, 'drink', (i) => i.name === 'Soju Shot');
+  g.updateSettings({ shopOpen: 'false' });
+  assert.throws(() => g.buy(players[0].id, { itemId: gift.id, targetTeamId: b.id }), /closed/);
+  g.updateSettings({ spendMode: 'request' });
+  assert.throws(() => g.buy(players[0].id, { itemId: gift.id, targetTeamId: b.id }), /closed/);
+  assert.equal(a.budget, 200);
+  g.updateSettings({ shopOpen: 'true' });
+  g.updateSettings({ spendMode: 'anyone' });
+  g.buy(players[0].id, { itemId: gift.id, targetTeamId: b.id });
+  serveAll(g);
+  assert.equal(a.points, 1);
+});
+
+test('a request made while open cannot go through after the shop closes', () => {
+  const { g, a, b, players } = setup();
+  g.updateSettings({ spendMode: 'request' });
+  const { requestId } = g.buy(players[0].id, { itemId: itemOf(g, 'drink', (i) => i.name === 'Soju Shot').id, targetTeamId: b.id });
+  g.updateSettings({ shopOpen: false });
+  g.secondRequest(players[2].id, { requestId });
+  assert.throws(() => g.secondRequest(players[4].id, { requestId }), /closed/);
+  assert.equal(a.points, 0);
+  assert.equal(a.budget, 200);
+});
+
+test('a new night runs one look with no acts to switch to', () => {
+  const g = new Game();
+  assert.equal(g.s.settings.actSet, 'single');
+  assert.equal(g.acts.length, 1);
+  assert.equal(g.act.id, 'slammer');
+  assert.equal(g.act.engine, 'pixel');
+  assert.throws(() => g.setAct({ index: 1 }), GameError);
+  assert.equal(new Game({ ...structuredClone(g.s), settings: { ...g.s.settings, actSet: 'gone' } }).acts.length, 1);
+});
+
+test("the party is called Shifty Shen's Slammer, including old saves with the old default", () => {
+  assert.equal(new Game().s.settings.partyName, "Shifty Shen's Slammer");
+  const old = new Game().s;
+  old.settings.partyName = 'Shifty Shen Slammer';
+  assert.equal(new Game(old).s.settings.partyName, "Shifty Shen's Slammer");
+  old.settings.partyName = 'Custom Night';
+  assert.equal(new Game(old).s.settings.partyName, 'Custom Night');
+});
+
+// ---------- LeParty rounds ----------
+
+// A round of a 1-player game, picks made by the first member of each block.
+function playRound(g, a, b, players, { place = { a: 1, b: 2 } } = {}) {
+  const game = g.addGame({ name: `Game ${g.s.rounds.length + 1}`, playersNeeded: 1 });
+  const r = g.startRound({ gameId: game.id });
+  g.revealPicks();
+  g.toResults();
+  g.enterResults({ placings: { [a.id]: place.a, [b.id]: place.b } });
+  return r;
+}
+const spirit = (g) => itemOf(g, 'drink', (i) => i.name === 'Spirit');
+const finishDrinks = (g) => {
+  while (g.round.serves.some((s) => !s.servedAt)) g.barNext();
+  g.round.serves.forEach((s) => g.barDone({ teamId: s.teamId }));
+};
+
+test('a round: blocks pick players, picks show once every block is in, the shop stays shut', () => {
+  const { g, a, b, players } = setup();
+  const game = g.addGame({ name: 'Flip cup', playersNeeded: 1 });
+  const r = g.startRound({ gameId: game.id });
+  assert.equal(r.phase, 'game');
+  assert.equal(g.s.settings.shopOpen, false);
+  assert.throws(() => g.pickPlayers(players[0].id, { playerIds: [players[1].id] }), /can’t play/); // not their block
+  assert.throws(() => g.pickPlayers(players[0].id, { playerIds: [players[0].id, players[2].id] }), /exactly 1/);
+  g.pickPlayers(players[0].id, { playerIds: [players[2].id] });
+  assert.equal(r.revealedAt, null);
+  g.pickPlayers(players[1].id, { playerIds: [players[1].id] });
+  assert.ok(r.revealedAt);
+  assert.deepEqual(r.picks, { [a.id]: [players[2].id], [b.id]: [players[1].id] });
+  assert.throws(() => g.startRound({ gameId: game.id }), /still running/);
+});
+
+test('players who played either of the last two games sit out; auto-pick favours whoever has played least', () => {
+  const { g, a, b, players } = setup();
+  const pick = (who, id) => g.pickPlayers(who.id, { playerIds: [id] });
+  const one = g.addGame({ name: 'One', playersNeeded: 1 });
+  g.startRound({ gameId: one.id });
+  pick(players[0], players[0].id);
+  pick(players[1], players[1].id);
+  g.toResults();
+  g.enterResults({ placings: { [a.id]: 1, [b.id]: 2 } });
+  g.startDrinks();
+  g.startRound({ gameId: one.id });
+  assert.throws(() => pick(players[0], players[0].id), /can’t play/);
+  // Nobody picks for Block A; the deadline passes and the app picks someone who hasn't played.
+  g.round.pickDeadline = Date.now() - 1;
+  g.tick();
+  assert.ok(g.round.revealedAt);
+  assert.equal(g.round.pickedBy[a.id], 'auto');
+  assert.notEqual(g.round.picks[a.id][0], players[0].id);
+  assert.equal(g.round.picks[a.id].length, 1);
+});
+
+test('group games: everyone plays at once and nobody goes on cooldown', () => {
+  const { g, a, players } = setup();
+  const r = g.startRound({ gameId: g.addGame({ name: 'Charades', playersNeeded: 0 }).id });
+  assert.ok(r.revealedAt);
+  assert.equal(r.picks[a.id].length, 3);
+  g.toResults();
+  g.enterResults({ placings: { [a.id]: 1 } });
+  g.startDrinks();
+  const r2 = g.startRound({ gameId: g.addGame({ name: 'Solo', playersNeeded: 1 }).id });
+  assert.equal(g.eligibleFor(r2, a.id).length, 3);
+});
+
+test('results pay prize money by placing, crown the round winner and open the shop', () => {
+  const { g, a, b, players } = setup();
+  const r = playRound(g, a, b, players);
+  const [first, second] = g.s.settings.prizeMoney;
+  assert.equal(a.budget, 200 + first);
+  assert.equal(b.budget, 200 + second);
+  assert.equal(r.winnerTeamId, a.id);
+  assert.equal(r.phase, 'spending');
+  assert.equal(g.s.settings.shopOpen, true);
+});
+
+test('the bar: fewest drinks first, Next pays the senders, Back undoes it, Done or the timer finishes a block', () => {
+  const { g, a, b, players } = setup();
+  g.updateSettings({ roundsPerAct: 1 }); // round 2 is Act 2, when the Mystery Box opens
+  const c = g.addTeam({ name: 'Block C' });
+  const p = g.join('Cee');
+  g.updatePlayer({ playerId: p.id, teamId: c.id });
+  playRound(g, a, b, players);
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 5 }); // A → B: 5 (17 pts)
+  g.buy(players[1].id, { itemId: spirit(g).id, targetTeamId: c.id, qty: 1 }); // B → C: 1 (3 pts)
+  g.startDrinks();
+  const r = g.round;
+  assert.equal(g.s.settings.shopOpen, false);
+  assert.deepEqual(r.serves.map((s) => [s.teamId, s.drinks]), [[c.id, 1], [b.id, 5]]);
+  g.barNext();
+  assert.equal(b.points, 3);
+  g.barBack();
+  assert.equal(b.points, 0);
+  g.barNext();
+  g.barDone({ teamId: c.id });
+  g.barNext();
+  assert.equal(a.points, 17);
+  assert.equal(r.phase, 'drinks');
+  r.serves[1].timerEndsAt = Date.now() - 1; // B runs out of time
+  g.tick();
+  assert.equal(r.serves[1].missed, true);
+  assert.equal(r.phase, 'done');
+  // B owes an extra shot of the cheapest drink in the next round's queue.
+  playRound(g, a, b, players);
+  g.startDrinks();
+  const pen = g.round.serves.find((s) => s.teamId === b.id);
+  assert.equal(pen.drinks, 1);
+  assert.equal(g.order(pen.orderIds[0]).origin, 'penalty');
+  assert.equal(g.order(pen.orderIds[0]).name, '1× Soju Shot');
+});
+
+// Open a Mystery Box with the dice fixed: inside the box, each Math.random() call returns the next roll.
+function openBox(g, playerId, rolls) {
+  const open = g.openMysteryBox;
+  g.openMysteryBox = (...args) => {
+    const real = Math.random;
+    const queue = [...rolls];
+    Math.random = () => (queue.length ? queue.shift() : 0);
+    try {
+      return open.apply(g, args);
+    } finally {
+      Math.random = real;
+    }
+  };
+  try {
+    return g.buy(playerId, { itemId: itemOf(g, 'mystery').id });
+  } finally {
+    delete g.openMysteryBox;
+  }
+}
+
+test('Reflect (won from a Mystery Box) works the round after: drinks bounce back to their senders and score for the reflector', () => {
+  const { g, a, b, players } = setup();
+  g.updateSettings({ roundsPerAct: 1 }); // round 2 is Act 2, when the Mystery Box opens
+  a.budget = b.budget = 1000;
+  assert.equal(g.s.items.some((i) => i.type === 'reflect' && i.active), false, 'Reflect is off the shelf');
+  playRound(g, a, b, players); // round 1
+  assert.throws(() => openBox(g, players[1].id, [0]), /off the shelf|open in Act 2/);
+  g.startDrinks();
+  finishDrinks(g);
+  playRound(g, a, b, players); // round 2: B opens a box and wins Reflect for round 3
+  const out = openBox(g, players[1].id, [0]);
+  assert.equal(out.mystery.kind, 'reflect');
+  assert.equal(out.mystery.round, 3);
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 5 });
+  g.startDrinks();
+  assert.deepEqual(g.round.serves.map((x) => x.teamId), [b.id]); // not active yet: B drinks
+  finishDrinks(g);
+  const a2 = a.points;
+  playRound(g, a, b, players); // round 3: B's Reflect is live
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 5 });
+  g.startDrinks();
+  assert.deepEqual(g.round.serves.map((x) => x.teamId), [a.id]);
+  const b3 = b.points;
+  g.barNext();
+  assert.equal(b.points - b3, 17, 'the reflector scores');
+  assert.equal(a.points, a2, 'the sender doesn’t');
+  g.barDone({ teamId: a.id });
+  playRound(g, a, b, players);
+  assert.notEqual(openBox(g, players[1].id, [0, 0, 0, 0]).mystery.kind, 'reflect', 'one Reflect per block per night');
+});
+
+test('Eye Spy opens at the start of the next round and shows who sent what to whom, round by round', () => {
+  const { g, a, b, players } = setup();
+  playRound(g, a, b, players);
+  g.buy(players[1].id, { itemId: spirit(g).id, targetTeamId: a.id, qty: 3 });
+  g.buy(players[0].id, { itemId: itemOf(g, 'eyespy').id });
+  assert.throws(() => g.buy(players[0].id, { itemId: itemOf(g, 'eyespy').id }), /One Eye Spy per round/);
+  assert.equal(g.viewFor(players[0].id).eyeSpy, null); // not yet
+  g.startDrinks();
+  finishDrinks(g);
+  g.startRound({ gameId: g.addGame({ name: 'Next', playersNeeded: 0 }).id });
+  const t = g.viewFor(players[0].id).eyeSpy;
+  assert.deepEqual(t.rows, [{ round: 1, from: b.id, to: a.id, qty: 3 }]);
+  assert.equal(g.viewFor(players[1].id).eyeSpy, null);
+});
+
+test('bounties are staked with points: send 7 in 3 rounds; Open pays 5×, Winner’s 8×; a miss loses the stake and the same again, plus 3 Spirit shots', () => {
+  const { g, a, b, players } = setup();
+  a.budget = b.budget = 1000;
+  a.points = b.points = 40;
+  playRound(g, a, b, players); // round 1: A wins
+  const open = itemOf(g, 'bounty', (i) => i.bounty === 'open');
+  const winners = itemOf(g, 'bounty', (i) => i.bounty === 'winner');
+  assert.equal(open.price, 0, 'bounties cost points, not cash');
+  assert.throws(() => g.buy(players[1].id, { itemId: winners.id, stake: 10 }), /just won/);
+  assert.throws(() => g.buy(players[0].id, { itemId: winners.id, stake: 2 }), /Stake between 5 and 50/);
+  assert.throws(() => g.buy(players[0].id, { itemId: winners.id, stake: 51 }), /Stake between/);
+  const cash = a.budget;
+  g.buy(players[0].id, { itemId: winners.id, stake: 10 });
+  assert.equal(a.points, 30, 'the stake leaves the score');
+  assert.equal(a.budget, cash, 'and costs no cash');
+  assert.throws(() => g.buy(players[0].id, { itemId: open.id, stake: 5 }), /already has a bounty/);
+  g.buy(players[1].id, { itemId: open.id, stake: 20 });
+  assert.equal(b.points, 20);
+  g.buy(players[1].id, { itemId: spirit(g).id, targetTeamId: a.id, qty: 5 }); // round 1: doesn't count yet
+  assert.equal(g.s.bounties.find((x) => x.teamId === b.id).sent, 0);
+  g.startDrinks();
+  finishDrinks(g);
+  playRound(g, a, b, players); // round 2
+  const startB = b.points;
+  g.buy(players[1].id, { itemId: spirit(g).id, targetTeamId: a.id, qty: 5 });
+  assert.equal(b.points, startB, '5 drinks isn’t enough any more');
+  g.buy(players[1].id, { itemId: spirit(g).id, targetTeamId: a.id, qty: 2 }); // B hits its Open Bounty at 7
+  assert.equal(b.points - startB, 100, '5× the 20 stake');
+  const startA = a.points;
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 7 }); // A hits the Winner's
+  assert.equal(a.points - startA, 80, '8× the 10 stake');
+  assert.equal(g.s.bounties.find((x) => x.teamId === a.id).status, 'hit');
+  g.startDrinks();
+  finishDrinks(g);
+  // A stakes on an Open Bounty and sends nothing in rounds 3–5: missed, stake gone, 3 Spirit shots in round 6.
+  g.updateSettings({ shopOpen: true });
+  g.round.phase = 'spending';
+  const beforeStake = a.points;
+  g.buy(players[0].id, { itemId: open.id, stake: 15 });
+  assert.equal(a.points, beforeStake - 15);
+  g.round.phase = 'done';
+  for (let i = 0; i < 3; i++) {
+    playRound(g, a, b, players);
+    g.startDrinks();
+    finishDrinks(g);
+  }
+  const missed = g.s.bounties.filter((x) => x.teamId === a.id).pop();
+  assert.equal(missed.status, 'missed');
+  assert.equal(missed.lostExtra, 15, 'a miss takes the stake again');
+  playRound(g, a, b, players);
+  g.startDrinks();
+  const owed = g.round.serves.find((x) => x.teamId === a.id);
+  assert.equal(g.order(owed.orderIds[0]).name, '3× Spirit');
+});
+
+test('a block can’t stake points it doesn’t have', () => {
+  const { g, a, b, players } = setup();
+  a.points = 3;
+  playRound(g, a, b, players);
+  const open = itemOf(g, 'bounty', (i) => i.bounty === 'open');
+  assert.throws(() => g.buy(players[0].id, { itemId: open.id, stake: 5 }), /only has 3 points/);
+});
+
+test('Winner’s Bounty rewards: bonus drinks land extra on the target; fewer drinks shields the block, down to nothing', () => {
+  const { g, a, b, players } = setup();
+  a.budget = b.budget = 1000;
+  a.bonusDrinks = 1; // A's orders land with +1
+  b.fewerDrinks = 2; // B knocks 2 off everything sent to it
+  playRound(g, a, b, players);
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 5 }); // 5 + 1 − 2 = 4
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 1 }); // 1 + 1 − 2 = 0: never poured
+  g.buy(players[1].id, { itemId: spirit(g).id, targetTeamId: a.id, qty: 2 }); // B's own: 2
+  g.startDrinks();
+  assert.deepEqual(g.round.serves.map((x) => [x.teamId, x.drinks]).sort(), [[a.id, 2], [b.id, 4]].sort());
+  assert.equal(a.points, 3); // the shielded single still scores
+  finishDrinks(g);
+  assert.equal(a.points, 3 + 17); // and the 5 scores what A paid for, not the free extra
+  const pour = g.adminView().round.serves.find((x) => x.teamId === b.id).breakdown[0];
+  assert.deepEqual([pour.qty, pour.adjust], [4, '+1 bonus, −2 shield']);
+});
+
+test('drink income: starts at 0 and grows $4 each round a block finishes in time; running out of time resets it', () => {
+  const { g, a, b, players } = setup();
+  a.budget = b.budget = 1000;
+  const roundWith = (qty) => {
+    playRound(g, a, b, players);
+    g.buy(players[1].id, { itemId: spirit(g).id, targetTeamId: a.id, qty });
+    g.startDrinks();
+    g.barNext();
+  };
+  const before = () => a.budget;
+  assert.equal(a.drinkStream, 0);
+  roundWith(2);
+  let m = before();
+  g.barDone({ teamId: a.id });
+  assert.equal(a.budget - m, 4);
+  roundWith(3);
+  m = before();
+  g.barDone({ teamId: a.id });
+  assert.equal(a.budget - m, 8, 'one step more, whatever the drink count');
+  roundWith(1);
+  m = before();
+  g.barDone({ teamId: a.id });
+  assert.equal(a.budget - m, 12);
+  roundWith(1);
+  g.round.serves[0].timerEndsAt = Date.now() - 1;
+  g.tick();
+  assert.equal(a.drinkStream, 0);
+  assert.equal(g.round.serves[0].streamLost, 12);
+  // Back to the start: the next finish pays one step again.
+  roundWith(1);
+  m = before();
+  g.barDone({ teamId: a.id });
+  assert.equal(a.budget - m, 4);
+});
+
+test('older saves move to the new money: prizes, starting cash, bounty prices and standards', () => {
+  const old = new Game();
+  Object.assign(old.s.settings, { startingBudget: 20, prizeMoney: [90, 75, 65, 55, 45, 40, 30, 20], streakCredits: 5 });
+  old.s.economy = 1;
+  for (const i of old.s.items) if (i.type === 'bounty') i.price = 50;
+  const g = new Game(JSON.parse(JSON.stringify(old.s)));
+  assert.equal(g.s.settings.startingBudget, 32);
+  assert.deepEqual(g.s.settings.prizeMoney, [35, 29, 24, 20, 17, 14, 12, 9]);
+  assert.equal(g.s.settings.streakCredits, undefined);
+  assert.ok(g.s.items.filter((i) => i.type === 'bounty').every((i) => i.price === 0));
+  assert.equal(g.s.items.find((i) => i.name === 'Wine').std, 1.5);
+});
+
+test('hosts can drop drinks into the queue before drinks start, and crown the winner', () => {
+  const { g, a, b, players } = setup();
+  playRound(g, a, b, players);
+  g.assignDrinks({ teamId: a.id, itemId: spirit(g).id, qty: 2, reason: 'late', by: 'warden' });
+  g.startDrinks();
+  assert.deepEqual(g.round.serves.map((s) => [s.teamId, s.drinks]), [[a.id, 2]]);
+  assert.throws(() => g.assignDrinks({ teamId: a.id, itemId: spirit(g).id }), /already built/);
+  b.points = 9;
+  g.crownWinner({});
+  assert.equal(g.s.winner.teamId, b.id);
+  assert.equal(g.tvView().winner.teamId, b.id);
+});
+
+test('other blocks can’t see your picks until they’re revealed, or who has Reflect', () => {
+  const { g, a, b, players } = setup();
+  g.updateSettings({ roundsPerAct: 1 }); // round 2 is Act 2, when the Mystery Box opens
+  g.startRound({ gameId: g.addGame({ name: 'Secret', playersNeeded: 1 }).id });
+  g.pickPlayers(players[0].id, { playerIds: [players[0].id] });
+  assert.equal(g.viewFor(players[1].id).round.picks[a.id], undefined);
+  assert.deepEqual(g.viewFor(players[2].id).round.picks[a.id], [players[0].id]);
+  g.pickPlayers(players[1].id, { playerIds: [players[1].id] });
+  g.toResults();
+  g.enterResults({ placings: { [a.id]: 1 } });
+  g.startDrinks();
+  playRound(g, a, b, players); // round 2
+  b.budget = 1000;
+  openBox(g, players[1].id, [0]); // Reflect for round 3
+  g.startDrinks();
+  playRound(g, a, b, players);
+  assert.equal(g.viewFor(players[0].id).round.reflectTeamId, null);
+  assert.equal(g.tvView().round.reflectTeamId, null);
+  assert.deepEqual(g.adminView().reflects, [{ teamId: b.id, round: 3 }]);
+  g.startDrinks();
+  assert.equal(g.tvView().round.reflectTeamId, b.id); // public once drinks start
+});
+
+test('a Mystery Box can pour 1–5 random drinks on your own block or another, which score nobody', () => {
+  const { g, a, b, players } = setup();
+  g.updateSettings({ roundsPerAct: 1 }); // round 2 is Act 2, when the Mystery Box opens
+  a.budget = 1000;
+  playRound(g, a, b, players);
+  g.startDrinks();
+  finishDrinks(g);
+  playRound(g, a, b, players); // round 2
+  // rolls: the prize (0.3 → drinks), pick the drink, qty roll 0.99 → 5, then the coin: 0.1 → own block
+  const self = openBox(g, players[0].id, [0.3, 0.4, 0.99, 0.1]).mystery;
+  assert.equal(self.kind, 'self');
+  assert.equal(self.qty, 5);
+  assert.equal(self.targetTeamId, a.id);
+  assert.ok(['Soju Shot', 'Spirit', 'Mystery Cocktail'].includes(self.drink));
+  const other = openBox(g, players[0].id, [0.3, 0, 0, 0.9, 0]).mystery;
+  assert.equal(other.kind, 'other');
+  assert.equal(other.qty, 1);
+  assert.equal(other.targetTeamId, b.id);
+  const pointsA = a.points;
+  g.startDrinks();
+  const serveA = g.round.serves.find((x) => x.teamId === a.id);
+  assert.equal(serveA.drinks, 5, 'its own box lands on A');
+  finishDrinks(g);
+  assert.equal(a.points, pointsA, 'box drinks score nobody');
+});
+
+test('the night runs 4 acts of 3 rounds, games in schedule order, and stops after Act 4’s final round', () => {
+  const { g, a, b, players } = setup();
+  const games = Array.from({ length: 13 }, (_, i) => g.addGame({ name: `G${i + 1}`, playersNeeded: 0 }));
+  const labels = [];
+  for (let i = 0; i < 12; i++) {
+    const r = g.startRound(); // no game given: the next one in the schedule
+    assert.equal(r.gameId, games[i].id);
+    labels.push(r.label);
+    g.toResults();
+    g.enterResults({ placings: { [a.id]: 1, [b.id]: 2 } });
+    g.startDrinks();
+  }
+  assert.deepEqual(labels.slice(0, 4), ['Act 1 · Round 1', 'Act 1 · Round 2', 'Act 1 · Final round', 'Act 2 · Round 1']);
+  assert.equal(labels[11], 'Act 4 · Final round');
+  assert.throws(() => g.startRound(), /final round of Act 4/);
+  assert.equal(g.tvView().round.label, 'Act 4 · Final round');
+  assert.ok(g.s.feed.some((f) => /ACT 3 begins/.test(f.text)));
+  // Hosts can change the shape of the night.
+  g.updateSettings({ actsCount: 5 });
+  assert.equal(g.startRound().label, 'Act 5 · Round 1');
+});
+
+test('an old save that predates the power-ups gets them on load, and keeps them after', () => {
+  const old = structuredClone(new Game().s);
+  delete old.catalogue; // saved before the field existed
+  old.items = old.items.filter((i) => !['reflect', 'mystery', 'eyespy', 'bounty'].includes(i.type));
+  const g = new Game(old);
+  assert.deepEqual(g.s.items.filter((i) => ['mystery', 'eyespy', 'bounty'].includes(i.type)).map((i) => i.name), ['Mystery Box', 'Eye Spy', 'Open Bounty', 'Winner’s Bounty']);
+  // A save stamped with an older catalogue number but missing them (the live save) is repaired too.
+  const stamped = structuredClone(old);
+  stamped.catalogue = 3;
+  assert.equal(new Game(stamped).s.items.filter((i) => i.type === 'bounty').length, 2);
+  // And it only happens once: a host who deletes one later doesn't get it back.
+  const after = structuredClone(g.s);
+  after.items = after.items.filter((i) => i.name !== 'Eye Spy');
+  assert.equal(new Game(after).s.items.some((i) => i.name === 'Eye Spy'), false);
+});
+
+// ---------- team phones (LeParty's format) ----------
+
+function teamSetup() {
+  const g = new Game();
+  g.s.settings.phoneMode = 'team';
+  g.addGuests({ names: 'Shen\nEdwin\nJason\nMia, Priya, Tom' });
+  g.updateSettings({ maxBlockSize: 3 });
+  g.buildBlocks();
+  const [a, b] = g.s.teams;
+  a.budget = b.budget = 500;
+  return { g, a, b };
+}
+
+test('team phones: guests can’t book in; hosts add names; each block has a code and a QR token', () => {
+  const { g, a, b } = teamSetup();
+  assert.throws(() => g.join('Late'), /one phone/);
+  assert.equal(g.members(a.id).length + g.members(b.id).length, 6);
+  assert.match(a.joinCode, /^[ACDEFGHJKMNPQRTUVWXY234679]{4}$/);
+  assert.notEqual(a.joinCode, b.joinCode);
+  assert.ok(a.joinToken.length >= 12);
+  assert.equal(g.addGuests({ names: 'shen\nNora' }).added, 1); // names stay unique
+});
+
+test('claiming a block: by code or card, latest scan wins, and a reissued code signs the phone out', () => {
+  const { g, a } = teamSetup();
+  const first = g.claimBlock({ code: a.joinCode.toLowerCase() });
+  const t1 = first.token;
+  assert.equal(g.playerByToken(t1).teamId, a.id);
+  const second = g.claimBlock({ token: a.joinToken });
+  assert.equal(second.id, first.id); // same block phone…
+  assert.equal(g.playerByToken(t1), null); // …and the old device is signed out
+  assert.ok(g.playerByToken(second.token));
+  const oldCode = a.joinCode;
+  const t2 = second.token;
+  g.reissueBlockCode({ teamId: a.id, by: 'warden' });
+  assert.equal(g.playerByToken(t2), null);
+  assert.throws(() => g.claimBlock({ code: oldCode }), /No block/);
+  assert.ok(g.claimBlock({ code: a.joinCode }));
+});
+
+test('the block phone acts for the block but never plays, drinks or shows up in rosters', () => {
+  const { g, a, b } = teamSetup();
+  g.updateSettings({ spendMode: 'request' });
+  const phone = g.claimBlock({ code: a.joinCode });
+  g.claimBlock({ code: b.joinCode });
+  assert.equal(g.members(a.id).length, 3);
+  assert.ok(!g.viewFor(phone.id).players.some((p) => p.id === phone.id));
+  assert.ok(!g.tvView().players.some((p) => /phone/.test(p.name)));
+  // Picks come from the real blockmates.
+  const r = g.startRound({ gameId: g.addGame({ name: 'Flip', playersNeeded: 1 }).id });
+  assert.throws(() => g.pickPlayers(phone.id, { playerIds: [phone.id] }), /can’t play/);
+  g.pickPlayers(phone.id, { playerIds: [g.members(a.id)[0].id] });
+  assert.deepEqual(r.picks[a.id], [g.members(a.id)[0].id]);
+  // It buys straight away, even when spending is a block decision.
+  g.revealPicks();
+  g.toResults();
+  g.enterResults({ placings: { [a.id]: 1 } });
+  const spirit = g.s.items.find((i) => i.name === 'Spirit');
+  const o = g.buy(phone.id, { itemId: spirit.id, targetTeamId: b.id, qty: 2 });
+  assert.equal(o.qty, 2);
+  // A Shot Penalty on its block lands on the people, not the phone.
+  const pen = g.s.items.find((i) => i.name === 'Shot Penalty');
+  const bPhone = g.phoneOf(b.id);
+  const hit = g.buy(bPhone.id, { itemId: pen.id, targetTeamId: a.id });
+  g.respondPunishment(phone.id, { orderId: hit.id, choice: 'accept' });
+  assert.ok(g.members(a.id).every((m) => m.drinksOwed === 1));
+  assert.equal(phone.drinksOwed, 0);
+  // Removing the block removes its phone.
+  g.removeTeam({ teamId: a.id });
+  assert.equal(g.playerByToken(phone.token), null);
+});
+
+test('PHONE_MODE picks the default for a new night; hosts can switch it', () => {
+  const g = new Game();
+  assert.equal(g.s.settings.phoneMode, 'guest'); // this test file runs with PHONE_MODE=guest
+  g.updateSettings({ phoneMode: 'team' });
+  assert.throws(() => g.join('Shen'), /one phone/);
+  assert.throws(() => g.updateSettings({ phoneMode: 'nope' }), /Unknown/);
+});
+
+test('block codes reach hosts only, never phones or the TV', () => {
+  const { g, a } = teamSetup();
+  const phone = g.claimBlock({ code: a.joinCode });
+  assert.equal(g.adminView().teams[0].joinCode, a.joinCode);
+  assert.equal(g.viewFor(phone.id).teams[0].joinCode, undefined);
+  assert.equal(g.tvView().teams[0].joinToken, undefined);
+});
+
+// ---------- LeParty sync ----------
+
+const roster = (blocks, guests) => ({ event: { id: 'ev1', name: 'November lockup' }, blocks, guests });
+const LB = [{ id: 'b1', name: 'Cellblock A', colour: '#c9402f' }, { id: 'b2', name: 'Cellblock B', colour: '#24477e' }];
+
+test('LeParty import: blocks and checked-in guests arrive on their blocks; syncing again changes nothing', () => {
+  const g = new Game();
+  g.s.settings.phoneMode = 'team';
+  const guests = [
+    { id: 'p1', name: 'Shen', blockId: 'b1' },
+    { id: 'p2', name: 'Edwin', blockId: 'b1' },
+    { id: 'p3', name: 'Jason', blockId: 'b2' },
+    { id: 'p4', name: 'Mia', blockId: null }, // checked in before the draw
+  ];
+  const first = g.applyRoster(roster(LB, guests));
+  assert.equal(first.changed, true);
+  const [a, b] = g.s.teams;
+  assert.deepEqual([a.name, a.color, a.lepartyId, b.name], ['Cellblock A', '#c9402f', 'b1', 'Cellblock B']);
+  assert.deepEqual(g.members(a.id).map((p) => p.name).sort(), ['Edwin', 'Shen']);
+  assert.equal(g.status(g.s.players.find((p) => p.name === 'Mia')), 'holding');
+  assert.ok(a.joinCode); // block cards work as usual
+  assert.equal(g.s.leparty.eventName, 'November lockup');
+  assert.ok(g.s.feed.some((f) => /Imported from LeParty: 4 guests on 2 blocks/.test(f.text)));
+  assert.equal(g.applyRoster(roster(LB, guests)).changed, false);
+  assert.equal(g.s.players.length, 4);
+  assert.equal(g.s.teams.length, 2);
+});
+
+test('LeParty sync: late check-ins follow LeParty’s block, even past the size limit; moves follow; leavers are only flagged', () => {
+  const g = new Game();
+  g.s.settings.phoneMode = 'team';
+  g.updateSettings({ maxBlockSize: 2 });
+  g.applyRoster(roster(LB, [{ id: 'p1', name: 'Shen', blockId: 'b1' }, { id: 'p2', name: 'Edwin', blockId: 'b1' }, { id: 'p3', name: 'Jason', blockId: 'b2' }]));
+  const [a, b] = g.s.teams;
+  a.points = 9;
+  const r = g.applyRoster(roster(LB, [
+    { id: 'p1', name: 'Shen', blockId: 'b1' },
+    { id: 'p2', name: 'Edwin', blockId: 'b2' }, // moved by the host in LeParty
+    { id: 'p4', name: 'Nora', blockId: 'b1' }, // late check-in, lightest block per LeParty
+    { id: 'p5', name: 'Kai', blockId: 'b1' }, // over the size limit: LeParty still wins
+  ]));
+  assert.deepEqual(r.changes.sort(), ['Edwin moved: Cellblock A → Cellblock B', 'Jason is no longer checked in on LeParty', 'Late check-in: Kai → Cellblock A', 'Late check-in: Nora → Cellblock A'].sort());
+  assert.deepEqual(g.members(a.id).map((p) => p.name).sort(), ['Kai', 'Nora', 'Shen']);
+  assert.equal(a.points, 9); // points stay with the block
+  const jason = g.s.players.find((p) => p.name === 'Jason');
+  assert.equal(jason.teamId, b.id); // not removed mid-game…
+  assert.equal(g.adminView().players.find((p) => p.name === 'Jason').lepartyGone, true); // …just flagged
+  assert.ok(g.s.feed.some((f) => /Late check-in: Nora → Cellblock A/.test(f.text)));
+  // A guest the hosts already added by hand is linked by name, not duplicated.
+  const g2 = new Game();
+  g2.s.settings.phoneMode = 'team';
+  g2.addGuests({ names: 'Shen' });
+  g2.applyRoster(roster(LB, [{ id: 'p1', name: 'shen', blockId: 'b1' }]));
+  assert.equal(g2.s.players.length, 1);
+  assert.equal(g2.s.players[0].lepartyId, 'p1');
+});
+
+test('blocks hold up to 10 by default, and saves on the old default of 5 move up', () => {
+  assert.equal(new Game().s.settings.maxBlockSize, 10);
+  const old = structuredClone(new Game().s);
+  old.settings.maxBlockSize = 5;
+  delete old.settings.blockSize10;
+  assert.equal(new Game(old).s.settings.maxBlockSize, 10);
+  const custom = structuredClone(old);
+  custom.settings.maxBlockSize = 7;
+  assert.equal(new Game(custom).s.settings.maxBlockSize, 7);
+});
+
+// ---------- app-run games ----------
+
+function appSetup(blocks = 4) {
+  const g = new Game();
+  g.s.settings.phoneMode = 'team';
+  g.addGuests({ names: Array.from({ length: blocks * 2 }, (_, i) => `G${i}`).join('\n') });
+  g.updateSettings({ maxBlockSize: 2 });
+  g.buildBlocks();
+  const teams = g.s.teams;
+  const phones = teams.map((t) => g.claimBlock({ code: t.joinCode }));
+  return { g, teams, phones };
+}
+
+test('Cold War: secret picks, revealed together; the two lowest drink theirs plus the two highest’s; places by number', () => {
+  const { g, teams, phones } = appSetup(5);
+  const game = g.addGame({ name: 'Cold War drinking', runBy: 'coldwar' });
+  assert.equal(game.playersNeeded, 0);
+  const r = g.startRound({ gameId: game.id });
+  assert.equal(r.play.kind, 'coldwar');
+  assert.throws(() => g.playAnswer(phones[0].id, { value: 16 }), /between 1 and 15/);
+  const picks = [15, 3, 9, 1, 12]; // A B C D E
+  picks.slice(0, 4).forEach((n, i) => g.playAnswer(phones[i].id, { value: n }));
+  // Others can't see the numbers before the reveal; your own block can.
+  assert.deepEqual(g.viewFor(phones[1].id).round.play.bids[teams[0].id], { locked: true });
+  assert.equal(g.viewFor(phones[0].id).round.play.bids[teams[0].id].n, 15);
+  g.playAnswer(phones[4].id, { value: 12 }); // the last block locks in: revealed at once
+  const pl = r.play;
+  assert.equal(pl.revealed, true);
+  // Order: A15, E12, C9, B3, D1. D (lowest) takes A's 15, B (second lowest) takes E's 12.
+  assert.deepEqual(pl.drinks, { [teams[0].id]: 0, [teams[4].id]: 0, [teams[2].id]: 9, [teams[1].id]: 3 + 12, [teams[3].id]: 1 + 15 });
+  const shots = g.s.orders.filter((o) => o.origin === 'game');
+  assert.deepEqual(shots.map((o) => [o.targetTeamId, o.qty]).sort(), [[teams[1].id, 15], [teams[2].id, 9], [teams[3].id, 16]].sort());
+  g.playFinish();
+  assert.equal(r.phase, 'results', 'the host confirms the rewards');
+  g.enterResults({ placings: r.proposed });
+  assert.equal(r.phase, 'spending');
+  assert.deepEqual(r.placings, { [teams[0].id]: 1, [teams[4].id]: 2, [teams[2].id]: 3, [teams[1].id]: 4, [teams[3].id]: 5 });
+  assert.equal(r.winnerTeamId, teams[0].id);
+  g.startDrinks(); // the Cold War shots are in the bar queue
+  assert.equal(g.round.serves.find((s) => s.teamId === teams[3].id).drinks, 16);
+});
+
+test('Cold War: blocks that don’t pick in time count as 1; two blocks means lowest takes the highest’s', () => {
+  const { g, teams, phones } = appSetup(2);
+  const r = g.startRound({ gameId: g.addGame({ name: 'CW', runBy: 'coldwar' }).id });
+  g.playAnswer(phones[0].id, { value: 6 });
+  r.play.deadline = Date.now() - 1;
+  g.tick();
+  assert.equal(r.play.bids[teams[1].id].auto, true);
+  assert.deepEqual(r.play.drinks, { [teams[0].id]: 0, [teams[1].id]: 1 + 6 });
+});
+
+test('Trivia: questions from the Games tab, answered on the phones, scored and placed by score then speed', () => {
+  const { g, teams, phones } = appSetup(3);
+  assert.throws(() => g.addGame({ name: 'Bad', runBy: 'trivia', questions: 'Just a question' }), /Trivia line 1/);
+  const game = g.addGame({ name: 'Trivia', runBy: 'trivia', questions: 'Capital of France? | Paris | Rome | Oslo | A\n2 + 2? | 3 | 4 | 2\nBiggest planet? | Mars | Jupiter | Venus | Earth | Jupiter' });
+  assert.deepEqual(game.questions.map((q) => q.answer), [0, 1, 1]);
+  const r = g.startRound({ gameId: game.id });
+  assert.throws(() => g.playAnswer(phones[0].id, { value: 0 }), /No question/);
+  g.playNext();
+  assert.equal(g.viewFor(phones[0].id).round.play.question.answer, null); // hidden while asking
+  g.playAnswer(phones[0].id, { value: 0 }); // A right
+  assert.throws(() => g.playAnswer(phones[0].id, { value: 1 }), /already answered/);
+  g.playAnswer(phones[1].id, { value: 2 }); // B wrong
+  g.playAnswer(phones[2].id, { value: 0 }); // C right; everyone in: revealed
+  assert.equal(r.play.state, 'revealed');
+  assert.equal(g.tvView().round.play.question.answer, 0);
+  g.playNext();
+  g.playAnswer(phones[1].id, { value: 1 }); // B right
+  r.play.deadline = Date.now() - 1; // time runs out for the others
+  g.tick();
+  g.playNext();
+  g.playAnswer(phones[2].id, { value: 1 }); // C right
+  assert.throws(() => g.playNext(), /Reveal this question/);
+  g.playFinish();
+  g.enterResults({ placings: r.proposed });
+  // C has 2 right answers, A and B one each.
+  assert.equal(r.placings[teams[2].id], 1);
+  assert.deepEqual([r.play.scores[teams[0].id], r.play.scores[teams[1].id], r.play.scores[teams[2].id]], [1, 1, 2]);
+  assert.equal(r.phase, 'spending');
+});
+
+test('Is Jason lying?: phones vote Truth or Lie, the host says which it was, right blocks score', () => {
+  const { g, teams, phones } = appSetup(3);
+  const r = g.startRound({ gameId: g.addGame({ name: 'Is Jason lying?', runBy: 'lying', stories: 2 }).id });
+  g.playNext();
+  g.playAnswer(phones[0].id, { value: 'lie' });
+  g.playAnswer(phones[1].id, { value: 'truth' });
+  assert.deepEqual(g.viewFor(phones[2].id).round.play.votes, {}); // others' votes are hidden
+  assert.throws(() => g.playNext(), /Say whether/);
+  assert.throws(() => g.playReveal({}), /truth or a lie/);
+  g.playReveal({ truth: 'lie' });
+  assert.equal(r.play.scores[teams[0].id], 1);
+  g.playNext();
+  g.playAnswer(phones[2].id, { value: 'truth' });
+  r.play.deadline = Date.now() - 1;
+  g.tick(); // voting closes; still waiting on the host
+  assert.equal(r.play.state, 'closed');
+  g.playReveal({ truth: 'truth' });
+  assert.throws(() => g.playNext(), /last story/);
+  g.playFinish();
+  assert.equal(Object.keys(r.proposed).length, 3);
+  g.enterResults({ placings: r.proposed });
+  assert.equal(r.phase, 'spending');
+  assert.equal(Object.keys(r.placings).length, 3);
+});
+
+test('an app-run game can still be finished by hand', () => {
+  const { g, teams } = appSetup(2);
+  const r = g.startRound({ gameId: g.addGame({ name: 'Trivia', runBy: 'trivia', questions: 'Q? | a | b | A' }).id });
+  g.toResults();
+  g.enterResults({ placings: { [teams[1].id]: 1, [teams[0].id]: 2 } });
+  assert.equal(r.winnerTeamId, teams[1].id);
+});
+
+// ---------- the night's setup and act mechanics ----------
+
+test('setup: name each act, choose a game for every round, confirm; rounds then follow the sequence', () => {
+  const g = new Game();
+  g.updateSettings({ actsCount: 2, roundsPerAct: 2 });
+  assert.equal(g.s.night.status, 'draft');
+  assert.deepEqual(g.s.night.acts.map((a) => [a.name, a.rounds.length]), [['Act 1', 2], ['Act 2', 2]]);
+  const [cup, quiz, chess, dance] = ['Flip cup', 'Trivia', 'Chess', 'Dance'].map((name) => g.addGame({ name, playersNeeded: 0 }));
+  g.renameAct({ act: 1, name: 'Booking Day' });
+  g.setSlot({ act: 1, slot: 1, gameId: chess.id });
+  g.setSlot({ act: 1, slot: 2, gameId: cup.id });
+  g.setSlot({ act: 2, slot: 1, gameId: dance.id });
+  assert.throws(() => g.confirmNight({}), /1 round still empty/);
+  g.setSlot({ act: 2, slot: 2, gameId: quiz.id });
+  g.confirmNight({});
+  assert.equal(g.s.night.status, 'live');
+  assert.deepEqual(g.s.games.map((x) => x.name), ['Chess', 'Flip cup', 'Dance', 'Trivia']);
+  // Rounds follow the sequence, labelled by the act's name.
+  const p = g.join('Shen');
+  g.seedTeams({ count: 1 });
+  g.updatePlayer({ playerId: p.id, teamId: g.s.teams[0].id });
+  const r1 = g.startRound();
+  assert.deepEqual([r1.gameName, r1.label], ['Chess', 'Booking Day · Round 1']);
+  assert.throws(() => g.setSlot({ act: 1, slot: 1, gameId: cup.id }), /already been played/);
+  g.toResults();
+  g.enterResults({ placings: { [g.s.teams[0].id]: 1 } });
+  g.startDrinks();
+  assert.deepEqual([g.startRound().gameName, g.round.label], ['Flip cup', 'Booking Day · Final round']);
+  // Growing the night keeps what's set; shrinking trims.
+  g.updateSettings({ actsCount: 3 });
+  assert.equal(g.s.night.acts[0].name, 'Booking Day');
+  assert.equal(g.s.night.acts[2].rounds.length, 2);
+});
+
+test('act mechanics: hooks run only in the acts that switch them on', () => {
+  const { registerMechanic } = require('../lib/game');
+  const seen = [];
+  registerMechanic('happyhour', {
+    name: 'Happy hour',
+    desc: 'Half-price drinks, double points.',
+    actStart: (game, act) => seen.push(`start ${act.name}`),
+    roundStart: (game, r) => seen.push(`round ${r.number}`),
+    results: (game, r) => seen.push(`results ${r.number}`),
+    drinksStart: (game, r) => seen.push(`drinks ${r.number}`),
+    price: (game, team, item, price) => (item.type === 'drink' ? Math.ceil(price / 2) : price),
+    points: (game, order, points) => points * 2,
+  });
+  const { g, a, b, players } = setup();
+  a.budget = b.budget = 1000;
+  g.updateSettings({ actsCount: 2, roundsPerAct: 1 });
+  assert.throws(() => g.setActMechanics({ act: 1, mechanics: ['nope'] }), /Unknown mechanic/);
+  g.setActMechanics({ act: 2, mechanics: ['happyhour'] });
+  g.renameAct({ act: 2, name: 'Happy Hour' });
+  const spirit = itemOf(g, 'drink', (i) => i.name === 'Spirit');
+  // Act 1: no mechanics.
+  playRound(g, a, b, players);
+  const before = a.budget;
+  g.buy(players[0].id, { itemId: spirit.id, targetTeamId: b.id, qty: 1 });
+  assert.equal(before - a.budget, 15);
+  g.startDrinks();
+  finishDrinks(g);
+  assert.equal(a.points, 3);
+  assert.deepEqual(seen, []);
+  // Act 2: Happy hour.
+  playRound(g, a, b, players);
+  const before2 = a.budget;
+  g.buy(players[0].id, { itemId: spirit.id, targetTeamId: b.id, qty: 1 });
+  assert.equal(before2 - a.budget, 8);
+  g.startDrinks();
+  finishDrinks(g);
+  assert.equal(a.points, 3 + 6);
+  assert.deepEqual(seen, ['start Happy Hour', 'round 2', 'results 2', 'drinks 2']);
+  assert.deepEqual(g.tvView().round.actMechanics, ['Happy hour']);
+  assert.equal(g.tvView().mechanicsCatalog.happyhour.name, 'Happy hour');
+});
+
+test('deleting a game from the library empties the rounds that used it', () => {
+  const g = new Game();
+  g.updateSettings({ actsCount: 1, roundsPerAct: 2 });
+  const quiz = g.addGame({ name: 'Trivia', playersNeeded: 0 });
+  g.setSlot({ act: 1, slot: 1, gameId: quiz.id });
+  g.setSlot({ act: 1, slot: 2, gameId: quiz.id });
+  g.removeGame({ gameId: quiz.id });
+  assert.deepEqual(g.s.night.acts[0].rounds, [null, null]);
+});
+
+test('the night ends itself: when the last act’s final round finishes, most points wins', () => {
+  const { g, a, b, players } = setup();
+  g.updateSettings({ actsCount: 1, roundsPerAct: 2 });
+  playRound(g, a, b, players);
+  g.startDrinks();
+  assert.equal(g.s.winner, null); // not after the first round
+  playRound(g, a, b, players);
+  b.points = 12;
+  a.points = 7;
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 1 });
+  g.startDrinks();
+  g.barNext();
+  assert.equal(g.s.winner, null); // the bar's still going
+  g.barDone({ teamId: b.id });
+  assert.equal(g.s.winner.teamId, b.id); // B 12 beats A 7 + 3
+  assert.equal(g.tvView().winner.teamId, b.id);
+});
+
+test('the party’s games load into the library once, with how each is run', () => {
+  const g = new Game();
+  g.addGame({ name: 'Flip cup', playersNeeded: 0 });
+  assert.equal(g.loadStarterGames().added, 15);
+  assert.equal(g.loadStarterGames().added, 0);
+  const by = Object.fromEntries(g.s.games.map((x) => [x.name, [x.runBy, x.playersNeeded]]));
+  assert.deepEqual(by['Is Jason lying?'], ['host', 1]);
+  assert.deepEqual(by['Flip 7'], ['host', 1]);
+  assert.deepEqual(by['Anime opening guessing'], ['anime', 0]);
+  assert.deepEqual(by['Cold War drinking'], ['coldwar', 0]);
+  assert.deepEqual(by.Trivia, ['trivia', 0]);
+  assert.deepEqual(by['Prisoner’s Dilemma'], ['dilemma', 0]);
+  assert.deepEqual(by['Two-Thirds of the Average'], ['twothirds', 0]);
+  assert.equal(g.s.games.find((x) => x.runBy === 'dilemma').stories, 3, 'three turns by default');
+  assert.equal(g.s.games.length, 16);
+});
+
+test('Anime openings: blocks type the anime; only the first right answer scores; typos and alternate names count', () => {
+  const { g, teams, phones } = appSetup(3);
+  const game = g.addGame({ name: 'Anime opening guessing', runBy: 'anime', openings: 'Opening 1 | Attack on Titan | Shingeki no Kyojin | AoT\nOpening 2 | Naruto\nOpening 3 | My Hero Academia' });
+  assert.equal(game.openings.length, 3);
+  const r = g.startRound({ gameId: game.id });
+  assert.throws(() => g.playAnswer(phones[0].id, { value: 'Naruto' }), /No opening/);
+  g.playNext();
+  assert.equal(g.viewFor(phones[0].id).round.play.answer, null); // hidden while it plays
+  assert.deepEqual(g.playAnswer(phones[0].id, { value: 'Bleach' }), { correct: false });
+  assert.deepEqual(g.playAnswer(phones[0].id, { value: 'Bleach' }), { correct: false }); // guess again as often as you like
+  assert.deepEqual(g.playAnswer(phones[1].id, { value: 'attack on titen!' }), { correct: true }); // one typo forgiven
+  assert.equal(r.play.state, 'won');
+  assert.throws(() => g.playAnswer(phones[2].id, { value: 'AoT' }), /No opening/); // closed for everyone
+  assert.equal(g.tvView().round.play.answer, 'Attack on Titan');
+  g.playNext();
+  g.playAnswer(phones[2].id, { value: 'NARUTO' });
+  g.playNext();
+  r.play.deadline = Date.now() - 1; // nobody gets opening 3
+  g.tick();
+  assert.equal(r.play.state, 'missed');
+  g.playFinish();
+  g.enterResults({ placings: r.proposed });
+  assert.equal(r.phase, 'spending');
+  assert.deepEqual([r.play.scores[teams[1].id], r.play.scores[teams[2].id], r.play.scores[teams[0].id] || 0], [1, 1, 0]);
+  assert.equal(r.placings[teams[0].id], 3);
+});
+
+test('Anime openings: hosts can give a near-miss to a block, or call nobody', () => {
+  const { g, teams } = appSetup(2);
+  const r = g.startRound({ gameId: g.addGame({ name: 'Anime', runBy: 'anime', openings: 'O1 | Spy x Family\nO2 | Bleach' }).id });
+  assert.throws(() => g.addGame({ name: 'Bad', runBy: 'anime', openings: 'Just a label' }), /Opening line 1/);
+  g.playNext();
+  g.playReveal({ teamId: teams[1].id });
+  assert.equal(r.play.winners[0], teams[1].id);
+  g.playNext();
+  g.playReveal({});
+  assert.equal(r.play.state, 'missed');
+});
+
+test('an old library with the multiple-choice anime game moves to typed answers', () => {
+  const g = new Game();
+  g.addGame({ name: 'Anime opening guessing', runBy: 'trivia', playersNeeded: 0 });
+  assert.equal(new Game(structuredClone(g.s)).s.games[0].runBy, 'anime');
+});
+
+test('ranking and reward are separate: a winner can be awarded less, and an app game waits for the host', () => {
+  const { g, teams } = appSetup(3);
+  const [a, b, c] = teams;
+  g.startRound({ gameId: g.addGame({ name: 'Beer pong', playersNeeded: 0 }).id });
+  const r = g.round;
+  g.toResults();
+  const before = [a.budget, b.budget, c.budget];
+  g.enterResults({ placings: { [a.id]: 1, [b.id]: 2, [c.id]: 3 }, rewards: { [a.id]: 30, [b.id]: '' } });
+  assert.equal(r.winnerTeamId, a.id, 'still the winner');
+  assert.equal(r.prizes[a.id], 30, 'awarded less than 1st place’s 90');
+  assert.equal(r.prizes[b.id], g.s.settings.prizeMoney[1], 'blank reward = the place’s prize');
+  assert.equal(r.prizes[c.id], g.s.settings.prizeMoney[2]);
+  assert.deepEqual([a.budget - before[0], b.budget - before[1]], [30, g.s.settings.prizeMoney[1]]);
+  assert.equal(g.adminView().round.proposed, null);
+});
+
+test('rewards can be zero, and are capped', () => {
+  const { g, teams } = appSetup(2);
+  g.startRound({ gameId: g.addGame({ name: 'Beer pong', playersNeeded: 0 }).id });
+  g.toResults();
+  g.enterResults({ placings: { [teams[0].id]: 1, [teams[1].id]: 2 }, rewards: { [teams[0].id]: 0, [teams[1].id]: 99999 } });
+  assert.equal(g.round.prizes[teams[0].id], 0);
+  assert.equal(g.round.prizes[teams[1].id], 1000);
+});
+
+test('the hosts see standard drinks sent against the night’s target', () => {
+  const { g, a, b, players } = setup();
+  a.budget = 1000;
+  playRound(g, a, b, players);
+  const wine = g.s.items.find((i) => i.name === 'Wine');
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 5 });
+  g.buy(players[0].id, { itemId: wine.id, targetTeamId: b.id, qty: 2 });
+  const v = g.adminView();
+  assert.equal(v.standards.sent, 5 + 3);
+  assert.equal(v.standards.target, 400);
+});
+
+test('an act’s final round publishes the standings', () => {
+  const { g, a, b, players } = setup();
+  g.updateSettings({ actsCount: 2, roundsPerAct: 1 });
+  a.budget = 1000;
+  playRound(g, a, b, players);
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 2 });
+  assert.equal(g.tvView().teams.find((t) => t.id === a.id).points, 0);
+  g.startDrinks();
+  finishDrinks(g);
+  assert.equal(g.round.final, true);
+  assert.equal(g.tvView().teams.find((t) => t.id === a.id).points, a.points);
+  assert.ok(a.points > 0);
+});
+
+test('a Burner Phone hides a block’s sends from when it’s bought to the end of the round, from the TV, the feed, the blocks it hits and Eye Spy', () => {
+  const { g, a, b, players } = setup();
+  a.budget = b.budget = 1000;
+  const burner = itemOf(g, 'ghost');
+  assert.throws(() => g.buy(players[0].id, { itemId: burner.id }), /while a round is on/);
+  playRound(g, a, b, players);
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 2 }); // sent before buying: stays named
+  assert.match(g.s.feed[0].text, new RegExp(`^${a.name} sent`));
+  const cash = a.budget;
+  g.buy(players[0].id, { itemId: burner.id });
+  assert.equal(cash - a.budget, burner.price);
+  assert.throws(() => g.buy(players[0].id, { itemId: burner.id }), /already anonymous/);
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 3 });
+  assert.match(g.s.feed[0].text, /^🕶️ Anonymous sent/);
+  assert.ok(!g.s.feed.slice(0, 2).some((f) => f.text.includes(a.name)), 'neither the buy nor the send names A');
+  const seenByB = g.viewFor(players[1].id).orders.filter((o) => o.type === 'drink');
+  assert.equal(seenByB.filter((o) => o.fromTeamId === null && o.buyerName === '🕶️ Anonymous').length, 1);
+  assert.equal(seenByB.filter((o) => o.fromTeamId === a.id).length, 1, 'the one sent before stays named');
+  assert.ok(g.viewFor(players[0].id).orders.filter((o) => o.type === 'drink').every((o) => o.fromTeamId === a.id), 'A still sees its own');
+  assert.ok(g.adminView().orders.filter((o) => o.type === 'drink').every((o) => o.fromTeamId === a.id), 'hosts still know');
+  g.startDrinks();
+  g.barNext();
+  const bd = g.adminView().round.serves.find((s) => s.teamId === b.id).breakdown;
+  assert.ok(bd.some((x) => x.from === '🕶️ Anonymous'), 'the bar’s Show senders list too');
+  finishDrinks(g);
+  assert.equal(a.points, 15, 'anonymous drinks still score (2 + 3 Spirits)');
+  // Next round A is visible again.
+  playRound(g, a, b, players);
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 1 });
+  assert.match(g.s.feed[0].text, new RegExp(`^${a.name} sent`));
+  // Eye Spy shows anonymous rows to other blocks.
+  b.eyeSpyAt = Date.now();
+  const rows = g.eyeSpyTable(b).rows;
+  assert.ok(rows.some((r) => r.from === 'anonymous'));
+  assert.ok(rows.some((r) => r.from === a.id));
+});
+
+test('the shop has a 90-second clock: when it runs out the shop closes and drinks start; hosts can add time', () => {
+  const { g, a, b, players } = setup();
+  a.budget = 1000;
+  const r = playRound(g, a, b, players);
+  assert.equal(r.phase, 'spending');
+  assert.ok(Math.abs(r.shopDeadline - (Date.now() + 90000)) < 2000);
+  assert.equal(g.nextDeadline(), r.shopDeadline);
+  g.extendShop({ seconds: 30 });
+  assert.ok(Math.abs(r.shopDeadline - (Date.now() + 120000)) < 2000);
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 2 });
+  assert.equal(g.tick(r.shopDeadline - 1), false, 'not yet');
+  assert.equal(g.tick(r.shopDeadline + 1), true);
+  assert.equal(r.phase, 'drinks');
+  assert.equal(g.s.settings.shopOpen, false);
+  assert.throws(() => g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id }), /closed/i);
+  g.updateSettings({ shopSeconds: 0 });
+  finishDrinks(g);
+  const r2 = playRound(g, a, b, players);
+  assert.equal(r2.shopDeadline, null, '0 = no clock');
+});
+
+test('supplies and the stash are off the shelf on a new night and on older saves; No Chasers is on it', () => {
+  const g = new Game();
+  const shelf = (game) => game.s.items.filter((i) => i.active).map((i) => i.type);
+  for (const t of ['supply', 'deflect', 'bail', 'warp']) assert.ok(!shelf(g).includes(t), `${t} hidden`);
+  assert.ok(shelf(g).includes('nochaser'));
+  const old = structuredClone(g.s);
+  old.economy = 3;
+  old.items = old.items.filter((i) => i.type !== 'nochaser').map((i) => ({ ...i, active: true }));
+  const moved = new Game(old);
+  for (const t of ['supply', 'deflect', 'bail', 'warp']) assert.ok(!shelf(moved).includes(t));
+  assert.ok(shelf(moved).includes('nochaser'));
+});
+
+test('No Chasers: everything the block sends this round is poured neat, including drinks already sent', () => {
+  const { g, a, b, players } = setup();
+  a.budget = 1000;
+  const nc = itemOf(g, 'nochaser');
+  assert.throws(() => g.buy(players[0].id, { itemId: nc.id }), /while a round is on/);
+  playRound(g, a, b, players);
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 2 }); // before buying: covered too
+  g.buy(players[0].id, { itemId: nc.id });
+  assert.throws(() => g.buy(players[0].id, { itemId: nc.id }), /already has No Chasers/);
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 3 });
+  g.buy(players[1].id, { itemId: spirit(g).id, targetTeamId: a.id, qty: 1 }); // B's own sends aren't affected
+  assert.match(g.s.feed[2].text, /No Chasers/);
+  g.startDrinks();
+  const serveB = g.tvView().round.serves.find((x) => x.teamId === b.id);
+  assert.equal(serveB.neat, 5, 'all 5 of A’s drinks are neat, and everyone can see it');
+  assert.equal(g.tvView().round.serves.find((x) => x.teamId === a.id).neat, 0);
+  g.barNext();
+  g.barNext();
+  const bd = g.adminView().round.serves.find((x) => x.teamId === b.id).breakdown;
+  assert.ok(bd.every((x) => x.noChaser));
+  finishDrinks(g);
+  playRound(g, a, b, players); // next round: back to normal
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 1 });
+  assert.equal(g.s.orders.find((o) => o.type === 'drink').noChaser, undefined);
+});
+
+test('an older save’s Soju becomes Soju Shot, with a separate Soju Bottle', () => {
+  const g = new Game();
+  const old = structuredClone(g.s);
+  old.economy = 4;
+  old.items = old.items.filter((i) => i.name !== 'Soju Bottle');
+  const shot = old.items.find((i) => i.name === 'Soju Shot');
+  Object.assign(shot, { name: 'Soju', bundles: [{ qty: 8, cost: 42, points: 9, label: 'Bottle' }] });
+  const moved = new Game(old);
+  const names = moved.s.items.filter((i) => i.type === 'drink').map((i) => i.name);
+  assert.deepEqual(names.slice(2, 4), ['Soju Shot', 'Soju Bottle']);
+  assert.deepEqual(moved.s.items.find((i) => i.name === 'Soju Shot').bundles, []);
+  assert.equal(moved.s.items.find((i) => i.name === 'Soju Bottle').price, 42);
+});
+
+test('a Mystery Box can hit the rare $80 Jackpot, or a Pickpocket that takes half the cash of a block you pick', () => {
+  const { g, a, b, players } = setup();
+  g.updateSettings({ roundsPerAct: 1 }); // round 2 is Act 2, when the Mystery Box opens
+  a.budget = 1000;
+  playRound(g, a, b, players);
+  g.startDrinks();
+  finishDrinks(g);
+  playRound(g, a, b, players); // round 2
+  // shares with Reflect available (9): reflect ×2, drinks ×4, jackpot, pickpocket ×2
+  let cash = a.budget;
+  const jp = openBox(g, players[0].id, [0.7]).mystery;
+  assert.equal(jp.kind, 'jackpot');
+  assert.equal(a.budget - cash, 80 - 30, 'pays $80 on a $30 box');
+  assert.match(g.s.feed[0].text, /JACKPOT/);
+  // Pickpocket: rolled now, used whenever the block picks a target.
+  const pp = openBox(g, players[0].id, [0.9]).mystery;
+  assert.equal(pp.kind, 'pickpocket');
+  assert.equal(a.pickpockets, 1);
+  assert.equal(g.viewFor(players[0].id).teams.find((t) => t.id === a.id).pickpockets, 1);
+  assert.equal(g.viewFor(players[1].id).teams.find((t) => t.id === a.id).pickpockets, null, 'other blocks can’t see it');
+  assert.throws(() => g.pickpocket(players[1].id, { targetTeamId: a.id }), /no Pickpocket/);
+  assert.throws(() => g.pickpocket(players[0].id, { targetTeamId: a.id }), /someone else/);
+  b.budget = 81;
+  cash = a.budget;
+  const got = g.pickpocket(players[0].id, { targetTeamId: b.id });
+  assert.equal(got.amount, 40, 'half of $81, rounded down');
+  assert.equal(b.budget, 41);
+  assert.equal(a.budget - cash, 40);
+  assert.equal(a.pickpockets, 0);
+  assert.throws(() => g.pickpocket(players[0].id, { targetTeamId: b.id }), /no Pickpocket/, 'one use each');
+  const flash = g.tvView().flash;
+  assert.equal(flash.kind, 'pickpocket');
+  assert.equal(flash.text, `${a.name} stole $40 from ${b.name}`, 'everyone gets told who robbed whom');
+  assert.equal(g.viewFor(players[1].id).flash.toTeamId, b.id);
+  // A broke block can't be picked; with nobody to rob the box pays the Jackpot instead.
+  openBox(g, players[0].id, [0.9]);
+  b.budget = 1;
+  assert.throws(() => g.pickpocket(players[0].id, { targetTeamId: b.id }), /broke/);
+  b.budget = 0;
+  assert.equal(openBox(g, players[0].id, [0.9]).mystery.kind, 'jackpot');
+});
+
+test('Pickpocket comes up more for a block in the bottom half of the standings', () => {
+  const { g, a, b, players } = setup();
+  g.updateSettings({ roundsPerAct: 1 }); // round 2 is Act 2, when the Mystery Box opens
+  a.budget = b.budget = 1000;
+  playRound(g, a, b, players);
+  g.startDrinks();
+  finishDrinks(g);
+  playRound(g, a, b, players); // round 2
+  a.points = 50;
+  b.points = 0;
+  // Same roll, different odds: the leader has 9 shares, so 0.75 lands on index 6 (Jackpot);
+  // the trailing block has 11 (2 extra Pickpockets), so it lands on index 8 (Pickpocket).
+  assert.equal(openBox(g, players[0].id, [0.75]).mystery.kind, 'jackpot');
+  assert.equal(openBox(g, players[1].id, [0.75, 0]).mystery.kind, 'pickpocket');
+});
+
+test('Two-Thirds of the Average: closest to ⅔ of the average wins; ties to the first to lock in; no-shows last; the furthest drinks', () => {
+  const { g, teams, phones } = appSetup(5);
+  const game = g.addGame({ name: 'Two-Thirds', runBy: 'twothirds' });
+  g.startRound({ gameId: game.id });
+  const r = g.round;
+  const [A, Bt, C, D, E] = teams;
+  const pick = (i, n) => g.playAnswer(phones[i].id, { value: n });
+  assert.throws(() => pick(0, 101), /0 to 100/);
+  assert.throws(() => pick(0, 2.5), /whole number/);
+  pick(0, 50);
+  assert.throws(() => pick(0, 20), /already locked/);
+  assert.deepEqual(g.viewFor(phones[1].id).round.play.picks[A.id], { locked: true }, 'picks stay secret');
+  pick(1, 30);
+  pick(2, 20);
+  pick(3, 100);
+  // E never picks: the clock runs out
+  g.tick(r.play.deadline + 1);
+  const pl = r.play;
+  assert.equal(pl.revealed, true);
+  assert.equal(pl.average, 50, 'the average counts only the blocks that picked');
+  assert.equal(pl.target, 33.3);
+  assert.deepEqual(pl.order, [Bt.id, C.id, A.id, D.id, E.id]);
+  assert.equal(pl.drinks[D.id], 7, '100 is 66.7 off: 7 shots');
+  assert.equal(pl.drinks[E.id], 1, 'didn’t pick: 1 shot');
+  g.playFinish();
+  assert.equal(r.phase, 'results');
+  assert.deepEqual(r.proposed, { [Bt.id]: 1, [C.id]: 2, [A.id]: 3, [D.id]: 4, [E.id]: 5 });
+  g.enterResults({ placings: r.proposed });
+  g.startDrinks();
+  assert.equal(g.round.serves.find((s) => s.teamId === D.id).drinks, 7);
+});
+
+test('Two-Thirds: a tie goes to the block that locked in first', () => {
+  const { g, teams, phones } = appSetup(3);
+  g.startRound({ gameId: g.addGame({ name: 'Two-Thirds', runBy: 'twothirds' }).id });
+  g.playAnswer(phones[2].id, { value: 10 });
+  g.round.play.picks[teams[2].id].at -= 1000; // locked in a second earlier
+  g.playAnswer(phones[0].id, { value: 10 });
+  g.playAnswer(phones[1].id, { value: 40 }); // all in: reveals. avg 20 → target 13.3
+  assert.deepEqual(g.round.play.order, [teams[2].id, teams[0].id, teams[1].id]);
+});
+
+test('Prisoner’s Dilemma: fixed pairs, secret picks, the payoff table, no-shows stay silent, and the ranking', () => {
+  const { g, teams, phones } = appSetup(4);
+  const game = g.addGame({ name: 'PD', runBy: 'dilemma', stories: 2 });
+  g.startRound({ gameId: game.id });
+  const r = g.round;
+  const pl = r.play;
+  assert.equal(pl.pairs.length, 2);
+  assert.equal(pl.total, 2);
+  const [[a, b], [c, d]] = pl.pairs;
+  const phoneOf = (id) => phones[teams.findIndex((t) => t.id === id)];
+  const choose = (id, v) => g.playAnswer(phoneOf(id).id, { value: v });
+  assert.throws(() => choose(a, 'silent'), /No turn is open/);
+  g.playNext(); // turn 1
+  assert.throws(() => choose(a, 'maybe'), /Stay Silent or Snitch/);
+  choose(a, 'silent');
+  assert.throws(() => choose(a, 'snitch'), /already picked/);
+  assert.ok(!g.viewFor(phoneOf(b).id).round.play.results[1], 'nothing shows while the turn is open');
+  assert.equal(g.viewFor(phoneOf(b).id).round.play.partner, a);
+  choose(b, 'snitch');
+  choose(c, 'snitch');
+  choose(d, 'snitch'); // everyone in: resolves
+  assert.equal(pl.state, 'revealed');
+  assert.deepEqual([pl.scores[a], pl.scores[b], pl.scores[c], pl.scores[d]], [0, 5, 1, 1]);
+  assert.deepEqual([pl.shots[a], pl.shots[b], pl.shots[c], pl.shots[d]], [5, 0, 3, 3]);
+  g.playNext(); // turn 2: a and b both silent, c silent, d never picks (counts as silent)
+  choose(a, 'silent');
+  choose(b, 'silent');
+  choose(c, 'silent');
+  g.tick(pl.deadline + 1);
+  assert.equal(pl.results[2][d].auto, true);
+  assert.deepEqual([pl.scores[a], pl.scores[b], pl.scores[c], pl.scores[d]], [3, 8, 4, 4]);
+  assert.deepEqual([pl.shots[a], pl.shots[b], pl.shots[c], pl.shots[d]], [6, 1, 4, 4]);
+  assert.throws(() => g.playNext(), /last turn/);
+  g.playFinish();
+  // b 8 pts; c and d tie on 4 points and 4 shots; a 3 points last
+  assert.equal(r.proposed[b], 1);
+  assert.equal(r.proposed[a], 4);
+  g.enterResults({ placings: r.proposed });
+  g.startDrinks();
+  assert.equal(g.round.serves.find((s) => s.teamId === a).drinks, 6, 'the turn shots go to the bar');
+  assert.equal(g.round.serves.find((s) => s.teamId === b)?.drinks, 1);
+});
+
+test('Prisoner’s Dilemma: with an odd number of blocks, the spare one plays the House', () => {
+  const { g, phones } = appSetup(3);
+  g.startRound({ gameId: g.addGame({ name: 'PD', runBy: 'dilemma' }).id });
+  const pl = g.round.play;
+  assert.equal(pl.pairs.filter((p) => p.includes('house')).length, 1);
+  g.playNext();
+  for (const ph of phones) g.playAnswer(ph.id, { value: 'snitch' });
+  assert.equal(pl.state, 'revealed');
+  assert.equal(Object.keys(pl.results[1]).length, 3, 'the House isn’t scored');
+});
+
+test('older saves get the two new app-run games added to their library once', () => {
+  const g = new Game();
+  g.loadStarterGames();
+  const old = structuredClone(g.s);
+  old.economy = 7;
+  old.games = old.games.filter((x) => !['dilemma', 'twothirds'].includes(x.runBy));
+  const moved = new Game(old);
+  assert.ok(moved.s.games.some((x) => x.runBy === 'dilemma'));
+  assert.ok(moved.s.games.some((x) => x.runBy === 'twothirds'));
+  assert.equal(new Game(structuredClone(moved.s)).s.games.length, moved.s.games.length, 'only once');
+});
+
+test('a missed bounty’s extra loss never takes a block below 0 points', () => {
+  const { g, a, b, players } = setup();
+  a.budget = 1000;
+  a.points = 10;
+  playRound(g, a, b, players);
+  g.buy(players[0].id, { itemId: itemOf(g, 'bounty', (i) => i.bounty === 'open').id, stake: 8 });
+  assert.equal(a.points, 2);
+  for (let i = 0; i < 4; i++) {
+    g.startDrinks();
+    finishDrinks(g);
+    playRound(g, a, b, players);
+  }
+  assert.equal(g.s.bounties[0].status, 'missed');
+  assert.equal(a.points, 0);
+});
+
+test('couldn’t finish at the bar: lose 10% of points and the drink income, but no extra shot (unlike running out of time)', () => {
+  const { g, a, b, players } = setup();
+  a.budget = b.budget = 1000;
+  a.points = 57;
+  a.drinkStream = 15;
+  playRound(g, a, b, players);
+  g.buy(players[1].id, { itemId: spirit(g).id, targetTeamId: a.id, qty: 2 });
+  g.startDrinks();
+  g.barNext();
+  assert.throws(() => g.barFail({ teamId: b.id }), /hasn’t been served/);
+  g.barFail({ teamId: a.id });
+  assert.equal(a.points, 51, '57 − 6 (10%, rounded)');
+  assert.equal(a.drinkStream, 0);
+  const s = g.tvView().round.serves.find((x) => x.teamId === a.id);
+  assert.deepEqual([s.failed, s.pointsLost], [true, 6]);
+  assert.throws(() => g.barFail({ teamId: a.id }), /already done|No round/);
+  assert.equal(g.s.penalties.filter((x) => x.teamId === a.id).length, 0, 'no extra shot next round');
+  assert.ok(!g.s.feed[0].text.includes('51') && !g.s.feed[0].text.includes('6 '), 'the feed doesn’t give the numbers away');
+  // A block with 3 points still loses at least 1.
+  playRound(g, a, b, players);
+  a.points = 3;
+  g.buy(players[1].id, { itemId: spirit(g).id, targetTeamId: a.id, qty: 1 });
+  g.startDrinks();
+  g.barNext();
+  g.barFail({ teamId: a.id });
+  assert.equal(a.points, 2);
+});
+
+test('the bartender starts the clock: Next only calls the block up; Start begins its 30 seconds', () => {
+  const { g, a, b, players } = setup();
+  a.budget = 1000;
+  playRound(g, a, b, players);
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 2 });
+  g.startDrinks();
+  assert.throws(() => g.barStart(), /Call the block up first/);
+  g.barNext();
+  const s = g.round.serves[0];
+  assert.equal(s.timerEndsAt, null, 'no clock yet');
+  assert.equal(g.nextDeadline(), null);
+  assert.equal(g.tick(Date.now() + 10 * 60 * 1000), false, 'nothing can time out before the clock starts');
+  assert.ok(!s.finishedAt);
+  g.barStart({ teamId: b.id });
+  assert.ok(Math.abs(s.timerEndsAt - (Date.now() + 30000)) < 2000);
+  assert.equal(g.nextDeadline(), s.timerEndsAt);
+  assert.throws(() => g.barStart({ teamId: b.id }), /already running/);
+  g.tick(s.timerEndsAt + 1);
+  assert.equal(s.missed, true, 'once started, running out of time works as before');
+});
+
+test('the Mystery Box stays off the shelf until Act 2, which opens with an announcement on every screen', () => {
+  const { g, a, b, players } = setup(); // 3 rounds an act: Act 2 starts at round 4
+  a.budget = 1000;
+  const box = itemOf(g, 'mystery');
+  for (let n = 1; n <= 3; n++) {
+    playRound(g, a, b, players);
+    assert.ok(!g.viewFor(players[0].id).items.some((i) => i.type === 'mystery'), `hidden in round ${n}`);
+    assert.throws(() => g.buy(players[0].id, { itemId: box.id }), /off the shelf|open in Act 2/);
+    g.startDrinks();
+    finishDrinks(g);
+  }
+  playRound(g, a, b, players); // round 4: Act 2
+  assert.ok(g.viewFor(players[0].id).items.some((i) => i.type === 'mystery'));
+  assert.equal(g.tvView().flash.kind, 'mystery');
+  assert.ok(g.s.feed.some((f) => f.text.includes('Mystery Box')));
+  assert.ok(g.adminView().items.some((i) => i.type === 'mystery'), 'hosts always see it');
+});
+
+test('cash from every source is 20% lower, and a save on the previous defaults moves down', () => {
+  const g = new Game();
+  assert.equal(g.s.settings.startingBudget, 32);
+  assert.deepEqual(g.s.settings.prizeMoney, [35, 29, 24, 20, 17, 14, 12, 9]);
+  assert.equal(g.s.settings.streamStep, 4);
+  const old = structuredClone(g.s);
+  Object.assign(old.settings, { startingBudget: 40, prizeMoney: [44, 36, 30, 25, 21, 18, 15, 11], streamStep: 5 });
+  old.economy = 10;
+  const moved = new Game(old).s.settings;
+  assert.deepEqual([moved.startingBudget, moved.prizeMoney[0], moved.streamStep], [32, 35, 4]);
+  const custom = structuredClone(g.s);
+  Object.assign(custom.settings, { startingBudget: 60, prizeMoney: [100, 50], streamStep: 7 });
+  custom.economy = 10;
+  const kept = new Game(custom).s.settings;
+  assert.deepEqual([kept.startingBudget, kept.prizeMoney[0], kept.streamStep], [60, 100, 7], 'a host’s own numbers are left alone');
+});
+
+test('Fresh start goes back to round 1: rounds, bounties, penalties and the winner are cleared; the sequence is kept', () => {
+  const { g, a, b, players } = setup();
+  g.updateSettings({ actsCount: 1, roundsPerAct: 2 });
+  const game = g.addGame({ name: 'Flip', playersNeeded: 0 });
+  g.setSlot({ act: 1, slot: 1, gameId: game.id });
+  g.setSlot({ act: 1, slot: 2, gameId: game.id });
+  g.confirmNight();
+  a.budget = 1000;
+  a.points = 40;
+  playRound(g, a, b, players);
+  g.buy(players[0].id, { itemId: itemOf(g, 'bounty', (i) => i.bounty === 'open').id, stake: 10 });
+  g.startDrinks();
+  finishDrinks(g);
+  g.crownWinner({});
+  assert.ok(g.s.rounds.length && g.s.bounties.length && g.s.winner);
+  g.freshStart({ confirm: 'RESET' });
+  assert.deepEqual([g.s.rounds.length, g.s.bounties.length, g.s.penalties.length, g.s.winner], [0, 0, 0, null]);
+  assert.equal(g.round, null);
+  assert.equal(g.s.night.status, 'draft', 'back to Setup to pull tonight’s guests in');
+  assert.deepEqual(g.s.night.acts[0].rounds, [game.id, game.id], 'the sequence is kept');
+  assert.equal(g.s.teams.length, 0);
+});
+
+test('Costume Parade: each phone picks 3 best and 3 worst (changeable); close ranks and pays out', () => {
+  const { g, a, b, players } = setup(8); // even players on A, odd on B
+  const id = (i) => players[i].id;
+  assert.throws(() => g.costumeVote({ voterId: 'phone-0001', best: [id(0), id(2), id(4)], worst: [id(1), id(3), id(5)] }), /isn’t open/);
+  g.costumeOpen();
+  assert.equal(g.tvView().costume.status, 'open');
+  assert.equal(g.tvView().flash.kind, 'costume');
+  assert.throws(() => g.costumeVote({ voterId: 'x', best: [id(0), id(2), id(4)], worst: [id(1), id(3), id(5)] }), /Refresh/);
+  assert.throws(() => g.costumeVote({ voterId: 'phone-0001', best: [id(0), id(2)], worst: [id(1), id(3), id(5)] }), /Pick 3 best and 3 worst/);
+  assert.throws(() => g.costumeVote({ voterId: 'phone-0001', best: [id(0), id(2), id(4)], worst: [id(0), id(3), id(5)] }), /both lists/);
+  g.costumeVote({ voterId: 'phone-0001', best: [id(1), id(3), id(5)], worst: [id(0), id(2), id(4)] });
+  g.costumeVote({ voterId: 'phone-0001', best: [id(0), id(2), id(4)], worst: [id(1), id(3), id(5)] }); // changed their mind: still one vote
+  g.costumeVote({ voterId: 'phone-0002', best: [id(0), id(2), id(6)], worst: [id(1), id(3), id(7)] });
+  g.costumeVote({ voterId: 'phone-0003', best: [id(0), id(4), id(6)], worst: [id(1), id(5), id(7)] });
+  assert.equal(g.tvView().costume.votes, 3);
+  assert.equal(g.tvView().costume.results, null, 'no results while voting');
+  assert.equal(g.tvView().costume.live, undefined, 'the TV never sees the running tally');
+  assert.equal(g.adminView().costume.live.best[0].id, id(0), 'hosts can watch it');
+  const before = a.points;
+  g.costumeClose();
+  const res = g.tvView().costume.results;
+  assert.deepEqual(res.best[0], { id: id(0), name: players[0].name, teamId: a.id, votes: 3 });
+  assert.equal(res.best.length, 3);
+  assert.equal(res.worst[0].id, id(1));
+  assert.equal(res.worst[0].votes, 3);
+  assert.equal(a.points - before, 10, 'the best costume’s block scores');
+  assert.ok(g.s.penalties.some((x) => x.teamId === b.id && x.reason === 'Worst costume' && x.qty === 1), 'the worst costume’s block owes a shot');
+  g.costumeHide();
+  assert.equal(g.tvView().costume.status, 'off');
+});
+
+test('Costume Parade: votes cast before 3-and-3 (one best, one worst) still count', () => {
+  const { g, players } = setup(6);
+  g.costumeOpen();
+  g.s.costume.votes['old-phone-1'] = { best: players[2].id, worst: players[3].id, ts: Date.now() };
+  g.costumeClose();
+  assert.equal(g.s.costume.results.best[0].id, players[2].id);
+  assert.equal(g.s.costume.results.worst[0].id, players[3].id);
+});
+
+test('LeParty blocks nobody is checked in on aren’t mirrored, and hosts can remove empty blocks', () => {
+  const g = new Game();
+  const blocks = [
+    { id: 'L1', name: 'Block A', colour: '#ff0000' }, { id: 'L2', name: 'Block B', colour: '#00ff00' },
+    { id: 'D1', name: 'Block A', colour: '#ff0000' }, { id: 'D2', name: 'Block B', colour: '#00ff00' }, // a duplicate set, empty
+  ];
+  const guests = [{ id: 'g1', name: 'Shen', blockId: 'L1' }, { id: 'g2', name: 'Edwin', blockId: 'L2' }, { id: 'g3', name: 'Mia', blockId: null }];
+  g.applyRoster({ event: { id: 'e', name: 'Party' }, blocks, guests });
+  assert.deepEqual(g.s.teams.map((t) => t.lepartyId), ['L1', 'L2'], 'only blocks with guests');
+  g.applyRoster({ event: { id: 'e', name: 'Party' }, blocks, guests });
+  assert.equal(g.s.teams.length, 2, 'and they don’t come back on the next sync');
+  // Empty blocks made some other way can be cleared in one go; people stay put.
+  g.addTeam({ name: 'Spare 1' });
+  g.addTeam({ name: 'Spare 2' });
+  assert.equal(g.removeEmptyTeams().removed, 2);
+  assert.deepEqual(g.s.teams.map((t) => t.name), ['Block A', 'Block B']);
+  assert.equal(g.s.players.filter((p) => p.teamId).length, 2);
+});
+
+test('Restart from round 1 keeps everyone and their blocks, and wipes everything that happened', () => {
+  const { g, a, b, players } = setup();
+  g.updateSettings({ actsCount: 1, roundsPerAct: 2 });
+  const game = g.addGame({ name: 'Flip', playersNeeded: 0 });
+  g.setSlot({ act: 1, slot: 1, gameId: game.id });
+  g.setSlot({ act: 1, slot: 2, gameId: game.id });
+  g.confirmNight();
+  g.updatePlayer({ playerId: players[0].id, isCaptain: true });
+  const phone = g.claimBlock({ code: a.joinCode });
+  a.budget = 1000;
+  a.points = 40;
+  playRound(g, a, b, players);
+  g.buy(players[0].id, { itemId: spirit(g).id, targetTeamId: b.id, qty: 2 });
+  g.buy(players[0].id, { itemId: itemOf(g, 'bounty', (i) => i.bounty === 'open').id, stake: 10 });
+  g.startDrinks();
+  finishDrinks(g);
+  players[1].drinksOwed = 3;
+  assert.throws(() => g.restartNight({ confirm: 'yes' }), /RESTART/);
+  g.restartNight({ confirm: 'restart' });
+  assert.equal(g.round, null);
+  assert.deepEqual([g.s.rounds.length, g.s.orders.length, g.s.bounties.length, g.s.penalties.length], [0, 0, 0, 0]);
+  assert.deepEqual([a.budget, a.points, a.earned, b.points], [g.s.settings.startingBudget, 0, 0, 0]);
+  assert.equal(players[1].drinksOwed, 0);
+  assert.equal(g.s.teams.length, 2, 'blocks kept');
+  assert.equal(g.members(a.id).length, 3, 'people kept on their blocks');
+  assert.equal(players[0].isCaptain, true, 'Shot Callers kept');
+  assert.equal(g.playerByToken(phone.token)?.id, phone.id, 'the block phone still works');
+  assert.equal(g.s.night.status, 'live', 'the night is still set up');
+  assert.equal(g.startRound().number, 1, 'the next round is round 1');
+});

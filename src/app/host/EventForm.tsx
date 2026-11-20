@@ -3,9 +3,7 @@
 import { useFormState, useFormStatus } from 'react-dom';
 import { createEvent, updateEvent, type HostState } from './actions';
 import type { EventRow } from '@/lib/types';
-import { getTheme, THEMES_WITH_COPY, type ThemeKey } from '@/lib/theme';
-
-const THEME_OPTIONS: ThemeKey[] = ['jail', 'heist', 'cult', 'custom'];
+import { THEME_PACKS, themePack } from '@/themes';
 
 function Submit({ mode }: { mode: 'create' | 'edit' }) {
   const { pending } = useFormStatus();
@@ -13,7 +11,7 @@ function Submit({ mode }: { mode: 'create' | 'edit' }) {
     <button className="btn" type="submit" disabled={pending}>
       {pending
         ? mode === 'create'
-          ? 'Opening the wing…'
+          ? 'Creating…'
           : 'Saving…'
         : mode === 'create'
           ? 'Create party'
@@ -42,7 +40,7 @@ export default function EventForm({ event }: { event?: EventRow }) {
         id="name"
         name="name"
         type="text"
-        placeholder="October lockup"
+        placeholder="October party"
         defaultValue={event?.name ?? ''}
         required
       />
@@ -90,24 +88,21 @@ export default function EventForm({ event }: { event?: EventRow }) {
             id="theme_title"
             name="theme_title"
             type="text"
-            placeholder="Cellblock H"
+            placeholder="The big night"
             defaultValue={event?.theme_title ?? ''}
           />
         </div>
         <div>
           <label className="field" htmlFor="theme_key">
-            Theme pack
+            Theme
           </label>
-          <select id="theme_key" name="theme_key" defaultValue={event?.theme_key ?? 'jail'}>
-            {THEME_OPTIONS.map((key) => {
-              const hasCopy = THEMES_WITH_COPY.includes(key);
-              return (
-                <option key={key} value={key}>
-                  {getTheme(key).label}
-                  {hasCopy ? '' : ' (not written yet — uses Prison copy)'}
-                </option>
-              );
-            })}
+          {/* themePack() maps a retired key (heist, cult, custom) onto the pack it always rendered as. */}
+          <select id="theme_key" name="theme_key" defaultValue={themePack(event?.theme_key ?? 'jail').key}>
+            {THEME_PACKS.map((pack) => (
+              <option key={pack.key} value={pack.key}>
+                {pack.label}
+              </option>
+            ))}
           </select>
         </div>
       </div>
@@ -118,7 +113,7 @@ export default function EventForm({ event }: { event?: EventRow }) {
       <textarea
         id="theme_blurb"
         name="theme_blurb"
-        placeholder="Forty inmates. Eight cell blocks. A night of games, and a sentence to work off."
+        placeholder="What the night is about, in a line or two."
         defaultValue={event?.theme_blurb ?? ''}
       />
 
@@ -129,7 +124,7 @@ export default function EventForm({ event }: { event?: EventRow }) {
         id="dress_code"
         name="dress_code"
         type="text"
-        placeholder="Orange jumpsuits, prison chic."
+        placeholder="What to wear."
         defaultValue={event?.dress_code ?? ''}
       />
 
@@ -140,21 +135,21 @@ export default function EventForm({ event }: { event?: EventRow }) {
         id="dress_code_notes"
         name="dress_code_notes"
         type="text"
-        placeholder="No actual police uniforms."
+        placeholder="What to avoid."
         defaultValue={event?.dress_code_notes ?? ''}
       />
 
-      <h2>Game setup</h2>
+      <h2>Teams</h2>
       <p className="small" style={{ marginBottom: 18 }}>
-        Block count is fixed; block size floats with however many turn up. Eight rows read from
-        across a room, fourteen don&rsquo;t.
+        The number of teams is fixed; their size floats with however many turn up. Eight rows
+        read from across a room, fourteen don&rsquo;t. The theme decides what a team is called.
         {mode === 'edit'
-          ? ' Raising this adds blocks. Lowering it only removes blocks that are empty and not in play.'
+          ? ' Raising this adds teams. Lowering it only removes teams that are empty and not in play.'
           : ''}
       </p>
 
       <label className="field" htmlFor="block_count">
-        Cell blocks
+        Number of teams
       </label>
       <input
         id="block_count"

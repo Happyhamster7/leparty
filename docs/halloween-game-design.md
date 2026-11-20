@@ -1,5 +1,10 @@
 # Halloween Game App: Design and Open Questions
 
+> **Superseded as the build spec.** The relational game built from this
+> doc has been retired; games are now modules, and the first is a port of
+> Shifty Shen's Slammer. See `docs/rework-plan.md`. This doc is kept for
+> the intent behind the round loop (game, results, spending, drinks).
+
 **Source of truth for Phase 2.** Combined from the *Halloween Game App — Software Brief* and *Halloween Game App — Open Questions (Updated)*, as of 4 Nov 2026. It supersedes the earlier Phase 2 design (Days, sentence and commissary, substitutes). Database tables for it are in `docs/schema.md`.
 
 ---

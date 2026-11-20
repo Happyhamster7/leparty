@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { db, MUGSHOT_BUCKET, siteUrl } from '@/lib/supabase';
 import { isHost } from '@/lib/host';
-import { getTheme } from '@/lib/theme';
+import { getTheme } from '@/themes';
 import { formatHeldOn, type EventRow } from '@/lib/types';
 import GuestForm from './GuestForm';
 import GuestPhoto from './GuestPhoto';
@@ -101,7 +101,7 @@ export default async function GuestPage({
         <p className="lede">
           {[
             formatHeldOn(ev.held_on, ev.starts_at_label),
-            blockName ? `in ${blockName}` : 'no block yet',
+            blockName ? `in ${blockName}` : `no ${theme.groupNoun.toLowerCase()} yet`,
             p.checked_in_at ? 'checked in' : 'not arrived',
             p.signup_completed_at ? 'signup done' : 'signup unfinished',
             `${parties ?? 1} ${parties === 1 ? 'party' : 'parties'} on file`,
@@ -125,7 +125,7 @@ export default async function GuestPage({
           </div>
 
           <div>
-            <h2>Mugshot</h2>
+            <h2>{theme.photoNoun}</h2>
             <GuestPhoto
               eventId={params.eventId}
               participantId={params.participantId}
@@ -136,7 +136,7 @@ export default async function GuestPage({
             {p.photo_path ? (
               <form action={dropPhoto} style={{ marginTop: 10 }}>
                 <button className="btn btn--quiet btn--inline" type="submit">
-                  DELETE MUGSHOT
+                  DELETE {theme.photoNoun.toUpperCase()}
                 </button>
               </form>
             ) : null}

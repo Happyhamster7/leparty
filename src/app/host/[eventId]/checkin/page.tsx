@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { db, MUGSHOT_BUCKET } from '@/lib/supabase';
 import { isHost } from '@/lib/host';
-import { getTheme } from '@/lib/theme';
+import { getTheme } from '@/themes';
 import type { EventRow } from '@/lib/types';
 import CheckinGrid, { type GridPerson } from './CheckinGrid';
 import DoorRegister from './DoorRegister';
@@ -91,16 +91,16 @@ export default async function CheckinPage({ params }: { params: { eventId: strin
       </div>
 
       <div className="body">
-        <CheckinGrid eventId={params.eventId} people={people} />
+        <CheckinGrid eventId={params.eventId} people={people} photo={theme.photoNoun.toLowerCase()} />
 
         <div style={{ marginTop: 24 }}>
-          <DoorRegister eventId={params.eventId} />
+          <DoorRegister eventId={params.eventId} group={theme.groupNoun.toLowerCase()} />
         </div>
 
         <hr className="rule" />
 
-        <h2>Mugshots at the door</h2>
-        <DoorPhotos eventId={params.eventId} people={needsPhoto} />
+        <h2>{theme.photoNounPlural} at the door</h2>
+        <DoorPhotos eventId={params.eventId} people={needsPhoto} photo={theme.photoNoun.toLowerCase()} />
 
         <hr className="rule" />
 
@@ -113,8 +113,9 @@ export default async function CheckinPage({ params }: { params: { eventId: strin
           }}
         >
           <p className="small" style={{ flex: '1 1 260px', margin: 0 }}>
-            Closing check-in draws the blocks from whoever is actually here. Latecomers after
-            that drop into the lightest block rather than triggering a redraw. If the draw&rsquo;s
+            Closing check-in draws the {theme.groupNounPlural.toLowerCase()} from whoever is actually
+            here. Latecomers after that drop into the lightest {theme.groupNoun.toLowerCase()}{' '}
+            rather than triggering a redraw. If the draw&rsquo;s
             already happened, &ldquo;The draw&rdquo; just shows the real board &mdash; nothing
             here reshuffles it.
           </p>
@@ -123,7 +124,7 @@ export default async function CheckinPage({ params }: { params: { eventId: strin
           </Link>
           <form action={close}>
             <button className="btn btn--inline" type="submit" disabled={!drawn}>
-              Close check-in &amp; draw blocks
+              Close check-in &amp; draw {theme.groupNounPlural.toLowerCase()}
             </button>
           </form>
         </div>

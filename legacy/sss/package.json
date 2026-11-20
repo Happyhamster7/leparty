@@ -1,0 +1,25 @@
+{
+  "name": "shifty-shen-slammer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Jailhouse party game night: teams, commissary, punishments, deflects and a mafia-style snitch game.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test test/*.test.js",
+    "build:vendor": "esbuild tools/blob-upload.js --bundle --platform=browser --format=iife --global-name=BlobUpload --minify --legal-comments=none --outfile=public/vendor/blob-upload.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@vercel/blob": "^2.8.2",
+    "express": "^5.3.0",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

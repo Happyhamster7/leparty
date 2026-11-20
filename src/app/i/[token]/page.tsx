@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { loadInvite, nextStep, hasAttendedBefore } from '@/lib/invite';
 import { formatHeldOn } from '@/lib/types';
-import { getTheme } from '@/lib/theme';
+import { getTheme } from '@/themes';
 import { db } from '@/lib/supabase';
 import { setRsvp } from './actions';
 
@@ -67,10 +67,10 @@ export default async function InvitePage({ params }: { params: { token: string }
         {done ? (
           <>
             <div className="notice">
-              You&rsquo;re booked in, {person.display_name}. Nothing else to do until the night.
+              You&rsquo;re {theme.bookedPhrase}, {person.display_name}. Nothing else to do until the night.
             </div>
             <Link className="btn" href={`/i/${token}/booked`}>
-              See your paperwork
+              {theme.seeBookingLabel}
             </Link>
           </>
         ) : participant.rsvp === 'no' ? (
@@ -91,7 +91,7 @@ export default async function InvitePage({ params }: { params: { token: string }
               </div>
             ) : null}
             <Link className="btn" href={`/i/${token}/${step}`}>
-              {step === 'booked' ? 'See your paperwork' : 'Report for intake'}
+              {step === 'booked' ? theme.seeBookingLabel : theme.rsvpYesLabel}
             </Link>
             <div style={{ marginTop: 12 }}>
               <form action={sayNo}>
@@ -105,7 +105,7 @@ export default async function InvitePage({ params }: { params: { token: string }
           <>
             <form action={sayYes}>
               <button className="btn" type="submit">
-                Report for intake
+                {theme.rsvpYesLabel}
               </button>
             </form>
             <div style={{ marginTop: 12 }}>
@@ -122,7 +122,7 @@ export default async function InvitePage({ params }: { params: { token: string }
           className="mono"
           style={{ textAlign: 'center', marginTop: 16, marginBottom: 0, fontSize: 11 }}
         >
-          {yes} BOOKED SO FAR
+          {yes} {theme.bookedLabel.toUpperCase()} SO FAR
         </p>
       </div>
     </div>
