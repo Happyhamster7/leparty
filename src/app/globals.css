@@ -1278,6 +1278,8 @@ table.list td.tight {
 .tv__head .mono {
   margin: 0;
   font-size: clamp(14px, 1.6vw, 30px);
+  /* The default mono colour is for paper; on the TV's dark ground it vanishes. */
+  color: var(--paper);
 }
 
 .tv__groups {
@@ -1309,4 +1311,450 @@ table.list td.tight {
 .tv__wait {
   font-size: clamp(18px, 2.4vw, 44px);
   max-width: 24em;
+}
+
+/* ------------------------------------------------------------------ */
+/* Game screens (any game module)                                      */
+/* ------------------------------------------------------------------ */
+
+.g-big {
+  font-size: 18px;
+  padding: 16px 22px;
+}
+
+.g-refusal {
+  border-left-color: var(--rust);
+  cursor: pointer;
+}
+
+.g-clock {
+  font-family: var(--mono);
+  font-weight: 500;
+  padding: 1px 8px;
+  background: var(--ink);
+  color: var(--paper);
+  white-space: nowrap;
+}
+
+.g-clock--low {
+  background: var(--rust);
+}
+
+.g-chip {
+  display: inline-block;
+  padding: 1px 8px;
+  border-left: 6px solid var(--ink);
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.g-chip--none {
+  border-left-style: dashed;
+  font-weight: 400;
+}
+
+.g-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 0 6px;
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--rust);
+  color: var(--paper);
+}
+
+.g-roundhead {
+  margin: 0 0 16px;
+}
+
+.g-phases {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-family: var(--mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.g-phases span {
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.g-phases span.on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.g-standings td,
+.g-standings th {
+  white-space: nowrap;
+}
+
+.g-feed {
+  list-style: none;
+  margin: 0 0 20px;
+  padding: 0;
+  font-size: 14px;
+}
+
+.g-feed li {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.g-fold {
+  margin: 18px 0;
+  border: 1px solid var(--line);
+  background: var(--card);
+}
+
+.g-fold > summary {
+  padding: 12px 16px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.g-fold[open] {
+  padding: 0 16px 16px;
+}
+
+.g-fold[open] > summary {
+  margin: 0 -16px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.g-row,
+.g-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 14px;
+}
+
+.g-row input,
+.g-row select,
+.g-grid input,
+.g-grid select {
+  width: 100%;
+}
+
+.g-inline {
+  display: grid;
+  gap: 10px;
+}
+
+.g-check {
+  display: block;
+  margin: 12px 0;
+  font-size: 14px;
+}
+
+.g-reveal,
+.g-options,
+.g-pour {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+}
+
+.g-reveal li,
+.g-pour li {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.box--dark .g-reveal li {
+  border-bottom-color: var(--ink-soft);
+}
+
+.g-reveal li.up {
+  font-weight: 600;
+}
+
+.g-options li {
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+}
+
+.g-options li.right {
+  border-color: var(--ink);
+  outline: 3px solid var(--rust);
+}
+
+.g-scores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 10px 0;
+}
+
+.g-answers {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.g-people,
+.g-shelf {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  margin: 10px 0 14px;
+}
+
+.g-person,
+.g-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  text-align: left;
+  font: inherit;
+  background: var(--card);
+  color: var(--ink);
+  border: 2px solid var(--line);
+  cursor: pointer;
+}
+
+.g-person.on,
+.g-item.on {
+  border-color: var(--rust);
+  background: var(--fill);
+}
+
+.g-person:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.g-item__name {
+  font-weight: 600;
+}
+
+.g-qty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.g-qty__n {
+  min-width: 2.5ch;
+  text-align: center;
+  font-size: 22px;
+}
+
+.g-bar__team {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 28px;
+}
+
+.g-bar__clock {
+  font-size: 44px;
+  margin: 8px 0 14px;
+}
+
+.g-pour {
+  font-size: 20px;
+}
+
+.g-extras {
+  margin: 18px 0;
+}
+
+/* The TV while a game runs: light ground, so the same components read. */
+.tv--game {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.tv--game .tv__head h1 {
+  color: var(--ink);
+  font-size: clamp(22px, 2.4vw, 44px);
+}
+
+.tv--game .tv__head .mono {
+  color: var(--muted);
+}
+
+.g-tv {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: 3vw;
+  font-size: clamp(16px, 1.5vw, 28px);
+}
+
+.g-tv__headline {
+  font-size: clamp(34px, 4.6vw, 90px);
+  line-height: 1.05;
+  margin: 0 0 2vh;
+}
+
+.g-tv__rules {
+  color: var(--muted);
+  max-width: 40em;
+}
+
+.g-tv .lede,
+.g-tv .g-reveal,
+.g-tv h2 {
+  font-size: clamp(20px, 2.2vw, 42px);
+}
+
+.g-tv .g-options li {
+  font-size: clamp(20px, 2.4vw, 44px);
+}
+
+/* Numbers are the point on the TV: never smaller than the words beside them. */
+.g-tv .mono,
+.g-tv .g-tag,
+.g-tv .g-clock {
+  font-size: inherit;
+}
+
+.g-tv .g-standings td {
+  font-size: clamp(16px, 1.6vw, 30px);
+}
+
+.g-tv__side .g-feed {
+  font-size: clamp(13px, 1.1vw, 20px);
+  margin-top: 2vh;
+}
+
+.g-flash {
+  margin-bottom: 2vh;
+  padding: 2vh 2vw;
+  background: var(--rust);
+  color: var(--paper);
+  font-family: var(--display);
+  font-size: clamp(24px, 3vw, 56px);
+  text-transform: uppercase;
+}
+
+@media (max-width: 800px) {
+  .g-tv {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* The costume vote                                                    */
+/* ------------------------------------------------------------------ */
+
+.g-person.v-best {
+  border-color: #146b4a;
+  background: #dcefe6;
+}
+
+.g-person.v-worst {
+  border-color: var(--rust);
+  background: var(--fill);
+}
+
+.tv-poll {
+  display: grid;
+  grid-template-columns: minmax(240px, 58vh) 1fr;
+  gap: 4vw;
+  align-items: center;
+  margin-top: 4vh;
+}
+
+.tv-poll--results {
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+}
+
+.tv-poll__qr {
+  background: #fff;
+  padding: 2vh;
+  line-height: 0;
+}
+
+.tv-poll__qr svg {
+  width: 100%;
+  height: auto;
+}
+
+.tv-poll__winner {
+  font-family: var(--display);
+  font-size: clamp(30px, 4vw, 80px);
+  line-height: 1.1;
+  margin: 0 0 1.5vh;
+  text-transform: uppercase;
+}
+
+.tv-poll__runner {
+  font-size: clamp(18px, 2.2vw, 42px);
+  margin: 0 0 1vh;
+}
+
+.tv-poll .small {
+  font-size: 0.5em;
+  color: var(--muted);
+}
+
+/* The vote count beside a name: smaller than the name, but readable from the back. */
+.tv-poll .mono {
+  font-size: 0.6em;
+  color: var(--rust);
+}
+
+/* ------------------------------------------------------------------ */
+/* Clips                                                               */
+/* ------------------------------------------------------------------ */
+
+.reel {
+  position: fixed;
+  right: 2vw;
+  bottom: 3vh;
+  width: min(30vw, 54vh);
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: 6px 6px 0 var(--ink-soft);
+}
+
+.reel video {
+  display: block;
+  width: 100%;
+  max-height: 46vh;
+  background: #000;
+  object-fit: contain;
+}
+
+.reel__by {
+  margin: 0;
+  padding: 0.8vh 1vw;
+  font-size: clamp(13px, 1.2vw, 22px);
+}
+
+.clip-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.clip-grid video {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  background: #000;
+}
+
+.g-sound {
+  float: right;
+  margin: 0 0 8px 8px;
 }

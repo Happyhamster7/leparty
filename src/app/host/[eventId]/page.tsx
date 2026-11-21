@@ -8,6 +8,13 @@ import { formatHeldOn, POTLUCK_CATEGORIES, type EventRow } from '@/lib/types';
 import BlocksForm, { type BlockEditRow } from './BlocksForm';
 import CopyLink from './CopyLink';
 import CopyAll from './CopyAll';
+import { MODULES, moduleFor } from '@/modules';
+import { sessions } from '@/lib/sessions/server';
+import { startGame, endGame } from './gameActions';
+import { liveTally, showingPoll } from '@/lib/polls/polls';
+import { closeCostumeVote, hideCostumeVote, openCostumeVote } from './pollActions';
+import { listClips } from '@/lib/clips/clips';
+import { hideClip } from './clipActions';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,6 +47,10 @@ export default async function EventPage({ params }: { params: { eventId: string 
   if (!event) notFound();
   const ev = event as EventRow;
   const theme = getTheme(ev.theme_key);
+  const game = await sessions.store.activeForEvent(params.eventId);
+  const poll = await showingPoll(params.eventId);
+  const clips = await listClips(params.eventId, { liveOnly: false, limit: 30 });
+  const count = poll?.status === 'open' ? await liveTally(poll) : poll?.results ?? null;
 
   const [{ data: participants }, { data: blocks }, tally, { data: allParts }] =
     await Promise.all([
@@ -284,6 +295,122 @@ export default async function EventPage({ params }: { params: { eventId: string 
               Nobody on the list yet. Add names above, then copy every link out in one go.
             </p>
           </div>
+        )}
+
+        <h2>Games</h2>
+        {game ? (
+          <div className="box box--quiet" style={{ marginBottom: 24 }}>
+            <p style={{ margin: '0 0 10px' }}>
+              <strong>{moduleFor(game.moduleKey)?.name ?? game.moduleKey}</strong> is running for this
+              party. The bar and the TV use the links above; each {theme.groupNoun.toLowerCase()}&rsquo;s
+              phone uses its card.
+            </p>
+            <div className="btn-row" style={{ marginBottom: 12 }}>
+              <Link className="btn btn--inline" href={`/host/${params.eventId}/game`}>
+                Run the game
+              </Link>
+            </div>
+            <form action={endGame.bind(null, params.eventId, game.id)}>
+              <button className="btn btn--quiet btn--inline" type="submit">
+                END THIS GAME
+              </button>
+            </form>
+          </div>
+        ) : (
+          <div style={{ marginBottom: 24 }}>
+            <p className="small" style={{ marginBottom: 14 }}>
+              A party works with no game at all. Add one to run it on the night; it uses this
+              party&rsquo;s {theme.groupNounPlural.toLowerCase()} and takes its words from the theme.
+            </p>
+            <div className="btn-row">
+              {Object.values(MODULES).map((m) => (
+                <form key={m.key} action={startGame.bind(null, params.eventId, m.key)}>
+                  <button className="btn btn--quiet btn--inline" type="submit">
+                    ADD {m.name.toUpperCase()}
+                  </button>
+                </form>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <h2>Costume vote</h2>
+        {!poll ? (
+          <div style={{ marginBottom: 24 }}>
+            <p className="small" style={{ marginBottom: 14 }}>
+              Puts a code on the TV. Everyone scans it and picks their three best and three worst costumes on their
+              own phone, one vote per phone.{game ? ' When you close it, the best costume’s ' + theme.groupNoun.toLowerCase() + ' scores 10 points and the worst owes a shot.' : ''}
+            </p>
+            <form action={openCostumeVote.bind(null, params.eventId)}>
+              <button className="btn btn--quiet btn--inline" type="submit">
+                OPEN THE COSTUME VOTE
+              </button>
+            </form>
+          </div>
+        ) : (
+          <div className="box box--quiet" style={{ marginBottom: 24 }}>
+            <p style={{ margin: '0 0 10px' }}>
+              {poll.status === 'open' ? (
+                <>
+                  <strong>Voting is open</strong> and the code is on the TV. {count?.voters ?? 0} voted so far.{' '}
+                  <CopyLink url={`${base}/vote/${poll.id}`} label="COPY VOTE LINK" />
+                </>
+              ) : (
+                <>
+                  <strong>Voting is closed</strong> and the results are on the TV. {count?.voters ?? 0} voted.
+                </>
+              )}
+            </p>
+            {count && (count.best.length || count.worst.length) ? (
+              <div className="grid-2" style={{ marginBottom: 12 }}>
+                {(['best', 'worst'] as const).map((k) => (
+                  <div key={k}>
+                    <p className="eyebrow">{k === 'best' ? 'Best' : 'Worst'}</p>
+                    {count[k].slice(0, 5).map((c) => (
+                      <div key={c.id} style={{ fontSize: 14 }}>
+                        <span className="mono">{c.votes}</span> {c.name}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {poll.results?.awards?.some((a) => a.includes(':')) ? (
+              <p className="small">
+                The game couldn&rsquo;t take part of the result ({poll.results.awards.filter((a) => a.includes(':')).join(', ')}). Award it by hand
+                from the game&rsquo;s rulings.
+              </p>
+            ) : null}
+            <form action={(poll.status === 'open' ? closeCostumeVote : hideCostumeVote).bind(null, params.eventId, poll.id)}>
+              <button className="btn btn--inline" type="submit">
+                {poll.status === 'open' ? 'Close voting and show the results' : 'Take it off the TV'}
+              </button>
+            </form>
+          </div>
+        )}
+
+        <h2>Clips</h2>
+        {clips.length ? (
+          <div className="clip-grid" style={{ marginBottom: 24 }}>
+            {clips.map((c) => (
+              <div key={c.id} className="box box--quiet">
+                {c.url ? <video src={c.url} controls preload="metadata" muted playsInline /> : null}
+                <p className="small" style={{ margin: '6px 0' }}>
+                  {blockRows.find((b) => b.id === c.blockId)?.name ?? 'Unknown'}
+                  {c.caption ? ` — ${c.caption}` : ''} {c.status === 'hidden' ? '(off the TV)' : ''}
+                </p>
+                <form action={hideClip.bind(null, params.eventId, c.id, c.status !== 'hidden')}>
+                  <button className="btn btn--quiet btn--inline" type="submit">
+                    {c.status === 'hidden' ? 'PUT BACK ON THE TV' : 'TAKE OFF THE TV'}
+                  </button>
+                </form>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="small" style={{ marginBottom: 24 }}>
+            None yet. Each {theme.groupNoun.toLowerCase()}&rsquo;s phone has a Film a clip button; clips loop on the TV, muted.
+          </p>
         )}
 
         <h2>{theme.groupNounPlural}</h2>

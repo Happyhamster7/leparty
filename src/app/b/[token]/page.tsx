@@ -3,6 +3,11 @@ import { db } from '@/lib/supabase';
 import { themePack } from '@/themes';
 import ThemeStyle from '@/themes/ThemeStyle';
 import ClaimOnLoad from './ClaimOnLoad';
+import FilmClip from './FilmClip';
+import { sessions } from '@/lib/sessions/server';
+import { GAME_UI } from '@/modules/ui';
+import { GameScreen } from '@/modules/sss/ui/common';
+import { wordsFor } from '@/modules/sss/voice';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +33,8 @@ export default async function BlockPage({ params }: { params: { token: string } 
   ]);
 
   const pack = themePack(event?.theme_key);
+  const game = await sessions.store.activeForEvent(block.event_id);
+  const ui = game ? GAME_UI[game.moduleKey] : null;
   const theme = pack.copy;
 
   const names = ((members ?? []) as unknown as { people: { display_name: string } | null }[])
@@ -47,6 +54,20 @@ export default async function BlockPage({ params }: { params: { token: string } 
         <div className="body">
           <h1 className="huge">{block.name}</h1>
           <hr className="rule" />
+
+          {game && ui ? (
+            <GameScreen sessionId={game.id} headers={{ 'x-team-token': params.token }} words={wordsFor(pack)}>
+              <ui.Team />
+            </GameScreen>
+          ) : (
+            <div className="box box--dark">
+              <p className="eyebrow">Hold tight</p>
+              <p style={{ margin: 0, fontSize: 14 }}>
+                You&rsquo;re in. Anything {theme.hostRef} starts tonight shows up on this page.
+              </p>
+            </div>
+          )}
+
 
           {block.charge ? (
             <>
@@ -75,12 +96,7 @@ export default async function BlockPage({ params }: { params: { token: string } 
             </div>
           )}
 
-          <div className="box box--dark">
-            <p className="eyebrow">Hold tight</p>
-            <p style={{ margin: 0, fontSize: 14 }}>
-              You&rsquo;re in. Anything {theme.hostRef} starts tonight shows up on this page.
-            </p>
-          </div>
+          <FilmClip token={params.token} />
 
           <p className="small">
             Keep this page open. Anyone else in {block.name} can scan the same card, and the latest

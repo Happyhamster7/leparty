@@ -19,10 +19,13 @@ both updated when the schema or behaviour changes.
 for the intent behind the round loop.
 
 **Visual direction: pixel art (Stardew Valley-inspired)** for the
-Prison theme. Reference: `docs/pixel-ui-reference.md`. The sprite kit
-SSS built from it is in `legacy/sss/public/pixel/` and `pixel.css`; it
-becomes Prison theme assets when the screens are rebuilt (phase 5).
-Nothing in `src` is wired to it yet.
+Prison theme, and it is wired in: the pack's `skin` names
+`public/themes/prison/skin.css`, which dresses the app's ordinary
+components in the sprite kit beside it. Reference:
+`docs/pixel-ui-reference.md`. The skin adds no components and no
+behaviour; a page must still work without it, which is what the Plain
+theme shows. Style a new component in `globals.css` first, then give
+it a frame in the skin.
 
 ## Stack
 
@@ -35,7 +38,7 @@ the code.
 `npm run test:legacy` (the original SSS engine's 130 tests). CI
 (`.github/workflows/ci.yml`) runs all of them.
 
-Migrations are in `supabase/migrations/`, numbered `0001`–`0010`, run in order against the Supabase SQL editor.
+Migrations are in `supabase/migrations/`, numbered `0001`–`0013`, run in order against the Supabase SQL editor.
 Each new one must actually be run before its feature works — nothing
 auto-applies them. If `npm run build` hangs right after the
 `Next.js 14.2.35` banner with no further output, it's not your code:
@@ -172,6 +175,8 @@ too.
   reads as data, IBM Plex Sans for body.
 - Adding a theme: write a pack in `src/themes`, register it in
   `index.ts`. `themes.test.ts` fails if it leaves a word or token out.
+  A pack may also bring a `skin` (a stylesheet under `public/themes`),
+  `sounds` for the TV's cues, and `gameWords`.
 
 ## State of play
 
@@ -179,18 +184,23 @@ Built: self-service signup (`/signup`, `/parties`), party signup
 (invite, identity, mugshot, potluck, booked, declined), host console
 (parties, create, edit, event, guest edit, check-in, draw, cards),
 `/join` and `/b/<token>` (claims the team phone; latest scan wins),
-the TV (`/tv/<display-token>`) and a bar page that waits for a game
-(`/bar/<bar-token>`). Two themes: Prison (`jail`) and Plain.
+the TV (`/tv/<display-token>`), the bar (`/bar/<bar-token>`), and the
+costume vote (opened from the event page; guests vote at
+`/vote/<pollId>`; see `src/lib/polls`), and clips (a team films on
+its phone, the TV loops them; see `src/lib/clips`). Two themes: Prison (`jail`)
+and Plain.
 
-Verified by driving it in a real browser against Postgres, before the
-rework: migration applies, inmate-number trigger works, photos
-downscale and upload, balancer hits spread 0–1 across realistic
-headcounts, QR codes scan. Since the rework: all ten migrations apply
-to a fresh Postgres 16, and the pages that need no database render
-under both site themes. The database-backed pages have been
-typechecked and built but **not yet re-driven in a browser** since the
-theme changes — do that against a real Supabase project before relying
-on them.
+Verified by driving it in a real browser against the real Supabase
+project, with a throwaway party, after the theme and session work:
+host sign-in, creating a party, guest signup and joining, the invite
+pages, door registration (six in a row, none lost), the draw, cards,
+the TV and bar links (each refused the other's token), team phones
+with latest scan wins, switching a party between Prison and Plain, and
+a full game round through `/api/sessions` as host, bar, TV and two
+teams, with a simultaneous double tap charged once and ten concurrent
+writes all landing. All eleven migrations apply to a fresh Postgres
+16. **Not re-driven since the rework:** photo capture and upload, and
+QR scanning on a real phone.
 
 Not done in the core: clone a party, shareable potluck page, CSV
 export, reminders (needs an email/SMS provider), reissuing a TV or bar
@@ -198,19 +208,42 @@ link.
 
 ## Games
 
-No game is playable from this codebase right now. `legacy/sss` is the
-original Shifty Shen's Slammer app, read-only, kept as the behaviour
-spec for the port; the deployed SSS (branch `sss-points`) still works
-on its own. What's next, and every decision already made, is in
-`docs/rework-plan.md` — don't re-decide those here.
+A game is a module under `src/modules/<key>`, registered in
+`src/modules/index.ts` (rules) and `src/modules/ui.tsx` (screens). The
+first, Shifty Shen's Slammer, is playable: a host adds it to a party
+from the event page and runs it at `/host/<eventId>/game`; the team
+phones (`/b/<token>`), the bar (`/bar/<token>`) and the TV
+(`/tv/<token>`) each show its screen for their seat. Rules are in
+`src/modules/sss/engine`, screens in `src/modules/sss/ui`, and
+`src/lib/sessions` stores the state and serves each viewer its view.
+Phases 1 to 5 of `docs/rework-plan.md` are done; phase 6 (a
+rehearsal under load, then shutting the old SSS down) is next. That
+doc records every decision already made — don't re-decide those here. The deployed SSS (branch
+`sss-points`) still runs on its own; `legacy/sss` is that app,
+read-only, kept as the behaviour spec.
 
-Three rules for whoever builds the game layer, learned from the two
-apps it replaces:
+Rules for the game layer, learned from the two apps it replaces:
 
+- **The engine is pure.** `reduce(state, action, ctx)` reads no clock,
+  no dice and no database; time, randomness, the roster and the sender
+  come in through `ctx`. Keep it that way: it is what makes the 100-odd
+  engine tests possible and a night replayable.
+- **The engine never names a theme or writes a sentence.** It emits a
+  code and parameters; `messages.ts` holds the words, written against a
+  `Voice` built from the party's theme. `messages.test.ts` fails if the
+  Plain theme ever says a prison word.
+- **`src/lib/sessions` is the only code that writes a session**, and
+  it never trusts a role or team id from the browser: `viewer.ts`
+  works out who is asking from the cookie or token.
 - **Anything that must happen once goes through one atomic step** (a
   SQL function, or the session's compare-and-set). The retired game
   checked then wrote, so a double-tap could pay points twice.
 - **Actions carry a client-generated id and name their target.**
   "Serve the next block" double-fires; "serve block X" doesn't.
+- **A team's phone acts for the team that sent the action**, taken from
+  who is signed in, never from an argument.
+- **Screens draw what the engine gives them.** What a seat may know is
+  decided in `engine/views.ts`, on the server. A screen never filters
+  out a secret itself, because the data would already be in the page.
 - **A game never touches a Vercel function with a video.** Phones get a
   signed upload URL and PUT straight to storage.

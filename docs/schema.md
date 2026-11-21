@@ -196,14 +196,145 @@ Migrations `0006`–`0009` built a relational game: `acts`, `games`,
 with `events.current_day`, `events.phase`, `events.ended_at`,
 `events.winner_block_id` and `blocks.bonus_points_per_drink`.
 
-Games are now modules. Each running game keeps its state in one JSON
-document and logs every action; those tables (`game_sessions`,
-`game_actions`) arrive with phase 4 of `docs/rework-plan.md` and will be
-documented here then.
+Games are now modules; their tables are in the next section.
 
 Two ideas from the retired tables carry forward. Balances are still
 derived from an append-only ledger, never stored. And phones still
 write intents that one server-side step turns into state.
+
+---
+
+## Game sessions
+
+Added by migration `0011`. These two tables and one function are all
+any game needs from the database, whatever the game is. A game module
+(`src/modules`) keeps its whole state in one document and changes it
+only through its reducer; `src/lib/sessions` is the only code that
+reads or writes these tables.
+
+### game_sessions
+
+One game running, or run, at one party.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | uuid | PK |
+| event_id | uuid | FK events |
+| module_key | text | Which module in `src/modules` owns `state`: `sss` |
+| status | text | active, archived. One active session per event, by a partial unique index |
+| state | jsonb | The module's document. Opaque to SQL on purpose |
+| schema_version | int | The module's version of the document's shape |
+| version | int | Bumped by every change. A writer must say which version it read |
+| next_deadline_at | timestamptz | When the game's clock next needs a nudge; null if nothing is pending |
+| updated_at | timestamptz | |
+
+`version` is what makes a poll cheap: a screen sends the version it
+holds, and an unchanged session is answered from this row alone,
+without reading `state`. `next_deadline_at` is on the row for the same
+reason: a poll can see that a timer has run out and settle it.
+
+People and groups are not in `state`. A game refers to `blocks.id` and
+`participants.id`, and reads who is here from those tables on every
+action.
+
+### game_actions
+
+Every change to a session, in order. Append-only.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | bigint | PK, identity |
+| session_id | uuid | FK game_sessions |
+| client_action_id | text | Minted by the sender, once per tap. Unique per session. Null for the clock |
+| actor_role | text | host, bar, team, system |
+| actor_team_id | uuid | FK blocks, for a team's phone |
+| type | text | The action: `startRound`, `buy`, `barNext`, `tick` |
+| args | jsonb | |
+| result | jsonb | What the sender was told, so a repeat can be told the same |
+| version | int | The session version this action produced. Unique per session |
+| at_ms | bigint | The clock the reducer was given |
+| seed | bigint | The seed for the dice the reducer was given |
+
+It does three jobs. It is the audit trail. Its unique
+`client_action_id` is what makes a double tap harmless. And because it
+records the clock and the dice each action was given, a night can be
+replayed from it (against the roster as it stands now; roster changes
+during the night are not logged).
+
+### apply_game_action
+
+`apply_game_action(session, expected_version, state, next_deadline_at,
+client_action_id, actor_role, actor_team_id, type, args, result, at_ms,
+seed) returns int`
+
+Saves a new state and logs the action that made it, in one transaction.
+Returns the new version, or null if the session's version is no longer
+`expected_version` (someone else saved first; the caller reloads and
+applies the action again). A repeated `client_action_id` raises a
+unique violation, which undoes the save. Only the service role may
+call it.
+
+---
+
+## Polls
+
+Added by migration `0012`. A room-wide vote that works with or without
+a game. The first kind is the costume vote.
+
+### polls
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | uuid | PK. Also the vote link: `/vote/<id>` |
+| event_id | uuid | FK events |
+| kind | text | costume |
+| status | text | open (taking votes, code on the TV), closed (results on the TV), hidden (over). One open-or-closed poll per event, by a partial unique index |
+| picks | int | How many each phone may pick for best, and for worst. Default 3 |
+| results | jsonb | Fixed when the poll closes: ranked best and worst with vote counts, how many voted, and what the game was told |
+| opened_at, closed_at | timestamptz | |
+
+### poll_votes
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| poll_id | uuid | FK polls |
+| voter_id | text | The phone's device cookie. PK with `poll_id`: one vote per phone, and voting again replaces it |
+| best | uuid[] | `participants.id` |
+| worst | uuid[] | `participants.id` |
+
+A vote is one row per phone, written with an upsert, so everyone voting
+at once contends for nothing. Votes are deliberately not in a game's
+session document, where they would all fight over one row.
+
+When a poll closes while a game is running, the game's module is asked
+what the result is worth (`GameModule.costumeAwards`) and those actions
+are sent as the host, each with an id built from the poll's, so closing
+twice awards once.
+
+---
+
+## Clips
+
+Added by migration `0013`. Short videos a team films on its phone, for
+the TV. A core feature: it works with or without a game.
+
+### clips
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | uuid | PK |
+| event_id | uuid | FK events |
+| block_id | uuid | FK blocks: the team whose phone filmed it |
+| storage_path | text | Path in the private `clips` bucket: `<event>/<block>/<name>` |
+| content_type | text | |
+| caption | text | Optional, 80 characters |
+| status | text | pending (a link was issued, upload not confirmed), live (on the TV), hidden (taken off by a host; the file is kept) |
+
+The video never passes through the app's server. The phone asks for a
+signed upload link, PUTs the file to storage itself, then says it's
+done; the clip goes live only if the file is really there. The bucket
+is private, takes video only, up to 50 MB; the TV plays clips through
+signed links that last an hour.
 
 ---
 
