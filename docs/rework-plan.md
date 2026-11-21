@@ -187,8 +187,13 @@ A full night is playable. Each seat has one screen, in
   and each send carries its own id.
 - The engine decides what each seat may know; the screens draw what
   they are given and hide nothing themselves.
-- The look is the existing paper-and-ink components. The pixel kit is
-  not wired in yet.
+- Every screen fits a 320px-wide phone: nothing is wider than the
+  screen, and a table too wide for it scrolls sideways inside a
+  `.scroller`. A new table in a game screen needs that wrapper.
+- On the team's phone the roster is folded away at the bottom.
+- A screen that names its seat (a team or screen token) gets that seat
+  even in a browser signed in as host, so a host who picks up a team's
+  phone sees what that team sees.
 
 Played end to end against the real database through these screens,
 with a host, three phones, the bar and the TV in separate browsers:
@@ -211,7 +216,10 @@ is worth: in Slammer, 10 points to the best costume's team and a shot
 in the next queue for the worst's.
 
 **Clips** are a core feature too (`src/lib/clips`, migration `0013`).
-A team's phone has a Film a clip button on its card page; the video
+A team's phone is offered Film a clip only while that team is
+drinking: from when the bar calls it up until the round ends. (The
+page hands the control to the game, which decides when to show it, so
+with no game running there is nowhere to film from.) The video
 goes from the phone straight to the private `clips` bucket through a
 signed link, and the newest clips loop muted in a corner of the TV. A
 host can take a clip off the TV from the event page; the file is kept.

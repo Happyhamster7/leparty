@@ -1369,19 +1369,26 @@ table.list td.tight {
   margin: 0 0 16px;
 }
 
+/* Where the round is: four equal steps in one row, whatever the screen width. */
 .g-phases {
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+  gap: 4px;
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
 }
 
 .g-phases span {
-  padding: 3px 10px;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 5px 2px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   border: 1px solid var(--line);
+  background: var(--fill);
   color: var(--muted);
 }
 
@@ -1389,10 +1396,10 @@ table.list td.tight {
   background: var(--ink);
   border-color: var(--ink);
   color: var(--paper);
+  font-weight: 500;
 }
 
-.g-standings td,
-.g-standings th {
+.g-standings td {
   white-space: nowrap;
 }
 
@@ -1757,4 +1764,72 @@ table.list td.tight {
 .g-sound {
   float: right;
   margin: 0 0 8px 8px;
+}
+
+.g-film {
+  margin-top: 14px;
+}
+
+/* Phones: nothing may be wider than the screen. Wide tables scroll inside themselves. */
+.scroller {
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 560px) {
+  .g-big {
+    font-size: 16px;
+    padding: 14px 16px;
+    width: 100%;
+  }
+
+  .btn-row .btn--inline {
+    flex: 1 1 auto;
+  }
+
+  .g-people,
+  .g-shelf {
+    grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  }
+
+  .g-row,
+  .g-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .g-bar__team {
+    font-size: 22px;
+  }
+
+  .g-bar__clock {
+    font-size: 36px;
+  }
+
+  table.list td,
+  table.list th {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  /* Four steps must fit a 320px screen without cutting a word. */
+  .g-phases {
+    gap: 3px;
+    font-size: 10px;
+    letter-spacing: 0;
+  }
+
+  .g-phases span {
+    padding: 5px 0;
+  }
+
+  /* Cash and points side by side, not stacked. */
+  .g-team .stat-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .g-buy .g-people {
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  }
 }

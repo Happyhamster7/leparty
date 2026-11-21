@@ -134,7 +134,7 @@ function Game({ round, me, teams }: { round: Round; me: string; teams: string[] 
 }
 
 function Drinks({ round, me }: { round: Round; me: string }) {
-  const { v } = useGame<View>();
+  const { v, film } = useGame<View>();
   const serves = round.serves;
   const mine = serves.find((s) => s.teamId === me);
   if (!mine) return <div className="box box--dark">Safe this round: nobody sent you anything.</div>;
@@ -157,6 +157,8 @@ function Drinks({ round, me }: { round: Round; me: string }) {
           {mine.drinks} coming your way. {ahead > 0 ? `${ahead} ${ahead === 1 ? v.group : v.groups} ahead of you at the bar.` : 'You’re next at the bar.'}
         </p>
       )}
+      {/* Filming is for the drinking itself: offered once the team is called up, until the round ends. */}
+      {mine.servedAt && film ? <div className="g-film">{film}</div> : null}
     </div>
   );
 }
@@ -361,7 +363,7 @@ function Extras({ me }: { me: string }) {
       {view.eyeSpy ? (
         <details className="g-fold">
           <summary>Eye Spy: who has sent what to whom</summary>
-          <table className="list">
+          <div className="scroller"><table className="list">
             <tbody>
               {view.eyeSpy.rows.map((r, i) => (
                 <tr key={i}>
@@ -373,7 +375,7 @@ function Extras({ me }: { me: string }) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </details>
       ) : null}
     </div>
