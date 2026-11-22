@@ -1,6 +1,7 @@
-// Fiona's body: a small vector rig drawn with canvas paths, in a
-// pastel kawaii / chibi style — a white cat with a big round head,
-// blob body, stubby legs, big sparkly eyes, blush, soft brown outline.
+// Fiona's body: a small vector rig drawn with canvas paths, styled as
+// a fluffy plush kitten — one soft egg shape, a fuzzy fur edge instead
+// of an outline, 3D-style shading, soft round blush and big glossy
+// eyes.
 //
 // She's built from simple shapes (capsules, circles, ellipses, ear
 // triangles) placed on a handful of joints. Three key poses — stand,
@@ -16,20 +17,27 @@
 
 (function (root) {
   const COL = {
-    fur: '#fffaf5', // warm white
-    furFar: '#efe5dc', // far-side legs, slightly shaded
-    stripe: '#f1dfd3', // markings: soft cream, just enough to give her shape
-    shade: '214, 186, 205', // lilac-pink shadow tint (r, g, b), used at various strengths
+    fur: '#fff8ee', // warm white
+    furFar: '#f3e5d6', // far-side legs, slightly shaded
+    stripe: '#f8e9da', // faint tabby markings
     white: '#ffffff',
-    whiteFar: '#f1e8df',
-    outline: '#9a6248', // soft brown, never black
-    nose: '#f28da2',
-    earIn: '#fbc6c4',
-    blush: '#f9a3b4',
-    eye: '#3a2733', // dark plum
-    eyeGlow: '#8f63b0',
+    whiteFar: '#f5e9dc',
+    rim: 'rgba(190, 150, 135, 0.5)', // soft edge so she reads on a white background
+    shade: '228, 188, 168', // warm shadow tint (r, g, b), used at various strengths
+    nose: '#f39aa9',
+    mouth: '#b77a70',
+    earIn: '#f9c3c4',
+    blush: '255, 140, 165', // (r, g, b)
+    eye: '#1a1115',
+    iris: '#8a5a32', // brown ring at the bottom of the eye
   };
-  const OUT = 1.8; // outline thickness
+  const OUT = 0.9; // width of the soft rim
+
+  // Repeatable pseudo-random number for index n, so fur doesn't flicker.
+  const rnd = (n) => {
+    const x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+    return x - Math.floor(x);
+  };
 
   // ---- small maths ------------------------------------------------------
 
@@ -62,13 +70,13 @@
 
   // ---- poses ------------------------------------------------------------
 
-  // Chibi proportions: the head is as big as the body, the legs are stubs.
-  const HEAD_RX = 22;
-  const HEAD_RY = 20;
+  // An egg: the head is the top half, the body the bottom, legs are nubs.
+  const HEAD_RX = 23;
+  const HEAD_RY = 19;
   const POSE = {
-    stand: { hip: { x: -12, y: -22 }, shoulder: { x: 8, y: -23 }, head: { x: 18, y: -40 }, tail: { x: -25, y: -28 }, bodyR: 15, haunchR: 15, chestR: 14.5 },
-    sit: { hip: { x: -5, y: -18.5 }, shoulder: { x: 3, y: -28 }, head: { x: 7, y: -47 }, tail: { x: -21, y: -8 }, bodyR: 15.5, haunchR: 18.5, chestR: 14.5 },
-    lie: { hip: { x: -14, y: -15 }, shoulder: { x: 8, y: -15 }, head: { x: 21, y: -20.5 }, tail: { x: -27, y: -9 }, bodyR: 14.5, haunchR: 15, chestR: 14.5 },
+    stand: { hip: { x: -11, y: -22 }, shoulder: { x: 7, y: -23 }, head: { x: 14, y: -37 }, tail: { x: -25, y: -27 }, bodyR: 16, haunchR: 16, chestR: 15.5 },
+    sit: { hip: { x: -3, y: -20 }, shoulder: { x: 2, y: -30 }, head: { x: 5, y: -44 }, tail: { x: -20, y: -8 }, bodyR: 18, haunchR: 20, chestR: 17 },
+    lie: { hip: { x: -14, y: -15.5 }, shoulder: { x: 8, y: -15.5 }, head: { x: 20, y: -20 }, tail: { x: -27, y: -9 }, bodyR: 15, haunchR: 15.5, chestR: 15 },
   };
 
   // Tail shapes: absolute angle of the first segment, then how much each
@@ -83,8 +91,8 @@
     sleep: { base: -3.35, curl: -0.36, amp: 0.025, freq: 0.8 },
   };
   const TAIL_N = 8;
-  const TAIL_SEG = 4.6;
-  const tailR = (i) => lerp(5, 4.2, i / (TAIL_N - 1)); // short and plump
+  const TAIL_SEG = 4.2;
+  const tailR = (i) => lerp(5.4, 4.6, i / (TAIL_N - 1)); // short and plump
 
   // ---- state ------------------------------------------------------------
 
@@ -173,8 +181,8 @@
     ];
     P.legs = legDefs.map((d) => {
       const foot = mix(gait(d.stand, d.p), { x: d.sit, y: FOOT_Y + hop }, s);
-      const l1 = d.front ? lerp(6, 9, s) : lerp(6, 7, s);
-      const l2 = d.front ? lerp(6.5, 10, s) : lerp(6.5, 8, s);
+      const l1 = d.front ? lerp(6, 10, s) : lerp(6, 7.5, s);
+      const l2 = d.front ? lerp(6.5, 11.5, s) : lerp(6.5, 9, s);
       const { knee, end } = ik(d.root, foot, l1, l2, d.front ? 1 : -1);
       return { far: d.far, root: d.root, knee, end };
     });
@@ -219,25 +227,86 @@
     }
   }
 
-  // Draw a set of shapes as one silhouette with one shared outline:
-  // fills first, then `details` clipped to the fills, then the outline
-  // slid in *behind* everything already on the canvas.
+  // Fuzz: short fine hairs all the way round each shape, in its own
+  // colour. Where shapes overlap the hairs vanish into the fur; at the
+  // silhouette they stick out, which is what makes the edge look soft.
+  function fuzz(ctx, shapes) {
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 0.7;
+    shapes.forEach((sh, si) => {
+      let n = si * 1000;
+      ctx.strokeStyle = sh.col;
+      ctx.beginPath();
+      // One hair from point (x, y) on the edge, pointing along angle a.
+      const hair = (x, y, a) => {
+        const lean = a + (rnd(n++) - 0.5) * 0.7;
+        const len = 0.5 + rnd(n++) * 1.5; // short: a soft halo, not spikes
+        ctx.moveTo(x - Math.cos(a), y - Math.sin(a));
+        ctx.lineTo(x + Math.cos(lean) * len, y + Math.sin(lean) * len);
+      };
+      const ring = (cx, cy, rx, ry, rot) => {
+        const count = Math.ceil((Math.PI * (rx + ry)) / 0.8);
+        const k = Math.cos(rot);
+        const s = Math.sin(rot);
+        for (let i = 0; i < count; i++) {
+          const t = ((i + rnd(n++) * 0.6) / count) * Math.PI * 2;
+          const ex = rx * Math.cos(t);
+          const ey = ry * Math.sin(t);
+          hair(cx + ex * k - ey * s, cy + ex * s + ey * k, Math.atan2(ex * s + ey * k, ex * k - ey * s));
+        }
+      };
+      if (sh.t === 'circ') ring(sh.c.x, sh.c.y, sh.r, sh.r, 0);
+      else if (sh.t === 'ell') ring(sh.c.x, sh.c.y, sh.rx, sh.ry, sh.rot || 0);
+      else if (sh.t === 'cap') {
+        ring(sh.a.x, sh.a.y, sh.r, sh.r, 0);
+        ring(sh.b.x, sh.b.y, sh.r, sh.r, 0);
+        const dx = sh.b.x - sh.a.x;
+        const dy = sh.b.y - sh.a.y;
+        const len = Math.hypot(dx, dy);
+        const side = Math.atan2(dy, dx) + Math.PI / 2;
+        for (let d = 0; d < len; d += 0.8) {
+          const px = sh.a.x + (dx / len) * d;
+          const py = sh.a.y + (dy / len) * d;
+          hair(px + Math.cos(side) * sh.r, py + Math.sin(side) * sh.r, side);
+          hair(px - Math.cos(side) * sh.r, py - Math.sin(side) * sh.r, side + Math.PI);
+        }
+      } else if (sh.t === 'poly') {
+        const cx = sh.pts.reduce((a, p) => a + p.x, 0) / sh.pts.length;
+        const cy = sh.pts.reduce((a, p) => a + p.y, 0) / sh.pts.length;
+        sh.pts.forEach((p, i) => {
+          const q = sh.pts[(i + 1) % sh.pts.length];
+          const len = Math.hypot(q.x - p.x, q.y - p.y);
+          for (let d = 0; d < len; d += 0.8) {
+            const px = p.x + ((q.x - p.x) * d) / len;
+            const py = p.y + ((q.y - p.y) * d) / len;
+            hair(px, py, Math.atan2(py - cy, px - cx));
+          }
+        });
+      }
+      ctx.stroke();
+    });
+  }
+
+  // Draw a set of shapes as one soft silhouette: fills and fuzz first,
+  // then `details` clipped to them, then a faint rim slid in behind.
   function layer(ctx, shapes, details) {
     ctx.globalCompositeOperation = 'source-over';
     for (const sh of shapes) shape(ctx, sh, 0);
+    fuzz(ctx, shapes);
     if (details) {
       ctx.globalCompositeOperation = 'source-atop';
       details();
     }
     ctx.globalCompositeOperation = 'destination-over';
-    for (const sh of shapes) shape(ctx, sh, OUT, COL.outline);
+    for (const sh of shapes) shape(ctx, sh, OUT, COL.rim);
   }
 
   // Same, but the whole layer goes behind what's already drawn.
   function layerBehind(ctx, shapes) {
     ctx.globalCompositeOperation = 'destination-over';
     for (const sh of shapes) shape(ctx, sh, 0);
-    for (const sh of shapes) shape(ctx, sh, OUT, COL.outline);
+    fuzz(ctx, shapes);
+    for (const sh of shapes) shape(ctx, sh, OUT, COL.rim);
   }
 
   function line(ctx, a, b, w, colour) {
@@ -250,56 +319,73 @@
     ctx.stroke();
   }
 
+  // Shade a round form like a ball lit from the upper left: clear in
+  // the middle, tinted toward the far edge.
+  function ball(ctx, cx, cy, r, strength) {
+    const g = ctx.createRadialGradient(cx - r * 0.25, cy - r * 0.35, r * 0.15, cx, cy, r * 1.08);
+    g.addColorStop(0, `rgba(${COL.shade}, 0)`);
+    g.addColorStop(0.55, `rgba(${COL.shade}, 0)`);
+    g.addColorStop(1, `rgba(${COL.shade}, ${strength})`);
+    ctx.fillStyle = g;
+    ctx.fillRect(cx - r * 1.3, cy - r * 1.3, r * 2.6, r * 2.6);
+  }
+
+  // Fur texture: fine light and dark strokes scattered over an ellipse,
+  // all combed outward and down from its top.
+  function furTexture(ctx, c, rx, ry, seed, count) {
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 0.6;
+    for (const [tone, offset] of [[`rgba(255, 255, 255, 0.5)`, 0], [`rgba(${COL.shade}, 0.16)`, 500]]) {
+      ctx.strokeStyle = tone;
+      ctx.beginPath();
+      for (let i = 0; i < count; i++) {
+        const n = seed + offset + i * 3;
+        const a = rnd(n) * Math.PI * 2;
+        const d = Math.sqrt(rnd(n + 1)) * 0.9;
+        const x = c.x + Math.cos(a) * rx * d;
+        const y = c.y + Math.sin(a) * ry * d;
+        const flow = Math.atan2(y - (c.y - ry * 0.9), x - c.x);
+        const len = 1.2 + rnd(n + 2) * 1.6;
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + Math.cos(flow) * len, y + Math.sin(flow) * len);
+      }
+      ctx.stroke();
+    }
+  }
+
   function drawCat(ctx, c) {
     const P = solve(c);
     c.points = P;
-    const tilt = c.tilt + 0.12 * c.lie + 0.25 * c.eat;
+    const tilt = c.tilt + 0.1 * c.lie + 0.22 * c.eat;
     const Hd = (x, y) => rotAround({ x: P.head.x + x, y: P.head.y + y }, P.head, tilt);
     const tw = c.earTwitch;
     const showLegs = c.lie < 0.55;
+    const headShape = { t: 'ell', c: P.head, rx: HEAD_RX, ry: HEAD_RY, rot: tilt, col: COL.fur };
 
     // Near half: body, head, ears, near legs — one silhouette.
     const near = [
       { t: 'cap', a: P.hip, b: P.shoulder, r: P.bodyR, col: COL.fur },
       { t: 'circ', c: P.hip, r: P.haunchR, col: COL.fur },
       { t: 'circ', c: P.shoulder, r: P.chestR, col: COL.fur },
-      { t: 'cap', a: P.shoulder, b: mix(P.shoulder, P.head, 0.6), r: 9, col: COL.fur },
     ];
     const far = [];
-    const nearPaws = [];
     for (const leg of P.legs) {
       if (!showLegs) break; // lying down she's a loaf: legs tucked away
       const list = leg.far ? far : near;
       const fur = leg.far ? COL.furFar : COL.fur;
-      list.push({ t: 'cap', a: leg.root, b: leg.knee, r: 5, col: fur });
-      list.push({ t: 'cap', a: leg.knee, b: leg.end, r: 4.5, col: fur });
-      list.push({ t: 'ell', c: add(leg.end, 1.4, 0.4), rx: 5.2, ry: 3.2, col: leg.far ? COL.whiteFar : COL.white });
-      if (!leg.far) nearPaws.push(add(leg.end, 1.4, 0.4));
+      list.push({ t: 'cap', a: leg.root, b: leg.knee, r: 5.2, col: fur });
+      list.push({ t: 'cap', a: leg.knee, b: leg.end, r: 4.8, col: fur });
+      list.push({ t: 'ell', c: add(leg.end, 1.2, 0.2), rx: 5.4, ry: 3.6, col: leg.far ? COL.whiteFar : COL.white });
     }
-    // Head last, so it sits over the body and front legs.
+    // Head last, so it sits over the body and front legs. Small ears, set wide.
     near.push(
-      { t: 'poly', round: 5, pts: [Hd(-15.5, -10.5), Hd(-6, -17), Hd(-13.5, -26)], col: COL.fur },
-      { t: 'poly', round: 5, pts: [Hd(5, -17), Hd(15.5, -10.5), Hd(14.5 + tw * 3, -26 + tw * 2)], col: COL.fur },
-      // Fluff: a tuft on top and at each cheek, so the outline isn't a plain oval.
-      { t: 'poly', round: 3, pts: [Hd(0, -18.5), Hd(3.5, -24.5), Hd(6.5, -18.5)], col: COL.fur },
-      { t: 'poly', round: 2.4, pts: [Hd(-19, 5), Hd(-23.6, 8), Hd(-20, 10)], col: COL.fur },
-      { t: 'poly', round: 3, pts: [Hd(-19, 9.5), Hd(-22.8, 13), Hd(-17.5, 14)], col: COL.fur },
-      { t: 'poly', round: 2.4, pts: [Hd(23, 5), Hd(27.4, 8), Hd(24, 10)], col: COL.fur },
-      { t: 'poly', round: 3, pts: [Hd(23, 9.5), Hd(26.6, 13), Hd(21.5, 14)], col: COL.fur },
-      { t: 'ell', c: P.head, rx: HEAD_RX, ry: HEAD_RY, rot: tilt, col: COL.fur },
-      { t: 'ell', c: Hd(2, 7), rx: HEAD_RX + 2, ry: 13.5, rot: tilt, col: COL.fur } // mochi cheeks
+      { t: 'poly', round: 4, pts: [Hd(-18.5, -8), Hd(-10, -15.5), Hd(-17.5, -23.5)], col: COL.fur },
+      { t: 'poly', round: 4, pts: [Hd(9, -15.5), Hd(18.5, -8.5), Hd(17.5 + tw * 2.5, -23.5 + tw * 1.5)], col: COL.fur },
+      headShape
     );
-    const headPath = () => {
-      const path = new Path2D();
-      path.ellipse(P.head.x, P.head.y, HEAD_RX, HEAD_RY, tilt, 0, Math.PI * 2);
-      const cheeks = new Path2D();
-      cheeks.ellipse(Hd(2, 7).x, Hd(2, 7).y, HEAD_RX + 2, 13.5, tilt, 0, Math.PI * 2);
-      path.addPath(cheeks);
-      return path;
-    };
 
     layer(ctx, near, () => {
-      // Back stripes, perpendicular to the spine.
+      // Faint tabby stripes across the back.
       const ux = P.shoulder.x - P.hip.x;
       const uy = P.shoulder.y - P.hip.y;
       const ul = Math.hypot(ux, uy) || 1;
@@ -308,138 +394,73 @@
         const t = 0.02 + 0.34 * i;
         const p = mix(P.hip, P.shoulder, t);
         const r = lerp(P.haunchR, P.chestR, t);
-        line(ctx, add(p, n.x * (r + 2), n.y * (r + 2)), add(p, n.x * (r - 6) - (ux / ul) * 2, n.y * (r - 6) - (uy / ul) * 2), 3, COL.stripe);
+        line(ctx, add(p, n.x * (r + 2), n.y * (r + 2)), add(p, n.x * (r - 7) - (ux / ul) * 2, n.y * (r - 7) - (uy / ul) * 2), 3.2, COL.stripe);
       }
-      // Cream belly.
-      ctx.fillStyle = COL.white;
-      ctx.beginPath();
-      ctx.ellipse(P.shoulder.x + P.chestR * 0.5, P.shoulder.y + 5, 8.5, 11, -0.15 * (1 - c.lie), 0, Math.PI * 2);
-      ctx.fill();
 
-      // Soft shading: the body darkens toward the ground...
-      const top = Math.min(P.hip.y - P.haunchR, P.shoulder.y - P.chestR);
-      const bodyShade = ctx.createLinearGradient(0, top, 0, 0);
-      bodyShade.addColorStop(0, `rgba(${COL.shade}, 0)`);
-      bodyShade.addColorStop(0.4, `rgba(${COL.shade}, 0)`);
-      bodyShade.addColorStop(1, `rgba(${COL.shade}, 0.7)`);
-      ctx.fillStyle = bodyShade;
-      ctx.fillRect(-120, -150, 240, 170);
-      // ...and the head casts a shadow on the chest.
-      ctx.fillStyle = `rgba(${COL.shade}, 0.4)`;
-      ctx.beginPath();
-      ctx.ellipse(Hd(2, 13).x, Hd(2, 13).y, HEAD_RX, 12, tilt, 0, Math.PI * 2);
-      ctx.fill();
-      // Chest fluff.
-      if (c.lie < 0.5) {
-        const ch = { x: P.shoulder.x + P.chestR * 0.55, y: P.shoulder.y + 8 };
-        ctx.strokeStyle = COL.outline;
-        ctx.globalAlpha = 0.4;
-        ctx.lineWidth = 1;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(ch.x - 3.5, ch.y);
-        ctx.quadraticCurveTo(ch.x - 1.8, ch.y + 3.2, ch.x, ch.y + 0.6);
-        ctx.quadraticCurveTo(ch.x + 1.8, ch.y + 3.6, ch.x + 3.5, ch.y);
-        ctx.stroke();
-        ctx.globalAlpha = 1;
-      }
-      // Toes.
-      ctx.strokeStyle = COL.outline;
-      ctx.globalAlpha = 0.45;
-      ctx.lineWidth = 0.9;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      for (const paw of nearPaws) {
-        for (const dx of [1.2, 3.2]) {
-          ctx.moveTo(paw.x + dx, paw.y + 0.4);
-          ctx.lineTo(paw.x + dx + 0.3, paw.y + 2.4);
-        }
-      }
-      ctx.stroke();
-      ctx.globalAlpha = 1;
+      // Body: shaded as one ball, textured, darker where it meets the ground.
+      const bc = mix(P.hip, P.shoulder, 0.45);
+      const br = Math.max(P.haunchR, P.chestR) + ul * 0.5;
+      ball(ctx, bc.x, bc.y, br, 0.75);
+      furTexture(ctx, bc, br * 0.95, Math.max(P.haunchR, P.chestR), 9000, 70);
+      const contact = ctx.createLinearGradient(0, -9, 0, 0);
+      contact.addColorStop(0, `rgba(${COL.shade}, 0)`);
+      contact.addColorStop(1, `rgba(${COL.shade}, 0.55)`);
+      ctx.fillStyle = contact;
+      ctx.fillRect(-120, -9, 240, 12);
+      // The head's shadow on the chest.
+      const under = Hd(1, 12);
+      const drop = ctx.createRadialGradient(under.x, under.y, 4, under.x, under.y, HEAD_RX + 2);
+      drop.addColorStop(0, `rgba(${COL.shade}, 0.6)`);
+      drop.addColorStop(1, `rgba(${COL.shade}, 0)`);
+      ctx.fillStyle = drop;
+      ctx.fillRect(under.x - 30, under.y - 30, 60, 60);
 
-      // Re-fill the head so body details don't show through it.
-      shape(ctx, { t: 'ell', c: P.head, rx: HEAD_RX, ry: HEAD_RY, rot: tilt, col: COL.fur }, 0);
-      shape(ctx, { t: 'ell', c: Hd(2, 7), rx: HEAD_RX + 2, ry: 13.5, rot: tilt, col: COL.fur }, 0);
-      // Head shading: light on the forehead, tinted toward the edges.
-      const hp = headPath();
-      const lit = Hd(-2, -8);
-      const headShade = ctx.createRadialGradient(lit.x, lit.y, 6, P.head.x, P.head.y + 2, 30);
-      headShade.addColorStop(0, `rgba(${COL.shade}, 0)`);
-      headShade.addColorStop(0.55, `rgba(${COL.shade}, 0)`);
-      headShade.addColorStop(1, `rgba(${COL.shade}, 0.65)`);
+      // The head: re-filled so body details don't show through it, then
+      // shaded as its own ball. No chin line, no cheek tufts — just round.
+      const hp = new Path2D();
+      hp.ellipse(P.head.x, P.head.y, HEAD_RX, HEAD_RY, tilt, 0, Math.PI * 2);
       ctx.save();
       ctx.clip(hp);
-      ctx.fillStyle = headShade;
-      ctx.fillRect(-120, -150, 240, 170);
-      ctx.restore();
-      // A soft line under the chin, to separate head from body.
-      ctx.strokeStyle = COL.outline;
-      ctx.globalAlpha = 0.55;
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      ctx.ellipse(Hd(2, 7).x, Hd(2, 7).y, HEAD_RX + 2.6, 14.1, tilt, 0.12 * Math.PI, 0.88 * Math.PI);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-
-      // Forehead stripes.
-      line(ctx, Hd(-1, -20), Hd(-0.5, -14.5), 2.4, COL.stripe);
-      line(ctx, Hd(3.5, -20.5), Hd(3.5, -14), 2.4, COL.stripe);
-      line(ctx, Hd(8, -20), Hd(7.5, -14.5), 2.4, COL.stripe);
-      // Cream lower face.
-      ctx.fillStyle = COL.white;
-      ctx.beginPath();
-      ctx.ellipse(Hd(4, 11).x, Hd(4, 11).y, 13, 8, tilt, 0, Math.PI * 2);
-      ctx.fill();
-      // Blush.
-      ctx.fillStyle = COL.blush;
-      ctx.globalAlpha = 0.75;
-      for (const [bx, by] of [[-12, 9.5], [19, 9.5]]) {
+      shape(ctx, headShape, 0);
+      line(ctx, Hd(-1.5, -19), Hd(-1, -14), 2.4, COL.stripe);
+      line(ctx, Hd(3.5, -19.5), Hd(3.5, -13.5), 2.4, COL.stripe);
+      line(ctx, Hd(8.5, -19), Hd(8, -14), 2.4, COL.stripe);
+      ball(ctx, P.head.x, P.head.y + 1, HEAD_RX + 1, 0.6);
+      furTexture(ctx, P.head, HEAD_RX, HEAD_RY, 4000, 80);
+      // Blush: big, soft, low on the cheeks, fading out with no edge.
+      for (const [bx, by] of [[-13.5, 8.5], [20, 8.5]]) {
         const b = Hd(bx, by);
-        ctx.beginPath();
-        ctx.ellipse(b.x, b.y, 4, 2.4, tilt, 0, Math.PI * 2);
-        ctx.fill();
+        const g = ctx.createRadialGradient(b.x, b.y, 0.5, b.x, b.y, 7.5);
+        g.addColorStop(0, `rgba(${COL.blush}, 0.62)`);
+        g.addColorStop(0.5, `rgba(${COL.blush}, 0.36)`);
+        g.addColorStop(1, `rgba(${COL.blush}, 0)`);
+        ctx.fillStyle = g;
+        ctx.fillRect(b.x - 8, b.y - 8, 16, 16);
       }
-      // Little hatch marks on the blush.
-      ctx.strokeStyle = '#ee7f96';
-      ctx.globalAlpha = 0.7;
-      ctx.lineWidth = 0.8;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      for (const bx of [-12, 19]) {
-        for (const dx of [-1.8, 0, 1.8]) {
-          const a = Hd(bx + dx + 0.6, 8.6);
-          const b = Hd(bx + dx - 0.6, 10.4);
-          ctx.moveTo(a.x, a.y);
-          ctx.lineTo(b.x, b.y);
-        }
-      }
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-      // Inner ears.
-      ctx.fillStyle = ctx.strokeStyle = COL.earIn;
+      ctx.restore();
+
+      // Inner ears, pink fading toward the tip.
       ctx.lineJoin = 'round';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 1.6;
       for (const pts of [
-        [Hd(-13.5, -12.5), Hd(-8.5, -16.5), Hd(-13, -22)],
-        [Hd(7.5, -16.5), Hd(13.5, -12.5), Hd(13 + tw * 2.5, -22 + tw * 1.5)],
+        [Hd(-16.5, -10.5), Hd(-11.5, -14.5), Hd(-16.3, -20.5)],
+        [Hd(11, -14.5), Hd(16.5, -11), Hd(16.3 + tw * 2, -20.5 + tw * 1.2)],
       ]) {
+        const g = ctx.createLinearGradient(pts[0].x, pts[0].y + 3, pts[2].x, pts[2].y);
+        g.addColorStop(0, COL.earIn);
+        g.addColorStop(1, '#fde3df');
+        ctx.fillStyle = ctx.strokeStyle = g;
         ctx.beginPath();
         pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
       }
-      // Ear fluff.
-      line(ctx, Hd(-9.5, -15.5), Hd(-11.3, -18.6), 1.5, COL.white);
-      line(ctx, Hd(-11.3, -14), Hd(-12.6, -17), 1.3, COL.white);
-      line(ctx, Hd(9, -15.5), Hd(11, -18.6), 1.5, COL.white);
-      line(ctx, Hd(11.3, -14), Hd(12.4, -17), 1.3, COL.white);
     });
 
     layerBehind(ctx, far);
 
-    // Tail, behind everything, with rings toward the tip.
+    // Tail, behind everything, with faint rings toward the tip.
     const tail = [];
     for (let i = 0; i < TAIL_N; i++) {
       tail.push({ t: 'cap', a: P.tailPts[i], b: P.tailPts[i + 1], r: tailR(i), col: i >= 2 && i % 2 === 0 ? COL.stripe : COL.fur });
@@ -449,113 +470,100 @@
     // A soft shadow on the ground, under everything.
     ctx.globalCompositeOperation = 'destination-over';
     const sx = (P.hip.x + P.shoulder.x) / 2 + lerp(3, 8, c.lie);
-    const shadow = ctx.createRadialGradient(sx, 0, 2, sx, 0, 34);
-    shadow.addColorStop(0, 'rgba(70, 45, 60, 0.28)');
-    shadow.addColorStop(1, 'rgba(70, 45, 60, 0)');
+    const shadow = ctx.createRadialGradient(sx, 0, 2, sx, 0, 36);
+    shadow.addColorStop(0, 'rgba(70, 45, 50, 0.3)');
+    shadow.addColorStop(1, 'rgba(70, 45, 50, 0)');
     ctx.save();
     ctx.translate(0, -0.5);
     ctx.scale(1, 0.11); // squash the round gradient into a flat ellipse
     ctx.fillStyle = shadow;
-    ctx.fillRect(sx - 36, -36, 72, 72);
+    ctx.fillRect(sx - 38, -38, 76, 76);
     ctx.restore();
 
     ctx.globalCompositeOperation = 'source-over';
-    drawFace(ctx, c, Hd, tilt);
+    drawFace(ctx, c, Hd);
   }
 
-  function drawFace(ctx, c, Hd, tilt) {
+  function drawFace(ctx, c, Hd) {
     const open = 1 - c.blink;
     ctx.lineCap = 'round';
-    // Big eyes, set low and wide apart.
-    for (const [ex, ey, outer] of [[-5, 3, -1], [13, 3, 1]]) {
+    // Big, round, glossy eyes, set wide.
+    for (const [ex, ey] of [[-6, 2], [13, 2]]) {
       const e = Hd(ex + c.lookX * 1.3, ey + c.lookY * 1.1);
       if (c.happy > 0.5) {
         // Happy: ^ ^
         ctx.strokeStyle = COL.eye;
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(e.x, e.y + 3, 4.6, 1.15 * Math.PI, 1.85 * Math.PI);
+        ctx.arc(e.x, e.y + 3, 4.8, 1.15 * Math.PI, 1.85 * Math.PI);
         ctx.stroke();
       } else if (open > 0.2) {
-        const rx = 5;
-        const ry = 6.2 * open;
-        // Iris: dark at the top, glowing violet then aqua at the bottom.
-        const iris = ctx.createLinearGradient(e.x, e.y - ry, e.x, e.y + ry);
-        iris.addColorStop(0, '#2a1a2c');
-        iris.addColorStop(0.45, COL.eye);
-        iris.addColorStop(0.75, COL.eyeGlow);
-        iris.addColorStop(1, '#9fe3ea');
-        ctx.fillStyle = iris;
-        ctx.strokeStyle = COL.eye;
-        ctx.lineWidth = 1;
+        const r = 5.4;
+        const ry = r * open;
+        ctx.fillStyle = COL.eye;
         ctx.beginPath();
-        ctx.ellipse(e.x, e.y, rx, ry, tilt, 0, Math.PI * 2);
+        ctx.ellipse(e.x, e.y, r, ry, 0, 0, Math.PI * 2);
         ctx.fill();
-        ctx.stroke();
-        // Heavy upper lid with a lash flick at the outer corner.
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.ellipse(e.x, e.y, rx, ry, tilt, 1.08 * Math.PI, 1.92 * Math.PI);
-        ctx.stroke();
-        ctx.lineWidth = 1.3;
-        ctx.beginPath();
-        ctx.moveTo(e.x + outer * 4.3, e.y - 3 * open);
-        ctx.lineTo(e.x + outer * 6.8, e.y - 5 * open);
-        ctx.stroke();
-        // Sparkles: one big, one small, one tiny.
+        // Brown iris glowing through at the bottom.
+        const glow = ctx.createRadialGradient(e.x, e.y + ry * 0.55, 0.5, e.x, e.y + ry * 0.3, r);
+        glow.addColorStop(0, 'rgba(150, 100, 55, 0.95)');
+        glow.addColorStop(0.6, 'rgba(110, 70, 40, 0.5)');
+        glow.addColorStop(1, 'rgba(110, 70, 40, 0)');
+        ctx.save();
+        ctx.clip();
+        ctx.fillStyle = glow;
+        ctx.fillRect(e.x - r, e.y, r * 2, ry);
+        ctx.restore();
+        // Catchlights: one big, one small.
         ctx.fillStyle = '#fff';
-        for (const [hx, hy, hr] of [[-1.6, -2.5, 2.1], [2.1, 2.6, 1.05], [-2.4, 1.6, 0.55]]) {
-          ctx.beginPath();
-          ctx.arc(e.x + hx + c.lookX * 0.5, e.y + hy * open + c.lookY * 0.3, hr, 0, Math.PI * 2);
-          ctx.fill();
-        }
+        ctx.beginPath();
+        ctx.ellipse(e.x - 1.5 + c.lookX * 0.5, e.y - 2.1 * open + c.lookY * 0.3, 2, 2 * open, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 0.85;
+        ctx.beginPath();
+        ctx.arc(e.x + 2.1 + c.lookX * 0.4, e.y + 2.4 * open, 0.85, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
       } else {
-        // Closed: a soft sleepy curve, with a lash.
+        // Closed: a soft sleepy curve.
         ctx.strokeStyle = COL.eye;
         ctx.lineWidth = 1.8;
         ctx.beginPath();
-        ctx.arc(e.x, e.y - 1.5, 4.4, 0.18 * Math.PI, 0.82 * Math.PI);
-        ctx.stroke();
-        ctx.lineWidth = 1.1;
-        ctx.beginPath();
-        ctx.moveTo(e.x + outer * 3.7, e.y + 1.2);
-        ctx.lineTo(e.x + outer * 5.8, e.y + 2.2);
+        ctx.arc(e.x, e.y - 1.5, 4.6, 0.18 * Math.PI, 0.82 * Math.PI);
         ctx.stroke();
       }
     }
 
-    // Tiny nose and "w" mouth, tucked between the eyes.
-    const n = Hd(4, 7);
+    // Tiny nose and mouth, tucked between the eyes.
+    const n = Hd(3.5, 6.4);
     ctx.fillStyle = COL.nose;
     ctx.beginPath();
-    ctx.ellipse(n.x, n.y, 1.5, 1.05, tilt, 0, Math.PI * 2);
+    ctx.ellipse(n.x, n.y, 1.6, 1.1, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.strokeStyle = COL.outline;
-    ctx.lineWidth = 1.1;
-    const mid = Hd(4, 8.6);
-    const q = (x, y) => Hd(x, y);
+    ctx.strokeStyle = COL.mouth;
+    ctx.lineWidth = 1;
+    const mid = Hd(3.5, 8.2);
     ctx.beginPath();
-    ctx.moveTo(q(1.2, 9.2).x, q(1.2, 9.2).y);
-    ctx.quadraticCurveTo(q(2.4, 11).x, q(2.4, 11).y, mid.x, mid.y);
-    ctx.quadraticCurveTo(q(5.6, 11).x, q(5.6, 11).y, q(6.8, 9.2).x, q(6.8, 9.2).y);
+    ctx.moveTo(Hd(1, 8.8).x, Hd(1, 8.8).y);
+    ctx.quadraticCurveTo(Hd(2.1, 10.4).x, Hd(2.1, 10.4).y, mid.x, mid.y);
+    ctx.quadraticCurveTo(Hd(4.9, 10.4).x, Hd(4.9, 10.4).y, Hd(6, 8.8).x, Hd(6, 8.8).y);
     ctx.stroke();
     if (c.mouth > 0.05) {
-      const m = Hd(4, 10.6);
-      ctx.fillStyle = '#e07a8a';
+      const m = Hd(3.5, 10.2);
+      ctx.fillStyle = '#e58492';
       ctx.beginPath();
-      ctx.ellipse(m.x, m.y, 1.9, 1.7 * c.mouth, tilt, 0, Math.PI * 2);
+      ctx.ellipse(m.x, m.y, 1.9, 1.7 * c.mouth, 0, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // Two short whiskers a side.
-    ctx.strokeStyle = COL.outline;
-    ctx.globalAlpha = 0.6;
-    ctx.lineWidth = 0.9;
+    // A few fine whiskers.
+    ctx.strokeStyle = 'rgba(160, 120, 110, 0.5)';
+    ctx.lineWidth = 0.6;
     ctx.beginPath();
     for (const [from, to] of [
-      [[-19, 6], [-24.5, 4.8]], [[-19.5, 9.5], [-24.5, 10.2]], // shorter at the back, so they don't cross her body
-      [[23, 6], [31, 4]], [[23.5, 9.5], [31, 10.5]],
+      [[-19, 6.5], [-25.5, 5.5]], [[-19, 9.5], [-25.5, 10.5]],
+      [[25, 6.5], [32, 5]], [[25, 9.5], [32, 10.5]],
     ]) {
       const a = Hd(from[0], from[1]);
       const b = Hd(to[0], to[1]);
@@ -563,7 +571,6 @@
       ctx.lineTo(b.x, b.y);
     }
     ctx.stroke();
-    ctx.globalAlpha = 1;
   }
 
   // ---- the fish (cursor) ------------------------------------------------
@@ -603,8 +610,8 @@
     ctx.ellipse(-1.5, 4.5, 10, 4, 0, 0, Math.PI * 2);
     ctx.fill();
     // Blush, to match Fiona.
-    ctx.fillStyle = COL.blush;
-    ctx.globalAlpha = 0.8;
+    ctx.fillStyle = `rgb(${COL.blush})`;
+    ctx.globalAlpha = 0.7;
     ctx.beginPath();
     ctx.ellipse(-5.5, 2.2, 2, 1.3, 0, 0, Math.PI * 2);
     ctx.fill();

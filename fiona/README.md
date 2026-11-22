@@ -1,8 +1,8 @@
 # Fiona
 
 A small animated cat who lives along the bottom of your screen and follows
-your mouse. She's a white cat drawn in a pastel kawaii style: big round head, blob
-body, stubby legs, sparkly eyes and blush. While she's running, your cursor is a fish. Windows only.
+your mouse. She's a white kitten drawn as a fluffy plush toy: one soft egg shape,
+fuzzy fur, stubby legs, big glossy eyes and soft pink blush. While she's running, your cursor is a fish. Windows only.
 
 ## Run it
 
@@ -75,10 +75,12 @@ clicks go straight through to whatever is underneath.
 There are no image files. Fiona is a small rig of joints (hip,
 shoulder, head, tail base), each with simple shapes on it: capsules for
 the body and legs, circles, ellipses, and triangles for ears. All of it
-is drawn every frame with canvas paths and one shared outline. Detail
-is layered on top, clipped to her silhouette: gradient shading, fur
-markings, blush, ear and chest fluff, toes, and eyes with a gradient
-iris, lashes and sparkles.
+is drawn every frame with canvas paths. There's no outline: short fine
+hairs are drawn all round every shape, so her edge is fuzzy, and a
+blurred copy underneath softens it further. Detail is layered on top,
+clipped to her silhouette: ball-style shading on head and body, fur
+texture, faint tabby markings, soft blush, and glossy eyes with a brown
+iris and catchlights.
 
 - **Posture** is three key poses (stand, sit, lie) blended by two
   numbers that ease toward their targets. Sitting down, lying down and

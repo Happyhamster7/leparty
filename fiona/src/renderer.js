@@ -359,6 +359,10 @@
       ctx.save();
       ctx.translate(cat.x, H - GROUND);
       ctx.scale(f, 1);
+      // Once blurred, once sharp: the blurred copy gives her a soft plush edge.
+      ctx.filter = 'blur(1.5px)';
+      ctx.drawImage(buf, -OX * SIZE, -OY * SIZE, BW * SIZE, BH * SIZE);
+      ctx.filter = 'none';
       ctx.drawImage(buf, -OX * SIZE, -OY * SIZE, BW * SIZE, BH * SIZE);
       ctx.restore();
     }
