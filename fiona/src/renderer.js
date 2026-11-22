@@ -1,5 +1,6 @@
 // Fiona's brain. Runs in the overlay page: decides what she's doing,
-// moves her, and hands pose targets to the rig in cat.js.
+// moves her, and shows her — as video clips if there are any (see
+// clips.js), otherwise as the drawn rig in cat.js.
 //
 // States:
 //   sit    – cursor is roughly above her; she faces it and watches it
@@ -79,6 +80,7 @@
   // ---- state ------------------------------------------------------------
 
   const rig = makeCat();
+  const player = window.FionaClips.create(); // clip mode; inactive until clips load
   const cat = {
     x: W / 2,
     facing: 1, // where she wants to face
@@ -103,6 +105,9 @@
 
   // Head position on screen, from the rig's last solved pose.
   function headOnScreen() {
+    if (player.active && player.size) {
+      return { x: cat.x + cat.flip * player.size.w * 0.12, y: H - GROUND - player.size.h * 0.7 };
+    }
     const p = rig.points ? rig.points.head : { x: 7, y: -45 };
     return { x: cat.x + p.x * SIZE * cat.flip, y: H - GROUND + p.y * SIZE };
   }
@@ -155,8 +160,13 @@
   });
 
   function updateHover() {
-    const tall = cat.state === 'sleep' ? 45 : 95;
-    const over = Math.abs(mouse.x - cat.x) < 45 * SIZE && mouse.y > H - tall * SIZE && mouse.y < H;
+    let wide = 45 * SIZE;
+    let tall = (cat.state === 'sleep' ? 45 : 95) * SIZE;
+    if (player.active && player.size) {
+      wide = player.size.w / 2;
+      tall = player.size.h;
+    }
+    const over = Math.abs(mouse.x - cat.x) < wide && mouse.y > H - tall && mouse.y < H;
     if (over !== cat.hovered) {
       cat.hovered = over;
       if (bridge) bridge.setInteractive(over);
@@ -275,6 +285,7 @@
     }
     particles = particles.filter((p) => p.age < p.life && p.y < H + 10);
 
+    if (player.active) player.setState(cat.state);
     updateHover();
   }
 
@@ -331,23 +342,26 @@
   }
 
   function draw() {
-    // Fiona into her buffer.
-    bctx.setTransform(1, 0, 0, 1, 0, 0);
-    bctx.globalCompositeOperation = 'source-over';
-    bctx.clearRect(0, 0, buf.width, buf.height);
-    bctx.setTransform(dpr * SIZE, 0, 0, dpr * SIZE, OX * dpr, OY * dpr);
-    drawCat(bctx, rig);
-
-    // Buffer onto the strip, mirrored when she faces left.
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.save();
-    ctx.translate(cat.x, H - GROUND);
+    // Mirrored when she faces left; never quite zero wide mid-turn.
     const f = Math.abs(cat.flip) < 0.06 ? 0.06 * Math.sign(cat.flip || 1) : cat.flip;
-    ctx.scale(f, 1);
-    ctx.drawImage(buf, -OX * SIZE, -OY * SIZE, BW * SIZE, BH * SIZE);
-    ctx.restore();
+
+    // Clip mode if there are clips; the drawn rig otherwise, and while
+    // a clip is still loading.
+    if (!(player.active && player.draw(ctx, cat.x, H - GROUND, f, dpr))) {
+      bctx.setTransform(1, 0, 0, 1, 0, 0);
+      bctx.globalCompositeOperation = 'source-over';
+      bctx.clearRect(0, 0, buf.width, buf.height);
+      bctx.setTransform(dpr * SIZE, 0, 0, dpr * SIZE, OX * dpr, OY * dpr);
+      drawCat(bctx, rig);
+      ctx.save();
+      ctx.translate(cat.x, H - GROUND);
+      ctx.scale(f, 1);
+      ctx.drawImage(buf, -OX * SIZE, -OY * SIZE, BW * SIZE, BH * SIZE);
+      ctx.restore();
+    }
 
     for (const p of particles) drawParticle(p);
 
@@ -376,6 +390,17 @@
   }
   requestAnimationFrame(frame);
 
+  // ---- clips -------------------------------------------------------------
+
+  // The main process reads the clips folder and sends the files over;
+  // they become in-memory blob URLs here.
+  if (bridge) {
+    bridge
+      .getClips()
+      .then((r) => player.load(r.clips, r.config))
+      .catch((err) => console.error('Fiona: could not load clips', err));
+  }
+
   // For the browser preview and debugging only.
-  window.__fiona = { cat, rig, mouse, setState };
+  window.__fiona = { cat, rig, mouse, setState, player };
 })();

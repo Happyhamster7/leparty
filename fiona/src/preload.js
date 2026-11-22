@@ -7,4 +7,5 @@ contextBridge.exposeInMainWorld('fiona', {
   onCommand: (cb) => ipcRenderer.on('command', (_e, c) => cb(c)),
   setInteractive: (on) => ipcRenderer.send('interactive', on),
   setFish: (img) => ipcRenderer.send('fish', img),
+  getClips: () => ipcRenderer.invoke('clips'),
 });

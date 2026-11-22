@@ -5,12 +5,12 @@
 // can't see the mouse on its own once the pointer leaves it, so we poll
 // the global cursor position and stream it to the renderer.
 
-const { app, BrowserWindow, Tray, Menu, nativeImage, screen, ipcMain, powerMonitor } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, screen, ipcMain, powerMonitor, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const cursor = require('./cursor');
 
-const STRIP_HEIGHT = 170; // px of screen Fiona lives in, incl. room for hearts and Zs
+const STRIP_HEIGHT = 280; // px of screen Fiona lives in, incl. room for hearts and Zs
 const POLL_MS = 16; // ~60 cursor samples a second
 
 let win = null;
@@ -139,6 +139,53 @@ function startCursorFeed() {
   }, POLL_MS);
 }
 
+// ---- clips ----------------------------------------------------------------
+
+// Clip mode: one video per action, named after it (sit.mp4, walk.mp4,
+// ...). While developing they live in fiona/clips; in the built exe, in
+// the app's data folder (tray menu > Open clips folder).
+const CLIP_STATES = ['sit', 'walk', 'run', 'eat', 'sleep', 'wake'];
+const CLIP_TYPES = { '.mp4': 'video/mp4', '.m4v': 'video/mp4', '.mov': 'video/mp4', '.webm': 'video/webm' };
+const CLIP_MAX_BYTES = 80 * 1024 * 1024;
+
+function clipsDir() {
+  return app.isPackaged ? path.join(app.getPath('userData'), 'clips') : path.join(__dirname, '..', 'clips');
+}
+
+ipcMain.handle('clips', () => {
+  const dir = clipsDir();
+  const out = { config: {}, clips: [] };
+  let names = [];
+  try {
+    names = fs.readdirSync(dir);
+  } catch {
+    return out; // no folder yet: drawn Fiona
+  }
+  try {
+    out.config = JSON.parse(fs.readFileSync(path.join(dir, 'config.json'), 'utf8'));
+  } catch {
+    // no config, or not valid JSON — defaults
+  }
+  const seen = new Set();
+  for (const name of names.sort()) {
+    const ext = path.extname(name).toLowerCase();
+    const state = path.basename(name, path.extname(name)).toLowerCase();
+    if (!CLIP_TYPES[ext] || !CLIP_STATES.includes(state) || seen.has(state)) continue;
+    const file = path.join(dir, name);
+    try {
+      if (fs.statSync(file).size > CLIP_MAX_BYTES) {
+        console.error(`Skipping ${name}: over 80 MB`);
+        continue;
+      }
+      out.clips.push({ state, mime: CLIP_TYPES[ext], data: fs.readFileSync(file) });
+      seen.add(state);
+    } catch (err) {
+      console.error(`Could not read ${name}`, err);
+    }
+  }
+  return out;
+});
+
 // The window is click-through, except while the pointer is over Fiona
 // herself — then it accepts clicks so you can pet her.
 ipcMain.on('interactive', (_e, on) => {
@@ -186,6 +233,15 @@ function buildMenu() {
       },
     },
     { label: 'Put her to sleep', click: () => win.webContents.send('command', 'sleep') },
+    { type: 'separator' },
+    {
+      label: 'Open clips folder',
+      click: () => {
+        fs.mkdirSync(clipsDir(), { recursive: true });
+        shell.openPath(clipsDir());
+      },
+    },
+    { label: 'Reload clips', click: () => win.webContents.reload() },
     { type: 'separator' },
     {
       label: 'Fish cursor',

@@ -43,6 +43,19 @@ The exe ends up in `dist/`.
 Tray menu: hide her, put her to sleep, turn the fish cursor on or off,
 start with Windows, quit.
 
+## Two ways to show her
+
+- **Drawn** (the default): the vector cat described below, drawn by
+  code. Nothing to set up.
+- **Clips**: put short video clips of her in the `clips` folder, one per
+  action, and the app plays those instead. This is how to get a look
+  code can't draw, such as a fluffy 3D-rendered kitten. The clips are
+  filmed on a green background, which the app removes as it plays them.
+  [`clips/README.md`](clips/README.md) explains what the clips need and
+  how to make them.
+
+Her behaviour, the overlay and the fish cursor are the same either way.
+
 ## How it works
 
 | File | What it does |
@@ -50,6 +63,7 @@ start with Windows, quit.
 | `src/main.js` | A transparent, always-on-top, click-through window, one strip tall, pinned to the bottom of the work area. Polls the global cursor about 60 times a second and sends it to the page. Tray menu. |
 | `src/renderer.js` | Fiona's brain: the state machine (sit, walk, run, eat, sleep, wake), movement, eye and head tracking, particles. |
 | `src/cat.js` | Fiona's body: a vector rig drawn with canvas paths. Also draws the fish. |
+| `src/clips.js` | Clip mode: plays one video per action and removes the green background from each frame. |
 | `src/cursor.js` | Turns the rendered fish into a real `.cur` file and swaps it in as the Windows system cursor (arrow and link hand) through `user32.dll`. |
 | `src/preload.js` | The bridge between the page and the main process. |
 
