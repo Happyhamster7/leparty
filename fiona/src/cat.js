@@ -1,7 +1,6 @@
 // Fiona's body: a small vector rig drawn with canvas paths, styled as
-// a fluffy plush kitten — one soft egg shape, a fuzzy fur edge instead
-// of an outline, 3D-style shading, soft round blush and big glossy
-// eyes.
+// a smooth plush kitten — one soft egg shape, a soft edge instead of
+// an outline, 3D-style shading, soft round blush and big glossy eyes.
 //
 // She's built from simple shapes (capsules, circles, ellipses, ear
 // triangles) placed on a handful of joints. Three key poses — stand,
@@ -227,72 +226,11 @@
     }
   }
 
-  // Fuzz: short fine hairs all the way round each shape, in its own
-  // colour. Where shapes overlap the hairs vanish into the fur; at the
-  // silhouette they stick out, which is what makes the edge look soft.
-  function fuzz(ctx, shapes) {
-    ctx.lineCap = 'round';
-    ctx.lineWidth = 0.7;
-    shapes.forEach((sh, si) => {
-      let n = si * 1000;
-      ctx.strokeStyle = sh.col;
-      ctx.beginPath();
-      // One hair from point (x, y) on the edge, pointing along angle a.
-      const hair = (x, y, a) => {
-        const lean = a + (rnd(n++) - 0.5) * 0.7;
-        const len = 0.2 + rnd(n++) * 0.6; // barely there: a velvety edge, not visible hairs
-        ctx.moveTo(x - Math.cos(a), y - Math.sin(a));
-        ctx.lineTo(x + Math.cos(lean) * len, y + Math.sin(lean) * len);
-      };
-      const ring = (cx, cy, rx, ry, rot) => {
-        const count = Math.ceil((Math.PI * (rx + ry)) / 0.8);
-        const k = Math.cos(rot);
-        const s = Math.sin(rot);
-        for (let i = 0; i < count; i++) {
-          const t = ((i + rnd(n++) * 0.6) / count) * Math.PI * 2;
-          const ex = rx * Math.cos(t);
-          const ey = ry * Math.sin(t);
-          hair(cx + ex * k - ey * s, cy + ex * s + ey * k, Math.atan2(ex * s + ey * k, ex * k - ey * s));
-        }
-      };
-      if (sh.t === 'circ') ring(sh.c.x, sh.c.y, sh.r, sh.r, 0);
-      else if (sh.t === 'ell') ring(sh.c.x, sh.c.y, sh.rx, sh.ry, sh.rot || 0);
-      else if (sh.t === 'cap') {
-        ring(sh.a.x, sh.a.y, sh.r, sh.r, 0);
-        ring(sh.b.x, sh.b.y, sh.r, sh.r, 0);
-        const dx = sh.b.x - sh.a.x;
-        const dy = sh.b.y - sh.a.y;
-        const len = Math.hypot(dx, dy);
-        const side = Math.atan2(dy, dx) + Math.PI / 2;
-        for (let d = 0; d < len; d += 0.8) {
-          const px = sh.a.x + (dx / len) * d;
-          const py = sh.a.y + (dy / len) * d;
-          hair(px + Math.cos(side) * sh.r, py + Math.sin(side) * sh.r, side);
-          hair(px - Math.cos(side) * sh.r, py - Math.sin(side) * sh.r, side + Math.PI);
-        }
-      } else if (sh.t === 'poly') {
-        const cx = sh.pts.reduce((a, p) => a + p.x, 0) / sh.pts.length;
-        const cy = sh.pts.reduce((a, p) => a + p.y, 0) / sh.pts.length;
-        sh.pts.forEach((p, i) => {
-          const q = sh.pts[(i + 1) % sh.pts.length];
-          const len = Math.hypot(q.x - p.x, q.y - p.y);
-          for (let d = 0; d < len; d += 0.8) {
-            const px = p.x + ((q.x - p.x) * d) / len;
-            const py = p.y + ((q.y - p.y) * d) / len;
-            hair(px, py, Math.atan2(py - cy, px - cx));
-          }
-        });
-      }
-      ctx.stroke();
-    });
-  }
-
-  // Draw a set of shapes as one soft silhouette: fills and fuzz first,
-  // then `details` clipped to them, then a faint rim slid in behind.
+  // Draw a set of shapes as one soft silhouette: fills first, then
+  // `details` clipped to them, then a faint rim slid in behind.
   function layer(ctx, shapes, details) {
     ctx.globalCompositeOperation = 'source-over';
     for (const sh of shapes) shape(ctx, sh, 0);
-    fuzz(ctx, shapes);
     if (details) {
       ctx.globalCompositeOperation = 'source-atop';
       details();
@@ -305,7 +243,6 @@
   function layerBehind(ctx, shapes) {
     ctx.globalCompositeOperation = 'destination-over';
     for (const sh of shapes) shape(ctx, sh, 0);
-    fuzz(ctx, shapes);
     for (const sh of shapes) shape(ctx, sh, OUT, COL.rim);
   }
 

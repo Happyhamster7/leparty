@@ -75,9 +75,8 @@ clicks go straight through to whatever is underneath.
 There are no image files. Fiona is a small rig of joints (hip,
 shoulder, head, tail base), each with simple shapes on it: capsules for
 the body and legs, circles, ellipses, and triangles for ears. All of it
-is drawn every frame with canvas paths. There's no outline: very short
-fine hairs all round every shape give her a velvety edge, and a
-blurred copy underneath softens it further. Detail is layered on top,
+is drawn every frame with canvas paths. There's no outline: a faint rim
+and a blurred copy underneath give her a smooth, soft edge. Detail is layered on top,
 clipped to her silhouette: ball-style shading on head and body, fur
 texture, faint tabby markings, soft blush, and glossy eyes with a brown
 iris and catchlights.
