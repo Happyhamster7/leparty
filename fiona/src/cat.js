@@ -240,7 +240,7 @@
       // One hair from point (x, y) on the edge, pointing along angle a.
       const hair = (x, y, a) => {
         const lean = a + (rnd(n++) - 0.5) * 0.7;
-        const len = 0.5 + rnd(n++) * 1.5; // short: a soft halo, not spikes
+        const len = 0.2 + rnd(n++) * 0.6; // barely there: a velvety edge, not visible hairs
         ctx.moveTo(x - Math.cos(a), y - Math.sin(a));
         ctx.lineTo(x + Math.cos(lean) * len, y + Math.sin(lean) * len);
       };
@@ -335,7 +335,7 @@
   function furTexture(ctx, c, rx, ry, seed, count) {
     ctx.lineCap = 'round';
     ctx.lineWidth = 0.6;
-    for (const [tone, offset] of [[`rgba(255, 255, 255, 0.5)`, 0], [`rgba(${COL.shade}, 0.16)`, 500]]) {
+    for (const [tone, offset] of [[`rgba(255, 255, 255, 0.3)`, 0], [`rgba(${COL.shade}, 0.07)`, 500]]) {
       ctx.strokeStyle = tone;
       ctx.beginPath();
       for (let i = 0; i < count; i++) {
@@ -401,7 +401,7 @@
       const bc = mix(P.hip, P.shoulder, 0.45);
       const br = Math.max(P.haunchR, P.chestR) + ul * 0.5;
       ball(ctx, bc.x, bc.y, br, 0.75);
-      furTexture(ctx, bc, br * 0.95, Math.max(P.haunchR, P.chestR), 9000, 70);
+      furTexture(ctx, bc, br * 0.95, Math.max(P.haunchR, P.chestR), 9000, 30);
       const contact = ctx.createLinearGradient(0, -9, 0, 0);
       contact.addColorStop(0, `rgba(${COL.shade}, 0)`);
       contact.addColorStop(1, `rgba(${COL.shade}, 0.55)`);
@@ -426,7 +426,7 @@
       line(ctx, Hd(3.5, -19.5), Hd(3.5, -13.5), 2.4, COL.stripe);
       line(ctx, Hd(8.5, -19), Hd(8, -14), 2.4, COL.stripe);
       ball(ctx, P.head.x, P.head.y + 1, HEAD_RX + 1, 0.6);
-      furTexture(ctx, P.head, HEAD_RX, HEAD_RY, 4000, 80);
+      furTexture(ctx, P.head, HEAD_RX, HEAD_RY, 4000, 30);
       // Blush: big, soft, low on the cheeks, fading out with no edge.
       for (const [bx, by] of [[-13.5, 8.5], [20, 8.5]]) {
         const b = Hd(bx, by);
