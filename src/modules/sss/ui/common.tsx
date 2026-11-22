@@ -21,6 +21,8 @@ type Game<V> = {
   membersOf: (teamId: string) => Roster['members'];
   /** The theme's sound cues, on screens that make sound. */
   sounds?: SoundSet;
+  /** The page's "film a clip" control, for the game to show at the right moment. */
+  film?: React.ReactNode;
 };
 
 const Ctx = createContext<Game<unknown> | null>(null);
@@ -41,6 +43,7 @@ export function GameScreen({
   words,
   everyMs,
   sounds,
+  film,
   children,
 }: {
   sessionId: string;
@@ -48,6 +51,7 @@ export function GameScreen({
   words: Words;
   everyMs?: number;
   sounds?: SoundSet;
+  film?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const { data, status, send: rawSend } = useSession<unknown>(sessionId, headers, everyMs);
@@ -92,7 +96,7 @@ export function GameScreen({
   if (!game) return <p className="small">Connecting…</p>;
 
   return (
-    <Ctx.Provider value={{ ...game, busy: busy > 0, sounds }}>
+    <Ctx.Provider value={{ ...game, busy: busy > 0, sounds, film }}>
       {status === 'offline' ? <div className="notice">Connection lost. Retrying…</div> : null}
       {refusal ? (
         <div className="notice g-refusal" role="alert" onClick={() => setRefusal(null)}>
@@ -180,13 +184,13 @@ export function Standings({ teams, showMoney = true, pointsAsOf, incomeStep = 0 
   const allLive = teams.every((t) => t.pointsLive);
   return (
     <>
-      <table className="list g-standings">
+      <div className="scroller"><table className="list g-standings">
         <thead>
           <tr>
             <th>{v.group}</th>
             <th>Points</th>
             {showMoney ? <th>Cash</th> : null}
-            {showMoney ? <th>Next drink income</th> : null}
+            {showMoney ? <th>Next income</th> : null}
           </tr>
         </thead>
         <tbody>
@@ -202,7 +206,7 @@ export function Standings({ teams, showMoney = true, pointsAsOf, incomeStep = 0 
             </tr>
           ))}
         </tbody>
-      </table>
+      </table></div>
       {allLive ? null : (
         <p className="small">
           {pointsAsOf === 'end'

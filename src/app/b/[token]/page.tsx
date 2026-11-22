@@ -56,7 +56,7 @@ export default async function BlockPage({ params }: { params: { token: string } 
           <hr className="rule" />
 
           {game && ui ? (
-            <GameScreen sessionId={game.id} headers={{ 'x-team-token': params.token }} words={wordsFor(pack)}>
+            <GameScreen sessionId={game.id} headers={{ 'x-team-token': params.token }} words={wordsFor(pack)} film={<FilmClip token={params.token} />}>
               <ui.Team />
             </GameScreen>
           ) : (
@@ -79,24 +79,22 @@ export default async function BlockPage({ params }: { params: { token: string } 
           ) : null}
 
           {names.length > 0 ? (
-            <>
-              <p className="eyebrow">Your {theme.groupNoun.toLowerCase()}</p>
-              <div className="box box--quiet">
-                {names.map((n) => (
-                  <div key={n} style={{ fontSize: 15, padding: '3px 0' }}>
-                    {n}
-                  </div>
-                ))}
-              </div>
-            </>
+            <details className="g-fold">
+              <summary>
+                Your {theme.groupNoun.toLowerCase()} ({names.length})
+              </summary>
+              {names.map((n) => (
+                <div key={n} style={{ fontSize: 15, padding: '3px 0' }}>
+                  {n}
+                </div>
+              ))}
+            </details>
           ) : (
             <div className="notice">
               Nobody is in this {theme.groupNoun.toLowerCase()} yet. They&rsquo;re drawn once check-in
               closes.
             </div>
           )}
-
-          <FilmClip token={params.token} />
 
           <p className="small">
             Keep this page open. Anyone else in {block.name} can scan the same card, and the latest

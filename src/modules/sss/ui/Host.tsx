@@ -161,7 +161,7 @@ function Results({ round, teams }: { round: Round; teams: string[] }) {
       <p style={{ marginTop: 0 }}>
         Where did each {v.group} place? First place wins the round. {round.proposed ? 'The app has filled these in from the game; change any that are wrong.' : ''}
       </p>
-      <table className="list">
+      <div className="scroller"><table className="list">
         <thead>
           <tr>
             <th>{v.group}</th>
@@ -199,7 +199,7 @@ function Results({ round, teams }: { round: Round; teams: string[] }) {
             </tr>
           ))}
         </tbody>
-      </table>
+      </table></div>
       <button className="btn g-big" type="submit" disabled={busy}>
         Pay the prizes and open {v.shop}
       </button>
@@ -322,7 +322,7 @@ function Rulings() {
 
       <h3>Orders waiting ({pending.length})</h3>
       {pending.length ? (
-        <table className="list">
+        <div className="scroller"><table className="list">
           <tbody>
             {pending.slice(0, 40).map((o) => (
               <tr key={o.id}>
@@ -340,7 +340,7 @@ function Rulings() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       ) : (
         <p className="small">None.</p>
       )}
@@ -393,7 +393,7 @@ function Setup() {
 
       <h3>The order of play</h3>
       <p className="small">Optional. Without it you choose the game as you start each round.</p>
-      <table className="list">
+      <div className="scroller"><table className="list">
         <tbody>
           {view.night.acts.map((act, a) => (
             <tr key={act.id}>
@@ -425,10 +425,10 @@ function Setup() {
             </tr>
           ))}
         </tbody>
-      </table>
+      </table></div>
 
       <h3>Games</h3>
-      <table className="list">
+      <div className="scroller"><table className="list">
         <tbody>
           {view.games.map((g) => (
             <tr key={g.id}>
@@ -450,7 +450,7 @@ function Setup() {
             </tr>
           ))}
         </tbody>
-      </table>
+      </table></div>
       {editing ? <GameEditor key={editing} gameId={editing} onClose={() => setEditing(null)} /> : null}
       <AddGame />
 
@@ -572,7 +572,7 @@ function Shelf() {
         A drink scores its points for the {v.group} that sent it when it’s served. Bundle prices (5 or 10 at once) are fixed. Untick an item to take it off the
         shelf.
       </p>
-      <table className="list">
+      <div className="scroller"><table className="list">
         <thead>
           <tr>
             <th>Item</th>
@@ -612,7 +612,7 @@ function Shelf() {
             </tr>
           ))}
         </tbody>
-      </table>
+      </table></div>
     </>
   );
 }

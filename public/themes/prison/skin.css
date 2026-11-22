@@ -222,6 +222,17 @@ a {
   color: var(--rust-dark);
 }
 
+/* A light panel inside a dark one goes back to dark text. */
+.box--dark .box {
+  color: var(--ink);
+}
+
+.box--dark .box .eyebrow,
+.box--dark .box .small,
+.box--dark .box label.field {
+  color: var(--rust-dark);
+}
+
 .box--dark .g-reveal li {
   border-bottom-color: #6e3416;
 }
@@ -288,20 +299,17 @@ table.list th {
   color: var(--px-cream);
 }
 
+/* The round's four steps: quiet parchment tiles, the current one dark with gold text. */
 .g-phases span {
-  border: 9px solid transparent;
-  border-image: url('pixel/frame-tab-idle.png') 9 fill / 9px stretch;
-  padding: 0 3px;
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  color: var(--ink);
+  border: 3px solid var(--line);
+  background: var(--fill);
+  color: var(--muted);
 }
 
 .g-phases span.on {
-  background: none;
-  border-image-source: url('pixel/frame-tab.png');
-  color: var(--ink);
-  font-weight: 600;
+  border-color: var(--px-outline);
+  background: var(--px-outline);
+  color: var(--px-gold);
 }
 
 /* A team's name, framed in its own colour (the colour comes from the element). */
@@ -414,4 +422,36 @@ table.list th {
   border-image: url('pixel/frame-wood.png') 18 fill / 18px stretch;
   box-shadow: none;
   color: var(--ink);
+}
+
+/* ---------- phones: give the content the width, not the frame ---------- */
+
+@media (max-width: 560px) {
+  .shell {
+    border-width: 12px;
+    border-image-width: 12px;
+    margin: 0 auto;
+    min-height: 100vh;
+  }
+
+  h1,
+  .huge {
+    font-size: 36px;
+  }
+
+  .btn {
+    min-height: 44px;
+    padding: 2px 8px;
+  }
+
+  .box,
+  .g-fold,
+  .notice {
+    border-width: 6px;
+    border-image-width: 6px;
+  }
+
+  .stat .value {
+    font-size: 32px;
+  }
 }
