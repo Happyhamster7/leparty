@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [master, claude/funny-archimedes-bwev8e] # second branch is temporary, to prove the e2e job
+    branches: [master]
   pull_request:
 
 jobs:
