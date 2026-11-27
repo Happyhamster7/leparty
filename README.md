@@ -84,6 +84,9 @@ npm run dev
 
 `npm test` runs the app's tests, `npm run test:legacy` runs the original
 Slammer engine's, and `npm run typecheck` checks types.
+`npm run check` runs all of those and a build. The end-to-end tests
+(real browsers, a whole party from every seat) are in `e2e/`; see
+`e2e/README.md`.
 
 Open <http://localhost:3000/host>, sign in with your `HOST_PASSCODE`, create
 a party, add yourself as a guest and click your own invite link to walk the

@@ -35,8 +35,20 @@ Tests are `node:test`, run through `tsx`, in `*.test.ts` files next to
 the code.
 
 `npm run dev` · `npm run build` · `npm test` · `npm run typecheck` ·
-`npm run test:legacy` (the original SSS engine's 130 tests). CI
+`npm run test:legacy` (the original SSS engine's 130 tests) ·
+`npm run check` (all four, the thing to run before pushing). CI
 (`.github/workflows/ci.yml`) runs all of them.
+
+End-to-end tests are Playwright, in `e2e/` (read `e2e/README.md`):
+real browsers playing a party from every seat at once. CI's `e2e` job
+runs them on every pull request against a throwaway Supabase it starts
+itself; `npm run e2e:local` does the same on a machine with Docker and
+the Supabase CLI. They refuse to run against a database that isn't
+local, and must never be pointed at the live project. A hosted practice
+project, `leparty-staging`, has every migration applied and is the
+place for a one-off run without Docker. A new migration must also go
+there. When a change touches a flow these tests play, run them; when it
+adds a flow, add a test.
 
 Migrations are in `supabase/migrations/`, numbered `0001`–`0013`, run in order against the Supabase SQL editor.
 Each new one must actually be run before its feature works — nothing

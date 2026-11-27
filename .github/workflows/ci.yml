@@ -23,3 +23,30 @@ jobs:
           # The build never talks to Supabase; these only need to be set.
           NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
           SUPABASE_SERVICE_ROLE_KEY: build-only
+
+  # Plays whole parties in real browsers against a throwaway Supabase
+  # that exists only for this run. See e2e/README.md.
+  e2e:
+    runs-on: ubuntu-latest
+    needs: check
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      # Starts Postgres, the API and Storage, and applies every migration.
+      - run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector,realtime
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e:local
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7

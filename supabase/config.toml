@@ -1,0 +1,4 @@
+# Settings for a local Supabase (`supabase start`), used by the
+# end-to-end tests. Everything not set here takes the CLI's default.
+# The live project is configured in the Supabase dashboard, not here.
+project_id = "leparty"

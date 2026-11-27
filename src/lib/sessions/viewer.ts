@@ -27,8 +27,9 @@ export async function resolveViewer(req: Request, eventId: string): Promise<View
   }
 
   const card = req.headers.get('x-team-token') || '';
-  const device = readDeviceId();
-  if (/^[a-f0-9]{16,64}$/.test(card) && device) {
+  if (/^[a-f0-9]{16,64}$/.test(card)) {
+    const device = readDeviceId();
+    if (!device) return null;
     const { data } = await db().from('blocks').select('id, team_device_id').eq('join_token', card).eq('event_id', eventId).maybeSingle();
     if (data && data.team_device_id === device) return { role: 'team', teamId: data.id as string };
     return null;

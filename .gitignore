@@ -19,3 +19,7 @@ Thumbs.db
 .vercel
 .env*
 supabase/.temp/
+
+# Playwright
+test-results/
+playwright-report/
